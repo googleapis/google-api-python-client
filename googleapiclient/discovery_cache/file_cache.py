@@ -15,7 +15,7 @@
 """File based cache for the discovery document.
 
 The cache is stored in a single file so that multiple processes can
-share the same cache. It locks the file whenever accesing to the
+share the same cache. It locks the file whenever accessing to the
 file. When the cache content is corrupted, it will be initialized with
 an empty cache.
 """
@@ -46,7 +46,7 @@ from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
 LOGGER = logging.getLogger(__name__)
 
 FILENAME = "google-api-python-client-discovery-doc.cache"
-EPOCH = datetime.datetime.utcfromtimestamp(0)
+EPOCH = datetime.datetime(1970, 1, 1)
 
 
 def _to_timestamp(date):

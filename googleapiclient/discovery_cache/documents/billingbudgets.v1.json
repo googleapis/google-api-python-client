@@ -219,6 +219,11 @@
                   "pattern": "^billingAccounts/[^/]+$",
                   "required": true,
                   "type": "string"
+                },
+                "scope": {
+                  "description": "Optional. Set the scope of the budgets to be returned, in the format of the resource name. The scope of a budget is the cost that it tracks, such as costs for a single project, or the costs for all projects in a folder. Only project scope (in the format of \"projects/project-id\" or \"projects/123\") is supported in this field. When this field is set to a project's resource name, the budgets returned are tracking the costs for that project.",
+                  "location": "query",
+                  "type": "string"
                 }
               },
               "path": "v1/{+parent}/budgets",
@@ -270,7 +275,7 @@
       }
     }
   },
-  "revision": "20220429",
+  "revision": "20231203",
   "rootUrl": "https://billingbudgets.googleapis.com/",
   "schemas": {
     "GoogleCloudBillingBudgetsV1Budget": {
@@ -301,6 +306,19 @@
         "notificationsRule": {
           "$ref": "GoogleCloudBillingBudgetsV1NotificationsRule",
           "description": "Optional. Rules to apply to notifications sent based on budget spend and thresholds."
+        },
+        "ownershipScope": {
+          "enum": [
+            "OWNERSHIP_SCOPE_UNSPECIFIED",
+            "ALL_USERS",
+            "BILLING_ACCOUNT"
+          ],
+          "enumDescriptions": [
+            "Unspecified ownership scope, same as ALL_USERS.",
+            "Both billing account-level users and project-level users have full access to the budget, if the users have the required IAM permissions.",
+            "Only billing account-level users have full access to the budget. Project-level users have read-only access, even if they have the required IAM permissions."
+          ],
+          "type": "string"
         },
         "thresholdRules": {
           "description": "Optional. Rules that trigger alerts (notifications of thresholds being crossed) when spend exceeds the specified percentages of the budget. Optional for `pubsubTopic` notifications. Required if using email notifications.",
@@ -400,7 +418,14 @@
           "type": "object"
         },
         "projects": {
-          "description": "Optional. A set of projects of the form `projects/{project}`, specifying that usage from only this set of projects should be included in the budget. If omitted, the report includes all usage for the billing account, regardless of which project the usage occurred on. Only zero or one project can be specified currently.",
+          "description": "Optional. A set of projects of the form `projects/{project}`, specifying that usage from only this set of projects should be included in the budget. If omitted, the report includes all usage for the billing account, regardless of which project the usage occurred on.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "resourceAncestors": {
+          "description": "Optional. A set of folder and organization names of the form `folders/{folderId}` or `organizations/{organizationId}`, specifying that usage from only this set of folders and organizations should be included in the budget. If omitted, the budget includes all usage that the billing account pays for. If the folder or organization contains projects that are paid for by a different Cloud Billing account, the budget *doesn't* apply to those projects.",
           "items": {
             "type": "string"
           },
@@ -453,6 +478,10 @@
       "properties": {
         "disableDefaultIamRecipients": {
           "description": "Optional. When set to true, disables default notifications sent when a threshold is exceeded. Default notifications are sent to those with Billing Account Administrator and Billing Account User IAM roles for the target account.",
+          "type": "boolean"
+        },
+        "enableProjectLevelRecipients": {
+          "description": "Optional. When set to true, and when the budget has a single project configured, notifications will be sent to project level recipients of that project. This field will be ignored if the budget has multiple or no project configured. Currently, project level recipients are the users with `Owner` role on a cloud project.",
           "type": "boolean"
         },
         "monitoringNotificationChannels": {

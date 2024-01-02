@@ -34,7 +34,7 @@ To get detailed log output run:
 """
 from __future__ import print_function
 
-__author__ = 'jcgregorio@google.com (Joe Gregorio)'
+__author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 import pprint
 import sys
@@ -42,28 +42,37 @@ import sys
 from oauth2client import client
 from googleapiclient import sample_tools
 
+
 def main(argv):
-  service, flags = sample_tools.init(
-      argv, 'urlshortener', 'v1', __doc__, __file__,
-      scope='https://www.googleapis.com/auth/urlshortener')
+    service, flags = sample_tools.init(
+        argv,
+        "urlshortener",
+        "v1",
+        __doc__,
+        __file__,
+        scope="https://www.googleapis.com/auth/urlshortener",
+    )
 
-  try:
-    url = service.url()
+    try:
+        url = service.url()
 
-    # Create a shortened URL by inserting the URL into the url collection.
-    body = {'longUrl': 'http://code.google.com/apis/urlshortener/' }
-    resp = url.insert(body=body).execute()
-    pprint.pprint(resp)
+        # Create a shortened URL by inserting the URL into the url collection.
+        body = {"longUrl": "http://code.google.com/apis/urlshortener/"}
+        resp = url.insert(body=body).execute()
+        pprint.pprint(resp)
 
-    short_url = resp['id']
+        short_url = resp["id"]
 
-    # Convert the shortened URL back into a long URL
-    resp = url.get(shortUrl=short_url).execute()
-    pprint.pprint(resp)
+        # Convert the shortened URL back into a long URL
+        resp = url.get(shortUrl=short_url).execute()
+        pprint.pprint(resp)
 
-  except client.AccessTokenRefreshError:
-    print ('The credentials have been revoked or expired, please re-run'
-      'the application to re-authorize')
+    except client.AccessTokenRefreshError:
+        print(
+            "The credentials have been revoked or expired, please re-run"
+            "the application to re-authorize"
+        )
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)

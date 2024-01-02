@@ -19,8 +19,7 @@
 
 import datetime
 import unittest
-
-import mock
+from unittest import mock
 
 from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
 

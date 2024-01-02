@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#list">list(project, instance, maxResults=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists all backup runs associated with the project or a given instance and configuration in the reverse chronological order of the backup initiation time.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
+  <code><a href="#list_next">list_next()</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -115,6 +115,11 @@ Returns:
   An object of the form:
 
     { # An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.
+  &quot;apiWarning&quot;: { # An Admin API warning message. # An Admin API warning message.
+    &quot;code&quot;: &quot;A String&quot;, # Code to uniquely identify the warning type.
+    &quot;message&quot;: &quot;A String&quot;, # The warning message.
+    &quot;region&quot;: &quot;A String&quot;, # The region name for REGION_UNREACHABLE warning.
+  },
   &quot;backupContext&quot;: { # Backup context. # The context for backup operation, if applicable.
     &quot;backupId&quot;: &quot;A String&quot;, # The identifier of the backup.
     &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#backupContext`.
@@ -131,6 +136,13 @@ Returns:
     &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#operationErrors`.
   },
   &quot;exportContext&quot;: { # Database instance export context. # The context for export operation, if applicable.
+    &quot;bakExportOptions&quot;: { # Options for exporting BAK files (SQL Server-only)
+      &quot;bakType&quot;: &quot;A String&quot;, # Type of this bak file will be export, FULL or DIFF, SQL Server only
+      &quot;copyOnly&quot;: True or False, # Deprecated: copy_only is deprecated. Use differential_base instead
+      &quot;differentialBase&quot;: True or False, # Whether or not the backup can be used as a differential base copy_only backup can not be served as differential base
+      &quot;stripeCount&quot;: 42, # Option for specifying how many stripes to use for the export. If blank, and the value of the striped field is true, the number of stripes is automatically chosen.
+      &quot;striped&quot;: True or False, # Whether or not the export should be striped.
+    },
     &quot;csvExportOptions&quot;: { # Options for exporting data as CSV. `MySQL` and `PostgreSQL` instances only.
       &quot;escapeCharacter&quot;: &quot;A String&quot;, # Specifies the character that should appear before a data character that needs to be escaped.
       &quot;fieldsTerminatedBy&quot;: &quot;A String&quot;, # Specifies the character that separates columns within each row (line) of the file.
@@ -157,11 +169,17 @@ Returns:
   },
   &quot;importContext&quot;: { # Database instance import context. # The context for import operation, if applicable.
     &quot;bakImportOptions&quot;: { # Import parameters specific to SQL Server .BAK files
+      &quot;bakType&quot;: &quot;A String&quot;, # Type of the bak content, FULL or DIFF.
       &quot;encryptionOptions&quot;: {
         &quot;certPath&quot;: &quot;A String&quot;, # Path to the Certificate (.cer) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
         &quot;pvkPassword&quot;: &quot;A String&quot;, # Password that encrypts the private key
         &quot;pvkPath&quot;: &quot;A String&quot;, # Path to the Certificate Private Key (.pvk) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
       },
+      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option Applies only to Cloud SQL for SQL Server.
+      &quot;recoveryOnly&quot;: True or False, # Whether or not the backup importing request will just bring database online without downloading Bak content only one of &quot;no_recovery&quot; and &quot;recovery_only&quot; can be true otherwise error will return. Applies only to Cloud SQL for SQL Server.
+      &quot;stopAt&quot;: &quot;A String&quot;, # Optional. The timestamp when the import should stop. This timestamp is in the [RFC 3339](https://tools.ietf.org/html/rfc3339) format (for example, `2023-10-01T16:19:00.094`). This field is equivalent to the STOPAT keyword and applies to Cloud SQL for SQL Server only.
+      &quot;stopAtMark&quot;: &quot;A String&quot;, # Optional. The marked transaction where the import should stop. This field is equivalent to the STOPATMARK keyword and applies to Cloud SQL for SQL Server only.
+      &quot;striped&quot;: True or False, # Whether or not the backup set being restored is striped. Applies only to Cloud SQL for SQL Server.
     },
     &quot;csvImportOptions&quot;: { # Options for importing data as CSV.
       &quot;columns&quot;: [ # The columns to which CSV data is imported. If not specified, all columns of the database table are loaded with CSV data.
@@ -234,7 +252,8 @@ Returns:
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this resource.
   &quot;startTime&quot;: &quot;A String&quot;, # The time the backup operation actually started in UTC timezone in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
   &quot;status&quot;: &quot;A String&quot;, # The status of this run.
-  &quot;type&quot;: &quot;A String&quot;, # The type of this run; can be either &quot;AUTOMATED&quot; or &quot;ON_DEMAND&quot;. This field defaults to &quot;ON_DEMAND&quot; and is ignored, when specified for insert requests.
+  &quot;timeZone&quot;: &quot;A String&quot;, # Backup time zone to prevent restores to an instance with a different time zone. Now relevant only for SQL Server.
+  &quot;type&quot;: &quot;A String&quot;, # The type of this run; can be either &quot;AUTOMATED&quot; or &quot;ON_DEMAND&quot; or &quot;FINAL&quot;. This field defaults to &quot;ON_DEMAND&quot; and is ignored, when specified for insert requests.
   &quot;windowStartTime&quot;: &quot;A String&quot;, # The start time of the backup window during which this the backup was attempted in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
 }</pre>
 </div>
@@ -274,7 +293,8 @@ Args:
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this resource.
   &quot;startTime&quot;: &quot;A String&quot;, # The time the backup operation actually started in UTC timezone in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
   &quot;status&quot;: &quot;A String&quot;, # The status of this run.
-  &quot;type&quot;: &quot;A String&quot;, # The type of this run; can be either &quot;AUTOMATED&quot; or &quot;ON_DEMAND&quot;. This field defaults to &quot;ON_DEMAND&quot; and is ignored, when specified for insert requests.
+  &quot;timeZone&quot;: &quot;A String&quot;, # Backup time zone to prevent restores to an instance with a different time zone. Now relevant only for SQL Server.
+  &quot;type&quot;: &quot;A String&quot;, # The type of this run; can be either &quot;AUTOMATED&quot; or &quot;ON_DEMAND&quot; or &quot;FINAL&quot;. This field defaults to &quot;ON_DEMAND&quot; and is ignored, when specified for insert requests.
   &quot;windowStartTime&quot;: &quot;A String&quot;, # The start time of the backup window during which this the backup was attempted in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
 }
 
@@ -287,6 +307,11 @@ Returns:
   An object of the form:
 
     { # An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.
+  &quot;apiWarning&quot;: { # An Admin API warning message. # An Admin API warning message.
+    &quot;code&quot;: &quot;A String&quot;, # Code to uniquely identify the warning type.
+    &quot;message&quot;: &quot;A String&quot;, # The warning message.
+    &quot;region&quot;: &quot;A String&quot;, # The region name for REGION_UNREACHABLE warning.
+  },
   &quot;backupContext&quot;: { # Backup context. # The context for backup operation, if applicable.
     &quot;backupId&quot;: &quot;A String&quot;, # The identifier of the backup.
     &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#backupContext`.
@@ -303,6 +328,13 @@ Returns:
     &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#operationErrors`.
   },
   &quot;exportContext&quot;: { # Database instance export context. # The context for export operation, if applicable.
+    &quot;bakExportOptions&quot;: { # Options for exporting BAK files (SQL Server-only)
+      &quot;bakType&quot;: &quot;A String&quot;, # Type of this bak file will be export, FULL or DIFF, SQL Server only
+      &quot;copyOnly&quot;: True or False, # Deprecated: copy_only is deprecated. Use differential_base instead
+      &quot;differentialBase&quot;: True or False, # Whether or not the backup can be used as a differential base copy_only backup can not be served as differential base
+      &quot;stripeCount&quot;: 42, # Option for specifying how many stripes to use for the export. If blank, and the value of the striped field is true, the number of stripes is automatically chosen.
+      &quot;striped&quot;: True or False, # Whether or not the export should be striped.
+    },
     &quot;csvExportOptions&quot;: { # Options for exporting data as CSV. `MySQL` and `PostgreSQL` instances only.
       &quot;escapeCharacter&quot;: &quot;A String&quot;, # Specifies the character that should appear before a data character that needs to be escaped.
       &quot;fieldsTerminatedBy&quot;: &quot;A String&quot;, # Specifies the character that separates columns within each row (line) of the file.
@@ -329,11 +361,17 @@ Returns:
   },
   &quot;importContext&quot;: { # Database instance import context. # The context for import operation, if applicable.
     &quot;bakImportOptions&quot;: { # Import parameters specific to SQL Server .BAK files
+      &quot;bakType&quot;: &quot;A String&quot;, # Type of the bak content, FULL or DIFF.
       &quot;encryptionOptions&quot;: {
         &quot;certPath&quot;: &quot;A String&quot;, # Path to the Certificate (.cer) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
         &quot;pvkPassword&quot;: &quot;A String&quot;, # Password that encrypts the private key
         &quot;pvkPath&quot;: &quot;A String&quot;, # Path to the Certificate Private Key (.pvk) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
       },
+      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option Applies only to Cloud SQL for SQL Server.
+      &quot;recoveryOnly&quot;: True or False, # Whether or not the backup importing request will just bring database online without downloading Bak content only one of &quot;no_recovery&quot; and &quot;recovery_only&quot; can be true otherwise error will return. Applies only to Cloud SQL for SQL Server.
+      &quot;stopAt&quot;: &quot;A String&quot;, # Optional. The timestamp when the import should stop. This timestamp is in the [RFC 3339](https://tools.ietf.org/html/rfc3339) format (for example, `2023-10-01T16:19:00.094`). This field is equivalent to the STOPAT keyword and applies to Cloud SQL for SQL Server only.
+      &quot;stopAtMark&quot;: &quot;A String&quot;, # Optional. The marked transaction where the import should stop. This field is equivalent to the STOPATMARK keyword and applies to Cloud SQL for SQL Server only.
+      &quot;striped&quot;: True or False, # Whether or not the backup set being restored is striped. Applies only to Cloud SQL for SQL Server.
     },
     &quot;csvImportOptions&quot;: { # Options for importing data as CSV.
       &quot;columns&quot;: [ # The columns to which CSV data is imported. If not specified, all columns of the database table are loaded with CSV data.
@@ -409,7 +447,8 @@ Returns:
       &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this resource.
       &quot;startTime&quot;: &quot;A String&quot;, # The time the backup operation actually started in UTC timezone in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
       &quot;status&quot;: &quot;A String&quot;, # The status of this run.
-      &quot;type&quot;: &quot;A String&quot;, # The type of this run; can be either &quot;AUTOMATED&quot; or &quot;ON_DEMAND&quot;. This field defaults to &quot;ON_DEMAND&quot; and is ignored, when specified for insert requests.
+      &quot;timeZone&quot;: &quot;A String&quot;, # Backup time zone to prevent restores to an instance with a different time zone. Now relevant only for SQL Server.
+      &quot;type&quot;: &quot;A String&quot;, # The type of this run; can be either &quot;AUTOMATED&quot; or &quot;ON_DEMAND&quot; or &quot;FINAL&quot;. This field defaults to &quot;ON_DEMAND&quot; and is ignored, when specified for insert requests.
       &quot;windowStartTime&quot;: &quot;A String&quot;, # The start time of the backup window during which this the backup was attempted in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
     },
   ],
@@ -419,17 +458,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
+    <code class="details" id="list_next">list_next()</code>
   <pre>Retrieves the next page of results.
 
-Args:
-  previous_request: The request for the previous page. (required)
-  previous_response: The response from the request for the previous page. (required)
+        Args:
+          previous_request: The request for the previous page. (required)
+          previous_response: The response from the request for the previous page. (required)
 
-Returns:
-  A request object that you can call &#x27;execute()&#x27; on to request the next
-  page. Returns None if there are no more items in the collection.
-    </pre>
+        Returns:
+          A request object that you can call &#x27;execute()&#x27; on to request the next
+          page. Returns None if there are no more items in the collection.
+        </pre>
 </div>
 
 </body></html>

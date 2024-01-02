@@ -22,7 +22,7 @@ Tags: urlchannels.list
 """
 from __future__ import print_function
 
-__author__ = 'sgomes@google.com (Sérgio Gomes)'
+__author__ = "sgomes@google.com (Sérgio Gomes)"
 
 import argparse
 import sys
@@ -34,36 +34,51 @@ MAX_PAGE_SIZE = 50
 
 # Declare command-line flags.
 argparser = argparse.ArgumentParser(add_help=False)
-argparser.add_argument('ad_client_id',
-    help='The ad client ID for which to get URL channels')
+argparser.add_argument(
+    "ad_client_id", help="The ad client ID for which to get URL channels"
+)
 
 
 def main(argv):
-  # Authenticate and construct service.
-  service, flags = sample_tools.init(
-      argv, 'adexchangeseller', 'v1.1', __doc__, __file__, parents=[argparser],
-      scope='https://www.googleapis.com/auth/adexchange.seller.readonly')
+    # Authenticate and construct service.
+    service, flags = sample_tools.init(
+        argv,
+        "adexchangeseller",
+        "v1.1",
+        __doc__,
+        __file__,
+        parents=[argparser],
+        scope="https://www.googleapis.com/auth/adexchange.seller.readonly",
+    )
 
-  ad_client_id = flags.ad_client_id
+    ad_client_id = flags.ad_client_id
 
-  try:
-    # Retrieve URL channel list in pages and display data as we receive it.
-    request = service.urlchannels().list(adClientId=ad_client_id,
-        maxResults=MAX_PAGE_SIZE)
+    try:
+        # Retrieve URL channel list in pages and display data as we receive it.
+        request = service.urlchannels().list(
+            adClientId=ad_client_id, maxResults=MAX_PAGE_SIZE
+        )
 
-    while request is not None:
-      result = request.execute()
+        while request is not None:
+            result = request.execute()
 
-      url_channels = result['items']
-      for url_channel in url_channels:
-        print(('URL channel with URL pattern "%s" was found.'
-               % url_channel['urlPattern']))
+            url_channels = result["items"]
+            for url_channel in url_channels:
+                print(
+                    (
+                        'URL channel with URL pattern "%s" was found.'
+                        % url_channel["urlPattern"]
+                    )
+                )
 
-      request = service.customchannels().list_next(request, result)
+            request = service.customchannels().list_next(request, result)
 
-  except client.AccessTokenRefreshError:
-    print ('The credentials have been revoked or expired, please re-run the '
-           'application to re-authorize')
+    except client.AccessTokenRefreshError:
+        print(
+            "The credentials have been revoked or expired, please re-run the "
+            "application to re-authorize"
+        )
 
-if __name__ == '__main__':
-  main(sys.argv)
+
+if __name__ == "__main__":
+    main(sys.argv)

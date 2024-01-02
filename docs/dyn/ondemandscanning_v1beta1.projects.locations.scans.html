@@ -98,17 +98,68 @@ Args:
 { # AnalyzePackagesRequest is the request to analyze a list of packages and create Vulnerability Occurrences for it.
   &quot;packages&quot;: [ # The packages to analyze.
     {
+      &quot;architecture&quot;: &quot;A String&quot;, # The architecture of the package.
+      &quot;binarySourceInfo&quot;: [ # A bundle containing the binary and source information.
+        {
+          &quot;binaryVersion&quot;: { # The binary package. This is significant when the source is different than the binary itself. Historically if they&#x27;ve differed, we&#x27;ve stored the name of the source and its version in the package/version fields, but we should also store the binary package info, as that&#x27;s what&#x27;s actually installed. See b/175908657#comment15.
+            &quot;licenses&quot;: [ # The licenses associated with this package. Note that this has to go on the PackageVersion level, because we can have cases with images with the same source having different licences. E.g. in Alpine, musl and musl-utils both have the same origin musl, but have different sets of licenses.
+              &quot;A String&quot;,
+            ],
+            &quot;name&quot;: &quot;A String&quot;,
+            &quot;version&quot;: &quot;A String&quot;,
+          },
+          &quot;sourceVersion&quot;: { # The source package. Similar to the above, this is significant when the source is different than the binary itself. Since the top-level package/version fields are based on an if/else, we need a separate field for both binary and source if we want to know definitively where the data is coming from.
+            &quot;licenses&quot;: [ # The licenses associated with this package. Note that this has to go on the PackageVersion level, because we can have cases with images with the same source having different licences. E.g. in Alpine, musl and musl-utils both have the same origin musl, but have different sets of licenses.
+              &quot;A String&quot;,
+            ],
+            &quot;name&quot;: &quot;A String&quot;,
+            &quot;version&quot;: &quot;A String&quot;,
+          },
+        },
+      ],
+      &quot;binaryVersion&quot;: { # DEPRECATED
+        &quot;licenses&quot;: [ # The licenses associated with this package. Note that this has to go on the PackageVersion level, because we can have cases with images with the same source having different licences. E.g. in Alpine, musl and musl-utils both have the same origin musl, but have different sets of licenses.
+          &quot;A String&quot;,
+        ],
+        &quot;name&quot;: &quot;A String&quot;,
+        &quot;version&quot;: &quot;A String&quot;,
+      },
       &quot;cpeUri&quot;: &quot;A String&quot;, # The cpe_uri in [cpe format] (https://cpe.mitre.org/specification/) in which the vulnerability may manifest. Examples include distro or storage location for vulnerable jar.
+      &quot;dependencyChain&quot;: [ # The dependency chain between this package and the user&#x27;s artifact. List in order from the customer&#x27;s package under review first, to the current package last. Inclusive of the original package and the current package.
+        { # Indicates a language package available between this package and the customer&#x27;s resource artifact.
+          &quot;package&quot;: &quot;A String&quot;,
+          &quot;version&quot;: &quot;A String&quot;,
+        },
+      ],
       &quot;fileLocation&quot;: [ # The path to the jar file / go binary file.
         { # Indicates the location at which a package was found.
           &quot;filePath&quot;: &quot;A String&quot;, # For jars that are contained inside .war files, this filepath can indicate the path to war file combined with the path to jar file.
         },
       ],
       &quot;hashDigest&quot;: &quot;A String&quot;, # HashDigest stores the SHA512 hash digest of the jar file if the package is of type Maven. This field will be unset for non Maven packages.
-      &quot;os&quot;: &quot;A String&quot;, # The OS affected by a vulnerability This field is deprecated and the information is in cpe_uri
-      &quot;osVersion&quot;: &quot;A String&quot;, # The version of the OS This field is deprecated and the information is in cpe_uri
+      &quot;licenses&quot;: [ # The list of licenses found that are related to a given package. Note that licenses may also be stored on the BinarySourceInfo. If there is no BinarySourceInfo (because there&#x27;s no concept of source vs binary), then it will be stored here, while if there are BinarySourceInfos, it will be stored there, as one source can have multiple binaries with different licenses.
+        &quot;A String&quot;,
+      ],
+      &quot;maintainer&quot;: { # The maintainer of the package.
+        &quot;email&quot;: &quot;A String&quot;,
+        &quot;kind&quot;: &quot;A String&quot;,
+        &quot;name&quot;: &quot;A String&quot;,
+        &quot;url&quot;: &quot;A String&quot;,
+      },
+      &quot;os&quot;: &quot;A String&quot;, # The OS affected by a vulnerability Used to generate the cpe_uri for OS packages
+      &quot;osVersion&quot;: &quot;A String&quot;, # The version of the OS Used to generate the cpe_uri for OS packages
       &quot;package&quot;: &quot;A String&quot;, # The package being analysed for vulnerabilities
       &quot;packageType&quot;: &quot;A String&quot;, # The type of package: os, maven, go, etc.
+      &quot;patchedCve&quot;: [ # CVEs that this package is no longer vulnerable to go/drydock-dd-custom-binary-scanning
+        &quot;A String&quot;,
+      ],
+      &quot;sourceVersion&quot;: { # DEPRECATED
+        &quot;licenses&quot;: [ # The licenses associated with this package. Note that this has to go on the PackageVersion level, because we can have cases with images with the same source having different licences. E.g. in Alpine, musl and musl-utils both have the same origin musl, but have different sets of licenses.
+          &quot;A String&quot;,
+        ],
+        &quot;name&quot;: &quot;A String&quot;,
+        &quot;version&quot;: &quot;A String&quot;,
+      },
       &quot;unused&quot;: &quot;A String&quot;,
       &quot;version&quot;: &quot;A String&quot;, # The version of the package being analysed
     },
@@ -139,7 +190,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>

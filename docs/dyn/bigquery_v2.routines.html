@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#list">list(projectId, datasetId, filter=None, maxResults=None, pageToken=None, readMask=None)</a></code></p>
 <p class="firstline">Lists all routines in the specified dataset. Requires the READER dataset role.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
+  <code><a href="#list_next">list_next()</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#update">update(projectId, datasetId, routineId, body=None)</a></code></p>
@@ -129,20 +129,23 @@ Returns:
   &quot;arguments&quot;: [ # Optional.
     { # Input/output argument of a function or a stored procedure.
       &quot;argumentKind&quot;: &quot;A String&quot;, # Optional. Defaults to FIXED_TYPE.
-      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
+      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
+      &quot;isAggregate&quot;: True or False, # Optional. Whether the argument is an aggregate function parameter. Must be Unset for routine types other than AGGREGATE_FUNCTION. For AGGREGATE_FUNCTION, if set to false, it is equivalent to adding &quot;NOT AGGREGATE&quot; clause in DDL; Otherwise, it is equivalent to omitting &quot;NOT AGGREGATE&quot; clause in DDL.
       &quot;mode&quot;: &quot;A String&quot;, # Optional. Specifies whether the argument is input or output. Can be set for procedures only.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this argument. Can be absent for function return argument.
     },
   ],
   &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was created, in milliseconds since the epoch.
+  &quot;dataGovernanceType&quot;: &quot;A String&quot;, # Optional. If set to `DATA_MASKING`, the function is validated and made available as a masking function. For more information, see [Create custom masking routines](https://cloud.google.com/bigquery/docs/user-defined-functions#custom-mask).
   &quot;definitionBody&quot;: &quot;A String&quot;, # Required. The body of the routine. For functions, this is the expression in the AS clause. If language=SQL, it is the substring inside (but excluding) the parentheses. For example, for the function created with the following statement: `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, &quot;\n&quot;, y))` The definition_body is `concat(x, &quot;\n&quot;, y)` (\n is not replaced with linebreak). If language=JAVASCRIPT, it is the evaluated string in the AS clause. For example, for the function created with the following statement: `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS &#x27;return &quot;\n&quot;;\n&#x27;` The definition_body is `return &quot;\n&quot;;\n` Note that both \n are replaced with linebreaks.
   &quot;description&quot;: &quot;A String&quot;, # Optional. The description of the routine, if defined.
   &quot;determinismLevel&quot;: &quot;A String&quot;, # Optional. The determinism level of the JavaScript UDF, if defined.
@@ -150,47 +153,72 @@ Returns:
   &quot;importedLibraries&quot;: [ # Optional. If language = &quot;JAVASCRIPT&quot;, this field stores the path of the imported JAVASCRIPT libraries.
     &quot;A String&quot;,
   ],
-  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot;.
+  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot; if remote_function_options field is absent, not set otherwise.
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was last modified, in milliseconds since the epoch.
   &quot;remoteFunctionOptions&quot;: { # Options for a remote user-defined function. # Optional. Remote function specific options.
-    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. projects/{project_id}/locations/{location_id}/connections/{connection_id}
-    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service (e.g. a function url in Google Cloud Functions).
-    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, it means no limit.
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. Format: ```&quot;projects/{projectId}/locations/{locationId}/connections/{connectionId}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service, e.g. ```https://us-east1-my_gcf_project.cloudfunctions.net/remote_add```
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, BigQuery dynamically decides the number of rows in a batch.
     &quot;userDefinedContext&quot;: { # User-defined context as a set of key/value pairs, which will be sent as function invocation context together with batched arguments in the requests to the remote service. The total number of bytes of keys and values must be less than 8KB.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
   },
-  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specificed in return table type, at query time.
+  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specified in return table type, at query time.
     &quot;columns&quot;: [ # The columns in this table type
       { # A field or a column.
         &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
           &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-          &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-            &quot;fields&quot;: [
+          &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+          &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+            &quot;fields&quot;: [ # Fields within the struct.
               # Object with schema name: StandardSqlField
             ],
           },
-          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
         },
       },
     ],
   },
-  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
+  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
     &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-    &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-      &quot;fields&quot;: [
+    &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+    &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+      &quot;fields&quot;: [ # Fields within the struct.
         # Object with schema name: StandardSqlField
       ],
     },
-    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
   },
   &quot;routineReference&quot;: { # Required. Reference describing the ID of this routine.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this routine.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this routine.
-    &quot;routineId&quot;: &quot;A String&quot;, # [Required] The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this routine.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this routine.
+    &quot;routineId&quot;: &quot;A String&quot;, # Required. The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
   },
   &quot;routineType&quot;: &quot;A String&quot;, # Required. The type of routine.
+  &quot;securityMode&quot;: &quot;A String&quot;, # Optional. The security mode of the routine, if defined. If not defined, the security mode is automatically determined from the routine&#x27;s configuration.
+  &quot;sparkOptions&quot;: { # Options for a user-defined Spark routine. # Optional. Spark specific options.
+    &quot;archiveUris&quot;: [ # Archive files to be extracted into the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided Spark connection object. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;containerImage&quot;: &quot;A String&quot;, # Custom container image for the runtime environment.
+    &quot;fileUris&quot;: [ # Files to be placed in the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;jarUris&quot;: [ # JARs to include on the driver and executor CLASSPATH. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;mainClass&quot;: &quot;A String&quot;, # The fully qualified name of a class in jar_uris, for example, com.example.wordcount. Exactly one of main_class and main_jar_uri field should be set for Java/Scala language type.
+    &quot;mainFileUri&quot;: &quot;A String&quot;, # The main file/jar URI of the Spark application. Exactly one of the definition_body field and the main_file_uri field must be set for Python. Exactly one of main_class and main_file_uri field should be set for Java/Scala language type.
+    &quot;properties&quot;: { # Configuration properties as a set of key/value pairs, which will be passed on to the Spark application. For more information, see [Apache Spark](https://spark.apache.org/docs/latest/index.html) and the [procedure option list](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#procedure_option_list).
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
+    &quot;pyFileUris&quot;: [ # Python files to be placed on the PYTHONPATH for PySpark application. Supported file types: `.py`, `.egg`, and `.zip`. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;runtimeVersion&quot;: &quot;A String&quot;, # Runtime version. If not specified, the default runtime version is used.
+  },
   &quot;strictMode&quot;: True or False, # Optional. Can be set for procedures only. If true (default), the definition body will be validated in the creation and the updates of the procedure. For procedures with an argument of ANY TYPE, the definition body validtion is not supported at creation/update time, and thus this field must be set to false explicitly.
 }</pre>
 </div>
@@ -209,20 +237,23 @@ Args:
   &quot;arguments&quot;: [ # Optional.
     { # Input/output argument of a function or a stored procedure.
       &quot;argumentKind&quot;: &quot;A String&quot;, # Optional. Defaults to FIXED_TYPE.
-      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
+      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
+      &quot;isAggregate&quot;: True or False, # Optional. Whether the argument is an aggregate function parameter. Must be Unset for routine types other than AGGREGATE_FUNCTION. For AGGREGATE_FUNCTION, if set to false, it is equivalent to adding &quot;NOT AGGREGATE&quot; clause in DDL; Otherwise, it is equivalent to omitting &quot;NOT AGGREGATE&quot; clause in DDL.
       &quot;mode&quot;: &quot;A String&quot;, # Optional. Specifies whether the argument is input or output. Can be set for procedures only.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this argument. Can be absent for function return argument.
     },
   ],
   &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was created, in milliseconds since the epoch.
+  &quot;dataGovernanceType&quot;: &quot;A String&quot;, # Optional. If set to `DATA_MASKING`, the function is validated and made available as a masking function. For more information, see [Create custom masking routines](https://cloud.google.com/bigquery/docs/user-defined-functions#custom-mask).
   &quot;definitionBody&quot;: &quot;A String&quot;, # Required. The body of the routine. For functions, this is the expression in the AS clause. If language=SQL, it is the substring inside (but excluding) the parentheses. For example, for the function created with the following statement: `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, &quot;\n&quot;, y))` The definition_body is `concat(x, &quot;\n&quot;, y)` (\n is not replaced with linebreak). If language=JAVASCRIPT, it is the evaluated string in the AS clause. For example, for the function created with the following statement: `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS &#x27;return &quot;\n&quot;;\n&#x27;` The definition_body is `return &quot;\n&quot;;\n` Note that both \n are replaced with linebreaks.
   &quot;description&quot;: &quot;A String&quot;, # Optional. The description of the routine, if defined.
   &quot;determinismLevel&quot;: &quot;A String&quot;, # Optional. The determinism level of the JavaScript UDF, if defined.
@@ -230,47 +261,72 @@ Args:
   &quot;importedLibraries&quot;: [ # Optional. If language = &quot;JAVASCRIPT&quot;, this field stores the path of the imported JAVASCRIPT libraries.
     &quot;A String&quot;,
   ],
-  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot;.
+  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot; if remote_function_options field is absent, not set otherwise.
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was last modified, in milliseconds since the epoch.
   &quot;remoteFunctionOptions&quot;: { # Options for a remote user-defined function. # Optional. Remote function specific options.
-    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. projects/{project_id}/locations/{location_id}/connections/{connection_id}
-    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service (e.g. a function url in Google Cloud Functions).
-    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, it means no limit.
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. Format: ```&quot;projects/{projectId}/locations/{locationId}/connections/{connectionId}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service, e.g. ```https://us-east1-my_gcf_project.cloudfunctions.net/remote_add```
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, BigQuery dynamically decides the number of rows in a batch.
     &quot;userDefinedContext&quot;: { # User-defined context as a set of key/value pairs, which will be sent as function invocation context together with batched arguments in the requests to the remote service. The total number of bytes of keys and values must be less than 8KB.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
   },
-  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specificed in return table type, at query time.
+  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specified in return table type, at query time.
     &quot;columns&quot;: [ # The columns in this table type
       { # A field or a column.
         &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
           &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-          &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-            &quot;fields&quot;: [
+          &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+          &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+            &quot;fields&quot;: [ # Fields within the struct.
               # Object with schema name: StandardSqlField
             ],
           },
-          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
         },
       },
     ],
   },
-  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
+  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
     &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-    &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-      &quot;fields&quot;: [
+    &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+    &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+      &quot;fields&quot;: [ # Fields within the struct.
         # Object with schema name: StandardSqlField
       ],
     },
-    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
   },
   &quot;routineReference&quot;: { # Required. Reference describing the ID of this routine.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this routine.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this routine.
-    &quot;routineId&quot;: &quot;A String&quot;, # [Required] The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this routine.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this routine.
+    &quot;routineId&quot;: &quot;A String&quot;, # Required. The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
   },
   &quot;routineType&quot;: &quot;A String&quot;, # Required. The type of routine.
+  &quot;securityMode&quot;: &quot;A String&quot;, # Optional. The security mode of the routine, if defined. If not defined, the security mode is automatically determined from the routine&#x27;s configuration.
+  &quot;sparkOptions&quot;: { # Options for a user-defined Spark routine. # Optional. Spark specific options.
+    &quot;archiveUris&quot;: [ # Archive files to be extracted into the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided Spark connection object. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;containerImage&quot;: &quot;A String&quot;, # Custom container image for the runtime environment.
+    &quot;fileUris&quot;: [ # Files to be placed in the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;jarUris&quot;: [ # JARs to include on the driver and executor CLASSPATH. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;mainClass&quot;: &quot;A String&quot;, # The fully qualified name of a class in jar_uris, for example, com.example.wordcount. Exactly one of main_class and main_jar_uri field should be set for Java/Scala language type.
+    &quot;mainFileUri&quot;: &quot;A String&quot;, # The main file/jar URI of the Spark application. Exactly one of the definition_body field and the main_file_uri field must be set for Python. Exactly one of main_class and main_file_uri field should be set for Java/Scala language type.
+    &quot;properties&quot;: { # Configuration properties as a set of key/value pairs, which will be passed on to the Spark application. For more information, see [Apache Spark](https://spark.apache.org/docs/latest/index.html) and the [procedure option list](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#procedure_option_list).
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
+    &quot;pyFileUris&quot;: [ # Python files to be placed on the PYTHONPATH for PySpark application. Supported file types: `.py`, `.egg`, and `.zip`. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;runtimeVersion&quot;: &quot;A String&quot;, # Runtime version. If not specified, the default runtime version is used.
+  },
   &quot;strictMode&quot;: True or False, # Optional. Can be set for procedures only. If true (default), the definition body will be validated in the creation and the updates of the procedure. For procedures with an argument of ANY TYPE, the definition body validtion is not supported at creation/update time, and thus this field must be set to false explicitly.
 }
 
@@ -282,20 +338,23 @@ Returns:
   &quot;arguments&quot;: [ # Optional.
     { # Input/output argument of a function or a stored procedure.
       &quot;argumentKind&quot;: &quot;A String&quot;, # Optional. Defaults to FIXED_TYPE.
-      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
+      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
+      &quot;isAggregate&quot;: True or False, # Optional. Whether the argument is an aggregate function parameter. Must be Unset for routine types other than AGGREGATE_FUNCTION. For AGGREGATE_FUNCTION, if set to false, it is equivalent to adding &quot;NOT AGGREGATE&quot; clause in DDL; Otherwise, it is equivalent to omitting &quot;NOT AGGREGATE&quot; clause in DDL.
       &quot;mode&quot;: &quot;A String&quot;, # Optional. Specifies whether the argument is input or output. Can be set for procedures only.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this argument. Can be absent for function return argument.
     },
   ],
   &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was created, in milliseconds since the epoch.
+  &quot;dataGovernanceType&quot;: &quot;A String&quot;, # Optional. If set to `DATA_MASKING`, the function is validated and made available as a masking function. For more information, see [Create custom masking routines](https://cloud.google.com/bigquery/docs/user-defined-functions#custom-mask).
   &quot;definitionBody&quot;: &quot;A String&quot;, # Required. The body of the routine. For functions, this is the expression in the AS clause. If language=SQL, it is the substring inside (but excluding) the parentheses. For example, for the function created with the following statement: `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, &quot;\n&quot;, y))` The definition_body is `concat(x, &quot;\n&quot;, y)` (\n is not replaced with linebreak). If language=JAVASCRIPT, it is the evaluated string in the AS clause. For example, for the function created with the following statement: `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS &#x27;return &quot;\n&quot;;\n&#x27;` The definition_body is `return &quot;\n&quot;;\n` Note that both \n are replaced with linebreaks.
   &quot;description&quot;: &quot;A String&quot;, # Optional. The description of the routine, if defined.
   &quot;determinismLevel&quot;: &quot;A String&quot;, # Optional. The determinism level of the JavaScript UDF, if defined.
@@ -303,47 +362,72 @@ Returns:
   &quot;importedLibraries&quot;: [ # Optional. If language = &quot;JAVASCRIPT&quot;, this field stores the path of the imported JAVASCRIPT libraries.
     &quot;A String&quot;,
   ],
-  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot;.
+  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot; if remote_function_options field is absent, not set otherwise.
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was last modified, in milliseconds since the epoch.
   &quot;remoteFunctionOptions&quot;: { # Options for a remote user-defined function. # Optional. Remote function specific options.
-    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. projects/{project_id}/locations/{location_id}/connections/{connection_id}
-    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service (e.g. a function url in Google Cloud Functions).
-    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, it means no limit.
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. Format: ```&quot;projects/{projectId}/locations/{locationId}/connections/{connectionId}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service, e.g. ```https://us-east1-my_gcf_project.cloudfunctions.net/remote_add```
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, BigQuery dynamically decides the number of rows in a batch.
     &quot;userDefinedContext&quot;: { # User-defined context as a set of key/value pairs, which will be sent as function invocation context together with batched arguments in the requests to the remote service. The total number of bytes of keys and values must be less than 8KB.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
   },
-  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specificed in return table type, at query time.
+  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specified in return table type, at query time.
     &quot;columns&quot;: [ # The columns in this table type
       { # A field or a column.
         &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
           &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-          &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-            &quot;fields&quot;: [
+          &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+          &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+            &quot;fields&quot;: [ # Fields within the struct.
               # Object with schema name: StandardSqlField
             ],
           },
-          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
         },
       },
     ],
   },
-  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
+  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
     &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-    &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-      &quot;fields&quot;: [
+    &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+    &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+      &quot;fields&quot;: [ # Fields within the struct.
         # Object with schema name: StandardSqlField
       ],
     },
-    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
   },
   &quot;routineReference&quot;: { # Required. Reference describing the ID of this routine.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this routine.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this routine.
-    &quot;routineId&quot;: &quot;A String&quot;, # [Required] The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this routine.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this routine.
+    &quot;routineId&quot;: &quot;A String&quot;, # Required. The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
   },
   &quot;routineType&quot;: &quot;A String&quot;, # Required. The type of routine.
+  &quot;securityMode&quot;: &quot;A String&quot;, # Optional. The security mode of the routine, if defined. If not defined, the security mode is automatically determined from the routine&#x27;s configuration.
+  &quot;sparkOptions&quot;: { # Options for a user-defined Spark routine. # Optional. Spark specific options.
+    &quot;archiveUris&quot;: [ # Archive files to be extracted into the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided Spark connection object. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;containerImage&quot;: &quot;A String&quot;, # Custom container image for the runtime environment.
+    &quot;fileUris&quot;: [ # Files to be placed in the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;jarUris&quot;: [ # JARs to include on the driver and executor CLASSPATH. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;mainClass&quot;: &quot;A String&quot;, # The fully qualified name of a class in jar_uris, for example, com.example.wordcount. Exactly one of main_class and main_jar_uri field should be set for Java/Scala language type.
+    &quot;mainFileUri&quot;: &quot;A String&quot;, # The main file/jar URI of the Spark application. Exactly one of the definition_body field and the main_file_uri field must be set for Python. Exactly one of main_class and main_file_uri field should be set for Java/Scala language type.
+    &quot;properties&quot;: { # Configuration properties as a set of key/value pairs, which will be passed on to the Spark application. For more information, see [Apache Spark](https://spark.apache.org/docs/latest/index.html) and the [procedure option list](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#procedure_option_list).
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
+    &quot;pyFileUris&quot;: [ # Python files to be placed on the PYTHONPATH for PySpark application. Supported file types: `.py`, `.egg`, and `.zip`. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;runtimeVersion&quot;: &quot;A String&quot;, # Runtime version. If not specified, the default runtime version is used.
+  },
   &quot;strictMode&quot;: True or False, # Optional. Can be set for procedures only. If true (default), the definition body will be validated in the creation and the updates of the procedure. For procedures with an argument of ANY TYPE, the definition body validtion is not supported at creation/update time, and thus this field must be set to false explicitly.
 }</pre>
 </div>
@@ -355,7 +439,7 @@ Returns:
 Args:
   projectId: string, Required. Project ID of the routines to list (required)
   datasetId: string, Required. Dataset ID of the routines to list (required)
-  filter: string, If set, then only the Routines matching this filter are returned. The current supported form is either &quot;routine_type:&quot; or &quot;routineType:&quot;, where is a RoutineType enum. Example: &quot;routineType:SCALAR_FUNCTION&quot;.
+  filter: string, If set, then only the Routines matching this filter are returned. The supported format is `routineType:{RoutineType}`, where `{RoutineType}` is a RoutineType enum. For example: `routineType:SCALAR_FUNCTION`.
   maxResults: integer, The maximum number of results to return in a single response page. Leverage the page tokens to iterate through the entire collection.
   pageToken: string, Page token, returned by a previous call, to request the next page of results
   readMask: string, If set, then only the Routine fields in the field mask, as well as project_id, dataset_id and routine_id, are returned in the response. If unset, then the following Routine fields are returned: etag, project_id, dataset_id, routine_id, routine_type, creation_time, last_modified_time, and language.
@@ -363,27 +447,30 @@ Args:
 Returns:
   An object of the form:
 
-    {
+    { # Describes the format of a single result page when listing routines.
   &quot;nextPageToken&quot;: &quot;A String&quot;, # A token to request the next page of results.
-  &quot;routines&quot;: [ # Routines in the requested dataset. Unless read_mask is set in the request, only the following fields are populated: etag, project_id, dataset_id, routine_id, routine_type, creation_time, last_modified_time, and language.
+  &quot;routines&quot;: [ # Routines in the requested dataset. Unless read_mask is set in the request, only the following fields are populated: etag, project_id, dataset_id, routine_id, routine_type, creation_time, last_modified_time, language, and remote_function_options.
     { # A user-defined function or a stored procedure.
       &quot;arguments&quot;: [ # Optional.
         { # Input/output argument of a function or a stored procedure.
           &quot;argumentKind&quot;: &quot;A String&quot;, # Optional. Defaults to FIXED_TYPE.
-          &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
+          &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
             &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-            &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-              &quot;fields&quot;: [
+            &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+            &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+              &quot;fields&quot;: [ # Fields within the struct.
                 # Object with schema name: StandardSqlField
               ],
             },
-            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
           },
+          &quot;isAggregate&quot;: True or False, # Optional. Whether the argument is an aggregate function parameter. Must be Unset for routine types other than AGGREGATE_FUNCTION. For AGGREGATE_FUNCTION, if set to false, it is equivalent to adding &quot;NOT AGGREGATE&quot; clause in DDL; Otherwise, it is equivalent to omitting &quot;NOT AGGREGATE&quot; clause in DDL.
           &quot;mode&quot;: &quot;A String&quot;, # Optional. Specifies whether the argument is input or output. Can be set for procedures only.
           &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this argument. Can be absent for function return argument.
         },
       ],
       &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was created, in milliseconds since the epoch.
+      &quot;dataGovernanceType&quot;: &quot;A String&quot;, # Optional. If set to `DATA_MASKING`, the function is validated and made available as a masking function. For more information, see [Create custom masking routines](https://cloud.google.com/bigquery/docs/user-defined-functions#custom-mask).
       &quot;definitionBody&quot;: &quot;A String&quot;, # Required. The body of the routine. For functions, this is the expression in the AS clause. If language=SQL, it is the substring inside (but excluding) the parentheses. For example, for the function created with the following statement: `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, &quot;\n&quot;, y))` The definition_body is `concat(x, &quot;\n&quot;, y)` (\n is not replaced with linebreak). If language=JAVASCRIPT, it is the evaluated string in the AS clause. For example, for the function created with the following statement: `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS &#x27;return &quot;\n&quot;;\n&#x27;` The definition_body is `return &quot;\n&quot;;\n` Note that both \n are replaced with linebreaks.
       &quot;description&quot;: &quot;A String&quot;, # Optional. The description of the routine, if defined.
       &quot;determinismLevel&quot;: &quot;A String&quot;, # Optional. The determinism level of the JavaScript UDF, if defined.
@@ -391,47 +478,72 @@ Returns:
       &quot;importedLibraries&quot;: [ # Optional. If language = &quot;JAVASCRIPT&quot;, this field stores the path of the imported JAVASCRIPT libraries.
         &quot;A String&quot;,
       ],
-      &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot;.
+      &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot; if remote_function_options field is absent, not set otherwise.
       &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was last modified, in milliseconds since the epoch.
       &quot;remoteFunctionOptions&quot;: { # Options for a remote user-defined function. # Optional. Remote function specific options.
-        &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. projects/{project_id}/locations/{location_id}/connections/{connection_id}
-        &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service (e.g. a function url in Google Cloud Functions).
-        &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, it means no limit.
+        &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. Format: ```&quot;projects/{projectId}/locations/{locationId}/connections/{connectionId}&quot;```
+        &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service, e.g. ```https://us-east1-my_gcf_project.cloudfunctions.net/remote_add```
+        &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, BigQuery dynamically decides the number of rows in a batch.
         &quot;userDefinedContext&quot;: { # User-defined context as a set of key/value pairs, which will be sent as function invocation context together with batched arguments in the requests to the remote service. The total number of bytes of keys and values must be less than 8KB.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
       },
-      &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specificed in return table type, at query time.
+      &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specified in return table type, at query time.
         &quot;columns&quot;: [ # The columns in this table type
           { # A field or a column.
             &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-            &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+            &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
               &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-              &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-                &quot;fields&quot;: [
+              &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+              &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+                &quot;fields&quot;: [ # Fields within the struct.
                   # Object with schema name: StandardSqlField
                 ],
               },
-              &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+              &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
             },
           },
         ],
       },
-      &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
+      &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
       &quot;routineReference&quot;: { # Required. Reference describing the ID of this routine.
-        &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this routine.
-        &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this routine.
-        &quot;routineId&quot;: &quot;A String&quot;, # [Required] The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
+        &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this routine.
+        &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this routine.
+        &quot;routineId&quot;: &quot;A String&quot;, # Required. The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
       },
       &quot;routineType&quot;: &quot;A String&quot;, # Required. The type of routine.
+      &quot;securityMode&quot;: &quot;A String&quot;, # Optional. The security mode of the routine, if defined. If not defined, the security mode is automatically determined from the routine&#x27;s configuration.
+      &quot;sparkOptions&quot;: { # Options for a user-defined Spark routine. # Optional. Spark specific options.
+        &quot;archiveUris&quot;: [ # Archive files to be extracted into the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+          &quot;A String&quot;,
+        ],
+        &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided Spark connection object. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+        &quot;containerImage&quot;: &quot;A String&quot;, # Custom container image for the runtime environment.
+        &quot;fileUris&quot;: [ # Files to be placed in the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+          &quot;A String&quot;,
+        ],
+        &quot;jarUris&quot;: [ # JARs to include on the driver and executor CLASSPATH. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+          &quot;A String&quot;,
+        ],
+        &quot;mainClass&quot;: &quot;A String&quot;, # The fully qualified name of a class in jar_uris, for example, com.example.wordcount. Exactly one of main_class and main_jar_uri field should be set for Java/Scala language type.
+        &quot;mainFileUri&quot;: &quot;A String&quot;, # The main file/jar URI of the Spark application. Exactly one of the definition_body field and the main_file_uri field must be set for Python. Exactly one of main_class and main_file_uri field should be set for Java/Scala language type.
+        &quot;properties&quot;: { # Configuration properties as a set of key/value pairs, which will be passed on to the Spark application. For more information, see [Apache Spark](https://spark.apache.org/docs/latest/index.html) and the [procedure option list](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#procedure_option_list).
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
+        &quot;pyFileUris&quot;: [ # Python files to be placed on the PYTHONPATH for PySpark application. Supported file types: `.py`, `.egg`, and `.zip`. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+          &quot;A String&quot;,
+        ],
+        &quot;runtimeVersion&quot;: &quot;A String&quot;, # Runtime version. If not specified, the default runtime version is used.
+      },
       &quot;strictMode&quot;: True or False, # Optional. Can be set for procedures only. If true (default), the definition body will be validated in the creation and the updates of the procedure. For procedures with an argument of ANY TYPE, the definition body validtion is not supported at creation/update time, and thus this field must be set to false explicitly.
     },
   ],
@@ -439,17 +551,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
+    <code class="details" id="list_next">list_next()</code>
   <pre>Retrieves the next page of results.
 
-Args:
-  previous_request: The request for the previous page. (required)
-  previous_response: The response from the request for the previous page. (required)
+        Args:
+          previous_request: The request for the previous page. (required)
+          previous_response: The response from the request for the previous page. (required)
 
-Returns:
-  A request object that you can call &#x27;execute()&#x27; on to request the next
-  page. Returns None if there are no more items in the collection.
-    </pre>
+        Returns:
+          A request object that you can call &#x27;execute()&#x27; on to request the next
+          page. Returns None if there are no more items in the collection.
+        </pre>
 </div>
 
 <div class="method">
@@ -467,20 +579,23 @@ Args:
   &quot;arguments&quot;: [ # Optional.
     { # Input/output argument of a function or a stored procedure.
       &quot;argumentKind&quot;: &quot;A String&quot;, # Optional. Defaults to FIXED_TYPE.
-      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
+      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
+      &quot;isAggregate&quot;: True or False, # Optional. Whether the argument is an aggregate function parameter. Must be Unset for routine types other than AGGREGATE_FUNCTION. For AGGREGATE_FUNCTION, if set to false, it is equivalent to adding &quot;NOT AGGREGATE&quot; clause in DDL; Otherwise, it is equivalent to omitting &quot;NOT AGGREGATE&quot; clause in DDL.
       &quot;mode&quot;: &quot;A String&quot;, # Optional. Specifies whether the argument is input or output. Can be set for procedures only.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this argument. Can be absent for function return argument.
     },
   ],
   &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was created, in milliseconds since the epoch.
+  &quot;dataGovernanceType&quot;: &quot;A String&quot;, # Optional. If set to `DATA_MASKING`, the function is validated and made available as a masking function. For more information, see [Create custom masking routines](https://cloud.google.com/bigquery/docs/user-defined-functions#custom-mask).
   &quot;definitionBody&quot;: &quot;A String&quot;, # Required. The body of the routine. For functions, this is the expression in the AS clause. If language=SQL, it is the substring inside (but excluding) the parentheses. For example, for the function created with the following statement: `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, &quot;\n&quot;, y))` The definition_body is `concat(x, &quot;\n&quot;, y)` (\n is not replaced with linebreak). If language=JAVASCRIPT, it is the evaluated string in the AS clause. For example, for the function created with the following statement: `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS &#x27;return &quot;\n&quot;;\n&#x27;` The definition_body is `return &quot;\n&quot;;\n` Note that both \n are replaced with linebreaks.
   &quot;description&quot;: &quot;A String&quot;, # Optional. The description of the routine, if defined.
   &quot;determinismLevel&quot;: &quot;A String&quot;, # Optional. The determinism level of the JavaScript UDF, if defined.
@@ -488,47 +603,72 @@ Args:
   &quot;importedLibraries&quot;: [ # Optional. If language = &quot;JAVASCRIPT&quot;, this field stores the path of the imported JAVASCRIPT libraries.
     &quot;A String&quot;,
   ],
-  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot;.
+  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot; if remote_function_options field is absent, not set otherwise.
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was last modified, in milliseconds since the epoch.
   &quot;remoteFunctionOptions&quot;: { # Options for a remote user-defined function. # Optional. Remote function specific options.
-    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. projects/{project_id}/locations/{location_id}/connections/{connection_id}
-    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service (e.g. a function url in Google Cloud Functions).
-    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, it means no limit.
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. Format: ```&quot;projects/{projectId}/locations/{locationId}/connections/{connectionId}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service, e.g. ```https://us-east1-my_gcf_project.cloudfunctions.net/remote_add```
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, BigQuery dynamically decides the number of rows in a batch.
     &quot;userDefinedContext&quot;: { # User-defined context as a set of key/value pairs, which will be sent as function invocation context together with batched arguments in the requests to the remote service. The total number of bytes of keys and values must be less than 8KB.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
   },
-  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specificed in return table type, at query time.
+  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specified in return table type, at query time.
     &quot;columns&quot;: [ # The columns in this table type
       { # A field or a column.
         &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
           &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-          &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-            &quot;fields&quot;: [
+          &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+          &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+            &quot;fields&quot;: [ # Fields within the struct.
               # Object with schema name: StandardSqlField
             ],
           },
-          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
         },
       },
     ],
   },
-  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
+  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
     &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-    &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-      &quot;fields&quot;: [
+    &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+    &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+      &quot;fields&quot;: [ # Fields within the struct.
         # Object with schema name: StandardSqlField
       ],
     },
-    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
   },
   &quot;routineReference&quot;: { # Required. Reference describing the ID of this routine.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this routine.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this routine.
-    &quot;routineId&quot;: &quot;A String&quot;, # [Required] The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this routine.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this routine.
+    &quot;routineId&quot;: &quot;A String&quot;, # Required. The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
   },
   &quot;routineType&quot;: &quot;A String&quot;, # Required. The type of routine.
+  &quot;securityMode&quot;: &quot;A String&quot;, # Optional. The security mode of the routine, if defined. If not defined, the security mode is automatically determined from the routine&#x27;s configuration.
+  &quot;sparkOptions&quot;: { # Options for a user-defined Spark routine. # Optional. Spark specific options.
+    &quot;archiveUris&quot;: [ # Archive files to be extracted into the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided Spark connection object. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;containerImage&quot;: &quot;A String&quot;, # Custom container image for the runtime environment.
+    &quot;fileUris&quot;: [ # Files to be placed in the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;jarUris&quot;: [ # JARs to include on the driver and executor CLASSPATH. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;mainClass&quot;: &quot;A String&quot;, # The fully qualified name of a class in jar_uris, for example, com.example.wordcount. Exactly one of main_class and main_jar_uri field should be set for Java/Scala language type.
+    &quot;mainFileUri&quot;: &quot;A String&quot;, # The main file/jar URI of the Spark application. Exactly one of the definition_body field and the main_file_uri field must be set for Python. Exactly one of main_class and main_file_uri field should be set for Java/Scala language type.
+    &quot;properties&quot;: { # Configuration properties as a set of key/value pairs, which will be passed on to the Spark application. For more information, see [Apache Spark](https://spark.apache.org/docs/latest/index.html) and the [procedure option list](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#procedure_option_list).
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
+    &quot;pyFileUris&quot;: [ # Python files to be placed on the PYTHONPATH for PySpark application. Supported file types: `.py`, `.egg`, and `.zip`. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;runtimeVersion&quot;: &quot;A String&quot;, # Runtime version. If not specified, the default runtime version is used.
+  },
   &quot;strictMode&quot;: True or False, # Optional. Can be set for procedures only. If true (default), the definition body will be validated in the creation and the updates of the procedure. For procedures with an argument of ANY TYPE, the definition body validtion is not supported at creation/update time, and thus this field must be set to false explicitly.
 }
 
@@ -540,20 +680,23 @@ Returns:
   &quot;arguments&quot;: [ # Optional.
     { # Input/output argument of a function or a stored procedure.
       &quot;argumentKind&quot;: &quot;A String&quot;, # Optional. Defaults to FIXED_TYPE.
-      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
+      &quot;dataType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Required unless argument_kind = ANY_TYPE.
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
+      &quot;isAggregate&quot;: True or False, # Optional. Whether the argument is an aggregate function parameter. Must be Unset for routine types other than AGGREGATE_FUNCTION. For AGGREGATE_FUNCTION, if set to false, it is equivalent to adding &quot;NOT AGGREGATE&quot; clause in DDL; Otherwise, it is equivalent to omitting &quot;NOT AGGREGATE&quot; clause in DDL.
       &quot;mode&quot;: &quot;A String&quot;, # Optional. Specifies whether the argument is input or output. Can be set for procedures only.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this argument. Can be absent for function return argument.
     },
   ],
   &quot;creationTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was created, in milliseconds since the epoch.
+  &quot;dataGovernanceType&quot;: &quot;A String&quot;, # Optional. If set to `DATA_MASKING`, the function is validated and made available as a masking function. For more information, see [Create custom masking routines](https://cloud.google.com/bigquery/docs/user-defined-functions#custom-mask).
   &quot;definitionBody&quot;: &quot;A String&quot;, # Required. The body of the routine. For functions, this is the expression in the AS clause. If language=SQL, it is the substring inside (but excluding) the parentheses. For example, for the function created with the following statement: `CREATE FUNCTION JoinLines(x string, y string) as (concat(x, &quot;\n&quot;, y))` The definition_body is `concat(x, &quot;\n&quot;, y)` (\n is not replaced with linebreak). If language=JAVASCRIPT, it is the evaluated string in the AS clause. For example, for the function created with the following statement: `CREATE FUNCTION f() RETURNS STRING LANGUAGE js AS &#x27;return &quot;\n&quot;;\n&#x27;` The definition_body is `return &quot;\n&quot;;\n` Note that both \n are replaced with linebreaks.
   &quot;description&quot;: &quot;A String&quot;, # Optional. The description of the routine, if defined.
   &quot;determinismLevel&quot;: &quot;A String&quot;, # Optional. The determinism level of the JavaScript UDF, if defined.
@@ -561,47 +704,72 @@ Returns:
   &quot;importedLibraries&quot;: [ # Optional. If language = &quot;JAVASCRIPT&quot;, this field stores the path of the imported JAVASCRIPT libraries.
     &quot;A String&quot;,
   ],
-  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot;.
+  &quot;language&quot;: &quot;A String&quot;, # Optional. Defaults to &quot;SQL&quot; if remote_function_options field is absent, not set otherwise.
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this routine was last modified, in milliseconds since the epoch.
   &quot;remoteFunctionOptions&quot;: { # Options for a remote user-defined function. # Optional. Remote function specific options.
-    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. projects/{project_id}/locations/{location_id}/connections/{connection_id}
-    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service (e.g. a function url in Google Cloud Functions).
-    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, it means no limit.
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided connection object which holds the authentication information to send requests to the remote service. Format: ```&quot;projects/{projectId}/locations/{locationId}/connections/{connectionId}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Endpoint of the user-provided remote service, e.g. ```https://us-east1-my_gcf_project.cloudfunctions.net/remote_add```
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Max number of rows in each batch sent to the remote service. If absent or if 0, BigQuery dynamically decides the number of rows in a batch.
     &quot;userDefinedContext&quot;: { # User-defined context as a set of key/value pairs, which will be sent as function invocation context together with batched arguments in the requests to the remote service. The total number of bytes of keys and values must be less than 8KB.
       &quot;a_key&quot;: &quot;A String&quot;,
     },
   },
-  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specificed in return table type, at query time.
+  &quot;returnTableType&quot;: { # A table type # Optional. Can be set only if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return table type is inferred from definition_body at query time in each query that references this routine. If present, then the columns in the evaluated table result will be cast to match the column types specified in return table type, at query time.
     &quot;columns&quot;: [ # The columns in this table type
       { # A field or a column.
         &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+        &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
           &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-          &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-            &quot;fields&quot;: [
+          &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+          &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+            &quot;fields&quot;: [ # Fields within the struct.
               # Object with schema name: StandardSqlField
             ],
           },
-          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+          &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
         },
       },
     ],
   },
-  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
+  &quot;returnType&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional if language = &quot;SQL&quot;; required otherwise. Cannot be set if routine_type = &quot;TABLE_VALUED_FUNCTION&quot;. If absent, the return type is inferred from definition_body at query time in each query that references this routine. If present, then the evaluated result will be cast to the specified returned type at query time. For example, for the functions created with the following statements: * `CREATE FUNCTION Add(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x + y);` * `CREATE FUNCTION Increment(x FLOAT64) AS (Add(x, 1));` * `CREATE FUNCTION Decrement(x FLOAT64) RETURNS FLOAT64 AS (Add(x, -1));` The return_type is `{type_kind: &quot;FLOAT64&quot;}` for `Add` and `Decrement`, and is absent for `Increment` (inferred as FLOAT64 at query time). Suppose the function `Add` is replaced by `CREATE OR REPLACE FUNCTION Add(x INT64, y INT64) AS (x + y);` Then the inferred return type of `Increment` is automatically changed to INT64 at query time, while the return type of `Decrement` remains FLOAT64.
     &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-    &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-      &quot;fields&quot;: [
+    &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+    &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+      &quot;fields&quot;: [ # Fields within the struct.
         # Object with schema name: StandardSqlField
       ],
     },
-    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+    &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
   },
   &quot;routineReference&quot;: { # Required. Reference describing the ID of this routine.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this routine.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this routine.
-    &quot;routineId&quot;: &quot;A String&quot;, # [Required] The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this routine.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this routine.
+    &quot;routineId&quot;: &quot;A String&quot;, # Required. The ID of the routine. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 256 characters.
   },
   &quot;routineType&quot;: &quot;A String&quot;, # Required. The type of routine.
+  &quot;securityMode&quot;: &quot;A String&quot;, # Optional. The security mode of the routine, if defined. If not defined, the security mode is automatically determined from the routine&#x27;s configuration.
+  &quot;sparkOptions&quot;: { # Options for a user-defined Spark routine. # Optional. Spark specific options.
+    &quot;archiveUris&quot;: [ # Archive files to be extracted into the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;connection&quot;: &quot;A String&quot;, # Fully qualified name of the user-provided Spark connection object. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;containerImage&quot;: &quot;A String&quot;, # Custom container image for the runtime environment.
+    &quot;fileUris&quot;: [ # Files to be placed in the working directory of each executor. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;jarUris&quot;: [ # JARs to include on the driver and executor CLASSPATH. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;mainClass&quot;: &quot;A String&quot;, # The fully qualified name of a class in jar_uris, for example, com.example.wordcount. Exactly one of main_class and main_jar_uri field should be set for Java/Scala language type.
+    &quot;mainFileUri&quot;: &quot;A String&quot;, # The main file/jar URI of the Spark application. Exactly one of the definition_body field and the main_file_uri field must be set for Python. Exactly one of main_class and main_file_uri field should be set for Java/Scala language type.
+    &quot;properties&quot;: { # Configuration properties as a set of key/value pairs, which will be passed on to the Spark application. For more information, see [Apache Spark](https://spark.apache.org/docs/latest/index.html) and the [procedure option list](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#procedure_option_list).
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
+    &quot;pyFileUris&quot;: [ # Python files to be placed on the PYTHONPATH for PySpark application. Supported file types: `.py`, `.egg`, and `.zip`. For more information about Apache Spark, see [Apache Spark](https://spark.apache.org/docs/latest/index.html).
+      &quot;A String&quot;,
+    ],
+    &quot;runtimeVersion&quot;: &quot;A String&quot;, # Runtime version. If not specified, the default runtime version is used.
+  },
   &quot;strictMode&quot;: True or False, # Optional. Can be set for procedures only. If true (default), the definition body will be validated in the creation and the updates of the procedure. For procedures with an argument of ANY TYPE, the definition body validtion is not supported at creation/update time, and thus this field must be set to false explicitly.
 }</pre>
 </div>

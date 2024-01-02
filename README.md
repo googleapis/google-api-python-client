@@ -20,7 +20,7 @@ The 2.0 release of `google-api-python-client` includes a substantial reliability
 improvement, compared with 1.x, as discovery documents are now cached in the library 
 rather than fetched dynamically. It is highly recommended to upgrade from v1.x to v2.x.
 
-Only python 3.6 and newer is supported. If you are not able to upgrade python, then
+Only python 3.7 and newer is supported. If you are not able to upgrade python, then
 please continue to use version 1.x as we will continue supporting python 2.7+ in
 [v1](https://github.com/googleapis/google-api-python-client/tree/v1).
 
@@ -80,7 +80,7 @@ dependencies.
 ### Mac/Linux
 
 ```
-pip install virtualenv
+pip3 install virtualenv
 virtualenv <your-env>
 source <your-env>/bin/activate
 <your-env>/bin/pip install google-api-python-client
@@ -97,11 +97,11 @@ virtualenv <your-env>
 
 ## Supported Python Versions
 
-Python 3.6, 3.7, 3.8, 3.9 and 3.10 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
+Python 3.7, 3.8, 3.9, 3.10, 3.11 and 3.12 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
 
 ## Unsupported Python Versions
 
-Python < 3.6
+Python < 3.7
 
 ## Third Party Libraries and Dependencies
 
@@ -110,7 +110,7 @@ The following libraries will be installed when you install the client library:
 * [uritemplate](https://github.com/sigmavirus24/uritemplate)
 
 For development you will also need the following libraries:
-* [WebTest](http://webtest.pythonpaste.org/en/latest/index.html)
+* [WebTest](https://pypi.org/project/WebTest/)
 * [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
 
 ## Contributing

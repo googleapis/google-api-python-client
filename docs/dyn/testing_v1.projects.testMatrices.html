@@ -82,10 +82,10 @@ h1, h2, h3 {
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
   <code><a href="#create">create(projectId, body=None, requestId=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Creates and runs a matrix of tests according to the given specifications. Unsupported environments will be returned in the state UNSUPPORTED. A test matrix is limited to use at most 2000 devices in parallel. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to write to project - INVALID_ARGUMENT - if the request is malformed or if the matrix tries to use too many simultaneous devices.</p>
+<p class="firstline">Creates and runs a matrix of tests according to the given specifications. Unsupported environments will be returned in the state UNSUPPORTED. A test matrix is limited to use at most 2000 devices in parallel. The returned matrix will not yet contain the executions that will be created for this matrix. Execution creation happens later on and will require a call to GetTestMatrix. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to write to project - INVALID_ARGUMENT - if the request is malformed or if the matrix tries to use too many simultaneous devices.</p>
 <p class="toc_element">
   <code><a href="#get">get(projectId, testMatrixId, x__xgafv=None)</a></code></p>
-<p class="firstline">Checks the status of a test matrix. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to read project - INVALID_ARGUMENT - if the request is malformed - NOT_FOUND - if the Test Matrix does not exist</p>
+<p class="firstline">Checks the status of a test matrix and the executions once they are created. The test matrix will contain the list of test executions to run if and only if the resultStorage.toolResultsExecution fields have been populated. Note: Flaky test executions may be added to the matrix at a later stage. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to read project - INVALID_ARGUMENT - if the request is malformed - NOT_FOUND - if the Test Matrix does not exist</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="cancel">cancel(projectId, testMatrixId, x__xgafv=None)</code>
@@ -114,7 +114,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="create">create(projectId, body=None, requestId=None, x__xgafv=None)</code>
-  <pre>Creates and runs a matrix of tests according to the given specifications. Unsupported environments will be returned in the state UNSUPPORTED. A test matrix is limited to use at most 2000 devices in parallel. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to write to project - INVALID_ARGUMENT - if the request is malformed or if the matrix tries to use too many simultaneous devices.
+  <pre>Creates and runs a matrix of tests according to the given specifications. Unsupported environments will be returned in the state UNSUPPORTED. A test matrix is limited to use at most 2000 devices in parallel. The returned matrix will not yet contain the executions that will be created for this matrix. Execution creation happens later on and will require a call to GetTestMatrix. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to write to project - INVALID_ARGUMENT - if the request is malformed or if the matrix tries to use too many simultaneous devices.
 
 Args:
   projectId: string, The GCE project under which this job will run. (required)
@@ -208,6 +208,7 @@ Args:
       &quot;matrixId&quot;: &quot;A String&quot;, # Output only. Id of the containing TestMatrix.
       &quot;projectId&quot;: &quot;A String&quot;, # Output only. The cloud project that owns the test execution.
       &quot;shard&quot;: { # Output only. Details about the shard. # Output only. Details about the shard.
+        &quot;estimatedShardDuration&quot;: &quot;A String&quot;, # Output only. The estimated shard duration based on previous test case timing records, if available.
         &quot;numShards&quot;: 42, # Output only. The total number of shards.
         &quot;shardIndex&quot;: 42, # Output only. The index of the shard among all the shards.
         &quot;testTargetsForShard&quot;: { # Test targets for a shard. # Output only. Test targets for each shard. Only set for manual sharding.
@@ -237,7 +238,7 @@ Args:
           &quot;orchestratorOption&quot;: &quot;A String&quot;, # The option of whether running each test within its own invocation of instrumentation with Android Test Orchestrator or not. ** Orchestrator is only compatible with AndroidJUnitRunner version 1.1 or higher! ** Orchestrator offers the following benefits: - No shared state - Crashes are isolated - Logs are scoped per test See for more information about Android Test Orchestrator. If not set, the test will be run without the orchestrator.
           &quot;shardingOption&quot;: { # Options for enabling sharding. # The option to run tests in multiple shards in parallel.
             &quot;manualSharding&quot;: { # Shards test cases into the specified groups of packages, classes, and/or methods. With manual sharding enabled, specifying test targets via environment_variables or in InstrumentationTest is invalid. # Shards test cases into the specified groups of packages, classes, and/or methods.
-              &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each shard. When any physical devices are selected, the number of test_targets_for_shard must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+              &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each manually-created shard. You must specify at least one shard if this field is present. When you select one or more physical devices, the number of repeated test_targets_for_shard must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
                 { # Test targets for a shard.
                   &quot;testTargets&quot;: [ # Group of packages, classes, and/or test methods to be run for each shard. The targets need to be specified in AndroidJUnitRunner argument format. For example, &quot;package com.my.packages&quot; &quot;class com.my.package.MyClass&quot;. The number of test_targets must be greater than 0.
                     &quot;A String&quot;,
@@ -245,8 +246,11 @@ Args:
                 },
               ],
             },
-            &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For Instrumentation test, it will be translated to &quot;-e numShard&quot; &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. With uniform sharding enabled, specifying these sharding arguments via environment_variables is invalid. # Uniformly shards test cases given a total number of shards.
-              &quot;numShards&quot;: 42, # Required. Total number of shards. When any physical devices are selected, the number must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+            &quot;smartSharding&quot;: { # Shards test based on previous test case timing records. # Shards test based on previous test case timing records.
+              &quot;targetedShardDuration&quot;: &quot;A String&quot;, # The amount of time tests within a shard should take. Default: 300 seconds (5 minutes). The minimum allowed: 120 seconds (2 minutes). The shard count is dynamically set based on time, up to the maximum shard limit (described below). To guarantee at least one test case for each shard, the number of shards will not exceed the number of test cases. Shard duration will be exceeded if: - The maximum shard limit is reached and there is more calculated test time remaining to allocate into shards. - Any individual test is estimated to be longer than the targeted shard duration. Shard duration is not guaranteed because smart sharding uses test case history and default durations which may not be accurate. The rules for finding the test case timing records are: - If the service has processed a test case in the last 30 days, the record of the latest successful test case will be used. - For new test cases, the average duration of other known test cases will be used. - If there are no previous test case timing records available, the default test case duration is 15 seconds. Because the actual shard duration can exceed the targeted shard duration, we recommend that you set the targeted value at least 5 minutes less than the maximum allowed test timeout (45 minutes for physical devices and 60 minutes for virtual), or that you use the custom test timeout value that you set. This approach avoids cancelling the shard before all tests can finish. Note that there is a limit for maximum number of shards. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500. To guarantee at least one test case for per shard, the number of shards will not exceed the number of test cases. Each shard created counts toward daily test quota.
+            },
+            &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For instrumentation tests, it will be translated to &quot;-e numShard&quot; and &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. With uniform sharding enabled, specifying either of these sharding arguments via `environment_variables` is invalid. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. # Uniformly shards test cases given a total number of shards.
+              &quot;numShards&quot;: 42, # Required. The total number of shards to create. This must always be a positive number that is no greater than the total number of test cases. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
             },
           },
           &quot;testApk&quot;: { # A reference to a file, used for user inputs. # Required. The APK containing the test code to be executed.
@@ -286,6 +290,8 @@ Args:
             { # Message for specifying the start activities to crawl.
               &quot;launcherActivity&quot;: { # Specifies an intent that starts the main launcher activity. # An intent that starts the main launcher activity.
               },
+              &quot;noActivity&quot;: { # Skips the starting activity # Skips the starting activity
+              },
               &quot;startActivity&quot;: { # A starting intent specified by an action, uri, and categories. # An intent that starts an activity with specific details.
                 &quot;action&quot;: &quot;A String&quot;, # Action name. Required for START_ACTIVITY.
                 &quot;categories&quot;: [ # Intent categories to set on the intent.
@@ -316,6 +322,15 @@ Args:
         },
         &quot;disablePerformanceMetrics&quot;: True or False, # Disables performance metrics recording. May reduce test latency.
         &quot;disableVideoRecording&quot;: True or False, # Disables video recording. May reduce test latency.
+        &quot;iosRoboTest&quot;: { # A test that explores an iOS application on an iOS device. # An iOS Robo test.
+          &quot;appBundleId&quot;: &quot;A String&quot;, # The bundle ID for the app-under-test. This is determined by examining the application&#x27;s &quot;Info.plist&quot; file.
+          &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The ipa stored at this file should be used to run the test.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+          &quot;roboScript&quot;: { # A reference to a file, used for user inputs. # An optional Roboscript to customize the crawl. See https://firebase.google.com/docs/test-lab/android/robo-scripts-reference for more information about Roboscripts.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+        },
         &quot;iosTestLoop&quot;: { # A test of an iOS application that implements one or more game loop scenarios. This test type accepts an archived application (.ipa file) and a list of integer scenarios that will be executed on the app sequentially. # An iOS application with a test loop.
           &quot;appBundleId&quot;: &quot;A String&quot;, # Output only. The bundle id for the application under test.
           &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The .ipa of the application to test.
@@ -367,7 +382,7 @@ Args:
             &quot;googleAuto&quot;: { # Enables automatic Google account login. If set, the service automatically generates a Google test account and adds it to the device, before executing the test. Note that test accounts might be reused. Many applications show their full set of functionalities when an account is present on the device. Logging into the device with these generated accounts allows testing more functionalities. # An automatic google login account.
             },
           },
-          &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. Currently capped at 100.
+          &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. These will be installed after the app under test. Currently capped at 100.
             { # An Android package file to install.
               &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
                 &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
@@ -401,8 +416,16 @@ Args:
               },
             },
           ],
+          &quot;initialSetupApks&quot;: [ # Optional. Initial setup APKs to install before the app under test is installed. Currently capped at 100.
+            { # An Android package file to install.
+              &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
+                &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+              },
+              &quot;packageName&quot;: &quot;A String&quot;, # The java package for the APK to be installed. Value is determined by examining the application&#x27;s manifest.
+            },
+          ],
           &quot;networkProfile&quot;: &quot;A String&quot;, # The network traffic profile used for running the test. Available network profiles can be queried by using the NETWORK_CONFIGURATION environment type when calling TestEnvironmentDiscoveryService.GetTestEnvironmentCatalog.
-          &quot;systrace&quot;: { # Deprecated: Systrace uses Python 2 which has been sunset 2020-01-01. Support of Systrace may stop at any time, at which point no Systrace file will be provided in the results. Systrace configuration for the run. If set a systrace will be taken, starting on test start and lasting for the configured duration. The systrace file thus obtained is put in the results bucket together with the other artifacts from the run.
+          &quot;systrace&quot;: { # Systrace configuration for the run. Deprecated: Systrace used Python 2 which was sunsetted on 2020-01-01. Systrace is no longer supported in the Cloud Testing API, and no Systrace file will be provided in the results.
             &quot;durationSeconds&quot;: 42, # Systrace duration in seconds. Should be between 1 and 30 seconds. 0 disables systrace.
           },
         },
@@ -432,7 +455,7 @@ Args:
       &quot;orchestratorOption&quot;: &quot;A String&quot;, # The option of whether running each test within its own invocation of instrumentation with Android Test Orchestrator or not. ** Orchestrator is only compatible with AndroidJUnitRunner version 1.1 or higher! ** Orchestrator offers the following benefits: - No shared state - Crashes are isolated - Logs are scoped per test See for more information about Android Test Orchestrator. If not set, the test will be run without the orchestrator.
       &quot;shardingOption&quot;: { # Options for enabling sharding. # The option to run tests in multiple shards in parallel.
         &quot;manualSharding&quot;: { # Shards test cases into the specified groups of packages, classes, and/or methods. With manual sharding enabled, specifying test targets via environment_variables or in InstrumentationTest is invalid. # Shards test cases into the specified groups of packages, classes, and/or methods.
-          &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each shard. When any physical devices are selected, the number of test_targets_for_shard must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+          &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each manually-created shard. You must specify at least one shard if this field is present. When you select one or more physical devices, the number of repeated test_targets_for_shard must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
             { # Test targets for a shard.
               &quot;testTargets&quot;: [ # Group of packages, classes, and/or test methods to be run for each shard. The targets need to be specified in AndroidJUnitRunner argument format. For example, &quot;package com.my.packages&quot; &quot;class com.my.package.MyClass&quot;. The number of test_targets must be greater than 0.
                 &quot;A String&quot;,
@@ -440,8 +463,11 @@ Args:
             },
           ],
         },
-        &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For Instrumentation test, it will be translated to &quot;-e numShard&quot; &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. With uniform sharding enabled, specifying these sharding arguments via environment_variables is invalid. # Uniformly shards test cases given a total number of shards.
-          &quot;numShards&quot;: 42, # Required. Total number of shards. When any physical devices are selected, the number must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+        &quot;smartSharding&quot;: { # Shards test based on previous test case timing records. # Shards test based on previous test case timing records.
+          &quot;targetedShardDuration&quot;: &quot;A String&quot;, # The amount of time tests within a shard should take. Default: 300 seconds (5 minutes). The minimum allowed: 120 seconds (2 minutes). The shard count is dynamically set based on time, up to the maximum shard limit (described below). To guarantee at least one test case for each shard, the number of shards will not exceed the number of test cases. Shard duration will be exceeded if: - The maximum shard limit is reached and there is more calculated test time remaining to allocate into shards. - Any individual test is estimated to be longer than the targeted shard duration. Shard duration is not guaranteed because smart sharding uses test case history and default durations which may not be accurate. The rules for finding the test case timing records are: - If the service has processed a test case in the last 30 days, the record of the latest successful test case will be used. - For new test cases, the average duration of other known test cases will be used. - If there are no previous test case timing records available, the default test case duration is 15 seconds. Because the actual shard duration can exceed the targeted shard duration, we recommend that you set the targeted value at least 5 minutes less than the maximum allowed test timeout (45 minutes for physical devices and 60 minutes for virtual), or that you use the custom test timeout value that you set. This approach avoids cancelling the shard before all tests can finish. Note that there is a limit for maximum number of shards. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500. To guarantee at least one test case for per shard, the number of shards will not exceed the number of test cases. Each shard created counts toward daily test quota.
+        },
+        &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For instrumentation tests, it will be translated to &quot;-e numShard&quot; and &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. With uniform sharding enabled, specifying either of these sharding arguments via `environment_variables` is invalid. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. # Uniformly shards test cases given a total number of shards.
+          &quot;numShards&quot;: 42, # Required. The total number of shards to create. This must always be a positive number that is no greater than the total number of test cases. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
         },
       },
       &quot;testApk&quot;: { # A reference to a file, used for user inputs. # Required. The APK containing the test code to be executed.
@@ -481,6 +507,8 @@ Args:
         { # Message for specifying the start activities to crawl.
           &quot;launcherActivity&quot;: { # Specifies an intent that starts the main launcher activity. # An intent that starts the main launcher activity.
           },
+          &quot;noActivity&quot;: { # Skips the starting activity # Skips the starting activity
+          },
           &quot;startActivity&quot;: { # A starting intent specified by an action, uri, and categories. # An intent that starts an activity with specific details.
             &quot;action&quot;: &quot;A String&quot;, # Action name. Required for START_ACTIVITY.
             &quot;categories&quot;: [ # Intent categories to set on the intent.
@@ -511,6 +539,15 @@ Args:
     },
     &quot;disablePerformanceMetrics&quot;: True or False, # Disables performance metrics recording. May reduce test latency.
     &quot;disableVideoRecording&quot;: True or False, # Disables video recording. May reduce test latency.
+    &quot;iosRoboTest&quot;: { # A test that explores an iOS application on an iOS device. # An iOS Robo test.
+      &quot;appBundleId&quot;: &quot;A String&quot;, # The bundle ID for the app-under-test. This is determined by examining the application&#x27;s &quot;Info.plist&quot; file.
+      &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The ipa stored at this file should be used to run the test.
+        &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+      },
+      &quot;roboScript&quot;: { # A reference to a file, used for user inputs. # An optional Roboscript to customize the crawl. See https://firebase.google.com/docs/test-lab/android/robo-scripts-reference for more information about Roboscripts.
+        &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+      },
+    },
     &quot;iosTestLoop&quot;: { # A test of an iOS application that implements one or more game loop scenarios. This test type accepts an archived application (.ipa file) and a list of integer scenarios that will be executed on the app sequentially. # An iOS application with a test loop.
       &quot;appBundleId&quot;: &quot;A String&quot;, # Output only. The bundle id for the application under test.
       &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The .ipa of the application to test.
@@ -562,7 +599,7 @@ Args:
         &quot;googleAuto&quot;: { # Enables automatic Google account login. If set, the service automatically generates a Google test account and adds it to the device, before executing the test. Note that test accounts might be reused. Many applications show their full set of functionalities when an account is present on the device. Logging into the device with these generated accounts allows testing more functionalities. # An automatic google login account.
         },
       },
-      &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. Currently capped at 100.
+      &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. These will be installed after the app under test. Currently capped at 100.
         { # An Android package file to install.
           &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
             &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
@@ -596,8 +633,16 @@ Args:
           },
         },
       ],
+      &quot;initialSetupApks&quot;: [ # Optional. Initial setup APKs to install before the app under test is installed. Currently capped at 100.
+        { # An Android package file to install.
+          &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+          &quot;packageName&quot;: &quot;A String&quot;, # The java package for the APK to be installed. Value is determined by examining the application&#x27;s manifest.
+        },
+      ],
       &quot;networkProfile&quot;: &quot;A String&quot;, # The network traffic profile used for running the test. Available network profiles can be queried by using the NETWORK_CONFIGURATION environment type when calling TestEnvironmentDiscoveryService.GetTestEnvironmentCatalog.
-      &quot;systrace&quot;: { # Deprecated: Systrace uses Python 2 which has been sunset 2020-01-01. Support of Systrace may stop at any time, at which point no Systrace file will be provided in the results. Systrace configuration for the run. If set a systrace will be taken, starting on test start and lasting for the configured duration. The systrace file thus obtained is put in the results bucket together with the other artifacts from the run.
+      &quot;systrace&quot;: { # Systrace configuration for the run. Deprecated: Systrace used Python 2 which was sunsetted on 2020-01-01. Systrace is no longer supported in the Cloud Testing API, and no Systrace file will be provided in the results.
         &quot;durationSeconds&quot;: 42, # Systrace duration in seconds. Should be between 1 and 30 seconds. 0 disables systrace.
       },
     },
@@ -702,6 +747,7 @@ Returns:
       &quot;matrixId&quot;: &quot;A String&quot;, # Output only. Id of the containing TestMatrix.
       &quot;projectId&quot;: &quot;A String&quot;, # Output only. The cloud project that owns the test execution.
       &quot;shard&quot;: { # Output only. Details about the shard. # Output only. Details about the shard.
+        &quot;estimatedShardDuration&quot;: &quot;A String&quot;, # Output only. The estimated shard duration based on previous test case timing records, if available.
         &quot;numShards&quot;: 42, # Output only. The total number of shards.
         &quot;shardIndex&quot;: 42, # Output only. The index of the shard among all the shards.
         &quot;testTargetsForShard&quot;: { # Test targets for a shard. # Output only. Test targets for each shard. Only set for manual sharding.
@@ -731,7 +777,7 @@ Returns:
           &quot;orchestratorOption&quot;: &quot;A String&quot;, # The option of whether running each test within its own invocation of instrumentation with Android Test Orchestrator or not. ** Orchestrator is only compatible with AndroidJUnitRunner version 1.1 or higher! ** Orchestrator offers the following benefits: - No shared state - Crashes are isolated - Logs are scoped per test See for more information about Android Test Orchestrator. If not set, the test will be run without the orchestrator.
           &quot;shardingOption&quot;: { # Options for enabling sharding. # The option to run tests in multiple shards in parallel.
             &quot;manualSharding&quot;: { # Shards test cases into the specified groups of packages, classes, and/or methods. With manual sharding enabled, specifying test targets via environment_variables or in InstrumentationTest is invalid. # Shards test cases into the specified groups of packages, classes, and/or methods.
-              &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each shard. When any physical devices are selected, the number of test_targets_for_shard must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+              &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each manually-created shard. You must specify at least one shard if this field is present. When you select one or more physical devices, the number of repeated test_targets_for_shard must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
                 { # Test targets for a shard.
                   &quot;testTargets&quot;: [ # Group of packages, classes, and/or test methods to be run for each shard. The targets need to be specified in AndroidJUnitRunner argument format. For example, &quot;package com.my.packages&quot; &quot;class com.my.package.MyClass&quot;. The number of test_targets must be greater than 0.
                     &quot;A String&quot;,
@@ -739,8 +785,11 @@ Returns:
                 },
               ],
             },
-            &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For Instrumentation test, it will be translated to &quot;-e numShard&quot; &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. With uniform sharding enabled, specifying these sharding arguments via environment_variables is invalid. # Uniformly shards test cases given a total number of shards.
-              &quot;numShards&quot;: 42, # Required. Total number of shards. When any physical devices are selected, the number must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+            &quot;smartSharding&quot;: { # Shards test based on previous test case timing records. # Shards test based on previous test case timing records.
+              &quot;targetedShardDuration&quot;: &quot;A String&quot;, # The amount of time tests within a shard should take. Default: 300 seconds (5 minutes). The minimum allowed: 120 seconds (2 minutes). The shard count is dynamically set based on time, up to the maximum shard limit (described below). To guarantee at least one test case for each shard, the number of shards will not exceed the number of test cases. Shard duration will be exceeded if: - The maximum shard limit is reached and there is more calculated test time remaining to allocate into shards. - Any individual test is estimated to be longer than the targeted shard duration. Shard duration is not guaranteed because smart sharding uses test case history and default durations which may not be accurate. The rules for finding the test case timing records are: - If the service has processed a test case in the last 30 days, the record of the latest successful test case will be used. - For new test cases, the average duration of other known test cases will be used. - If there are no previous test case timing records available, the default test case duration is 15 seconds. Because the actual shard duration can exceed the targeted shard duration, we recommend that you set the targeted value at least 5 minutes less than the maximum allowed test timeout (45 minutes for physical devices and 60 minutes for virtual), or that you use the custom test timeout value that you set. This approach avoids cancelling the shard before all tests can finish. Note that there is a limit for maximum number of shards. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500. To guarantee at least one test case for per shard, the number of shards will not exceed the number of test cases. Each shard created counts toward daily test quota.
+            },
+            &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For instrumentation tests, it will be translated to &quot;-e numShard&quot; and &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. With uniform sharding enabled, specifying either of these sharding arguments via `environment_variables` is invalid. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. # Uniformly shards test cases given a total number of shards.
+              &quot;numShards&quot;: 42, # Required. The total number of shards to create. This must always be a positive number that is no greater than the total number of test cases. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
             },
           },
           &quot;testApk&quot;: { # A reference to a file, used for user inputs. # Required. The APK containing the test code to be executed.
@@ -780,6 +829,8 @@ Returns:
             { # Message for specifying the start activities to crawl.
               &quot;launcherActivity&quot;: { # Specifies an intent that starts the main launcher activity. # An intent that starts the main launcher activity.
               },
+              &quot;noActivity&quot;: { # Skips the starting activity # Skips the starting activity
+              },
               &quot;startActivity&quot;: { # A starting intent specified by an action, uri, and categories. # An intent that starts an activity with specific details.
                 &quot;action&quot;: &quot;A String&quot;, # Action name. Required for START_ACTIVITY.
                 &quot;categories&quot;: [ # Intent categories to set on the intent.
@@ -810,6 +861,15 @@ Returns:
         },
         &quot;disablePerformanceMetrics&quot;: True or False, # Disables performance metrics recording. May reduce test latency.
         &quot;disableVideoRecording&quot;: True or False, # Disables video recording. May reduce test latency.
+        &quot;iosRoboTest&quot;: { # A test that explores an iOS application on an iOS device. # An iOS Robo test.
+          &quot;appBundleId&quot;: &quot;A String&quot;, # The bundle ID for the app-under-test. This is determined by examining the application&#x27;s &quot;Info.plist&quot; file.
+          &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The ipa stored at this file should be used to run the test.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+          &quot;roboScript&quot;: { # A reference to a file, used for user inputs. # An optional Roboscript to customize the crawl. See https://firebase.google.com/docs/test-lab/android/robo-scripts-reference for more information about Roboscripts.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+        },
         &quot;iosTestLoop&quot;: { # A test of an iOS application that implements one or more game loop scenarios. This test type accepts an archived application (.ipa file) and a list of integer scenarios that will be executed on the app sequentially. # An iOS application with a test loop.
           &quot;appBundleId&quot;: &quot;A String&quot;, # Output only. The bundle id for the application under test.
           &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The .ipa of the application to test.
@@ -861,7 +921,7 @@ Returns:
             &quot;googleAuto&quot;: { # Enables automatic Google account login. If set, the service automatically generates a Google test account and adds it to the device, before executing the test. Note that test accounts might be reused. Many applications show their full set of functionalities when an account is present on the device. Logging into the device with these generated accounts allows testing more functionalities. # An automatic google login account.
             },
           },
-          &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. Currently capped at 100.
+          &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. These will be installed after the app under test. Currently capped at 100.
             { # An Android package file to install.
               &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
                 &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
@@ -895,8 +955,16 @@ Returns:
               },
             },
           ],
+          &quot;initialSetupApks&quot;: [ # Optional. Initial setup APKs to install before the app under test is installed. Currently capped at 100.
+            { # An Android package file to install.
+              &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
+                &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+              },
+              &quot;packageName&quot;: &quot;A String&quot;, # The java package for the APK to be installed. Value is determined by examining the application&#x27;s manifest.
+            },
+          ],
           &quot;networkProfile&quot;: &quot;A String&quot;, # The network traffic profile used for running the test. Available network profiles can be queried by using the NETWORK_CONFIGURATION environment type when calling TestEnvironmentDiscoveryService.GetTestEnvironmentCatalog.
-          &quot;systrace&quot;: { # Deprecated: Systrace uses Python 2 which has been sunset 2020-01-01. Support of Systrace may stop at any time, at which point no Systrace file will be provided in the results. Systrace configuration for the run. If set a systrace will be taken, starting on test start and lasting for the configured duration. The systrace file thus obtained is put in the results bucket together with the other artifacts from the run.
+          &quot;systrace&quot;: { # Systrace configuration for the run. Deprecated: Systrace used Python 2 which was sunsetted on 2020-01-01. Systrace is no longer supported in the Cloud Testing API, and no Systrace file will be provided in the results.
             &quot;durationSeconds&quot;: 42, # Systrace duration in seconds. Should be between 1 and 30 seconds. 0 disables systrace.
           },
         },
@@ -926,7 +994,7 @@ Returns:
       &quot;orchestratorOption&quot;: &quot;A String&quot;, # The option of whether running each test within its own invocation of instrumentation with Android Test Orchestrator or not. ** Orchestrator is only compatible with AndroidJUnitRunner version 1.1 or higher! ** Orchestrator offers the following benefits: - No shared state - Crashes are isolated - Logs are scoped per test See for more information about Android Test Orchestrator. If not set, the test will be run without the orchestrator.
       &quot;shardingOption&quot;: { # Options for enabling sharding. # The option to run tests in multiple shards in parallel.
         &quot;manualSharding&quot;: { # Shards test cases into the specified groups of packages, classes, and/or methods. With manual sharding enabled, specifying test targets via environment_variables or in InstrumentationTest is invalid. # Shards test cases into the specified groups of packages, classes, and/or methods.
-          &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each shard. When any physical devices are selected, the number of test_targets_for_shard must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+          &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each manually-created shard. You must specify at least one shard if this field is present. When you select one or more physical devices, the number of repeated test_targets_for_shard must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
             { # Test targets for a shard.
               &quot;testTargets&quot;: [ # Group of packages, classes, and/or test methods to be run for each shard. The targets need to be specified in AndroidJUnitRunner argument format. For example, &quot;package com.my.packages&quot; &quot;class com.my.package.MyClass&quot;. The number of test_targets must be greater than 0.
                 &quot;A String&quot;,
@@ -934,8 +1002,11 @@ Returns:
             },
           ],
         },
-        &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For Instrumentation test, it will be translated to &quot;-e numShard&quot; &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. With uniform sharding enabled, specifying these sharding arguments via environment_variables is invalid. # Uniformly shards test cases given a total number of shards.
-          &quot;numShards&quot;: 42, # Required. Total number of shards. When any physical devices are selected, the number must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+        &quot;smartSharding&quot;: { # Shards test based on previous test case timing records. # Shards test based on previous test case timing records.
+          &quot;targetedShardDuration&quot;: &quot;A String&quot;, # The amount of time tests within a shard should take. Default: 300 seconds (5 minutes). The minimum allowed: 120 seconds (2 minutes). The shard count is dynamically set based on time, up to the maximum shard limit (described below). To guarantee at least one test case for each shard, the number of shards will not exceed the number of test cases. Shard duration will be exceeded if: - The maximum shard limit is reached and there is more calculated test time remaining to allocate into shards. - Any individual test is estimated to be longer than the targeted shard duration. Shard duration is not guaranteed because smart sharding uses test case history and default durations which may not be accurate. The rules for finding the test case timing records are: - If the service has processed a test case in the last 30 days, the record of the latest successful test case will be used. - For new test cases, the average duration of other known test cases will be used. - If there are no previous test case timing records available, the default test case duration is 15 seconds. Because the actual shard duration can exceed the targeted shard duration, we recommend that you set the targeted value at least 5 minutes less than the maximum allowed test timeout (45 minutes for physical devices and 60 minutes for virtual), or that you use the custom test timeout value that you set. This approach avoids cancelling the shard before all tests can finish. Note that there is a limit for maximum number of shards. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500. To guarantee at least one test case for per shard, the number of shards will not exceed the number of test cases. Each shard created counts toward daily test quota.
+        },
+        &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For instrumentation tests, it will be translated to &quot;-e numShard&quot; and &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. With uniform sharding enabled, specifying either of these sharding arguments via `environment_variables` is invalid. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. # Uniformly shards test cases given a total number of shards.
+          &quot;numShards&quot;: 42, # Required. The total number of shards to create. This must always be a positive number that is no greater than the total number of test cases. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
         },
       },
       &quot;testApk&quot;: { # A reference to a file, used for user inputs. # Required. The APK containing the test code to be executed.
@@ -975,6 +1046,8 @@ Returns:
         { # Message for specifying the start activities to crawl.
           &quot;launcherActivity&quot;: { # Specifies an intent that starts the main launcher activity. # An intent that starts the main launcher activity.
           },
+          &quot;noActivity&quot;: { # Skips the starting activity # Skips the starting activity
+          },
           &quot;startActivity&quot;: { # A starting intent specified by an action, uri, and categories. # An intent that starts an activity with specific details.
             &quot;action&quot;: &quot;A String&quot;, # Action name. Required for START_ACTIVITY.
             &quot;categories&quot;: [ # Intent categories to set on the intent.
@@ -1005,6 +1078,15 @@ Returns:
     },
     &quot;disablePerformanceMetrics&quot;: True or False, # Disables performance metrics recording. May reduce test latency.
     &quot;disableVideoRecording&quot;: True or False, # Disables video recording. May reduce test latency.
+    &quot;iosRoboTest&quot;: { # A test that explores an iOS application on an iOS device. # An iOS Robo test.
+      &quot;appBundleId&quot;: &quot;A String&quot;, # The bundle ID for the app-under-test. This is determined by examining the application&#x27;s &quot;Info.plist&quot; file.
+      &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The ipa stored at this file should be used to run the test.
+        &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+      },
+      &quot;roboScript&quot;: { # A reference to a file, used for user inputs. # An optional Roboscript to customize the crawl. See https://firebase.google.com/docs/test-lab/android/robo-scripts-reference for more information about Roboscripts.
+        &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+      },
+    },
     &quot;iosTestLoop&quot;: { # A test of an iOS application that implements one or more game loop scenarios. This test type accepts an archived application (.ipa file) and a list of integer scenarios that will be executed on the app sequentially. # An iOS application with a test loop.
       &quot;appBundleId&quot;: &quot;A String&quot;, # Output only. The bundle id for the application under test.
       &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The .ipa of the application to test.
@@ -1056,7 +1138,7 @@ Returns:
         &quot;googleAuto&quot;: { # Enables automatic Google account login. If set, the service automatically generates a Google test account and adds it to the device, before executing the test. Note that test accounts might be reused. Many applications show their full set of functionalities when an account is present on the device. Logging into the device with these generated accounts allows testing more functionalities. # An automatic google login account.
         },
       },
-      &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. Currently capped at 100.
+      &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. These will be installed after the app under test. Currently capped at 100.
         { # An Android package file to install.
           &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
             &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
@@ -1090,8 +1172,16 @@ Returns:
           },
         },
       ],
+      &quot;initialSetupApks&quot;: [ # Optional. Initial setup APKs to install before the app under test is installed. Currently capped at 100.
+        { # An Android package file to install.
+          &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+          &quot;packageName&quot;: &quot;A String&quot;, # The java package for the APK to be installed. Value is determined by examining the application&#x27;s manifest.
+        },
+      ],
       &quot;networkProfile&quot;: &quot;A String&quot;, # The network traffic profile used for running the test. Available network profiles can be queried by using the NETWORK_CONFIGURATION environment type when calling TestEnvironmentDiscoveryService.GetTestEnvironmentCatalog.
-      &quot;systrace&quot;: { # Deprecated: Systrace uses Python 2 which has been sunset 2020-01-01. Support of Systrace may stop at any time, at which point no Systrace file will be provided in the results. Systrace configuration for the run. If set a systrace will be taken, starting on test start and lasting for the configured duration. The systrace file thus obtained is put in the results bucket together with the other artifacts from the run.
+      &quot;systrace&quot;: { # Systrace configuration for the run. Deprecated: Systrace used Python 2 which was sunsetted on 2020-01-01. Systrace is no longer supported in the Cloud Testing API, and no Systrace file will be provided in the results.
         &quot;durationSeconds&quot;: 42, # Systrace duration in seconds. Should be between 1 and 30 seconds. 0 disables systrace.
       },
     },
@@ -1103,7 +1193,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="get">get(projectId, testMatrixId, x__xgafv=None)</code>
-  <pre>Checks the status of a test matrix. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to read project - INVALID_ARGUMENT - if the request is malformed - NOT_FOUND - if the Test Matrix does not exist
+  <pre>Checks the status of a test matrix and the executions once they are created. The test matrix will contain the list of test executions to run if and only if the resultStorage.toolResultsExecution fields have been populated. Note: Flaky test executions may be added to the matrix at a later stage. May return any of the following canonical error codes: - PERMISSION_DENIED - if the user is not authorized to read project - INVALID_ARGUMENT - if the request is malformed - NOT_FOUND - if the Test Matrix does not exist
 
 Args:
   projectId: string, Cloud project that owns the test matrix. (required)
@@ -1203,6 +1293,7 @@ Returns:
       &quot;matrixId&quot;: &quot;A String&quot;, # Output only. Id of the containing TestMatrix.
       &quot;projectId&quot;: &quot;A String&quot;, # Output only. The cloud project that owns the test execution.
       &quot;shard&quot;: { # Output only. Details about the shard. # Output only. Details about the shard.
+        &quot;estimatedShardDuration&quot;: &quot;A String&quot;, # Output only. The estimated shard duration based on previous test case timing records, if available.
         &quot;numShards&quot;: 42, # Output only. The total number of shards.
         &quot;shardIndex&quot;: 42, # Output only. The index of the shard among all the shards.
         &quot;testTargetsForShard&quot;: { # Test targets for a shard. # Output only. Test targets for each shard. Only set for manual sharding.
@@ -1232,7 +1323,7 @@ Returns:
           &quot;orchestratorOption&quot;: &quot;A String&quot;, # The option of whether running each test within its own invocation of instrumentation with Android Test Orchestrator or not. ** Orchestrator is only compatible with AndroidJUnitRunner version 1.1 or higher! ** Orchestrator offers the following benefits: - No shared state - Crashes are isolated - Logs are scoped per test See for more information about Android Test Orchestrator. If not set, the test will be run without the orchestrator.
           &quot;shardingOption&quot;: { # Options for enabling sharding. # The option to run tests in multiple shards in parallel.
             &quot;manualSharding&quot;: { # Shards test cases into the specified groups of packages, classes, and/or methods. With manual sharding enabled, specifying test targets via environment_variables or in InstrumentationTest is invalid. # Shards test cases into the specified groups of packages, classes, and/or methods.
-              &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each shard. When any physical devices are selected, the number of test_targets_for_shard must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+              &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each manually-created shard. You must specify at least one shard if this field is present. When you select one or more physical devices, the number of repeated test_targets_for_shard must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
                 { # Test targets for a shard.
                   &quot;testTargets&quot;: [ # Group of packages, classes, and/or test methods to be run for each shard. The targets need to be specified in AndroidJUnitRunner argument format. For example, &quot;package com.my.packages&quot; &quot;class com.my.package.MyClass&quot;. The number of test_targets must be greater than 0.
                     &quot;A String&quot;,
@@ -1240,8 +1331,11 @@ Returns:
                 },
               ],
             },
-            &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For Instrumentation test, it will be translated to &quot;-e numShard&quot; &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. With uniform sharding enabled, specifying these sharding arguments via environment_variables is invalid. # Uniformly shards test cases given a total number of shards.
-              &quot;numShards&quot;: 42, # Required. Total number of shards. When any physical devices are selected, the number must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+            &quot;smartSharding&quot;: { # Shards test based on previous test case timing records. # Shards test based on previous test case timing records.
+              &quot;targetedShardDuration&quot;: &quot;A String&quot;, # The amount of time tests within a shard should take. Default: 300 seconds (5 minutes). The minimum allowed: 120 seconds (2 minutes). The shard count is dynamically set based on time, up to the maximum shard limit (described below). To guarantee at least one test case for each shard, the number of shards will not exceed the number of test cases. Shard duration will be exceeded if: - The maximum shard limit is reached and there is more calculated test time remaining to allocate into shards. - Any individual test is estimated to be longer than the targeted shard duration. Shard duration is not guaranteed because smart sharding uses test case history and default durations which may not be accurate. The rules for finding the test case timing records are: - If the service has processed a test case in the last 30 days, the record of the latest successful test case will be used. - For new test cases, the average duration of other known test cases will be used. - If there are no previous test case timing records available, the default test case duration is 15 seconds. Because the actual shard duration can exceed the targeted shard duration, we recommend that you set the targeted value at least 5 minutes less than the maximum allowed test timeout (45 minutes for physical devices and 60 minutes for virtual), or that you use the custom test timeout value that you set. This approach avoids cancelling the shard before all tests can finish. Note that there is a limit for maximum number of shards. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500. To guarantee at least one test case for per shard, the number of shards will not exceed the number of test cases. Each shard created counts toward daily test quota.
+            },
+            &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For instrumentation tests, it will be translated to &quot;-e numShard&quot; and &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. With uniform sharding enabled, specifying either of these sharding arguments via `environment_variables` is invalid. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. # Uniformly shards test cases given a total number of shards.
+              &quot;numShards&quot;: 42, # Required. The total number of shards to create. This must always be a positive number that is no greater than the total number of test cases. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
             },
           },
           &quot;testApk&quot;: { # A reference to a file, used for user inputs. # Required. The APK containing the test code to be executed.
@@ -1281,6 +1375,8 @@ Returns:
             { # Message for specifying the start activities to crawl.
               &quot;launcherActivity&quot;: { # Specifies an intent that starts the main launcher activity. # An intent that starts the main launcher activity.
               },
+              &quot;noActivity&quot;: { # Skips the starting activity # Skips the starting activity
+              },
               &quot;startActivity&quot;: { # A starting intent specified by an action, uri, and categories. # An intent that starts an activity with specific details.
                 &quot;action&quot;: &quot;A String&quot;, # Action name. Required for START_ACTIVITY.
                 &quot;categories&quot;: [ # Intent categories to set on the intent.
@@ -1311,6 +1407,15 @@ Returns:
         },
         &quot;disablePerformanceMetrics&quot;: True or False, # Disables performance metrics recording. May reduce test latency.
         &quot;disableVideoRecording&quot;: True or False, # Disables video recording. May reduce test latency.
+        &quot;iosRoboTest&quot;: { # A test that explores an iOS application on an iOS device. # An iOS Robo test.
+          &quot;appBundleId&quot;: &quot;A String&quot;, # The bundle ID for the app-under-test. This is determined by examining the application&#x27;s &quot;Info.plist&quot; file.
+          &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The ipa stored at this file should be used to run the test.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+          &quot;roboScript&quot;: { # A reference to a file, used for user inputs. # An optional Roboscript to customize the crawl. See https://firebase.google.com/docs/test-lab/android/robo-scripts-reference for more information about Roboscripts.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+        },
         &quot;iosTestLoop&quot;: { # A test of an iOS application that implements one or more game loop scenarios. This test type accepts an archived application (.ipa file) and a list of integer scenarios that will be executed on the app sequentially. # An iOS application with a test loop.
           &quot;appBundleId&quot;: &quot;A String&quot;, # Output only. The bundle id for the application under test.
           &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The .ipa of the application to test.
@@ -1362,7 +1467,7 @@ Returns:
             &quot;googleAuto&quot;: { # Enables automatic Google account login. If set, the service automatically generates a Google test account and adds it to the device, before executing the test. Note that test accounts might be reused. Many applications show their full set of functionalities when an account is present on the device. Logging into the device with these generated accounts allows testing more functionalities. # An automatic google login account.
             },
           },
-          &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. Currently capped at 100.
+          &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. These will be installed after the app under test. Currently capped at 100.
             { # An Android package file to install.
               &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
                 &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
@@ -1396,8 +1501,16 @@ Returns:
               },
             },
           ],
+          &quot;initialSetupApks&quot;: [ # Optional. Initial setup APKs to install before the app under test is installed. Currently capped at 100.
+            { # An Android package file to install.
+              &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
+                &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+              },
+              &quot;packageName&quot;: &quot;A String&quot;, # The java package for the APK to be installed. Value is determined by examining the application&#x27;s manifest.
+            },
+          ],
           &quot;networkProfile&quot;: &quot;A String&quot;, # The network traffic profile used for running the test. Available network profiles can be queried by using the NETWORK_CONFIGURATION environment type when calling TestEnvironmentDiscoveryService.GetTestEnvironmentCatalog.
-          &quot;systrace&quot;: { # Deprecated: Systrace uses Python 2 which has been sunset 2020-01-01. Support of Systrace may stop at any time, at which point no Systrace file will be provided in the results. Systrace configuration for the run. If set a systrace will be taken, starting on test start and lasting for the configured duration. The systrace file thus obtained is put in the results bucket together with the other artifacts from the run.
+          &quot;systrace&quot;: { # Systrace configuration for the run. Deprecated: Systrace used Python 2 which was sunsetted on 2020-01-01. Systrace is no longer supported in the Cloud Testing API, and no Systrace file will be provided in the results.
             &quot;durationSeconds&quot;: 42, # Systrace duration in seconds. Should be between 1 and 30 seconds. 0 disables systrace.
           },
         },
@@ -1427,7 +1540,7 @@ Returns:
       &quot;orchestratorOption&quot;: &quot;A String&quot;, # The option of whether running each test within its own invocation of instrumentation with Android Test Orchestrator or not. ** Orchestrator is only compatible with AndroidJUnitRunner version 1.1 or higher! ** Orchestrator offers the following benefits: - No shared state - Crashes are isolated - Logs are scoped per test See for more information about Android Test Orchestrator. If not set, the test will be run without the orchestrator.
       &quot;shardingOption&quot;: { # Options for enabling sharding. # The option to run tests in multiple shards in parallel.
         &quot;manualSharding&quot;: { # Shards test cases into the specified groups of packages, classes, and/or methods. With manual sharding enabled, specifying test targets via environment_variables or in InstrumentationTest is invalid. # Shards test cases into the specified groups of packages, classes, and/or methods.
-          &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each shard. When any physical devices are selected, the number of test_targets_for_shard must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+          &quot;testTargetsForShard&quot;: [ # Required. Group of packages, classes, and/or test methods to be run for each manually-created shard. You must specify at least one shard if this field is present. When you select one or more physical devices, the number of repeated test_targets_for_shard must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
             { # Test targets for a shard.
               &quot;testTargets&quot;: [ # Group of packages, classes, and/or test methods to be run for each shard. The targets need to be specified in AndroidJUnitRunner argument format. For example, &quot;package com.my.packages&quot; &quot;class com.my.package.MyClass&quot;. The number of test_targets must be greater than 0.
                 &quot;A String&quot;,
@@ -1435,8 +1548,11 @@ Returns:
             },
           ],
         },
-        &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For Instrumentation test, it will be translated to &quot;-e numShard&quot; &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. With uniform sharding enabled, specifying these sharding arguments via environment_variables is invalid. # Uniformly shards test cases given a total number of shards.
-          &quot;numShards&quot;: 42, # Required. Total number of shards. When any physical devices are selected, the number must be &gt;= 1 and &lt;= 50. When no physical devices are selected, the number must be &gt;= 1 and &lt;= 500.
+        &quot;smartSharding&quot;: { # Shards test based on previous test case timing records. # Shards test based on previous test case timing records.
+          &quot;targetedShardDuration&quot;: &quot;A String&quot;, # The amount of time tests within a shard should take. Default: 300 seconds (5 minutes). The minimum allowed: 120 seconds (2 minutes). The shard count is dynamically set based on time, up to the maximum shard limit (described below). To guarantee at least one test case for each shard, the number of shards will not exceed the number of test cases. Shard duration will be exceeded if: - The maximum shard limit is reached and there is more calculated test time remaining to allocate into shards. - Any individual test is estimated to be longer than the targeted shard duration. Shard duration is not guaranteed because smart sharding uses test case history and default durations which may not be accurate. The rules for finding the test case timing records are: - If the service has processed a test case in the last 30 days, the record of the latest successful test case will be used. - For new test cases, the average duration of other known test cases will be used. - If there are no previous test case timing records available, the default test case duration is 15 seconds. Because the actual shard duration can exceed the targeted shard duration, we recommend that you set the targeted value at least 5 minutes less than the maximum allowed test timeout (45 minutes for physical devices and 60 minutes for virtual), or that you use the custom test timeout value that you set. This approach avoids cancelling the shard before all tests can finish. Note that there is a limit for maximum number of shards. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500. To guarantee at least one test case for per shard, the number of shards will not exceed the number of test cases. Each shard created counts toward daily test quota.
+        },
+        &quot;uniformSharding&quot;: { # Uniformly shards test cases given a total number of shards. For instrumentation tests, it will be translated to &quot;-e numShard&quot; and &quot;-e shardIndex&quot; AndroidJUnitRunner arguments. With uniform sharding enabled, specifying either of these sharding arguments via `environment_variables` is invalid. Based on the sharding mechanism AndroidJUnitRunner uses, there is no guarantee that test cases will be distributed uniformly across all shards. # Uniformly shards test cases given a total number of shards.
+          &quot;numShards&quot;: 42, # Required. The total number of shards to create. This must always be a positive number that is no greater than the total number of test cases. When you select one or more physical devices, the number of shards must be &lt;= 50. When you select one or more ARM virtual devices, it must be &lt;= 200. When you select only x86 virtual devices, it must be &lt;= 500.
         },
       },
       &quot;testApk&quot;: { # A reference to a file, used for user inputs. # Required. The APK containing the test code to be executed.
@@ -1476,6 +1592,8 @@ Returns:
         { # Message for specifying the start activities to crawl.
           &quot;launcherActivity&quot;: { # Specifies an intent that starts the main launcher activity. # An intent that starts the main launcher activity.
           },
+          &quot;noActivity&quot;: { # Skips the starting activity # Skips the starting activity
+          },
           &quot;startActivity&quot;: { # A starting intent specified by an action, uri, and categories. # An intent that starts an activity with specific details.
             &quot;action&quot;: &quot;A String&quot;, # Action name. Required for START_ACTIVITY.
             &quot;categories&quot;: [ # Intent categories to set on the intent.
@@ -1506,6 +1624,15 @@ Returns:
     },
     &quot;disablePerformanceMetrics&quot;: True or False, # Disables performance metrics recording. May reduce test latency.
     &quot;disableVideoRecording&quot;: True or False, # Disables video recording. May reduce test latency.
+    &quot;iosRoboTest&quot;: { # A test that explores an iOS application on an iOS device. # An iOS Robo test.
+      &quot;appBundleId&quot;: &quot;A String&quot;, # The bundle ID for the app-under-test. This is determined by examining the application&#x27;s &quot;Info.plist&quot; file.
+      &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The ipa stored at this file should be used to run the test.
+        &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+      },
+      &quot;roboScript&quot;: { # A reference to a file, used for user inputs. # An optional Roboscript to customize the crawl. See https://firebase.google.com/docs/test-lab/android/robo-scripts-reference for more information about Roboscripts.
+        &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+      },
+    },
     &quot;iosTestLoop&quot;: { # A test of an iOS application that implements one or more game loop scenarios. This test type accepts an archived application (.ipa file) and a list of integer scenarios that will be executed on the app sequentially. # An iOS application with a test loop.
       &quot;appBundleId&quot;: &quot;A String&quot;, # Output only. The bundle id for the application under test.
       &quot;appIpa&quot;: { # A reference to a file, used for user inputs. # Required. The .ipa of the application to test.
@@ -1557,7 +1684,7 @@ Returns:
         &quot;googleAuto&quot;: { # Enables automatic Google account login. If set, the service automatically generates a Google test account and adds it to the device, before executing the test. Note that test accounts might be reused. Many applications show their full set of functionalities when an account is present on the device. Logging into the device with these generated accounts allows testing more functionalities. # An automatic google login account.
         },
       },
-      &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. Currently capped at 100.
+      &quot;additionalApks&quot;: [ # APKs to install in addition to those being directly tested. These will be installed after the app under test. Currently capped at 100.
         { # An Android package file to install.
           &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
             &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
@@ -1591,8 +1718,16 @@ Returns:
           },
         },
       ],
+      &quot;initialSetupApks&quot;: [ # Optional. Initial setup APKs to install before the app under test is installed. Currently capped at 100.
+        { # An Android package file to install.
+          &quot;location&quot;: { # A reference to a file, used for user inputs. # The path to an APK to be installed on the device before the test begins.
+            &quot;gcsPath&quot;: &quot;A String&quot;, # A path to a file in Google Cloud Storage. Example: gs://build-app-1414623860166/app%40debug-unaligned.apk These paths are expected to be url encoded (percent encoding)
+          },
+          &quot;packageName&quot;: &quot;A String&quot;, # The java package for the APK to be installed. Value is determined by examining the application&#x27;s manifest.
+        },
+      ],
       &quot;networkProfile&quot;: &quot;A String&quot;, # The network traffic profile used for running the test. Available network profiles can be queried by using the NETWORK_CONFIGURATION environment type when calling TestEnvironmentDiscoveryService.GetTestEnvironmentCatalog.
-      &quot;systrace&quot;: { # Deprecated: Systrace uses Python 2 which has been sunset 2020-01-01. Support of Systrace may stop at any time, at which point no Systrace file will be provided in the results. Systrace configuration for the run. If set a systrace will be taken, starting on test start and lasting for the configured duration. The systrace file thus obtained is put in the results bucket together with the other artifacts from the run.
+      &quot;systrace&quot;: { # Systrace configuration for the run. Deprecated: Systrace used Python 2 which was sunsetted on 2020-01-01. Systrace is no longer supported in the Cloud Testing API, and no Systrace file will be provided in the results.
         &quot;durationSeconds&quot;: 42, # Systrace duration in seconds. Should be between 1 and 30 seconds. 0 disables systrace.
       },
     },

@@ -360,7 +360,7 @@
                           "type": "string"
                         },
                         "tunnelDestGroupId": {
-                          "description": "Required. The ID to use for the TunnelDestGroup, which becomes the final component of the resource name. This value must be 4-63 characters, and valid characters are `a-z-`.",
+                          "description": "Required. The ID to use for the TunnelDestGroup, which becomes the final component of the resource name. This value must be 4-63 characters, and valid characters are `[a-z]-`.",
                           "location": "query",
                           "type": "string"
                         }
@@ -472,7 +472,7 @@
                       ],
                       "parameters": {
                         "name": {
-                          "description": "Required. Immutable. Identifier for the TunnelDestGroup. Must be unique within the project.",
+                          "description": "Required. Immutable. Identifier for the TunnelDestGroup. Must be unique within the project and contain only lower case letters (a-z) and dashes (-).",
                           "location": "path",
                           "pattern": "^projects/[^/]+/iap_tunnel/locations/[^/]+/destGroups/[^/]+$",
                           "required": true,
@@ -516,7 +516,7 @@
           ],
           "parameters": {
             "resource": {
-              "description": "REQUIRED: The resource for which the policy is being requested. See the operation documentation for the appropriate value for this field.",
+              "description": "REQUIRED: The resource for which the policy is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
               "location": "path",
               "pattern": "^.*$",
               "required": true,
@@ -569,7 +569,7 @@
           ],
           "parameters": {
             "resource": {
-              "description": "REQUIRED: The resource for which the policy is being specified. See the operation documentation for the appropriate value for this field.",
+              "description": "REQUIRED: The resource for which the policy is being specified. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
               "location": "path",
               "pattern": "^.*$",
               "required": true,
@@ -597,7 +597,7 @@
           ],
           "parameters": {
             "resource": {
-              "description": "REQUIRED: The resource for which the policy detail is being requested. See the operation documentation for the appropriate value for this field.",
+              "description": "REQUIRED: The resource for which the policy detail is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field.",
               "location": "path",
               "pattern": "^.*$",
               "required": true,
@@ -632,7 +632,7 @@
               "type": "string"
             },
             "updateMask": {
-              "description": "The field mask specifying which IAP settings should be updated. If omitted, the all of the settings are updated. See https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#fieldmask",
+              "description": "The field mask specifying which IAP settings should be updated. If omitted, then all of the settings are updated. See https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#fieldmask. Note: All IAP reauth settings must always be set together, using the field mask: `iapSettings.accessSettings.reauthSettings`.",
               "format": "google-fieldmask",
               "location": "query",
               "type": "string"
@@ -648,11 +648,41 @@
           "scopes": [
             "https://www.googleapis.com/auth/cloud-platform"
           ]
+        },
+        "validateAttributeExpression": {
+          "description": "Validates a given CEL expression conforms to IAP restrictions.",
+          "flatPath": "v1/{v1Id}:validateAttributeExpression",
+          "httpMethod": "POST",
+          "id": "iap.validateAttributeExpression",
+          "parameterOrder": [
+            "name"
+          ],
+          "parameters": {
+            "expression": {
+              "description": "Required. User input string expression. Should be of the form 'attributes.saml_attributes.filter(attribute, attribute.name in ['{attribute_name}', '{attribute_name}'])'",
+              "location": "query",
+              "type": "string"
+            },
+            "name": {
+              "description": "Required. The resource name of the IAP protected resource.",
+              "location": "path",
+              "pattern": "^.*$",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "v1/{+name}:validateAttributeExpression",
+          "response": {
+            "$ref": "ValidateIapAttributeExpressionResponse"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform"
+          ]
         }
       }
     }
   },
-  "revision": "20220421",
+  "revision": "20231208",
   "rootUrl": "https://iap.googleapis.com/",
   "schemas": {
     "AccessDeniedPageSettings": {
@@ -666,6 +696,10 @@
         "generateTroubleshootingUri": {
           "description": "Whether to generate a troubleshooting URL on access denied events to this application.",
           "type": "boolean"
+        },
+        "remediationTokenGenerationEnabled": {
+          "description": "Whether to generate remediation token on access denied events to this application.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -674,6 +708,10 @@
       "description": "Access related settings for IAP protected apps.",
       "id": "AccessSettings",
       "properties": {
+        "allowedDomainsSettings": {
+          "$ref": "AllowedDomainsSettings",
+          "description": "Settings to configure and enable allowed domains."
+        },
         "corsSettings": {
           "$ref": "CorsSettings",
           "description": "Configuration to allow cross-origin requests via IAP."
@@ -697,6 +735,24 @@
       },
       "type": "object"
     },
+    "AllowedDomainsSettings": {
+      "description": "Configuration for IAP allowed domains. Lets you to restrict access to an app and allow access to only the domains that you list.",
+      "id": "AllowedDomainsSettings",
+      "properties": {
+        "domains": {
+          "description": "List of trusted domains.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "enable": {
+          "description": "Configuration for customers to opt in for the feature.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
     "ApplicationSettings": {
       "description": "Wrapper over application specific settings for IAP.",
       "id": "ApplicationSettings",
@@ -705,13 +761,51 @@
           "$ref": "AccessDeniedPageSettings",
           "description": "Customization for Access Denied page."
         },
+        "attributePropagationSettings": {
+          "$ref": "AttributePropagationSettings",
+          "description": "Settings to configure attribute propagation."
+        },
         "cookieDomain": {
           "description": "The Domain value to set for cookies generated by IAP. This value is not validated by the API, but will be ignored at runtime if invalid.",
           "type": "string"
         },
         "csmSettings": {
           "$ref": "CsmSettings",
-          "description": "Settings to configure IAP's behavior for a CSM mesh."
+          "description": "Settings to configure IAP's behavior for a service mesh."
+        }
+      },
+      "type": "object"
+    },
+    "AttributePropagationSettings": {
+      "description": "Configuration for propagating attributes to applications protected by IAP.",
+      "id": "AttributePropagationSettings",
+      "properties": {
+        "enable": {
+          "description": "Whether the provided attribute propagation settings should be evaluated on user requests. If set to true, attributes returned from the expression will be propagated in the set output credentials.",
+          "type": "boolean"
+        },
+        "expression": {
+          "description": "Raw string CEL expression. Must return a list of attributes. A maximum of 45 attributes can be selected. Expressions can select different attribute types from `attributes`: `attributes.saml_attributes`, `attributes.iap_attributes`. The following functions are supported: - filter `.filter(, )`: Returns a subset of `` where `` is true for every item. - in ` in `: Returns true if `` contains ``. - selectByName `.selectByName()`: Returns the attribute in `` with the given `` name, otherwise returns empty. - emitAs `.emitAs()`: Sets the `` name field to the given `` for propagation in selected output credentials. - strict `.strict()`: Ignores the `x-goog-iap-attr-` prefix for the provided `` when propagating with the `HEADER` output credential, such as request headers. - append `.append()` OR `.append()`: Appends the provided `` or `` to the end of ``. Example expression: `attributes.saml_attributes.filter(x, x.name in ['test']).append(attributes.iap_attributes.selectByName('exact').emitAs('custom').strict())`",
+          "type": "string"
+        },
+        "outputCredentials": {
+          "description": "Which output credentials attributes selected by the CEL expression should be propagated in. All attributes will be fully duplicated in each selected output credential.",
+          "items": {
+            "enum": [
+              "OUTPUT_CREDENTIALS_UNSPECIFIED",
+              "HEADER",
+              "JWT",
+              "RCTOKEN"
+            ],
+            "enumDescriptions": [
+              "An output credential is required.",
+              "Propagate attributes in the headers with \"x-goog-iap-attr-\" prefix.",
+              "Propagate attributes in the JWT of the form: `\"additional_claims\": { \"my_attribute\": [\"value1\", \"value2\"] }`",
+              "Propagate attributes in the RCToken of the form: `\"additional_claims\": { \"my_attribute\": [\"value1\", \"value2\"] }`"
+            ],
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -725,7 +819,7 @@
           "description": "The condition that is associated with this binding. If the condition evaluates to `true`, then this binding applies to the current request. If the condition evaluates to `false`, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies)."
         },
         "members": {
-          "description": "Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`. ",
+          "description": "Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding.",
           "items": {
             "type": "string"
           },
@@ -775,7 +869,7 @@
       "type": "object"
     },
     "CsmSettings": {
-      "description": "Configuration for RCTokens generated for CSM workloads protected by IAP. RCTokens are IAP generated JWTs that can be verified at the application. The RCToken is primarily used for ISTIO deployments, and can be scoped to a single mesh by configuring the audience field accordingly",
+      "description": "Configuration for RCToken generated for service mesh workloads protected by IAP. RCToken are IAP generated JWTs that can be verified at the application. The RCToken is primarily used for service mesh deployments, and can be scoped to a single mesh by configuring the audience field accordingly.",
       "id": "CsmSettings",
       "properties": {
         "rctokenAud": {
@@ -952,12 +1046,19 @@
         "loginHint": {
           "description": "Domain hint to send as hd=? parameter in OAuth request flow. Enables redirect to primary IDP by skipping Google's login screen. https://developers.google.com/identity/protocols/OpenIDConnect#hd-param Note: IAP does not verify that the id token's hd claim matches this value since access behavior is managed by IAM policies.",
           "type": "string"
+        },
+        "programmaticClients": {
+          "description": "List of client ids allowed to use IAP programmatically.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "type": "object"
     },
     "Policy": {
-      "description": "An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { \"bindings\": [ { \"role\": \"roles/resourcemanager.organizationAdmin\", \"members\": [ \"user:mike@example.com\", \"group:admins@example.com\", \"domain:google.com\", \"serviceAccount:my-project-id@appspot.gserviceaccount.com\" ] }, { \"role\": \"roles/resourcemanager.organizationViewer\", \"members\": [ \"user:eve@example.com\" ], \"condition\": { \"title\": \"expirable access\", \"description\": \"Does not grant access after Sep 2020\", \"expression\": \"request.time < timestamp('2020-10-01T00:00:00.000Z')\", } } ], \"etag\": \"BwWWja0YfJA=\", \"version\": 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time < timestamp('2020-10-01T00:00:00.000Z') etag: BwWWja0YfJA= version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).",
+      "description": "An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** ``` { \"bindings\": [ { \"role\": \"roles/resourcemanager.organizationAdmin\", \"members\": [ \"user:mike@example.com\", \"group:admins@example.com\", \"domain:google.com\", \"serviceAccount:my-project-id@appspot.gserviceaccount.com\" ] }, { \"role\": \"roles/resourcemanager.organizationViewer\", \"members\": [ \"user:eve@example.com\" ], \"condition\": { \"title\": \"expirable access\", \"description\": \"Does not grant access after Sep 2020\", \"expression\": \"request.time < timestamp('2020-10-01T00:00:00.000Z')\", } } ], \"etag\": \"BwWWja0YfJA=\", \"version\": 3 } ``` **YAML example:** ``` bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time < timestamp('2020-10-01T00:00:00.000Z') etag: BwWWja0YfJA= version: 3 ``` For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).",
       "id": "Policy",
       "properties": {
         "bindings": {
@@ -1032,23 +1133,32 @@
           "type": "string"
         },
         "method": {
-          "description": "Reauth method required by the policy.",
+          "description": "Reauth method requested.",
           "enum": [
             "METHOD_UNSPECIFIED",
             "LOGIN",
             "PASSWORD",
-            "SECURE_KEY"
+            "SECURE_KEY",
+            "ENROLLED_SECOND_FACTORS"
+          ],
+          "enumDeprecated": [
+            false,
+            false,
+            true,
+            false,
+            false
           ],
           "enumDescriptions": [
             "Reauthentication disabled.",
-            "Mimics the behavior as if the user had logged out and tried to log in again. Users with 2SV (2-step verification) enabled see their 2SV challenges if they did not opt to have their second factor responses saved. Apps Core (GSuites) admins can configure settings to disable 2SV cookies and require 2SV for all Apps Core users in their domains.",
-            "User must type their password.",
-            "User must use their secure key 2nd factor device."
+            "Prompts the user to log in again.",
+            "",
+            "User must use their secure key 2nd factor device.",
+            "User can use any enabled 2nd factor."
           ],
           "type": "string"
         },
         "policyType": {
-          "description": "How IAP determines the effective policy in cases of hierarchial policies. Policies are merged from higher in the hierarchy to lower in the hierarchy.",
+          "description": "How IAP determines the effective policy in cases of hierarchical policies. Policies are merged from higher in the hierarchy to lower in the hierarchy.",
           "enum": [
             "POLICY_TYPE_UNSPECIFIED",
             "MINIMUM",
@@ -1073,6 +1183,14 @@
     "Resource": {
       "id": "Resource",
       "properties": {
+        "expectedNextState": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "The proto or JSON formatted expected next state of the resource, wrapped in a google.protobuf.Any proto, against which the policy rules are evaluated. Services not integrated with custom org policy can omit this field. Services integrated with custom org policy must populate this field for all requests where the API call changes the state of the resource. Custom org policy backend uses these attributes to enforce custom org policies. When a proto is wrapped, it is generally the One Platform API proto. When a JSON string is wrapped, use `google.protobuf.StringValue` for the inner value. It is sufficient to pass just the max set of attributes that are allowed for use in custom constraints; other attributes can be omitted. See go/custom-constraints-org-policy-integration-guide for additional details.",
+          "type": "object"
+        },
         "labels": {
           "additionalProperties": {
             "type": "string"
@@ -1139,24 +1257,30 @@
       "id": "TunnelDestGroup",
       "properties": {
         "cidrs": {
-          "description": "null List of CIDRs that this group applies to.",
+          "description": "Unordered list. List of CIDRs that this group applies to.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "fqdns": {
-          "description": "null List of FQDNs that this group applies to.",
+          "description": "Unordered list. List of FQDNs that this group applies to.",
           "items": {
             "type": "string"
           },
           "type": "array"
         },
         "name": {
-          "description": "Required. Immutable. Identifier for the TunnelDestGroup. Must be unique within the project.",
+          "description": "Required. Immutable. Identifier for the TunnelDestGroup. Must be unique within the project and contain only lower case letters (a-z) and dashes (-).",
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "ValidateIapAttributeExpressionResponse": {
+      "description": "API requires a return message, but currently all response strings will fit in the status and public message. In the future, this response can hold AST validation info.",
+      "id": "ValidateIapAttributeExpressionResponse",
+      "properties": {},
       "type": "object"
     }
   },

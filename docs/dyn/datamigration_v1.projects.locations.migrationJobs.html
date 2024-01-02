@@ -84,8 +84,14 @@ h1, h2, h3 {
   <code><a href="#delete">delete(name, force=None, requestId=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Deletes a single migration job.</p>
 <p class="toc_element">
+  <code><a href="#demoteDestination">demoteDestination(name, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Demotes the destination database to become a read replica of the source. This is applicable for the following migrations: 1. MySQL to Cloud SQL (for MySQL) 2. PostgreSQL to Cloud SQL (for PostgreSQL) 3. PostgreSQL to AlloyDB.</p>
+<p class="toc_element">
   <code><a href="#generateSshScript">generateSshScript(migrationJob, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Generate a SSH configuration script to configure the reverse SSH connectivity.</p>
+<p class="toc_element">
+  <code><a href="#generateTcpProxyScript">generateTcpProxyScript(migrationJob, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Generate a TCP Proxy configuration script to configure a cloud-hosted VM running a TCP Proxy.</p>
 <p class="toc_element">
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets details of a single migration job.</p>
@@ -96,7 +102,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, filter=None, orderBy=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists migration jobs in a given project and location.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
+  <code><a href="#list_next">list_next()</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, body=None, requestId=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -136,11 +142,16 @@ h1, h2, h3 {
   <pre>Creates a new migration job in a given project and location.
 
 Args:
-  parent: string, Required. The parent, which owns this collection of migration jobs. (required)
+  parent: string, Required. The parent which owns this collection of migration jobs. (required)
   body: object, The request body.
     The object takes the form of:
 
 { # Represents a Database Migration Service migration job object.
+  &quot;cmekKeyName&quot;: &quot;A String&quot;, # The CMEK (customer-managed encryption key) fully qualified key name used for the migration job. This field supports all migration jobs types except for: * Mysql to Mysql (use the cmek field in the cloudsql connection profile instead). * PostrgeSQL to PostgreSQL (use the cmek field in the cloudsql connection profile instead). * PostgreSQL to AlloyDB (use the kms_key_name field in the alloydb connection profile instead). Each Cloud CMEK key has the following format: projects/[PROJECT]/locations/[REGION]/keyRings/[RING]/cryptoKeys/[KEY_NAME]
+  &quot;conversionWorkspace&quot;: { # A conversion workspace&#x27;s version. # The conversion workspace used by the migration.
+    &quot;commitId&quot;: &quot;A String&quot;, # The commit ID of the conversion workspace.
+    &quot;name&quot;: &quot;A String&quot;, # The resource name (URI) of the conversion workspace.
+  },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was created. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
   &quot;destination&quot;: &quot;A String&quot;, # Required. The resource name (URI) of the destination connection profile.
   &quot;destinationDatabase&quot;: { # A message defining the database engine and provider. # The database engine type and provider of the destination.
@@ -168,10 +179,14 @@ Args:
     ],
     &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
   },
+  &quot;filter&quot;: &quot;A String&quot;, # This field can be used to select the entities to migrate as part of the migration job. It uses AIP-160 notation to select a subset of the entities configured on the associated conversion-workspace. This field should not be set on migration-jobs that are not associated with a conversion workspace.
   &quot;labels&quot;: { # The resource labels for migration job to use to annotate any related underlying resources such as Compute Engine VMs. An object containing a list of &quot;key&quot;: &quot;value&quot; pairs. Example: `{ &quot;name&quot;: &quot;wrench&quot;, &quot;mass&quot;: &quot;1.3kg&quot;, &quot;count&quot;: &quot;3&quot; }`.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;name&quot;: &quot;A String&quot;, # The name (URI) of this migration job resource, in the form of: projects/{project}/locations/{location}/migrationJobs/{migrationJob}.
+  &quot;performanceConfig&quot;: { # Performance configuration definition. # Optional. Data dump parallelism settings used by the migration. Currently applicable only for MySQL to Cloud SQL for MySQL migrations only.
+    &quot;dumpParallelLevel&quot;: &quot;A String&quot;, # Initial dump parallelism level.
+  },
   &quot;phase&quot;: &quot;A String&quot;, # Output only. The current migration job phase.
   &quot;reverseSshConnectivity&quot;: { # The details needed to configure a reverse SSH tunnel between the source and destination databases. These details will be used when calling the generateSshScript method (see https://cloud.google.com/database-migration/docs/reference/rest/v1/projects.locations.migrationJobs/generateSshScript) to produce the script that will help set up the reverse SSH tunnel, and to set up the VPC peering between the Cloud SQL private network and the VPC. # The details needed to communicate to the source over Reverse SSH tunnel connectivity.
     &quot;vm&quot;: &quot;A String&quot;, # The name of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
@@ -185,7 +200,7 @@ Args:
     &quot;provider&quot;: &quot;A String&quot;, # The database provider.
   },
   &quot;state&quot;: &quot;A String&quot;, # The current migration job state.
-  &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the destination database&#x27;s public IP. You can retrieve the Cloud SQL instance&#x27;s public IP from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
+  &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the public IP of the destination database. You can retrieve the public IP of the Cloud SQL instance from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
   },
   &quot;type&quot;: &quot;A String&quot;, # Required. The migration job type.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was last updated. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
@@ -195,7 +210,7 @@ Args:
 }
 
   migrationJobId: string, Required. The ID of the instance to create.
-  requestId: string, A unique id used to identify the request. If the server receives two requests with the same id, then the second request will be ignored. It is recommended to always set this value to a UUID. The id must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
+  requestId: string, Optional. A unique ID used to identify the request. If the server receives two requests with the same ID, then the second request is ignored. It is recommended to always set this value to a UUID. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -219,7 +234,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -232,7 +247,7 @@ Returns:
 Args:
   name: string, Required. Name of the migration job resource to delete. (required)
   force: boolean, The destination CloudSQL connection profile is always deleted with the migration job. In case of force delete, the destination CloudSQL replica database is also deleted.
-  requestId: string, A unique id used to identify the request. If the server receives two requests with the same id, then the second request will be ignored. It is recommended to always set this value to a UUID. The id must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
+  requestId: string, A unique ID used to identify the request. If the server receives two requests with the same ID, then the second request is ignored. It is recommended to always set this value to a UUID. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -256,7 +271,48 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+  },
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="demoteDestination">demoteDestination(name, body=None, x__xgafv=None)</code>
+  <pre>Demotes the destination database to become a read replica of the source. This is applicable for the following migrations: 1. MySQL to Cloud SQL (for MySQL) 2. PostgreSQL to Cloud SQL (for PostgreSQL) 3. PostgreSQL to AlloyDB.
+
+Args:
+  name: string, Name of the migration job resource to demote its destination. (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request message for &#x27;DemoteDestination&#x27; request.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # This resource represents a long-running operation that is the result of a network API call.
+  &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.
+  &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # The error result of the operation in case of failure or cancellation.
+    &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+    &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+      {
+        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      },
+    ],
+    &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+  },
+  &quot;metadata&quot;: { # Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.
+    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -278,7 +334,7 @@ Args:
     &quot;vmMachineType&quot;: &quot;A String&quot;, # Required. VM instance machine type to create.
     &quot;vmZone&quot;: &quot;A String&quot;, # The Google Cloud Platform zone to create the VM in.
   },
-  &quot;vmPort&quot;: 42, # The port that will be open on the bastion host
+  &quot;vmPort&quot;: 42, # The port that will be open on the bastion host.
   &quot;vmSelectionConfig&quot;: { # VM selection configuration message # The VM selection configuration
     &quot;vmZone&quot;: &quot;A String&quot;, # Required. The Google Cloud Platform zone the VM is located.
   },
@@ -298,6 +354,35 @@ Returns:
 </div>
 
 <div class="method">
+    <code class="details" id="generateTcpProxyScript">generateTcpProxyScript(migrationJob, body=None, x__xgafv=None)</code>
+  <pre>Generate a TCP Proxy configuration script to configure a cloud-hosted VM running a TCP Proxy.
+
+Args:
+  migrationJob: string, Name of the migration job resource to generate the TCP Proxy script. (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request message for &#x27;GenerateTcpProxyScript&#x27; request.
+  &quot;vmMachineType&quot;: &quot;A String&quot;, # Required. The type of the Compute instance that will host the proxy.
+  &quot;vmName&quot;: &quot;A String&quot;, # Required. The name of the Compute instance that will host the proxy.
+  &quot;vmSubnet&quot;: &quot;A String&quot;, # Required. The name of the subnet the Compute instance will use for private connectivity. Must be supplied in the form of projects/{project}/regions/{region}/subnetworks/{subnetwork}. Note: the region for the subnet must match the Compute instance region.
+  &quot;vmZone&quot;: &quot;A String&quot;, # Optional. The Google Cloud Platform zone to create the VM in. The fully qualified name of the zone must be specified, including the region name, for example &quot;us-central1-b&quot;. If not specified, uses the &quot;-b&quot; zone of the destination Connection Profile&#x27;s region.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Response message for &#x27;GenerateTcpProxyScript&#x27; request.
+  &quot;script&quot;: &quot;A String&quot;, # The TCP Proxy configuration script.
+}</pre>
+</div>
+
+<div class="method">
     <code class="details" id="get">get(name, x__xgafv=None)</code>
   <pre>Gets details of a single migration job.
 
@@ -312,6 +397,11 @@ Returns:
   An object of the form:
 
     { # Represents a Database Migration Service migration job object.
+  &quot;cmekKeyName&quot;: &quot;A String&quot;, # The CMEK (customer-managed encryption key) fully qualified key name used for the migration job. This field supports all migration jobs types except for: * Mysql to Mysql (use the cmek field in the cloudsql connection profile instead). * PostrgeSQL to PostgreSQL (use the cmek field in the cloudsql connection profile instead). * PostgreSQL to AlloyDB (use the kms_key_name field in the alloydb connection profile instead). Each Cloud CMEK key has the following format: projects/[PROJECT]/locations/[REGION]/keyRings/[RING]/cryptoKeys/[KEY_NAME]
+  &quot;conversionWorkspace&quot;: { # A conversion workspace&#x27;s version. # The conversion workspace used by the migration.
+    &quot;commitId&quot;: &quot;A String&quot;, # The commit ID of the conversion workspace.
+    &quot;name&quot;: &quot;A String&quot;, # The resource name (URI) of the conversion workspace.
+  },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was created. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
   &quot;destination&quot;: &quot;A String&quot;, # Required. The resource name (URI) of the destination connection profile.
   &quot;destinationDatabase&quot;: { # A message defining the database engine and provider. # The database engine type and provider of the destination.
@@ -339,10 +429,14 @@ Returns:
     ],
     &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
   },
+  &quot;filter&quot;: &quot;A String&quot;, # This field can be used to select the entities to migrate as part of the migration job. It uses AIP-160 notation to select a subset of the entities configured on the associated conversion-workspace. This field should not be set on migration-jobs that are not associated with a conversion workspace.
   &quot;labels&quot;: { # The resource labels for migration job to use to annotate any related underlying resources such as Compute Engine VMs. An object containing a list of &quot;key&quot;: &quot;value&quot; pairs. Example: `{ &quot;name&quot;: &quot;wrench&quot;, &quot;mass&quot;: &quot;1.3kg&quot;, &quot;count&quot;: &quot;3&quot; }`.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;name&quot;: &quot;A String&quot;, # The name (URI) of this migration job resource, in the form of: projects/{project}/locations/{location}/migrationJobs/{migrationJob}.
+  &quot;performanceConfig&quot;: { # Performance configuration definition. # Optional. Data dump parallelism settings used by the migration. Currently applicable only for MySQL to Cloud SQL for MySQL migrations only.
+    &quot;dumpParallelLevel&quot;: &quot;A String&quot;, # Initial dump parallelism level.
+  },
   &quot;phase&quot;: &quot;A String&quot;, # Output only. The current migration job phase.
   &quot;reverseSshConnectivity&quot;: { # The details needed to configure a reverse SSH tunnel between the source and destination databases. These details will be used when calling the generateSshScript method (see https://cloud.google.com/database-migration/docs/reference/rest/v1/projects.locations.migrationJobs/generateSshScript) to produce the script that will help set up the reverse SSH tunnel, and to set up the VPC peering between the Cloud SQL private network and the VPC. # The details needed to communicate to the source over Reverse SSH tunnel connectivity.
     &quot;vm&quot;: &quot;A String&quot;, # The name of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
@@ -356,7 +450,7 @@ Returns:
     &quot;provider&quot;: &quot;A String&quot;, # The database provider.
   },
   &quot;state&quot;: &quot;A String&quot;, # The current migration job state.
-  &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the destination database&#x27;s public IP. You can retrieve the Cloud SQL instance&#x27;s public IP from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
+  &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the public IP of the destination database. You can retrieve the public IP of the Cloud SQL instance from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
   },
   &quot;type&quot;: &quot;A String&quot;, # Required. The migration job type.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was last updated. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
@@ -371,7 +465,7 @@ Returns:
   <pre>Gets the access control policy for a resource. Returns an empty policy if the resource exists and does not have a policy set.
 
 Args:
-  resource: string, REQUIRED: The resource for which the policy is being requested. See the operation documentation for the appropriate value for this field. (required)
+  resource: string, REQUIRED: The resource for which the policy is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field. (required)
   options_requestedPolicyVersion: integer, Optional. The maximum policy version that will be used to format the policy. Valid values are 0, 1, and 3. Requests specifying an invalid value will be rejected. Requests for policies with any conditional role bindings must specify version 3. Policies with no conditional role bindings may specify any valid value or leave the field unset. The policy in the response might use the policy version that you specified, or it might use a lower policy version. For example, if you specify version 3, but the policy has no conditional role bindings, the response uses version 1. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies).
   x__xgafv: string, V1 error format.
     Allowed values
@@ -381,9 +475,9 @@ Args:
 Returns:
   An object of the form:
 
-    { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) etag: BwWWja0YfJA= version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).
+    { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** ``` { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } ``` **YAML example:** ``` bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) etag: BwWWja0YfJA= version: 3 ``` For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).
   &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
-    { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
+    { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts `jose@example.com` from DATA_READ logging, and `aliya@example.com` from DATA_WRITE logging.
       &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
         { # Provides the configuration for logging a type of permissions. Example: { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; } ] } This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting jose@example.com from DATA_READ logging.
           &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of permission. Follows the same format of Binding.members.
@@ -403,7 +497,7 @@ Returns:
         &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
         &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
       },
-      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
+      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding.
         &quot;A String&quot;,
       ],
       &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -419,10 +513,10 @@ Returns:
   <pre>Lists migration jobs in a given project and location.
 
 Args:
-  parent: string, Required. The parent, which owns this collection of migrationJobs. (required)
+  parent: string, Required. The parent which owns this collection of migrationJobs. (required)
   filter: string, A filter expression that filters migration jobs listed in the response. The expression must specify the field name, a comparison operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The comparison operator must be either =, !=, &gt;, or &lt;. For example, list migration jobs created this year by specifying **createTime %gt; 2020-01-01T00:00:00.000000000Z.** You can also filter nested fields. For example, you could specify **reverseSshConnectivity.vmIp = &quot;1.2.3.4&quot;** to select all migration jobs connecting through the specific SSH tunnel bastion.
   orderBy: string, Sort the results based on the migration job name. Valid values are: &quot;name&quot;, &quot;name asc&quot;, and &quot;name desc&quot;.
-  pageSize: integer, The maximum number of migration jobs to return. The service may return fewer than this value. If unspecified, at most 50 migration jobs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000.
+  pageSize: integer, The maximum number of migration jobs to return. The service may return fewer than this value. If unspecified, at most 50 migration jobs will be returned. The maximum value is 1000; values above 1000 are coerced to 1000.
   pageToken: string, The nextPageToken value received in the previous call to migrationJobs.list, used in the subsequent request to retrieve the next page of results. On first call this should be left blank. When paginating, all other parameters provided to migrationJobs.list must match the call that provided the page token.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -435,6 +529,11 @@ Returns:
     { # Response message for &#x27;ListMigrationJobs&#x27; request.
   &quot;migrationJobs&quot;: [ # The list of migration jobs objects.
     { # Represents a Database Migration Service migration job object.
+      &quot;cmekKeyName&quot;: &quot;A String&quot;, # The CMEK (customer-managed encryption key) fully qualified key name used for the migration job. This field supports all migration jobs types except for: * Mysql to Mysql (use the cmek field in the cloudsql connection profile instead). * PostrgeSQL to PostgreSQL (use the cmek field in the cloudsql connection profile instead). * PostgreSQL to AlloyDB (use the kms_key_name field in the alloydb connection profile instead). Each Cloud CMEK key has the following format: projects/[PROJECT]/locations/[REGION]/keyRings/[RING]/cryptoKeys/[KEY_NAME]
+      &quot;conversionWorkspace&quot;: { # A conversion workspace&#x27;s version. # The conversion workspace used by the migration.
+        &quot;commitId&quot;: &quot;A String&quot;, # The commit ID of the conversion workspace.
+        &quot;name&quot;: &quot;A String&quot;, # The resource name (URI) of the conversion workspace.
+      },
       &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was created. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
       &quot;destination&quot;: &quot;A String&quot;, # Required. The resource name (URI) of the destination connection profile.
       &quot;destinationDatabase&quot;: { # A message defining the database engine and provider. # The database engine type and provider of the destination.
@@ -462,10 +561,14 @@ Returns:
         ],
         &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
       },
+      &quot;filter&quot;: &quot;A String&quot;, # This field can be used to select the entities to migrate as part of the migration job. It uses AIP-160 notation to select a subset of the entities configured on the associated conversion-workspace. This field should not be set on migration-jobs that are not associated with a conversion workspace.
       &quot;labels&quot;: { # The resource labels for migration job to use to annotate any related underlying resources such as Compute Engine VMs. An object containing a list of &quot;key&quot;: &quot;value&quot; pairs. Example: `{ &quot;name&quot;: &quot;wrench&quot;, &quot;mass&quot;: &quot;1.3kg&quot;, &quot;count&quot;: &quot;3&quot; }`.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
       &quot;name&quot;: &quot;A String&quot;, # The name (URI) of this migration job resource, in the form of: projects/{project}/locations/{location}/migrationJobs/{migrationJob}.
+      &quot;performanceConfig&quot;: { # Performance configuration definition. # Optional. Data dump parallelism settings used by the migration. Currently applicable only for MySQL to Cloud SQL for MySQL migrations only.
+        &quot;dumpParallelLevel&quot;: &quot;A String&quot;, # Initial dump parallelism level.
+      },
       &quot;phase&quot;: &quot;A String&quot;, # Output only. The current migration job phase.
       &quot;reverseSshConnectivity&quot;: { # The details needed to configure a reverse SSH tunnel between the source and destination databases. These details will be used when calling the generateSshScript method (see https://cloud.google.com/database-migration/docs/reference/rest/v1/projects.locations.migrationJobs/generateSshScript) to produce the script that will help set up the reverse SSH tunnel, and to set up the VPC peering between the Cloud SQL private network and the VPC. # The details needed to communicate to the source over Reverse SSH tunnel connectivity.
         &quot;vm&quot;: &quot;A String&quot;, # The name of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
@@ -479,7 +582,7 @@ Returns:
         &quot;provider&quot;: &quot;A String&quot;, # The database provider.
       },
       &quot;state&quot;: &quot;A String&quot;, # The current migration job state.
-      &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the destination database&#x27;s public IP. You can retrieve the Cloud SQL instance&#x27;s public IP from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
+      &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the public IP of the destination database. You can retrieve the public IP of the Cloud SQL instance from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
       },
       &quot;type&quot;: &quot;A String&quot;, # Required. The migration job type.
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was last updated. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
@@ -488,7 +591,7 @@ Returns:
       },
     },
   ],
-  &quot;nextPageToken&quot;: &quot;A String&quot;, # A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.
+  &quot;nextPageToken&quot;: &quot;A String&quot;, # A token which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.
   &quot;unreachable&quot;: [ # Locations that could not be reached.
     &quot;A String&quot;,
   ],
@@ -496,17 +599,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
+    <code class="details" id="list_next">list_next()</code>
   <pre>Retrieves the next page of results.
 
-Args:
-  previous_request: The request for the previous page. (required)
-  previous_response: The response from the request for the previous page. (required)
+        Args:
+          previous_request: The request for the previous page. (required)
+          previous_response: The response from the request for the previous page. (required)
 
-Returns:
-  A request object that you can call &#x27;execute()&#x27; on to request the next
-  page. Returns None if there are no more items in the collection.
-    </pre>
+        Returns:
+          A request object that you can call &#x27;execute()&#x27; on to request the next
+          page. Returns None if there are no more items in the collection.
+        </pre>
 </div>
 
 <div class="method">
@@ -519,6 +622,11 @@ Args:
     The object takes the form of:
 
 { # Represents a Database Migration Service migration job object.
+  &quot;cmekKeyName&quot;: &quot;A String&quot;, # The CMEK (customer-managed encryption key) fully qualified key name used for the migration job. This field supports all migration jobs types except for: * Mysql to Mysql (use the cmek field in the cloudsql connection profile instead). * PostrgeSQL to PostgreSQL (use the cmek field in the cloudsql connection profile instead). * PostgreSQL to AlloyDB (use the kms_key_name field in the alloydb connection profile instead). Each Cloud CMEK key has the following format: projects/[PROJECT]/locations/[REGION]/keyRings/[RING]/cryptoKeys/[KEY_NAME]
+  &quot;conversionWorkspace&quot;: { # A conversion workspace&#x27;s version. # The conversion workspace used by the migration.
+    &quot;commitId&quot;: &quot;A String&quot;, # The commit ID of the conversion workspace.
+    &quot;name&quot;: &quot;A String&quot;, # The resource name (URI) of the conversion workspace.
+  },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was created. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
   &quot;destination&quot;: &quot;A String&quot;, # Required. The resource name (URI) of the destination connection profile.
   &quot;destinationDatabase&quot;: { # A message defining the database engine and provider. # The database engine type and provider of the destination.
@@ -546,10 +654,14 @@ Args:
     ],
     &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
   },
+  &quot;filter&quot;: &quot;A String&quot;, # This field can be used to select the entities to migrate as part of the migration job. It uses AIP-160 notation to select a subset of the entities configured on the associated conversion-workspace. This field should not be set on migration-jobs that are not associated with a conversion workspace.
   &quot;labels&quot;: { # The resource labels for migration job to use to annotate any related underlying resources such as Compute Engine VMs. An object containing a list of &quot;key&quot;: &quot;value&quot; pairs. Example: `{ &quot;name&quot;: &quot;wrench&quot;, &quot;mass&quot;: &quot;1.3kg&quot;, &quot;count&quot;: &quot;3&quot; }`.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;name&quot;: &quot;A String&quot;, # The name (URI) of this migration job resource, in the form of: projects/{project}/locations/{location}/migrationJobs/{migrationJob}.
+  &quot;performanceConfig&quot;: { # Performance configuration definition. # Optional. Data dump parallelism settings used by the migration. Currently applicable only for MySQL to Cloud SQL for MySQL migrations only.
+    &quot;dumpParallelLevel&quot;: &quot;A String&quot;, # Initial dump parallelism level.
+  },
   &quot;phase&quot;: &quot;A String&quot;, # Output only. The current migration job phase.
   &quot;reverseSshConnectivity&quot;: { # The details needed to configure a reverse SSH tunnel between the source and destination databases. These details will be used when calling the generateSshScript method (see https://cloud.google.com/database-migration/docs/reference/rest/v1/projects.locations.migrationJobs/generateSshScript) to produce the script that will help set up the reverse SSH tunnel, and to set up the VPC peering between the Cloud SQL private network and the VPC. # The details needed to communicate to the source over Reverse SSH tunnel connectivity.
     &quot;vm&quot;: &quot;A String&quot;, # The name of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
@@ -563,7 +675,7 @@ Args:
     &quot;provider&quot;: &quot;A String&quot;, # The database provider.
   },
   &quot;state&quot;: &quot;A String&quot;, # The current migration job state.
-  &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the destination database&#x27;s public IP. You can retrieve the Cloud SQL instance&#x27;s public IP from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
+  &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the public IP of the destination database. You can retrieve the public IP of the Cloud SQL instance from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
   },
   &quot;type&quot;: &quot;A String&quot;, # Required. The migration job type.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was last updated. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
@@ -572,8 +684,8 @@ Args:
   },
 }
 
-  requestId: string, A unique id used to identify the request. If the server receives two requests with the same id, then the second request will be ignored. It is recommended to always set this value to a UUID. The id must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
-  updateMask: string, Required. Field mask is used to specify the fields to be overwritten in the migration job resource by the update.
+  requestId: string, A unique ID used to identify the request. If the server receives two requests with the same ID, then the second request is ignored. It is recommended to always set this value to a UUID. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
+  updateMask: string, Required. Field mask is used to specify the fields to be overwritten by the update in the conversion workspace resource.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -597,7 +709,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -638,7 +750,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -654,6 +766,7 @@ Args:
     The object takes the form of:
 
 { # Request message for &#x27;RestartMigrationJob&#x27; request.
+  &quot;skipValidation&quot;: True or False, # Optional. Restart the migration job without running prior configuration verification. Defaults to `false`.
 }
 
   x__xgafv: string, V1 error format.
@@ -679,7 +792,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -720,7 +833,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -731,14 +844,14 @@ Returns:
   <pre>Sets the access control policy on the specified resource. Replaces any existing policy. Can return `NOT_FOUND`, `INVALID_ARGUMENT`, and `PERMISSION_DENIED` errors.
 
 Args:
-  resource: string, REQUIRED: The resource for which the policy is being specified. See the operation documentation for the appropriate value for this field. (required)
+  resource: string, REQUIRED: The resource for which the policy is being specified. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field. (required)
   body: object, The request body.
     The object takes the form of:
 
 { # Request message for `SetIamPolicy` method.
-  &quot;policy&quot;: { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) etag: BwWWja0YfJA= version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/). # REQUIRED: The complete policy to be applied to the `resource`. The size of the policy is limited to a few 10s of KB. An empty policy is a valid policy but certain Google Cloud services (such as Projects) might reject them.
+  &quot;policy&quot;: { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** ``` { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } ``` **YAML example:** ``` bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) etag: BwWWja0YfJA= version: 3 ``` For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/). # REQUIRED: The complete policy to be applied to the `resource`. The size of the policy is limited to a few 10s of KB. An empty policy is a valid policy but certain Google Cloud services (such as Projects) might reject them.
     &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
-      { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
+      { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts `jose@example.com` from DATA_READ logging, and `aliya@example.com` from DATA_WRITE logging.
         &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
           { # Provides the configuration for logging a type of permissions. Example: { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; } ] } This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting jose@example.com from DATA_READ logging.
             &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of permission. Follows the same format of Binding.members.
@@ -758,7 +871,7 @@ Args:
           &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
           &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
         },
-        &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
+        &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding.
           &quot;A String&quot;,
         ],
         &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -778,9 +891,9 @@ Args:
 Returns:
   An object of the form:
 
-    { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } **YAML example:** bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) etag: BwWWja0YfJA= version: 3 For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).
+    { # An Identity and Access Management (IAM) policy, which specifies access controls for Google Cloud resources. A `Policy` is a collection of `bindings`. A `binding` binds one or more `members`, or principals, to a single `role`. Principals can be user accounts, service accounts, Google groups, and domains (such as G Suite). A `role` is a named list of permissions; each `role` can be an IAM predefined role or a user-created custom role. For some types of Google Cloud resources, a `binding` can also specify a `condition`, which is a logical expression that allows access to a resource only if the expression evaluates to `true`. A condition can add constraints based on attributes of the request, the resource, or both. To learn which resources support conditions in their IAM policies, see the [IAM documentation](https://cloud.google.com/iam/help/conditions/resource-policies). **JSON example:** ``` { &quot;bindings&quot;: [ { &quot;role&quot;: &quot;roles/resourcemanager.organizationAdmin&quot;, &quot;members&quot;: [ &quot;user:mike@example.com&quot;, &quot;group:admins@example.com&quot;, &quot;domain:google.com&quot;, &quot;serviceAccount:my-project-id@appspot.gserviceaccount.com&quot; ] }, { &quot;role&quot;: &quot;roles/resourcemanager.organizationViewer&quot;, &quot;members&quot;: [ &quot;user:eve@example.com&quot; ], &quot;condition&quot;: { &quot;title&quot;: &quot;expirable access&quot;, &quot;description&quot;: &quot;Does not grant access after Sep 2020&quot;, &quot;expression&quot;: &quot;request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;)&quot;, } } ], &quot;etag&quot;: &quot;BwWWja0YfJA=&quot;, &quot;version&quot;: 3 } ``` **YAML example:** ``` bindings: - members: - user:mike@example.com - group:admins@example.com - domain:google.com - serviceAccount:my-project-id@appspot.gserviceaccount.com role: roles/resourcemanager.organizationAdmin - members: - user:eve@example.com role: roles/resourcemanager.organizationViewer condition: title: expirable access description: Does not grant access after Sep 2020 expression: request.time &lt; timestamp(&#x27;2020-10-01T00:00:00.000Z&#x27;) etag: BwWWja0YfJA= version: 3 ``` For a description of IAM and its features, see the [IAM documentation](https://cloud.google.com/iam/docs/).
   &quot;auditConfigs&quot;: [ # Specifies cloud audit logging configuration for this policy.
-    { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging, and aliya@example.com from DATA_WRITE logging.
+    { # Specifies the audit configuration for a service. The configuration determines which permission types are logged, and what identities, if any, are exempted from logging. An AuditConfig must have one or more AuditLogConfigs. If there are AuditConfigs for both `allServices` and a specific service, the union of the two AuditConfigs is used for that service: the log_types specified in each AuditConfig are enabled, and the exempted_members in each AuditLogConfig are exempted. Example Policy with multiple AuditConfigs: { &quot;audit_configs&quot;: [ { &quot;service&quot;: &quot;allServices&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; }, { &quot;log_type&quot;: &quot;ADMIN_READ&quot; } ] }, { &quot;service&quot;: &quot;sampleservice.googleapis.com&quot;, &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot; }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot;, &quot;exempted_members&quot;: [ &quot;user:aliya@example.com&quot; ] } ] } ] } For sampleservice, this policy enables DATA_READ, DATA_WRITE and ADMIN_READ logging. It also exempts `jose@example.com` from DATA_READ logging, and `aliya@example.com` from DATA_WRITE logging.
       &quot;auditLogConfigs&quot;: [ # The configuration for logging of each type of permission.
         { # Provides the configuration for logging a type of permissions. Example: { &quot;audit_log_configs&quot;: [ { &quot;log_type&quot;: &quot;DATA_READ&quot;, &quot;exempted_members&quot;: [ &quot;user:jose@example.com&quot; ] }, { &quot;log_type&quot;: &quot;DATA_WRITE&quot; } ] } This enables &#x27;DATA_READ&#x27; and &#x27;DATA_WRITE&#x27; logging, while exempting jose@example.com from DATA_READ logging.
           &quot;exemptedMembers&quot;: [ # Specifies the identities that do not cause logging for this type of permission. Follows the same format of Binding.members.
@@ -800,7 +913,7 @@ Returns:
         &quot;location&quot;: &quot;A String&quot;, # Optional. String indicating the location of the expression for error reporting, e.g. a file name and a position in the file.
         &quot;title&quot;: &quot;A String&quot;, # Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.
       },
-      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`.
+      &quot;members&quot;: [ # Specifies the principals requesting access for a Google Cloud resource. `members` can have the following values: * `allUsers`: A special identifier that represents anyone who is on the internet; with or without a Google account. * `allAuthenticatedUsers`: A special identifier that represents anyone who is authenticated with a Google account or a service account. Does not include identities that come from external identity providers (IdPs) through identity federation. * `user:{emailid}`: An email address that represents a specific Google account. For example, `alice@example.com` . * `serviceAccount:{emailid}`: An email address that represents a Google service account. For example, `my-other-app@appspot.gserviceaccount.com`. * `serviceAccount:{projectid}.svc.id.goog[{namespace}/{kubernetes-sa}]`: An identifier for a [Kubernetes service account](https://cloud.google.com/kubernetes-engine/docs/how-to/kubernetes-service-accounts). For example, `my-project.svc.id.goog[my-namespace/my-kubernetes-sa]`. * `group:{emailid}`: An email address that represents a Google group. For example, `admins@example.com`. * `domain:{domain}`: The G Suite domain (primary) that represents all the users of that domain. For example, `google.com` or `example.com`. * `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a user that has been recently deleted. For example, `alice@example.com?uid=123456789012345678901`. If the user is recovered, this value reverts to `user:{emailid}` and the recovered user retains the role in the binding. * `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a service account that has been recently deleted. For example, `my-other-app@appspot.gserviceaccount.com?uid=123456789012345678901`. If the service account is undeleted, this value reverts to `serviceAccount:{emailid}` and the undeleted service account retains the role in the binding. * `deleted:group:{emailid}?uid={uniqueid}`: An email address (plus unique identifier) representing a Google group that has been recently deleted. For example, `admins@example.com?uid=123456789012345678901`. If the group is recovered, this value reverts to `group:{emailid}` and the recovered group retains the role in the binding.
         &quot;A String&quot;,
       ],
       &quot;role&quot;: &quot;A String&quot;, # Role that is assigned to the list of `members`, or principals. For example, `roles/viewer`, `roles/editor`, or `roles/owner`.
@@ -821,6 +934,7 @@ Args:
     The object takes the form of:
 
 { # Request message for &#x27;StartMigrationJob&#x27; request.
+  &quot;skipValidation&quot;: True or False, # Optional. Start the migration job without running prior configuration verification. Defaults to `false`.
 }
 
   x__xgafv: string, V1 error format.
@@ -846,7 +960,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -887,7 +1001,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -898,7 +1012,7 @@ Returns:
   <pre>Returns permissions that a caller has on the specified resource. If the resource does not exist, this will return an empty set of permissions, not a `NOT_FOUND` error. Note: This operation is designed to be used for building permission-aware UIs and command-line tools, not for authorization checking. This operation may &quot;fail open&quot; without warning.
 
 Args:
-  resource: string, REQUIRED: The resource for which the policy detail is being requested. See the operation documentation for the appropriate value for this field. (required)
+  resource: string, REQUIRED: The resource for which the policy detail is being requested. See [Resource names](https://cloud.google.com/apis/design/resource_names) for the appropriate value for this field. (required)
   body: object, The request body.
     The object takes the form of:
 
@@ -933,6 +1047,69 @@ Args:
     The object takes the form of:
 
 { # Request message for &#x27;VerifyMigrationJob&#x27; request.
+  &quot;migrationJob&quot;: { # Represents a Database Migration Service migration job object. # Optional. The changed migration job parameters to verify. It will not update the migration job.
+    &quot;cmekKeyName&quot;: &quot;A String&quot;, # The CMEK (customer-managed encryption key) fully qualified key name used for the migration job. This field supports all migration jobs types except for: * Mysql to Mysql (use the cmek field in the cloudsql connection profile instead). * PostrgeSQL to PostgreSQL (use the cmek field in the cloudsql connection profile instead). * PostgreSQL to AlloyDB (use the kms_key_name field in the alloydb connection profile instead). Each Cloud CMEK key has the following format: projects/[PROJECT]/locations/[REGION]/keyRings/[RING]/cryptoKeys/[KEY_NAME]
+    &quot;conversionWorkspace&quot;: { # A conversion workspace&#x27;s version. # The conversion workspace used by the migration.
+      &quot;commitId&quot;: &quot;A String&quot;, # The commit ID of the conversion workspace.
+      &quot;name&quot;: &quot;A String&quot;, # The resource name (URI) of the conversion workspace.
+    },
+    &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was created. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
+    &quot;destination&quot;: &quot;A String&quot;, # Required. The resource name (URI) of the destination connection profile.
+    &quot;destinationDatabase&quot;: { # A message defining the database engine and provider. # The database engine type and provider of the destination.
+      &quot;engine&quot;: &quot;A String&quot;, # The database engine.
+      &quot;provider&quot;: &quot;A String&quot;, # The database provider.
+    },
+    &quot;displayName&quot;: &quot;A String&quot;, # The migration job display name.
+    &quot;dumpFlags&quot;: { # Dump flags definition. # The initial dump flags. This field and the &quot;dump_path&quot; field are mutually exclusive.
+      &quot;dumpFlags&quot;: [ # The flags for the initial dump.
+        { # Dump flag definition.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the flag
+          &quot;value&quot;: &quot;A String&quot;, # The value of the flag.
+        },
+      ],
+    },
+    &quot;dumpPath&quot;: &quot;A String&quot;, # The path to the dump file in Google Cloud Storage, in the format: (gs://[BUCKET_NAME]/[OBJECT_NAME]). This field and the &quot;dump_flags&quot; field are mutually exclusive.
+    &quot;duration&quot;: &quot;A String&quot;, # Output only. The duration of the migration job (in seconds). A duration in seconds with up to nine fractional digits, terminated by &#x27;s&#x27;. Example: &quot;3.5s&quot;.
+    &quot;endTime&quot;: &quot;A String&quot;, # Output only. If the migration job is completed, the time when it was completed.
+    &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # Output only. The error details in case of state FAILED.
+      &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+      &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+        },
+      ],
+      &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+    },
+    &quot;filter&quot;: &quot;A String&quot;, # This field can be used to select the entities to migrate as part of the migration job. It uses AIP-160 notation to select a subset of the entities configured on the associated conversion-workspace. This field should not be set on migration-jobs that are not associated with a conversion workspace.
+    &quot;labels&quot;: { # The resource labels for migration job to use to annotate any related underlying resources such as Compute Engine VMs. An object containing a list of &quot;key&quot;: &quot;value&quot; pairs. Example: `{ &quot;name&quot;: &quot;wrench&quot;, &quot;mass&quot;: &quot;1.3kg&quot;, &quot;count&quot;: &quot;3&quot; }`.
+      &quot;a_key&quot;: &quot;A String&quot;,
+    },
+    &quot;name&quot;: &quot;A String&quot;, # The name (URI) of this migration job resource, in the form of: projects/{project}/locations/{location}/migrationJobs/{migrationJob}.
+    &quot;performanceConfig&quot;: { # Performance configuration definition. # Optional. Data dump parallelism settings used by the migration. Currently applicable only for MySQL to Cloud SQL for MySQL migrations only.
+      &quot;dumpParallelLevel&quot;: &quot;A String&quot;, # Initial dump parallelism level.
+    },
+    &quot;phase&quot;: &quot;A String&quot;, # Output only. The current migration job phase.
+    &quot;reverseSshConnectivity&quot;: { # The details needed to configure a reverse SSH tunnel between the source and destination databases. These details will be used when calling the generateSshScript method (see https://cloud.google.com/database-migration/docs/reference/rest/v1/projects.locations.migrationJobs/generateSshScript) to produce the script that will help set up the reverse SSH tunnel, and to set up the VPC peering between the Cloud SQL private network and the VPC. # The details needed to communicate to the source over Reverse SSH tunnel connectivity.
+      &quot;vm&quot;: &quot;A String&quot;, # The name of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
+      &quot;vmIp&quot;: &quot;A String&quot;, # Required. The IP of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
+      &quot;vmPort&quot;: 42, # Required. The forwarding port of the virtual machine (Compute Engine) used as the bastion server for the SSH tunnel.
+      &quot;vpc&quot;: &quot;A String&quot;, # The name of the VPC to peer with the Cloud SQL private network.
+    },
+    &quot;source&quot;: &quot;A String&quot;, # Required. The resource name (URI) of the source connection profile.
+    &quot;sourceDatabase&quot;: { # A message defining the database engine and provider. # The database engine type and provider of the source.
+      &quot;engine&quot;: &quot;A String&quot;, # The database engine.
+      &quot;provider&quot;: &quot;A String&quot;, # The database provider.
+    },
+    &quot;state&quot;: &quot;A String&quot;, # The current migration job state.
+    &quot;staticIpConnectivity&quot;: { # The source database will allow incoming connections from the public IP of the destination database. You can retrieve the public IP of the Cloud SQL instance from the Cloud SQL console or using Cloud SQL APIs. No additional configuration is required. # static ip connectivity data (default, no additional details needed).
+    },
+    &quot;type&quot;: &quot;A String&quot;, # Required. The migration job type.
+    &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the migration job resource was last updated. A timestamp in RFC3339 UTC &quot;Zulu&quot; format, accurate to nanoseconds. Example: &quot;2014-10-02T15:01:23.045123456Z&quot;.
+    &quot;vpcPeeringConnectivity&quot;: { # The details of the VPC where the source database is located in Google Cloud. We will use this information to set up the VPC peering connection between Cloud SQL and this VPC. # The details of the VPC network that the source database is located in.
+      &quot;vpc&quot;: &quot;A String&quot;, # The name of the VPC network to peer with the Cloud SQL private network.
+    },
+  },
+  &quot;updateMask&quot;: &quot;A String&quot;, # Optional. Field mask is used to specify the changed fields to be verified. It will not update the migration job.
 }
 
   x__xgafv: string, V1 error format.
@@ -958,7 +1135,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>

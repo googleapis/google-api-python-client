@@ -87,7 +87,7 @@ h1, h2, h3 {
   <code><a href="#list">list(projectId, datasetId, maxResults=None, pageToken=None)</a></code></p>
 <p class="firstline">Lists all models in the specified dataset. Requires the READER dataset role. After retrieving the list of models, you can get information about a particular model by calling the models.get method.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
+  <code><a href="#list_next">list_next()</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(projectId, datasetId, modelId, body=None)</a></code></p>
@@ -127,21 +127,22 @@ Returns:
   &quot;defaultTrialId&quot;: &quot;A String&quot;, # Output only. The default trial_id to use in TVFs when the trial_id is not passed in. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the best trial ID. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the smallest trial ID among all Pareto optimal trials.
   &quot;description&quot;: &quot;A String&quot;, # Optional. A user-friendly description of this model.
   &quot;encryptionConfiguration&quot;: { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the encryption configuration of the model data while stored in BigQuery storage. This field can be used with PatchModel to update encryption key for an already encrypted model.
-    &quot;kmsKeyName&quot;: &quot;A String&quot;, # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+    &quot;kmsKeyName&quot;: &quot;A String&quot;, # Optional. Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
   &quot;expirationTime&quot;: &quot;A String&quot;, # Optional. The time when this model expires, in milliseconds since the epoch. If not present, the model will persist indefinitely. Expired models will be deleted and their storage reclaimed. The defaultTableExpirationMs property of the encapsulating dataset can be used to set a default expirationTime on newly created models.
-  &quot;featureColumns&quot;: [ # Output only. Input feature columns that were used to train this model.
+  &quot;featureColumns&quot;: [ # Output only. Input feature columns for the model inference. If the model is trained with TRANSFORM clause, these are the input of the TRANSFORM clause.
     { # A field or a column.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
     },
   ],
@@ -654,13 +655,20 @@ Returns:
         },
       },
       &quot;hparams&quot;: { # Options used in model training. # The hyperprameters selected for this trial.
+        &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
         &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+        &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
         &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+        &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+        &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
         &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
         &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+        &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
         &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+        &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
         &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+        &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
         &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
         &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
         &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -675,10 +683,14 @@ Returns:
         &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
         &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
         &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+        &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
         &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
           &quot;A String&quot;,
         ],
         &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+        &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+          &quot;A String&quot;,
+        ],
         &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
         &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
           &quot;A String&quot;,
@@ -688,10 +700,12 @@ Returns:
         &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
           &quot;A String&quot;,
         ],
+        &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
         &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
         &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
         &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
         &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+        &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
         &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
         &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
         &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -702,10 +716,13 @@ Returns:
         &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
         &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
         &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+        &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
         &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
         &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
         &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+        &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
         &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+        &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
         &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
         &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
           &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -715,21 +732,33 @@ Returns:
         &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
         &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
         &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+        &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
         &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
         &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-        &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+        &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+        &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+        &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+        &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+        &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
         &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+        &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
         &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
         &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
         &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
           &quot;A String&quot;,
         ],
+        &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
         &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
         &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+        &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
         &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+        &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+          &quot;A String&quot;,
+        ],
         &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
         &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+        &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
       },
       &quot;startTimeMs&quot;: &quot;A String&quot;, # Starting time of the trial.
       &quot;status&quot;: &quot;A String&quot;, # The status of the trial.
@@ -740,14 +769,15 @@ Returns:
   &quot;labelColumns&quot;: [ # Output only. Label columns that were used to train this model. The output of the model will have a &quot;predicted_&quot; prefix to these columns.
     { # A field or a column.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
     },
   ],
@@ -757,17 +787,25 @@ Returns:
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this model was last modified, in millisecs since the epoch.
   &quot;location&quot;: &quot;A String&quot;, # Output only. The geographic location where the model resides. This value is inherited from the dataset.
   &quot;modelReference&quot;: { # Required. Unique identifier for this model.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this model.
-    &quot;modelId&quot;: &quot;A String&quot;, # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this model.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this model.
+    &quot;modelId&quot;: &quot;A String&quot;, # Required. The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this model.
   },
   &quot;modelType&quot;: &quot;A String&quot;, # Output only. Type of the model resource.
   &quot;optimalTrialIds&quot;: [ # Output only. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it only contains the best trial. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it contains all Pareto optimal trials sorted by trial_id.
     &quot;A String&quot;,
   ],
-  &quot;trainingRuns&quot;: [ # Output only. Information for all training runs in increasing order of start_time.
+  &quot;remoteModelInfo&quot;: { # Remote Model Info # Output only. Remote model info
+    &quot;connection&quot;: &quot;A String&quot;, # Output only. Fully qualified name of the user-provided connection object of the remote model. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Output only. The endpoint for remote model.
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Output only. Max number of rows in each batch sent to the remote service. If unset, the number of rows in each batch is set dynamically.
+    &quot;remoteModelVersion&quot;: &quot;A String&quot;, # Output only. The model version for LLM.
+    &quot;remoteServiceType&quot;: &quot;A String&quot;, # Output only. The remote service type for remote model.
+    &quot;speechRecognizer&quot;: &quot;A String&quot;, # Output only. The name of the speech recognizer to use for speech recognition. The expected format is `projects/{project}/locations/{location}/recognizers/{recognizer}`. Customers can specify this field at model creation. If not specified, a default recognizer `projects/{model project}/locations/global/recognizers/_` will be used. See more details at [recognizers](https://cloud.google.com/speech-to-text/v2/docs/reference/rest/v2/projects.locations.recognizers)
+  },
+  &quot;trainingRuns&quot;: [ # Information for all training runs in increasing order of start_time.
     { # Information about a single training query run for the model.
-      &quot;classLevelGlobalExplanations&quot;: [ # Global explanation contains the explanation of top features on the class level. Applies to classification models only.
+      &quot;classLevelGlobalExplanations&quot;: [ # Output only. Global explanation contains the explanation of top features on the class level. Applies to classification models only.
         { # Global explanations containing the top most important features after training.
           &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
           &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
@@ -778,7 +816,7 @@ Returns:
           ],
         },
       ],
-      &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Data split result of the training run. Only set when the input data is actually split.
+      &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Output only. Data split result of the training run. Only set when the input data is actually split.
         &quot;evaluationTable&quot;: { # Table reference of the evaluation data after split.
           &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this table.
           &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this table.
@@ -795,7 +833,7 @@ Returns:
           &quot;tableId&quot;: &quot;A String&quot;, # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
         },
       },
-      &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # The evaluation metrics over training/eval data that were computed at the end of training.
+      &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # Output only. The evaluation metrics over training/eval data that were computed at the end of training.
         &quot;arimaForecastingMetrics&quot;: { # Model evaluation metrics for ARIMA forecasting models. # Populated for ARIMA models.
           &quot;arimaFittingMetrics&quot;: [ # Arima model fitting metrics.
             { # ARIMA model fitting metrics.
@@ -940,7 +978,7 @@ Returns:
           &quot;rSquared&quot;: 3.14, # R^2 score. This corresponds to r2_score in ML.EVALUATE.
         },
       },
-      &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
+      &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Output only. Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
         &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
         &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
           { # Explanation for a single feature.
@@ -949,7 +987,7 @@ Returns:
           },
         ],
       },
-      &quot;results&quot;: [ # Output of each iteration run, results.size() &lt;= max_iterations.
+      &quot;results&quot;: [ # Output only. Output of each iteration run, results.size() &lt;= max_iterations.
         {
           &quot;durationMs&quot;: &quot;A String&quot;, # Time taken to run the iteration in milliseconds.
           &quot;evalLoss&quot;: 3.14, # Loss computed on the eval data at the end of iteration.
@@ -958,15 +996,22 @@ Returns:
           &quot;trainingLoss&quot;: 3.14, # Loss computed on the training data at the end of iteration.
         },
       ],
-      &quot;startTime&quot;: &quot;A String&quot;, # The start time of this training run.
-      &quot;trainingOptions&quot;: { # Options used in model training. # Options that were used for this training run, includes user specified and default options that were used.
+      &quot;startTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run.
+      &quot;trainingOptions&quot;: { # Options used in model training. # Output only. Options that were used for this training run, includes user specified and default options that were used.
+        &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
         &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+        &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
         &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+        &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+        &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
         &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
         &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+        &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
         &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+        &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
         &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+        &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
         &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
         &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
         &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -981,10 +1026,14 @@ Returns:
         &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
         &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
         &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+        &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
         &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
           &quot;A String&quot;,
         ],
         &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+        &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+          &quot;A String&quot;,
+        ],
         &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
         &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
           &quot;A String&quot;,
@@ -994,10 +1043,12 @@ Returns:
         &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
           &quot;A String&quot;,
         ],
+        &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
         &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
         &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
         &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
         &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+        &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
         &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
         &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
         &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -1008,10 +1059,13 @@ Returns:
         &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
         &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
         &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+        &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
         &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
         &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
         &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+        &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
         &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+        &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
         &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
         &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
           &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -1021,24 +1075,53 @@ Returns:
         &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
         &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
         &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+        &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
         &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
         &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-        &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+        &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+        &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+        &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+        &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+        &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
         &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+        &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
         &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
         &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
         &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
           &quot;A String&quot;,
         ],
+        &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
         &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
         &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+        &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
         &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+        &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+          &quot;A String&quot;,
+        ],
         &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
         &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+        &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
       },
-      &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in Vertex AI Model Registry for this training run
-      &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # The model version in Vertex AI Model Registry for this training run
+      &quot;trainingStartTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run, in milliseconds since epoch.
+      &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+      &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # Output only. The model version in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+    },
+  ],
+  &quot;transformColumns&quot;: [ # Output only. This field will be populated if a TRANSFORM clause was used to train a model. TRANSFORM clause (if used) takes feature_columns as input and outputs transform_columns. transform_columns then are used to train the model.
+    { # Information about a single transform column.
+      &quot;name&quot;: &quot;A String&quot;, # Output only. Name of the column.
+      &quot;transformSql&quot;: &quot;A String&quot;, # Output only. The SQL expression used in the column transform.
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Output only. Data type of the column after the transform.
+        &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
+            # Object with schema name: StandardSqlField
+          ],
+        },
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+      },
     },
   ],
 }</pre>
@@ -1057,7 +1140,7 @@ Args:
 Returns:
   An object of the form:
 
-    {
+    { # Response format for a single page when listing BigQuery ML models.
   &quot;models&quot;: [ # Models in the requested dataset. Only the following fields are populated: model_reference, model_type, creation_time, last_modified_time and labels.
     {
       &quot;bestTrialId&quot;: &quot;A String&quot;, # The best trial_id across all training runs.
@@ -1065,21 +1148,22 @@ Returns:
       &quot;defaultTrialId&quot;: &quot;A String&quot;, # Output only. The default trial_id to use in TVFs when the trial_id is not passed in. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the best trial ID. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the smallest trial ID among all Pareto optimal trials.
       &quot;description&quot;: &quot;A String&quot;, # Optional. A user-friendly description of this model.
       &quot;encryptionConfiguration&quot;: { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the encryption configuration of the model data while stored in BigQuery storage. This field can be used with PatchModel to update encryption key for an already encrypted model.
-        &quot;kmsKeyName&quot;: &quot;A String&quot;, # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+        &quot;kmsKeyName&quot;: &quot;A String&quot;, # Optional. Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
       },
       &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
       &quot;expirationTime&quot;: &quot;A String&quot;, # Optional. The time when this model expires, in milliseconds since the epoch. If not present, the model will persist indefinitely. Expired models will be deleted and their storage reclaimed. The defaultTableExpirationMs property of the encapsulating dataset can be used to set a default expirationTime on newly created models.
-      &quot;featureColumns&quot;: [ # Output only. Input feature columns that were used to train this model.
+      &quot;featureColumns&quot;: [ # Output only. Input feature columns for the model inference. If the model is trained with TRANSFORM clause, these are the input of the TRANSFORM clause.
         { # A field or a column.
           &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-          &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+          &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
             &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-            &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-              &quot;fields&quot;: [
+            &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+            &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+              &quot;fields&quot;: [ # Fields within the struct.
                 # Object with schema name: StandardSqlField
               ],
             },
-            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
           },
         },
       ],
@@ -1592,13 +1676,20 @@ Returns:
             },
           },
           &quot;hparams&quot;: { # Options used in model training. # The hyperprameters selected for this trial.
+            &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
             &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+            &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
             &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-            &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+            &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+            &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+            &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
             &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
             &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+            &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
             &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+            &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
             &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+            &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
             &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
             &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
             &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -1613,10 +1704,14 @@ Returns:
             &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
             &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
             &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+            &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
             &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
               &quot;A String&quot;,
             ],
             &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+            &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+              &quot;A String&quot;,
+            ],
             &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
             &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
               &quot;A String&quot;,
@@ -1626,10 +1721,12 @@ Returns:
             &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
               &quot;A String&quot;,
             ],
+            &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
             &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
             &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
             &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
             &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+            &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
             &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
             &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
             &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -1640,10 +1737,13 @@ Returns:
             &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
             &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
             &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+            &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
             &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
             &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
             &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+            &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
             &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+            &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
             &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
             &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
               &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -1653,21 +1753,33 @@ Returns:
             &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
             &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
             &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+            &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
             &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
             &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-            &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-            &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+            &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+            &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+            &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+            &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+            &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+            &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
             &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+            &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
             &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
             &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
             &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
               &quot;A String&quot;,
             ],
+            &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
             &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
             &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+            &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
             &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+            &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+              &quot;A String&quot;,
+            ],
             &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
             &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+            &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
           },
           &quot;startTimeMs&quot;: &quot;A String&quot;, # Starting time of the trial.
           &quot;status&quot;: &quot;A String&quot;, # The status of the trial.
@@ -1678,14 +1790,15 @@ Returns:
       &quot;labelColumns&quot;: [ # Output only. Label columns that were used to train this model. The output of the model will have a &quot;predicted_&quot; prefix to these columns.
         { # A field or a column.
           &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-          &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+          &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
             &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-            &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-              &quot;fields&quot;: [
+            &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+            &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+              &quot;fields&quot;: [ # Fields within the struct.
                 # Object with schema name: StandardSqlField
               ],
             },
-            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
           },
         },
       ],
@@ -1695,17 +1808,25 @@ Returns:
       &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this model was last modified, in millisecs since the epoch.
       &quot;location&quot;: &quot;A String&quot;, # Output only. The geographic location where the model resides. This value is inherited from the dataset.
       &quot;modelReference&quot;: { # Required. Unique identifier for this model.
-        &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this model.
-        &quot;modelId&quot;: &quot;A String&quot;, # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-        &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this model.
+        &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this model.
+        &quot;modelId&quot;: &quot;A String&quot;, # Required. The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+        &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this model.
       },
       &quot;modelType&quot;: &quot;A String&quot;, # Output only. Type of the model resource.
       &quot;optimalTrialIds&quot;: [ # Output only. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it only contains the best trial. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it contains all Pareto optimal trials sorted by trial_id.
         &quot;A String&quot;,
       ],
-      &quot;trainingRuns&quot;: [ # Output only. Information for all training runs in increasing order of start_time.
+      &quot;remoteModelInfo&quot;: { # Remote Model Info # Output only. Remote model info
+        &quot;connection&quot;: &quot;A String&quot;, # Output only. Fully qualified name of the user-provided connection object of the remote model. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+        &quot;endpoint&quot;: &quot;A String&quot;, # Output only. The endpoint for remote model.
+        &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Output only. Max number of rows in each batch sent to the remote service. If unset, the number of rows in each batch is set dynamically.
+        &quot;remoteModelVersion&quot;: &quot;A String&quot;, # Output only. The model version for LLM.
+        &quot;remoteServiceType&quot;: &quot;A String&quot;, # Output only. The remote service type for remote model.
+        &quot;speechRecognizer&quot;: &quot;A String&quot;, # Output only. The name of the speech recognizer to use for speech recognition. The expected format is `projects/{project}/locations/{location}/recognizers/{recognizer}`. Customers can specify this field at model creation. If not specified, a default recognizer `projects/{model project}/locations/global/recognizers/_` will be used. See more details at [recognizers](https://cloud.google.com/speech-to-text/v2/docs/reference/rest/v2/projects.locations.recognizers)
+      },
+      &quot;trainingRuns&quot;: [ # Information for all training runs in increasing order of start_time.
         { # Information about a single training query run for the model.
-          &quot;classLevelGlobalExplanations&quot;: [ # Global explanation contains the explanation of top features on the class level. Applies to classification models only.
+          &quot;classLevelGlobalExplanations&quot;: [ # Output only. Global explanation contains the explanation of top features on the class level. Applies to classification models only.
             { # Global explanations containing the top most important features after training.
               &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
               &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
@@ -1716,7 +1837,7 @@ Returns:
               ],
             },
           ],
-          &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Data split result of the training run. Only set when the input data is actually split.
+          &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Output only. Data split result of the training run. Only set when the input data is actually split.
             &quot;evaluationTable&quot;: { # Table reference of the evaluation data after split.
               &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this table.
               &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this table.
@@ -1733,7 +1854,7 @@ Returns:
               &quot;tableId&quot;: &quot;A String&quot;, # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
             },
           },
-          &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # The evaluation metrics over training/eval data that were computed at the end of training.
+          &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # Output only. The evaluation metrics over training/eval data that were computed at the end of training.
             &quot;arimaForecastingMetrics&quot;: { # Model evaluation metrics for ARIMA forecasting models. # Populated for ARIMA models.
               &quot;arimaFittingMetrics&quot;: [ # Arima model fitting metrics.
                 { # ARIMA model fitting metrics.
@@ -1878,7 +1999,7 @@ Returns:
               &quot;rSquared&quot;: 3.14, # R^2 score. This corresponds to r2_score in ML.EVALUATE.
             },
           },
-          &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
+          &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Output only. Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
             &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
             &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
               { # Explanation for a single feature.
@@ -1887,7 +2008,7 @@ Returns:
               },
             ],
           },
-          &quot;results&quot;: [ # Output of each iteration run, results.size() &lt;= max_iterations.
+          &quot;results&quot;: [ # Output only. Output of each iteration run, results.size() &lt;= max_iterations.
             {
               &quot;durationMs&quot;: &quot;A String&quot;, # Time taken to run the iteration in milliseconds.
               &quot;evalLoss&quot;: 3.14, # Loss computed on the eval data at the end of iteration.
@@ -1896,15 +2017,22 @@ Returns:
               &quot;trainingLoss&quot;: 3.14, # Loss computed on the training data at the end of iteration.
             },
           ],
-          &quot;startTime&quot;: &quot;A String&quot;, # The start time of this training run.
-          &quot;trainingOptions&quot;: { # Options used in model training. # Options that were used for this training run, includes user specified and default options that were used.
+          &quot;startTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run.
+          &quot;trainingOptions&quot;: { # Options used in model training. # Output only. Options that were used for this training run, includes user specified and default options that were used.
+            &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
             &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+            &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
             &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-            &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+            &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+            &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+            &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
             &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
             &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+            &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
             &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+            &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
             &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+            &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
             &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
             &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
             &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -1919,10 +2047,14 @@ Returns:
             &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
             &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
             &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+            &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
             &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
               &quot;A String&quot;,
             ],
             &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+            &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+              &quot;A String&quot;,
+            ],
             &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
             &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
               &quot;A String&quot;,
@@ -1932,10 +2064,12 @@ Returns:
             &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
               &quot;A String&quot;,
             ],
+            &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
             &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
             &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
             &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
             &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+            &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
             &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
             &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
             &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -1946,10 +2080,13 @@ Returns:
             &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
             &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
             &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+            &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
             &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
             &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
             &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+            &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
             &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+            &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
             &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
             &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
               &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -1959,24 +2096,53 @@ Returns:
             &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
             &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
             &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+            &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
             &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
             &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-            &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-            &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+            &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+            &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+            &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+            &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+            &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+            &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
             &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+            &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
             &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
             &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
             &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
               &quot;A String&quot;,
             ],
+            &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
             &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
             &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+            &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
             &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+            &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+              &quot;A String&quot;,
+            ],
             &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
             &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+            &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
           },
-          &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in Vertex AI Model Registry for this training run
-          &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # The model version in Vertex AI Model Registry for this training run
+          &quot;trainingStartTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run, in milliseconds since epoch.
+          &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+          &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # Output only. The model version in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+        },
+      ],
+      &quot;transformColumns&quot;: [ # Output only. This field will be populated if a TRANSFORM clause was used to train a model. TRANSFORM clause (if used) takes feature_columns as input and outputs transform_columns. transform_columns then are used to train the model.
+        { # Information about a single transform column.
+          &quot;name&quot;: &quot;A String&quot;, # Output only. Name of the column.
+          &quot;transformSql&quot;: &quot;A String&quot;, # Output only. The SQL expression used in the column transform.
+          &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Output only. Data type of the column after the transform.
+            &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
+            &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+            &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+              &quot;fields&quot;: [ # Fields within the struct.
+                # Object with schema name: StandardSqlField
+              ],
+            },
+            &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+          },
         },
       ],
     },
@@ -1986,17 +2152,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
+    <code class="details" id="list_next">list_next()</code>
   <pre>Retrieves the next page of results.
 
-Args:
-  previous_request: The request for the previous page. (required)
-  previous_response: The response from the request for the previous page. (required)
+        Args:
+          previous_request: The request for the previous page. (required)
+          previous_response: The response from the request for the previous page. (required)
 
-Returns:
-  A request object that you can call &#x27;execute()&#x27; on to request the next
-  page. Returns None if there are no more items in the collection.
-    </pre>
+        Returns:
+          A request object that you can call &#x27;execute()&#x27; on to request the next
+          page. Returns None if there are no more items in the collection.
+        </pre>
 </div>
 
 <div class="method">
@@ -2016,21 +2182,22 @@ Args:
   &quot;defaultTrialId&quot;: &quot;A String&quot;, # Output only. The default trial_id to use in TVFs when the trial_id is not passed in. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the best trial ID. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the smallest trial ID among all Pareto optimal trials.
   &quot;description&quot;: &quot;A String&quot;, # Optional. A user-friendly description of this model.
   &quot;encryptionConfiguration&quot;: { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the encryption configuration of the model data while stored in BigQuery storage. This field can be used with PatchModel to update encryption key for an already encrypted model.
-    &quot;kmsKeyName&quot;: &quot;A String&quot;, # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+    &quot;kmsKeyName&quot;: &quot;A String&quot;, # Optional. Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
   &quot;expirationTime&quot;: &quot;A String&quot;, # Optional. The time when this model expires, in milliseconds since the epoch. If not present, the model will persist indefinitely. Expired models will be deleted and their storage reclaimed. The defaultTableExpirationMs property of the encapsulating dataset can be used to set a default expirationTime on newly created models.
-  &quot;featureColumns&quot;: [ # Output only. Input feature columns that were used to train this model.
+  &quot;featureColumns&quot;: [ # Output only. Input feature columns for the model inference. If the model is trained with TRANSFORM clause, these are the input of the TRANSFORM clause.
     { # A field or a column.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
     },
   ],
@@ -2543,13 +2710,20 @@ Args:
         },
       },
       &quot;hparams&quot;: { # Options used in model training. # The hyperprameters selected for this trial.
+        &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
         &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+        &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
         &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+        &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+        &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
         &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
         &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+        &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
         &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+        &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
         &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+        &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
         &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
         &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
         &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -2564,10 +2738,14 @@ Args:
         &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
         &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
         &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+        &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
         &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
           &quot;A String&quot;,
         ],
         &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+        &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+          &quot;A String&quot;,
+        ],
         &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
         &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
           &quot;A String&quot;,
@@ -2577,10 +2755,12 @@ Args:
         &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
           &quot;A String&quot;,
         ],
+        &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
         &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
         &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
         &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
         &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+        &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
         &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
         &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
         &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -2591,10 +2771,13 @@ Args:
         &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
         &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
         &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+        &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
         &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
         &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
         &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+        &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
         &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+        &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
         &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
         &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
           &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -2604,21 +2787,33 @@ Args:
         &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
         &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
         &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+        &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
         &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
         &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-        &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+        &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+        &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+        &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+        &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+        &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
         &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+        &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
         &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
         &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
         &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
           &quot;A String&quot;,
         ],
+        &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
         &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
         &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+        &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
         &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+        &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+          &quot;A String&quot;,
+        ],
         &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
         &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+        &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
       },
       &quot;startTimeMs&quot;: &quot;A String&quot;, # Starting time of the trial.
       &quot;status&quot;: &quot;A String&quot;, # The status of the trial.
@@ -2629,14 +2824,15 @@ Args:
   &quot;labelColumns&quot;: [ # Output only. Label columns that were used to train this model. The output of the model will have a &quot;predicted_&quot; prefix to these columns.
     { # A field or a column.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
     },
   ],
@@ -2646,17 +2842,25 @@ Args:
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this model was last modified, in millisecs since the epoch.
   &quot;location&quot;: &quot;A String&quot;, # Output only. The geographic location where the model resides. This value is inherited from the dataset.
   &quot;modelReference&quot;: { # Required. Unique identifier for this model.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this model.
-    &quot;modelId&quot;: &quot;A String&quot;, # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this model.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this model.
+    &quot;modelId&quot;: &quot;A String&quot;, # Required. The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this model.
   },
   &quot;modelType&quot;: &quot;A String&quot;, # Output only. Type of the model resource.
   &quot;optimalTrialIds&quot;: [ # Output only. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it only contains the best trial. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it contains all Pareto optimal trials sorted by trial_id.
     &quot;A String&quot;,
   ],
-  &quot;trainingRuns&quot;: [ # Output only. Information for all training runs in increasing order of start_time.
+  &quot;remoteModelInfo&quot;: { # Remote Model Info # Output only. Remote model info
+    &quot;connection&quot;: &quot;A String&quot;, # Output only. Fully qualified name of the user-provided connection object of the remote model. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Output only. The endpoint for remote model.
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Output only. Max number of rows in each batch sent to the remote service. If unset, the number of rows in each batch is set dynamically.
+    &quot;remoteModelVersion&quot;: &quot;A String&quot;, # Output only. The model version for LLM.
+    &quot;remoteServiceType&quot;: &quot;A String&quot;, # Output only. The remote service type for remote model.
+    &quot;speechRecognizer&quot;: &quot;A String&quot;, # Output only. The name of the speech recognizer to use for speech recognition. The expected format is `projects/{project}/locations/{location}/recognizers/{recognizer}`. Customers can specify this field at model creation. If not specified, a default recognizer `projects/{model project}/locations/global/recognizers/_` will be used. See more details at [recognizers](https://cloud.google.com/speech-to-text/v2/docs/reference/rest/v2/projects.locations.recognizers)
+  },
+  &quot;trainingRuns&quot;: [ # Information for all training runs in increasing order of start_time.
     { # Information about a single training query run for the model.
-      &quot;classLevelGlobalExplanations&quot;: [ # Global explanation contains the explanation of top features on the class level. Applies to classification models only.
+      &quot;classLevelGlobalExplanations&quot;: [ # Output only. Global explanation contains the explanation of top features on the class level. Applies to classification models only.
         { # Global explanations containing the top most important features after training.
           &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
           &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
@@ -2667,7 +2871,7 @@ Args:
           ],
         },
       ],
-      &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Data split result of the training run. Only set when the input data is actually split.
+      &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Output only. Data split result of the training run. Only set when the input data is actually split.
         &quot;evaluationTable&quot;: { # Table reference of the evaluation data after split.
           &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this table.
           &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this table.
@@ -2684,7 +2888,7 @@ Args:
           &quot;tableId&quot;: &quot;A String&quot;, # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
         },
       },
-      &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # The evaluation metrics over training/eval data that were computed at the end of training.
+      &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # Output only. The evaluation metrics over training/eval data that were computed at the end of training.
         &quot;arimaForecastingMetrics&quot;: { # Model evaluation metrics for ARIMA forecasting models. # Populated for ARIMA models.
           &quot;arimaFittingMetrics&quot;: [ # Arima model fitting metrics.
             { # ARIMA model fitting metrics.
@@ -2829,7 +3033,7 @@ Args:
           &quot;rSquared&quot;: 3.14, # R^2 score. This corresponds to r2_score in ML.EVALUATE.
         },
       },
-      &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
+      &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Output only. Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
         &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
         &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
           { # Explanation for a single feature.
@@ -2838,7 +3042,7 @@ Args:
           },
         ],
       },
-      &quot;results&quot;: [ # Output of each iteration run, results.size() &lt;= max_iterations.
+      &quot;results&quot;: [ # Output only. Output of each iteration run, results.size() &lt;= max_iterations.
         {
           &quot;durationMs&quot;: &quot;A String&quot;, # Time taken to run the iteration in milliseconds.
           &quot;evalLoss&quot;: 3.14, # Loss computed on the eval data at the end of iteration.
@@ -2847,15 +3051,22 @@ Args:
           &quot;trainingLoss&quot;: 3.14, # Loss computed on the training data at the end of iteration.
         },
       ],
-      &quot;startTime&quot;: &quot;A String&quot;, # The start time of this training run.
-      &quot;trainingOptions&quot;: { # Options used in model training. # Options that were used for this training run, includes user specified and default options that were used.
+      &quot;startTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run.
+      &quot;trainingOptions&quot;: { # Options used in model training. # Output only. Options that were used for this training run, includes user specified and default options that were used.
+        &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
         &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+        &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
         &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+        &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+        &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
         &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
         &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+        &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
         &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+        &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
         &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+        &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
         &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
         &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
         &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -2870,10 +3081,14 @@ Args:
         &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
         &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
         &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+        &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
         &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
           &quot;A String&quot;,
         ],
         &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+        &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+          &quot;A String&quot;,
+        ],
         &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
         &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
           &quot;A String&quot;,
@@ -2883,10 +3098,12 @@ Args:
         &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
           &quot;A String&quot;,
         ],
+        &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
         &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
         &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
         &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
         &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+        &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
         &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
         &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
         &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -2897,10 +3114,13 @@ Args:
         &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
         &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
         &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+        &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
         &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
         &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
         &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+        &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
         &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+        &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
         &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
         &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
           &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -2910,24 +3130,53 @@ Args:
         &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
         &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
         &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+        &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
         &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
         &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-        &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+        &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+        &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+        &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+        &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+        &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
         &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+        &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
         &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
         &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
         &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
           &quot;A String&quot;,
         ],
+        &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
         &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
         &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+        &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
         &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+        &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+          &quot;A String&quot;,
+        ],
         &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
         &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+        &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
       },
-      &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in Vertex AI Model Registry for this training run
-      &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # The model version in Vertex AI Model Registry for this training run
+      &quot;trainingStartTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run, in milliseconds since epoch.
+      &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+      &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # Output only. The model version in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+    },
+  ],
+  &quot;transformColumns&quot;: [ # Output only. This field will be populated if a TRANSFORM clause was used to train a model. TRANSFORM clause (if used) takes feature_columns as input and outputs transform_columns. transform_columns then are used to train the model.
+    { # Information about a single transform column.
+      &quot;name&quot;: &quot;A String&quot;, # Output only. Name of the column.
+      &quot;transformSql&quot;: &quot;A String&quot;, # Output only. The SQL expression used in the column transform.
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Output only. Data type of the column after the transform.
+        &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
+            # Object with schema name: StandardSqlField
+          ],
+        },
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+      },
     },
   ],
 }
@@ -2942,21 +3191,22 @@ Returns:
   &quot;defaultTrialId&quot;: &quot;A String&quot;, # Output only. The default trial_id to use in TVFs when the trial_id is not passed in. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the best trial ID. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, this is the smallest trial ID among all Pareto optimal trials.
   &quot;description&quot;: &quot;A String&quot;, # Optional. A user-friendly description of this model.
   &quot;encryptionConfiguration&quot;: { # Custom encryption configuration (e.g., Cloud KMS keys). This shows the encryption configuration of the model data while stored in BigQuery storage. This field can be used with PatchModel to update encryption key for an already encrypted model.
-    &quot;kmsKeyName&quot;: &quot;A String&quot;, # [Optional] Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
+    &quot;kmsKeyName&quot;: &quot;A String&quot;, # Optional. Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key.
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
   &quot;expirationTime&quot;: &quot;A String&quot;, # Optional. The time when this model expires, in milliseconds since the epoch. If not present, the model will persist indefinitely. Expired models will be deleted and their storage reclaimed. The defaultTableExpirationMs property of the encapsulating dataset can be used to set a default expirationTime on newly created models.
-  &quot;featureColumns&quot;: [ # Output only. Input feature columns that were used to train this model.
+  &quot;featureColumns&quot;: [ # Output only. Input feature columns for the model inference. If the model is trained with TRANSFORM clause, these are the input of the TRANSFORM clause.
     { # A field or a column.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
     },
   ],
@@ -3469,13 +3719,20 @@ Returns:
         },
       },
       &quot;hparams&quot;: { # Options used in model training. # The hyperprameters selected for this trial.
+        &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
         &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+        &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
         &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+        &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+        &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
         &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
         &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+        &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
         &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+        &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
         &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+        &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
         &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
         &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
         &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -3490,10 +3747,14 @@ Returns:
         &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
         &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
         &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+        &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
         &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
           &quot;A String&quot;,
         ],
         &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+        &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+          &quot;A String&quot;,
+        ],
         &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
         &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
           &quot;A String&quot;,
@@ -3503,10 +3764,12 @@ Returns:
         &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
           &quot;A String&quot;,
         ],
+        &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
         &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
         &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
         &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
         &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+        &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
         &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
         &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
         &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -3517,10 +3780,13 @@ Returns:
         &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
         &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
         &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+        &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
         &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
         &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
         &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+        &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
         &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+        &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
         &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
         &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
           &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -3530,21 +3796,33 @@ Returns:
         &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
         &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
         &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+        &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
         &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
         &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-        &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+        &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+        &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+        &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+        &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+        &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
         &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+        &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
         &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
         &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
         &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
           &quot;A String&quot;,
         ],
+        &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
         &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
         &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+        &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
         &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+        &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+          &quot;A String&quot;,
+        ],
         &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
         &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+        &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
       },
       &quot;startTimeMs&quot;: &quot;A String&quot;, # Starting time of the trial.
       &quot;status&quot;: &quot;A String&quot;, # The status of the trial.
@@ -3555,14 +3833,15 @@ Returns:
   &quot;labelColumns&quot;: [ # Output only. Label columns that were used to train this model. The output of the model will have a &quot;predicted_&quot; prefix to these columns.
     { # A field or a column.
       &quot;name&quot;: &quot;A String&quot;, # Optional. The name of this field. Can be absent for struct fields.
-      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typekind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Optional. The type of this parameter. Absent if not explicitly specified (e.g., CREATE FUNCTION statement can omit the return type; in this case the output parameter does not have this &quot;type&quot; field).
         &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
-        &quot;structType&quot;: { # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
-          &quot;fields&quot;: [
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
             # Object with schema name: StandardSqlField
           ],
         },
-        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any standard SQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
       },
     },
   ],
@@ -3572,17 +3851,25 @@ Returns:
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # Output only. The time when this model was last modified, in millisecs since the epoch.
   &quot;location&quot;: &quot;A String&quot;, # Output only. The geographic location where the model resides. This value is inherited from the dataset.
   &quot;modelReference&quot;: { # Required. Unique identifier for this model.
-    &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this model.
-    &quot;modelId&quot;: &quot;A String&quot;, # [Required] The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
-    &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this model.
+    &quot;datasetId&quot;: &quot;A String&quot;, # Required. The ID of the dataset containing this model.
+    &quot;modelId&quot;: &quot;A String&quot;, # Required. The ID of the model. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
+    &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this model.
   },
   &quot;modelType&quot;: &quot;A String&quot;, # Output only. Type of the model resource.
   &quot;optimalTrialIds&quot;: [ # Output only. For single-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it only contains the best trial. For multi-objective [hyperparameter tuning](/bigquery-ml/docs/reference/standard-sql/bigqueryml-syntax-hp-tuning-overview) models, it contains all Pareto optimal trials sorted by trial_id.
     &quot;A String&quot;,
   ],
-  &quot;trainingRuns&quot;: [ # Output only. Information for all training runs in increasing order of start_time.
+  &quot;remoteModelInfo&quot;: { # Remote Model Info # Output only. Remote model info
+    &quot;connection&quot;: &quot;A String&quot;, # Output only. Fully qualified name of the user-provided connection object of the remote model. Format: ```&quot;projects/{project_id}/locations/{location_id}/connections/{connection_id}&quot;```
+    &quot;endpoint&quot;: &quot;A String&quot;, # Output only. The endpoint for remote model.
+    &quot;maxBatchingRows&quot;: &quot;A String&quot;, # Output only. Max number of rows in each batch sent to the remote service. If unset, the number of rows in each batch is set dynamically.
+    &quot;remoteModelVersion&quot;: &quot;A String&quot;, # Output only. The model version for LLM.
+    &quot;remoteServiceType&quot;: &quot;A String&quot;, # Output only. The remote service type for remote model.
+    &quot;speechRecognizer&quot;: &quot;A String&quot;, # Output only. The name of the speech recognizer to use for speech recognition. The expected format is `projects/{project}/locations/{location}/recognizers/{recognizer}`. Customers can specify this field at model creation. If not specified, a default recognizer `projects/{model project}/locations/global/recognizers/_` will be used. See more details at [recognizers](https://cloud.google.com/speech-to-text/v2/docs/reference/rest/v2/projects.locations.recognizers)
+  },
+  &quot;trainingRuns&quot;: [ # Information for all training runs in increasing order of start_time.
     { # Information about a single training query run for the model.
-      &quot;classLevelGlobalExplanations&quot;: [ # Global explanation contains the explanation of top features on the class level. Applies to classification models only.
+      &quot;classLevelGlobalExplanations&quot;: [ # Output only. Global explanation contains the explanation of top features on the class level. Applies to classification models only.
         { # Global explanations containing the top most important features after training.
           &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
           &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
@@ -3593,7 +3880,7 @@ Returns:
           ],
         },
       ],
-      &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Data split result of the training run. Only set when the input data is actually split.
+      &quot;dataSplitResult&quot;: { # Data split result. This contains references to the training and evaluation data tables that were used to train the model. # Output only. Data split result of the training run. Only set when the input data is actually split.
         &quot;evaluationTable&quot;: { # Table reference of the evaluation data after split.
           &quot;datasetId&quot;: &quot;A String&quot;, # [Required] The ID of the dataset containing this table.
           &quot;projectId&quot;: &quot;A String&quot;, # [Required] The ID of the project containing this table.
@@ -3610,7 +3897,7 @@ Returns:
           &quot;tableId&quot;: &quot;A String&quot;, # [Required] The ID of the table. The ID must contain only letters (a-z, A-Z), numbers (0-9), or underscores (_). The maximum length is 1,024 characters.
         },
       },
-      &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # The evaluation metrics over training/eval data that were computed at the end of training.
+      &quot;evaluationMetrics&quot;: { # Evaluation metrics of a model. These are either computed on all training data or just the eval data based on whether eval data was used during training. These are not present for imported models. # Output only. The evaluation metrics over training/eval data that were computed at the end of training.
         &quot;arimaForecastingMetrics&quot;: { # Model evaluation metrics for ARIMA forecasting models. # Populated for ARIMA models.
           &quot;arimaFittingMetrics&quot;: [ # Arima model fitting metrics.
             { # ARIMA model fitting metrics.
@@ -3755,7 +4042,7 @@ Returns:
           &quot;rSquared&quot;: 3.14, # R^2 score. This corresponds to r2_score in ML.EVALUATE.
         },
       },
-      &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
+      &quot;modelLevelGlobalExplanation&quot;: { # Global explanations containing the top most important features after training. # Output only. Global explanation contains the explanation of top features on the model level. Applies to both regression and classification models.
         &quot;classLabel&quot;: &quot;A String&quot;, # Class label for this set of global explanations. Will be empty/null for binary logistic and linear regression models. Sorted alphabetically in descending order.
         &quot;explanations&quot;: [ # A list of the top global explanations. Sorted by absolute value of attribution in descending order.
           { # Explanation for a single feature.
@@ -3764,7 +4051,7 @@ Returns:
           },
         ],
       },
-      &quot;results&quot;: [ # Output of each iteration run, results.size() &lt;= max_iterations.
+      &quot;results&quot;: [ # Output only. Output of each iteration run, results.size() &lt;= max_iterations.
         {
           &quot;durationMs&quot;: &quot;A String&quot;, # Time taken to run the iteration in milliseconds.
           &quot;evalLoss&quot;: 3.14, # Loss computed on the eval data at the end of iteration.
@@ -3773,15 +4060,22 @@ Returns:
           &quot;trainingLoss&quot;: 3.14, # Loss computed on the training data at the end of iteration.
         },
       ],
-      &quot;startTime&quot;: &quot;A String&quot;, # The start time of this training run.
-      &quot;trainingOptions&quot;: { # Options used in model training. # Options that were used for this training run, includes user specified and default options that were used.
+      &quot;startTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run.
+      &quot;trainingOptions&quot;: { # Options used in model training. # Output only. Options that were used for this training run, includes user specified and default options that were used.
+        &quot;activationFn&quot;: &quot;A String&quot;, # Activation function of the neural nets.
         &quot;adjustStepChanges&quot;: True or False, # If true, detect step changes and make data adjustment in the input time series.
+        &quot;approxGlobalFeatureContrib&quot;: True or False, # Whether to use approximate feature contribution method in XGBoost model explanation for global explain.
         &quot;autoArima&quot;: True or False, # Whether to enable auto ARIMA or not.
-        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of non-seasonal p and q.
+        &quot;autoArimaMaxOrder&quot;: &quot;A String&quot;, # The max value of the sum of non-seasonal p and q.
+        &quot;autoArimaMinOrder&quot;: &quot;A String&quot;, # The min value of the sum of non-seasonal p and q.
+        &quot;autoClassWeights&quot;: True or False, # Whether to calculate class weights automatically based on the popularity of each label.
         &quot;batchSize&quot;: &quot;A String&quot;, # Batch size for dnn models.
         &quot;boosterType&quot;: &quot;A String&quot;, # Booster type for boosted tree models.
+        &quot;budgetHours&quot;: 3.14, # Budget in hours for AutoML training.
         &quot;calculatePValues&quot;: True or False, # Whether or not p-value test should be computed for this model. Only available for linear and logistic regression models.
+        &quot;categoryEncodingMethod&quot;: &quot;A String&quot;, # Categorical feature encoding method.
         &quot;cleanSpikesAndDips&quot;: True or False, # If true, clean spikes and dips in the input time series.
+        &quot;colorSpace&quot;: &quot;A String&quot;, # Enums for color space, used for processing images in Object Table. See more details at https://www.tensorflow.org/io/tutorials/colorspace.
         &quot;colsampleBylevel&quot;: 3.14, # Subsample ratio of columns for each level for boosted tree models.
         &quot;colsampleBynode&quot;: 3.14, # Subsample ratio of columns for each node(split) for boosted tree models.
         &quot;colsampleBytree&quot;: 3.14, # Subsample ratio of columns when constructing each tree for boosted tree models.
@@ -3796,10 +4090,14 @@ Returns:
         &quot;earlyStop&quot;: True or False, # Whether to stop early when the loss doesn&#x27;t improve significantly any more (compared to min_relative_progress). Used only for iterative training algorithms.
         &quot;enableGlobalExplain&quot;: True or False, # If true, enable global explanation during training.
         &quot;feedbackType&quot;: &quot;A String&quot;, # Feedback type that specifies which algorithm to run for matrix factorization.
+        &quot;fitIntercept&quot;: True or False, # Whether the model should include intercept during model training.
         &quot;hiddenUnits&quot;: [ # Hidden units for dnn models.
           &quot;A String&quot;,
         ],
         &quot;holidayRegion&quot;: &quot;A String&quot;, # The geographical region based on which the holidays are considered in time series modeling. If a valid value is specified, then holiday effects modeling is enabled.
+        &quot;holidayRegions&quot;: [ # A list of geographical regions that are used for time series modeling.
+          &quot;A String&quot;,
+        ],
         &quot;horizon&quot;: &quot;A String&quot;, # The number of periods ahead that need to be forecasted.
         &quot;hparamTuningObjectives&quot;: [ # The target evaluation metrics to optimize the hyperparameters for.
           &quot;A String&quot;,
@@ -3809,10 +4107,12 @@ Returns:
         &quot;inputLabelColumns&quot;: [ # Name of input label columns in training data.
           &quot;A String&quot;,
         ],
+        &quot;instanceWeightColumn&quot;: &quot;A String&quot;, # Name of the instance weight column for training data. This column isn&#x27;t be used as a feature.
         &quot;integratedGradientsNumSteps&quot;: &quot;A String&quot;, # Number of integral steps for the integrated gradients explain method.
         &quot;itemColumn&quot;: &quot;A String&quot;, # Item column specified for matrix factorization models.
         &quot;kmeansInitializationColumn&quot;: &quot;A String&quot;, # The column used to provide the initial centroids for kmeans algorithm when kmeans_initialization_method is CUSTOM.
         &quot;kmeansInitializationMethod&quot;: &quot;A String&quot;, # The method used to initialize the centroids for kmeans algorithm.
+        &quot;l1RegActivation&quot;: 3.14, # L1 regularization coefficient to activations.
         &quot;l1Regularization&quot;: 3.14, # L1 regularization coefficient.
         &quot;l2Regularization&quot;: 3.14, # L2 regularization coefficient.
         &quot;labelClassWeights&quot;: { # Weights associated with each label class, for rebalancing the training data. Only applicable for classification models.
@@ -3823,10 +4123,13 @@ Returns:
         &quot;lossType&quot;: &quot;A String&quot;, # Type of loss function used during training run.
         &quot;maxIterations&quot;: &quot;A String&quot;, # The maximum number of iterations in training. Used only for iterative training algorithms.
         &quot;maxParallelTrials&quot;: &quot;A String&quot;, # Maximum number of trials to run in parallel.
+        &quot;maxTimeSeriesLength&quot;: &quot;A String&quot;, # The maximum number of time points in a time series that can be used in modeling the trend component of the time series. Don&#x27;t use this option with the `timeSeriesLengthFraction` or `minTimeSeriesLength` options.
         &quot;maxTreeDepth&quot;: &quot;A String&quot;, # Maximum depth of a tree for boosted tree models.
         &quot;minRelativeProgress&quot;: 3.14, # When early_stop is true, stops training when accuracy improvement is less than &#x27;min_relative_progress&#x27;. Used only for iterative training algorithms.
         &quot;minSplitLoss&quot;: 3.14, # Minimum split loss for boosted tree models.
+        &quot;minTimeSeriesLength&quot;: &quot;A String&quot;, # The minimum number of time points in a time series that are used in modeling the trend component of the time series. If you use this option you must also set the `timeSeriesLengthFraction` option. This training option ensures that enough time points are available when you use `timeSeriesLengthFraction` in trend modeling. This is particularly important when forecasting multiple time series in a single query using `timeSeriesIdColumn`. If the total number of time points is less than the `minTimeSeriesLength` value, then the query uses all available time points.
         &quot;minTreeChildWeight&quot;: &quot;A String&quot;, # Minimum sum of instance weight needed in a child for boosted tree models.
+        &quot;modelRegistry&quot;: &quot;A String&quot;, # The model registry.
         &quot;modelUri&quot;: &quot;A String&quot;, # Google Cloud Storage URI from which the model was imported. Only applicable for imported models.
         &quot;nonSeasonalOrder&quot;: { # Arima order, can be used for both non-seasonal and seasonal parts. # A specification of the non-seasonal part of the ARIMA model: the three components (p, d, q) are the AR order, the degree of differencing, and the MA order.
           &quot;d&quot;: &quot;A String&quot;, # Order of the differencing part.
@@ -3836,24 +4139,53 @@ Returns:
         &quot;numClusters&quot;: &quot;A String&quot;, # Number of clusters for clustering models.
         &quot;numFactors&quot;: &quot;A String&quot;, # Num factors specified for matrix factorization models.
         &quot;numParallelTree&quot;: &quot;A String&quot;, # Number of parallel trees constructed during each iteration for boosted tree models.
+        &quot;numPrincipalComponents&quot;: &quot;A String&quot;, # Number of principal components to keep in the PCA model. Must be &lt;= the number of features.
         &quot;numTrials&quot;: &quot;A String&quot;, # Number of trials to run this hyperparameter tuning job.
         &quot;optimizationStrategy&quot;: &quot;A String&quot;, # Optimization strategy for training linear regression models.
-        &quot;preserveInputStructs&quot;: True or False, # Whether to preserve the input structs in output feature names. Suppose there is a struct A with field b. When false (default), the output feature name is A_b. When true, the output feature name is A.b.
-        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled shapley explain method.
+        &quot;optimizer&quot;: &quot;A String&quot;, # Optimizer used for training the neural nets.
+        &quot;pcaExplainedVarianceRatio&quot;: 3.14, # The minimum ratio of cumulative explained variance that needs to be given by the PCA model.
+        &quot;pcaSolver&quot;: &quot;A String&quot;, # The solver for PCA.
+        &quot;sampledShapleyNumPaths&quot;: &quot;A String&quot;, # Number of paths for the sampled Shapley explain method.
+        &quot;scaleFeatures&quot;: True or False, # If true, scale the feature values by dividing the feature standard deviation. Currently only apply to PCA.
+        &quot;standardizeFeatures&quot;: True or False, # Whether to standardize numerical features. Default to true.
         &quot;subsample&quot;: 3.14, # Subsample fraction of the training data to grow tree to prevent overfitting for boosted tree models.
+        &quot;tfVersion&quot;: &quot;A String&quot;, # Based on the selected TF version, the corresponding docker image is used to train external models.
         &quot;timeSeriesDataColumn&quot;: &quot;A String&quot;, # Column to be designated as time series data for ARIMA model.
         &quot;timeSeriesIdColumn&quot;: &quot;A String&quot;, # The time series id column that was used during ARIMA model training.
         &quot;timeSeriesIdColumns&quot;: [ # The time series id columns that were used during ARIMA model training.
           &quot;A String&quot;,
         ],
+        &quot;timeSeriesLengthFraction&quot;: 3.14, # The fraction of the interpolated length of the time series that&#x27;s used to model the time series trend component. All of the time points of the time series are used to model the non-trend component. This training option accelerates modeling training without sacrificing much forecasting accuracy. You can use this option with `minTimeSeriesLength` but not with `maxTimeSeriesLength`.
         &quot;timeSeriesTimestampColumn&quot;: &quot;A String&quot;, # Column to be designated as time series timestamp for ARIMA model.
         &quot;treeMethod&quot;: &quot;A String&quot;, # Tree construction algorithm for boosted tree models.
+        &quot;trendSmoothingWindowSize&quot;: &quot;A String&quot;, # Smoothing window size for the trend component. When a positive value is specified, a center moving average smoothing is applied on the history trend. When the smoothing window is out of the boundary at the beginning or the end of the trend, the first element or the last element is padded to fill the smoothing window before the average is applied.
         &quot;userColumn&quot;: &quot;A String&quot;, # User column specified for matrix factorization models.
+        &quot;vertexAiModelVersionAliases&quot;: [ # The version aliases to apply in Vertex AI model registry. Always overwrite if the version aliases exists in a existing model.
+          &quot;A String&quot;,
+        ],
         &quot;walsAlpha&quot;: 3.14, # Hyperparameter for matrix factoration when implicit feedback type is specified.
         &quot;warmStart&quot;: True or False, # Whether to train a model from the last checkpoint.
+        &quot;xgboostVersion&quot;: &quot;A String&quot;, # User-selected XGBoost versions for training of XGBoost models.
       },
-      &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in Vertex AI Model Registry for this training run
-      &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # The model version in Vertex AI Model Registry for this training run
+      &quot;trainingStartTime&quot;: &quot;A String&quot;, # Output only. The start time of this training run, in milliseconds since epoch.
+      &quot;vertexAiModelId&quot;: &quot;A String&quot;, # The model id in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+      &quot;vertexAiModelVersion&quot;: &quot;A String&quot;, # Output only. The model version in the [Vertex AI Model Registry](https://cloud.google.com/vertex-ai/docs/model-registry/introduction) for this training run.
+    },
+  ],
+  &quot;transformColumns&quot;: [ # Output only. This field will be populated if a TRANSFORM clause was used to train a model. TRANSFORM clause (if used) takes feature_columns as input and outputs transform_columns. transform_columns then are used to train the model.
+    { # Information about a single transform column.
+      &quot;name&quot;: &quot;A String&quot;, # Output only. Name of the column.
+      &quot;transformSql&quot;: &quot;A String&quot;, # Output only. The SQL expression used in the column transform.
+      &quot;type&quot;: { # The data type of a variable such as a function argument. Examples include: * INT64: `{&quot;typeKind&quot;: &quot;INT64&quot;}` * ARRAY: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} } * STRUCT&gt;: { &quot;typeKind&quot;: &quot;STRUCT&quot;, &quot;structType&quot;: { &quot;fields&quot;: [ { &quot;name&quot;: &quot;x&quot;, &quot;type&quot;: {&quot;typeKind&quot;: &quot;STRING&quot;} }, { &quot;name&quot;: &quot;y&quot;, &quot;type&quot;: { &quot;typeKind&quot;: &quot;ARRAY&quot;, &quot;arrayElementType&quot;: {&quot;typeKind&quot;: &quot;DATE&quot;} } } ] } } # Output only. Data type of the column after the transform.
+        &quot;arrayElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the array&#x27;s elements, if type_kind = &quot;ARRAY&quot;.
+        &quot;rangeElementType&quot;: # Object with schema name: StandardSqlDataType # The type of the range&#x27;s elements, if type_kind = &quot;RANGE&quot;.
+        &quot;structType&quot;: { # The representation of a SQL STRUCT type. # The fields of this struct, in order, if type_kind = &quot;STRUCT&quot;.
+          &quot;fields&quot;: [ # Fields within the struct.
+            # Object with schema name: StandardSqlField
+          ],
+        },
+        &quot;typeKind&quot;: &quot;A String&quot;, # Required. The top level type of this field. Can be any GoogleSQL data type (e.g., &quot;INT64&quot;, &quot;DATE&quot;, &quot;ARRAY&quot;).
+      },
     },
   ],
 }</pre>

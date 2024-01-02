@@ -154,7 +154,7 @@ class ChangeSummary:
         # Split the Key into 2 columns for `Parent` and `Child` in order
         # to group keys with the same parents together to summarize the changes
         # by parent.
-        parent_child_df = combined_docs["Key"].str.rsplit(".", 1, expand=True)
+        parent_child_df = combined_docs["Key"].str.rsplit(".", n=1, expand=True)
         # Rename the columns and join them with the combined_docs dataframe.
         # If we only have a `Parent` column, it means that the Key doesn't have
         # any children.

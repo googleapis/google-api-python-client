@@ -524,7 +524,7 @@
                   ]
                 },
                 "list": {
-                  "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`. NOTE: the `name` binding allows API services to override the binding to use different resource name schemes, such as `users/*/operations`. To override the binding, API services can add a binding such as `\"/v1/{name=users/*}/operations\"` to their service configuration. For backwards compatibility, the default name includes the operations collection id, however overriding users must ensure the name binding is the parent resource, without the operations collection id.",
+                  "description": "Lists operations that match the specified filter in the request. If the server doesn't support this method, it returns `UNIMPLEMENTED`.",
                   "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/operations",
                   "httpMethod": "GET",
                   "id": "datastream.projects.locations.operations.list",
@@ -577,6 +577,11 @@
                     "parent"
                   ],
                   "parameters": {
+                    "force": {
+                      "description": "Optional. If set to true, will skip validations.",
+                      "location": "query",
+                      "type": "boolean"
+                    },
                     "parent": {
                       "description": "Required. The parent that owns the collection of PrivateConnections.",
                       "location": "path",
@@ -1058,6 +1063,34 @@
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ]
+                },
+                "run": {
+                  "description": "Use this method to start, resume or recover a stream with a non default CDC strategy. NOTE: This feature is currently experimental.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/streams/{streamsId}:run",
+                  "httpMethod": "POST",
+                  "id": "datastream.projects.locations.streams.run",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Name of the stream resource to start, in the format: projects/{project_id}/locations/{location}/streams/{stream_name}",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/streams/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}:run",
+                  "request": {
+                    "$ref": "RunStreamRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
                 }
               },
               "resources": {
@@ -1217,7 +1250,7 @@
       }
     }
   },
-  "revision": "20220413",
+  "revision": "20231129",
   "rootUrl": "https://datastream.googleapis.com/",
   "schemas": {
     "AvroFileFormat": {
@@ -1237,6 +1270,10 @@
         "oracleExcludedObjects": {
           "$ref": "OracleRdbms",
           "description": "Oracle data source objects to avoid backfilling."
+        },
+        "postgresqlExcludedObjects": {
+          "$ref": "PostgresqlRdbms",
+          "description": "PostgreSQL data source objects to avoid backfilling."
         }
       },
       "type": "object"
@@ -1266,7 +1303,7 @@
           "type": "string"
         },
         "state": {
-          "description": "Backfill job state.",
+          "description": "Output only. Backfill job state.",
           "enum": [
             "STATE_UNSPECIFIED",
             "NOT_STARTED",
@@ -1287,6 +1324,7 @@
             "Backfill completed successfully.",
             "Backfill job failed since the table structure is currently unsupported for backfill."
           ],
+          "readOnly": true,
           "type": "string"
         },
         "trigger": {
@@ -1312,16 +1350,65 @@
       "properties": {},
       "type": "object"
     },
+    "BigQueryDestinationConfig": {
+      "description": "BigQuery destination configuration",
+      "id": "BigQueryDestinationConfig",
+      "properties": {
+        "dataFreshness": {
+          "description": "The guaranteed data freshness (in seconds) when querying tables created by the stream. Editing this field will only affect new tables created in the future, but existing tables will not be impacted. Lower values mean that queries will return fresher data, but may result in higher cost.",
+          "format": "google-duration",
+          "type": "string"
+        },
+        "singleTargetDataset": {
+          "$ref": "SingleTargetDataset",
+          "description": "Single destination dataset."
+        },
+        "sourceHierarchyDatasets": {
+          "$ref": "SourceHierarchyDatasets",
+          "description": "Source hierarchy datasets."
+        }
+      },
+      "type": "object"
+    },
+    "BigQueryProfile": {
+      "description": "BigQuery warehouse profile.",
+      "id": "BigQueryProfile",
+      "properties": {},
+      "type": "object"
+    },
     "CancelOperationRequest": {
       "description": "The request message for Operations.CancelOperation.",
       "id": "CancelOperationRequest",
       "properties": {},
       "type": "object"
     },
+    "CdcStrategy": {
+      "description": "The strategy that the stream uses for CDC replication.",
+      "id": "CdcStrategy",
+      "properties": {
+        "mostRecentStartPosition": {
+          "$ref": "MostRecentStartPosition",
+          "description": "Optional. Start replicating from the most recent position in the source."
+        },
+        "nextAvailableStartPosition": {
+          "$ref": "NextAvailableStartPosition",
+          "description": "Optional. Resume replication from the next available position in the source."
+        },
+        "specificStartPosition": {
+          "$ref": "SpecificStartPosition",
+          "description": "Optional. Start replicating from a specific position in the source."
+        }
+      },
+      "type": "object"
+    },
     "ConnectionProfile": {
       "description": "A set of reusable connection configurations to be used as a source or destination for a stream.",
       "id": "ConnectionProfile",
       "properties": {
+        "bigqueryProfile": {
+          "$ref": "BigQueryProfile",
+          "description": "BigQuery Connection Profile configuration."
+        },
         "createTime": {
           "description": "Output only. The create time of the resource.",
           "format": "google-datetime",
@@ -1360,6 +1447,10 @@
           "$ref": "OracleProfile",
           "description": "Oracle ConnectionProfile configuration."
         },
+        "postgresqlProfile": {
+          "$ref": "PostgresqlProfile",
+          "description": "PostgreSQL Connection Profile configuration."
+        },
         "privateConnectivity": {
           "$ref": "PrivateConnectivity",
           "description": "Private connectivity."
@@ -1377,10 +1468,33 @@
       },
       "type": "object"
     },
+    "DatasetTemplate": {
+      "description": "Dataset template used for dynamic dataset creation.",
+      "id": "DatasetTemplate",
+      "properties": {
+        "datasetIdPrefix": {
+          "description": "If supplied, every created dataset will have its name prefixed by the provided value. The prefix and name will be separated by an underscore. i.e. _.",
+          "type": "string"
+        },
+        "kmsKeyName": {
+          "description": "Describes the Cloud KMS encryption key that will be used to protect destination BigQuery table. The BigQuery Service Account associated with your project requires access to this encryption key. i.e. projects/{project}/locations/{location}/keyRings/{key_ring}/cryptoKeys/{cryptoKey}. See https://cloud.google.com/bigquery/docs/customer-managed-encryption for more information.",
+          "type": "string"
+        },
+        "location": {
+          "description": "Required. The geographic location where the dataset should reside. See https://cloud.google.com/bigquery/docs/locations for supported locations.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "DestinationConfig": {
       "description": "The configuration of the stream destination.",
       "id": "DestinationConfig",
       "properties": {
+        "bigqueryDestinationConfig": {
+          "$ref": "BigQueryDestinationConfig",
+          "description": "BigQuery destination configuration."
+        },
         "destinationConnectionProfile": {
           "description": "Required. Destination connection profile resource. Format: `projects/{project}/locations/{location}/connectionProfiles/{name}`",
           "type": "string"
@@ -1420,6 +1534,10 @@
         "oracleRdbms": {
           "$ref": "OracleRdbms",
           "description": "Oracle RDBMS to enrich with child data objects and metadata."
+        },
+        "postgresqlRdbms": {
+          "$ref": "PostgresqlRdbms",
+          "description": "PostgreSQL RDBMS to enrich with child data objects and metadata."
         }
       },
       "type": "object"
@@ -1435,6 +1553,10 @@
         "oracleRdbms": {
           "$ref": "OracleRdbms",
           "description": "Enriched Oracle RDBMS object."
+        },
+        "postgresqlRdbms": {
+          "$ref": "PostgresqlRdbms",
+          "description": "Enriched PostgreSQL RDBMS object."
         }
       },
       "type": "object"
@@ -1537,7 +1659,7 @@
           "description": "AVRO file format configuration."
         },
         "fileRotationInterval": {
-          "description": "The maximum duration for which new events are added before a file is closed and a new file is created.",
+          "description": "The maximum duration for which new events are added before a file is closed and a new file is created. Values within the range of 15-60 seconds are allowed.",
           "format": "google-duration",
           "type": "string"
         },
@@ -1762,7 +1884,7 @@
       "type": "object"
     },
     "Location": {
-      "description": "A resource that represents Google Cloud Platform location.",
+      "description": "A resource that represents a Google Cloud location.",
       "id": "Location",
       "properties": {
         "displayName": {
@@ -1806,6 +1928,12 @@
       },
       "type": "object"
     },
+    "MostRecentStartPosition": {
+      "description": "CDC strategy to start replicating from the most recent position in the source.",
+      "id": "MostRecentStartPosition",
+      "properties": {},
+      "type": "object"
+    },
     "MysqlColumn": {
       "description": "MySQL Column.",
       "id": "MysqlColumn",
@@ -1836,9 +1964,19 @@
           "format": "int32",
           "type": "integer"
         },
+        "precision": {
+          "description": "Column precision.",
+          "format": "int32",
+          "type": "integer"
+        },
         "primaryKey": {
           "description": "Whether or not the column represents a primary key.",
           "type": "boolean"
+        },
+        "scale": {
+          "description": "Column scale.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -1857,6 +1995,22 @@
             "$ref": "MysqlTable"
           },
           "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "MysqlLogPosition": {
+      "description": "MySQL log position",
+      "id": "MysqlLogPosition",
+      "properties": {
+        "logFile": {
+          "description": "Required. The binary log file name.",
+          "type": "string"
+        },
+        "logPosition": {
+          "description": "Optional. The position within the binary log file. Default is head of file.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -1929,6 +2083,16 @@
         "includeObjects": {
           "$ref": "MysqlRdbms",
           "description": "MySQL objects to retrieve from the source."
+        },
+        "maxConcurrentBackfillTasks": {
+          "description": "Maximum number of concurrent backfill tasks. The number should be non negative. If not set (or set to 0), the system's default value will be used.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "maxConcurrentCdcTasks": {
+          "description": "Maximum number of concurrent CDC tasks. The number should be non negative. If not set (or set to 0), the system's default value will be used.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -1985,6 +2149,12 @@
       },
       "type": "object"
     },
+    "NextAvailableStartPosition": {
+      "description": "CDC strategy to resume replication from the next available position in the source.",
+      "id": "NextAvailableStartPosition",
+      "properties": {},
+      "type": "object"
+    },
     "Operation": {
       "description": "This resource represents a long-running operation that is the result of a network API call.",
       "id": "Operation",
@@ -2014,7 +2184,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
           "type": "object"
         }
       },
@@ -2150,6 +2320,10 @@
           "description": "Required. Hostname for the Oracle connection.",
           "type": "string"
         },
+        "oracleSslConfig": {
+          "$ref": "OracleSslConfig",
+          "description": "Optional. SSL configuration for the Oracle connection."
+        },
         "password": {
           "description": "Required. Password for the Oracle connection.",
           "type": "string"
@@ -2213,6 +2387,36 @@
         "includeObjects": {
           "$ref": "OracleRdbms",
           "description": "Oracle objects to include in the stream."
+        },
+        "maxConcurrentBackfillTasks": {
+          "description": "Maximum number of concurrent backfill tasks. The number should be non-negative. If not set (or set to 0), the system's default value is used.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "maxConcurrentCdcTasks": {
+          "description": "Maximum number of concurrent CDC tasks. The number should be non-negative. If not set (or set to 0), the system's default value is used.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "streamLargeObjects": {
+          "$ref": "StreamLargeObjects",
+          "description": "Stream large object values. NOTE: This feature is currently experimental."
+        }
+      },
+      "type": "object"
+    },
+    "OracleSslConfig": {
+      "description": "Oracle SSL configuration information.",
+      "id": "OracleSslConfig",
+      "properties": {
+        "caCertificate": {
+          "description": "Input only. PEM-encoded certificate of the CA that signed the source database server's certificate.",
+          "type": "string"
+        },
+        "caCertificateSet": {
+          "description": "Output only. Indicates whether the ca_certificate field has been set for this Connection-Profile.",
+          "readOnly": true,
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -2225,6 +2429,170 @@
           "description": "Oracle columns in the schema. When unspecified as part of include/exclude objects, includes/excludes everything.",
           "items": {
             "$ref": "OracleColumn"
+          },
+          "type": "array"
+        },
+        "table": {
+          "description": "Table name.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlColumn": {
+      "description": "PostgreSQL Column.",
+      "id": "PostgresqlColumn",
+      "properties": {
+        "column": {
+          "description": "Column name.",
+          "type": "string"
+        },
+        "dataType": {
+          "description": "The PostgreSQL data type.",
+          "type": "string"
+        },
+        "length": {
+          "description": "Column length.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "nullable": {
+          "description": "Whether or not the column can accept a null value.",
+          "type": "boolean"
+        },
+        "ordinalPosition": {
+          "description": "The ordinal position of the column in the table.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "precision": {
+          "description": "Column precision.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "primaryKey": {
+          "description": "Whether or not the column represents a primary key.",
+          "type": "boolean"
+        },
+        "scale": {
+          "description": "Column scale.",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlObjectIdentifier": {
+      "description": "PostgreSQL data source object identifier.",
+      "id": "PostgresqlObjectIdentifier",
+      "properties": {
+        "schema": {
+          "description": "Required. The schema name.",
+          "type": "string"
+        },
+        "table": {
+          "description": "Required. The table name.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlProfile": {
+      "description": "PostgreSQL database profile.",
+      "id": "PostgresqlProfile",
+      "properties": {
+        "database": {
+          "description": "Required. Database for the PostgreSQL connection.",
+          "type": "string"
+        },
+        "hostname": {
+          "description": "Required. Hostname for the PostgreSQL connection.",
+          "type": "string"
+        },
+        "password": {
+          "description": "Required. Password for the PostgreSQL connection.",
+          "type": "string"
+        },
+        "port": {
+          "description": "Port for the PostgreSQL connection, default value is 5432.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "username": {
+          "description": "Required. Username for the PostgreSQL connection.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlRdbms": {
+      "description": "PostgreSQL database structure.",
+      "id": "PostgresqlRdbms",
+      "properties": {
+        "postgresqlSchemas": {
+          "description": "PostgreSQL schemas in the database server.",
+          "items": {
+            "$ref": "PostgresqlSchema"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlSchema": {
+      "description": "PostgreSQL schema.",
+      "id": "PostgresqlSchema",
+      "properties": {
+        "postgresqlTables": {
+          "description": "Tables in the schema.",
+          "items": {
+            "$ref": "PostgresqlTable"
+          },
+          "type": "array"
+        },
+        "schema": {
+          "description": "Schema name.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlSourceConfig": {
+      "description": "PostgreSQL data source configuration",
+      "id": "PostgresqlSourceConfig",
+      "properties": {
+        "excludeObjects": {
+          "$ref": "PostgresqlRdbms",
+          "description": "PostgreSQL objects to exclude from the stream."
+        },
+        "includeObjects": {
+          "$ref": "PostgresqlRdbms",
+          "description": "PostgreSQL objects to include in the stream."
+        },
+        "maxConcurrentBackfillTasks": {
+          "description": "Maximum number of concurrent backfill tasks. The number should be non negative. If not set (or set to 0), the system's default value will be used.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "publication": {
+          "description": "Required. The name of the publication that includes the set of all tables that are defined in the stream's include_objects.",
+          "type": "string"
+        },
+        "replicationSlot": {
+          "description": "Required. Immutable. The name of the logical replication slot that's configured with the pgoutput plugin.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PostgresqlTable": {
+      "description": "PostgreSQL table.",
+      "id": "PostgresqlTable",
+      "properties": {
+        "postgresqlColumns": {
+          "description": "PostgreSQL columns in the schema. When unspecified as part of include/exclude objects, includes/excludes everything.",
+          "items": {
+            "$ref": "PostgresqlColumn"
           },
           "type": "array"
         },
@@ -2355,6 +2723,28 @@
       },
       "type": "object"
     },
+    "RunStreamRequest": {
+      "description": "Request message for running a stream.",
+      "id": "RunStreamRequest",
+      "properties": {
+        "cdcStrategy": {
+          "$ref": "CdcStrategy",
+          "description": "Optional. The CDC strategy of the stream. If not set, the system's default value will be used."
+        }
+      },
+      "type": "object"
+    },
+    "SingleTargetDataset": {
+      "description": "A single target dataset to which all data will be streamed.",
+      "id": "SingleTargetDataset",
+      "properties": {
+        "datasetId": {
+          "description": "The dataset ID of the target dataset. DatasetIds allowed characters: https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets#datasetreference.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "SourceConfig": {
       "description": "The configuration of the stream source.",
       "id": "SourceConfig",
@@ -2367,9 +2757,24 @@
           "$ref": "OracleSourceConfig",
           "description": "Oracle data source configuration."
         },
+        "postgresqlSourceConfig": {
+          "$ref": "PostgresqlSourceConfig",
+          "description": "PostgreSQL data source configuration."
+        },
         "sourceConnectionProfile": {
           "description": "Required. Source connection profile resoource. Format: `projects/{project}/locations/{location}/connectionProfiles/{name}`",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SourceHierarchyDatasets": {
+      "description": "Destination datasets are created so that hierarchy of the destination data objects matches the source hierarchy.",
+      "id": "SourceHierarchyDatasets",
+      "properties": {
+        "datasetTemplate": {
+          "$ref": "DatasetTemplate",
+          "description": "The dataset template to use for dynamic dataset creation."
         }
       },
       "type": "object"
@@ -2385,6 +2790,21 @@
         "oracleIdentifier": {
           "$ref": "OracleObjectIdentifier",
           "description": "Oracle data source object identifier."
+        },
+        "postgresqlIdentifier": {
+          "$ref": "PostgresqlObjectIdentifier",
+          "description": "PostgreSQL data source object identifier."
+        }
+      },
+      "type": "object"
+    },
+    "SpecificStartPosition": {
+      "description": "CDC strategy to start replicating from a specific position in the source.",
+      "id": "SpecificStartPosition",
+      "properties": {
+        "mysqlLogPosition": {
+          "$ref": "MysqlLogPosition",
+          "description": "MySQL specific log position to start replicating from."
         }
       },
       "type": "object"
@@ -2407,7 +2827,7 @@
       "type": "object"
     },
     "StaticServiceIpConnectivity": {
-      "description": "Static IP address connectivity.",
+      "description": "Static IP address connectivity. Used when the source database is configured to allow incoming connections from the Datastream public IP addresses for the region specified in the connection profile.",
       "id": "StaticServiceIpConnectivity",
       "properties": {},
       "type": "object"
@@ -2501,6 +2921,12 @@
           "description": "Labels.",
           "type": "object"
         },
+        "lastRecoveryTime": {
+          "description": "Output only. If the stream was recovered, the time of the last recovery. Note: This field is currently experimental.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
         "name": {
           "description": "Output only. The stream's name.",
           "readOnly": true,
@@ -2543,6 +2969,12 @@
           "type": "string"
         }
       },
+      "type": "object"
+    },
+    "StreamLargeObjects": {
+      "description": "Configuration to stream large object values.",
+      "id": "StreamLargeObjects",
+      "properties": {},
       "type": "object"
     },
     "StreamObject": {
@@ -2609,19 +3041,22 @@
           "type": "array"
         },
         "state": {
-          "description": "Validation execution status.",
+          "description": "Output only. Validation execution status.",
           "enum": [
             "STATE_UNSPECIFIED",
             "NOT_EXECUTED",
             "FAILED",
-            "PASSED"
+            "PASSED",
+            "WARNING"
           ],
           "enumDescriptions": [
             "Unspecified state.",
             "Validation did not execute.",
             "Validation failed.",
-            "Validation passed."
+            "Validation passed.",
+            "Validation executed with warnings."
           ],
+          "readOnly": true,
           "type": "string"
         }
       },
@@ -2682,7 +3117,7 @@
       "id": "VpcPeeringConfig",
       "properties": {
         "subnet": {
-          "description": "Required. A free subnet for peering. (CIDR of /29) TODO(b/172995841) add validators.",
+          "description": "Required. A free subnet for peering. (CIDR of /29)",
           "type": "string"
         },
         "vpc": {

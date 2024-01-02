@@ -38,7 +38,7 @@ from googleapiclient.discovery import DISCOVERY_URI, build_from_document
 from googleapiclient.http import build_http
 
 DISCOVERY_DOC_DIR = (
-    pathlib.Path(__file__).parent.resolve()
+    pathlib.Path(__file__).resolve().parent
     / "googleapiclient"
     / "discovery_cache"
     / "documents"
@@ -134,7 +134,7 @@ METHOD_LINK = """<p class="toc_element">
   <code><a href="#$name">$name($params)</a></code></p>
 <p class="firstline">$firstline</p>"""
 
-BASE = pathlib.Path(__file__).parent.resolve() / "docs" / "dyn"
+BASE = pathlib.Path(__file__).resolve().parent / "docs" / "dyn"
 
 DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
 
@@ -356,7 +356,12 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
 
 
 def document_collection_recursive(
-    resource, path, root_discovery, discovery, doc_destination_dir
+    resource,
+    path,
+    root_discovery,
+    discovery,
+    doc_destination_dir,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
 ):
     html = document_collection(resource, path, root_discovery, discovery)
 
@@ -380,10 +385,13 @@ def document_collection_recursive(
                 root_discovery,
                 discovery["resources"].get(dname, {}),
                 doc_destination_dir,
+                artifact_destination_dir,
             )
 
 
-def document_api(name, version, uri, doc_destination_dir):
+def document_api(
+    name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR
+):
     """Document the given API.
 
     Args:
@@ -392,6 +400,8 @@ def document_api(name, version, uri, doc_destination_dir):
         uri (str): URI of the API's discovery document
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
+        artifact_destination_dir (str): relative path where the discovery
+            artifacts should be saved.
     """
     http = build_http()
     resp, content = http.request(
@@ -405,7 +415,7 @@ def document_api(name, version, uri, doc_destination_dir):
         discovery = json.loads(content)
         service = build_from_document(discovery)
         doc_name = "{}.{}.json".format(name, version)
-        discovery_file_path = DISCOVERY_DOC_DIR / doc_name
+        discovery_file_path = artifact_destination_dir / doc_name
         revision = None
 
         pathlib.Path(discovery_file_path).touch(exist_ok=True)
@@ -445,16 +455,21 @@ def document_api(name, version, uri, doc_destination_dir):
         discovery,
         discovery,
         doc_destination_dir,
+        artifact_destination_dir,
     )
 
 
-def document_api_from_discovery_document(discovery_url, doc_destination_dir):
+def document_api_from_discovery_document(
+    discovery_url, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR
+):
     """Document the given API.
 
     Args:
       discovery_url (str): URI of discovery document.
       doc_destination_dir (str): relative path where the reference
           documentation should be saved.
+      artifact_destination_dir (str): relative path where the discovery
+          artifacts should be saved.
     """
     http = build_http()
     response, content = http.request(discovery_url)
@@ -471,16 +486,23 @@ def document_api_from_discovery_document(discovery_url, doc_destination_dir):
         discovery,
         discovery,
         doc_destination_dir,
+        artifact_destination_dir,
     )
 
 
-def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=BASE):
+def generate_all_api_documents(
+    directory_uri=DIRECTORY_URI,
+    doc_destination_dir=BASE,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
+):
     """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
     args:
         directory_uri (str): uri of the public discovery directory.
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
+        artifact_destination_dir (str): relative path where the discovery
+            artifacts should be saved.
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
@@ -493,6 +515,7 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
                 api["version"],
                 api["discoveryRestUrl"],
                 doc_destination_dir,
+                artifact_destination_dir,
             )
             api_directory[api["name"]].append(api["version"])
 
@@ -513,7 +536,7 @@ def generate_all_api_documents(directory_uri=DIRECTORY_URI, doc_destination_dir=
                 )
             markdown.append("\n")
 
-        with open(BASE / "index.md", "w") as f:
+        with open(doc_destination_dir / "index.md", "w") as f:
             markdown = "\n".join(markdown)
             f.write(markdown)
 
@@ -525,9 +548,11 @@ if __name__ == "__main__":
     FLAGS = parser.parse_args(sys.argv[1:])
     if FLAGS.discovery_uri:
         document_api_from_discovery_document(
-            discovery_url=FLAGS.discovery_uri, doc_destination_dir=FLAGS.dest
+            discovery_url=FLAGS.discovery_uri,
+            doc_destination_dir=FLAGS.dest,
         )
     else:
         generate_all_api_documents(
-            directory_uri=FLAGS.directory_uri, doc_destination_dir=FLAGS.dest
+            directory_uri=FLAGS.directory_uri,
+            doc_destination_dir=FLAGS.dest,
         )

@@ -887,6 +887,29 @@ def _fix_up_method_description(method_desc, root_desc, schema):
     return path_url, http_method, method_id, accept, max_size, media_path_url
 
 
+def _fix_up_media_path_base_url(media_path_url, base_url):
+    """
+    Update the media upload base url if its netloc doesn't match base url netloc.
+
+    This can happen in case the base url was overridden by
+    client_options.api_endpoint.
+
+    Args:
+      media_path_url: String; the absolute URI for media upload.
+      base_url: string, base URL for the API. All requests are relative to this URI.
+
+    Returns:
+      String; the absolute URI for media upload.
+    """
+    parsed_media_url = urllib.parse.urlparse(media_path_url)
+    parsed_base_url = urllib.parse.urlparse(base_url)
+    if parsed_media_url.netloc == parsed_base_url.netloc:
+        return media_path_url
+    return urllib.parse.urlunparse(
+        parsed_media_url._replace(netloc=parsed_base_url.netloc)
+    )
+
+
 def _urljoin(base, url):
     """Custom urljoin replacement supporting : before / in url."""
     # In general, it's unsafe to simply join base and url. However, for
@@ -1133,6 +1156,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
             # Use the media path uri for media uploads
             expanded_url = uritemplate.expand(mediaPathUrl, params)
             url = _urljoin(self._baseUrl, expanded_url + query)
+            url = _fix_up_media_path_base_url(url, self._baseUrl)
             if media_upload.resumable():
                 url = _add_query_parameter(url, "uploadType", "resumable")
 
