@@ -682,7 +682,7 @@ class MediaIoBaseDownload(object):
     """
 
     @util.positional(3)
-    def __init__(self, fd, request, chunksize=DEFAULT_CHUNK_SIZE):
+    def __init__(self, fd, request, chunksize=DEFAULT_CHUNK_SIZE, start=0):
         """Constructor.
 
         Args:
@@ -696,7 +696,7 @@ class MediaIoBaseDownload(object):
         self._request = request
         self._uri = request.uri
         self._chunksize = chunksize
-        self._progress = 0
+        self._progress = start
         self._total_size = None
         self._done = False
 
