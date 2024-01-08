@@ -432,7 +432,7 @@ def document_api(
                 # Reset position to the beginning
                 f.seek(0)
                 # Write the changes to disk
-                json.dump(discovery, f, indent=2, sort_keys=True)
+                json.dump(discovery, f, indent=0, sort_keys=True)
                 # Truncate anything left as it's not needed
                 f.truncate()
 
