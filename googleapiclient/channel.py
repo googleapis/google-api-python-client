@@ -78,7 +78,7 @@ from googleapiclient import _helpers as util
 from googleapiclient import errors
 
 # The unix time epoch starts at midnight 1970.
-EPOCH = datetime.datetime.utcfromtimestamp(0)
+EPOCH = datetime.datetime(1970, 1, 1)
 
 # Map the names of the parameters in the JSON channel description to
 # the parameter names we use in the Channel class.

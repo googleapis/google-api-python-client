@@ -175,7 +175,7 @@ Returns:
       ],
       &quot;env&quot;: [ # List of environment variables to set in the container.
         { # EnvVar represents an environment variable present in a Container.
-          &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must be a C_IDENTIFIER, and must not exceed 32768 characters.
+          &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must not exceed 32768 characters.
           &quot;value&quot;: &quot;A String&quot;, # Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any route environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to &quot;&quot;, and the maximum length is 32768 bytes.
           &quot;valueSource&quot;: { # EnvVarSource represents a source for the value of an EnvVar. # Source for the environment variable&#x27;s value.
             &quot;secretKeyRef&quot;: { # SecretEnvVarSource represents a source for the value of an EnvVar. # Selects a secret and a specific version from Cloud Secret Manager.
@@ -217,8 +217,8 @@ Returns:
         },
       ],
       &quot;resources&quot;: { # ResourceRequirements describes the compute resource requirements. # Compute Resource requirements by this container.
-        &quot;cpuIdle&quot;: True or False, # Determines whether CPU should be throttled or not outside of requests.
-        &quot;limits&quot;: { # Only ´memory´ and &#x27;cpu&#x27; are supported. Notes: * The only supported values for CPU are &#x27;1&#x27;, &#x27;2&#x27;, &#x27;4&#x27;, and &#x27;8&#x27;. Setting 4 CPU requires at least 2Gi of memory. For more information, go to https://cloud.google.com/run/docs/configuring/cpu. * For supported &#x27;memory&#x27; values and syntax, go to https://cloud.google.com/run/docs/configuring/memory-limits
+        &quot;cpuIdle&quot;: True or False, # Determines whether CPU is only allocated during requests (true by default). However, if ResourceRequirements is set, the caller must explicitly set this field to true to preserve the default behavior.
+        &quot;limits&quot;: { # Only `memory` and `cpu` keys in the map are supported. Notes: * The only supported values for CPU are &#x27;1&#x27;, &#x27;2&#x27;, &#x27;4&#x27;, and &#x27;8&#x27;. Setting 4 CPU requires at least 2Gi of memory. For more information, go to https://cloud.google.com/run/docs/configuring/cpu. * For supported &#x27;memory&#x27; values and syntax, go to https://cloud.google.com/run/docs/configuring/memory-limits
           &quot;a_key&quot;: &quot;A String&quot;,
         },
         &quot;startupCpuBoost&quot;: True or False, # Determines whether CPU should be boosted on startup of a new container instance above the requested CPU threshold, this can help reduce cold-start latency.
@@ -278,6 +278,9 @@ Returns:
     &quot;maxInstanceCount&quot;: 42, # Maximum number of serving instances that this resource should have.
     &quot;minInstanceCount&quot;: 42, # Minimum number of serving instances that this resource should have.
   },
+  &quot;scalingStatus&quot;: { # Effective settings for the current revision # Output only. The current effective scaling settings for the revision.
+    &quot;desiredMinInstanceCount&quot;: 42, # The current number of min instances provisioned for this revision.
+  },
   &quot;service&quot;: &quot;A String&quot;, # Output only. The name of the parent service.
   &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the IAM service account associated with the revision of the service. The service account represents the identity of the running revision, and determines what permissions the revision has.
   &quot;sessionAffinity&quot;: True or False, # Enable session affinity.
@@ -295,7 +298,16 @@ Returns:
         &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values today is only MEMORY or none. When none, the default will currently be backed by memory but could change over time. +optional
         &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. More info: https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume. Info in Kubernetes: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
       },
+      &quot;gcs&quot;: { # Represents a GCS Bucket mounted as a volume. # Persistent storage backed by a Google Cloud Storage bucket.
+        &quot;bucket&quot;: &quot;A String&quot;, # GCS Bucket name
+        &quot;readOnly&quot;: True or False, # If true, mount the GCS bucket as read-only
+      },
       &quot;name&quot;: &quot;A String&quot;, # Required. Volume&#x27;s name.
+      &quot;nfs&quot;: { # Represents an NFS mount. # For NFS Voumes, contains the path to the nfs Volume
+        &quot;path&quot;: &quot;A String&quot;, # Path that is exported by the NFS server.
+        &quot;readOnly&quot;: True or False, # If true, mount the NFS volume as read only
+        &quot;server&quot;: &quot;A String&quot;, # Hostname or IP address of the NFS server
+      },
       &quot;secret&quot;: { # The secret&#x27;s value will be presented as the content of a file whose name is defined in the item path. If no items are defined, the name of the file is the secret. # Secret represents a secret that should populate this volume.
         &quot;defaultMode&quot;: 42, # Integer representation of mode bits to use on created files by default. Must be a value between 0000 and 0777 (octal), defaulting to 0444. Directories within the path are not affected by this setting. Notes * Internally, a umask of 0222 will be applied to any non-zero value. * This is an integer representation of the mode bits. So, the octal integer value should look exactly as the chmod numeric notation with a leading zero. Some examples: for chmod 777 (a=rwx), set to 0777 (octal) or 511 (base-10). For chmod 640 (u=rw,g=r), set to 0640 (octal) or 416 (base-10). For chmod 755 (u=rwx,g=rx,o=rx), set to 0755 (octal) or 493 (base-10). * This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set. This might be in conflict with other options that affect the file mode, like fsGroup, and as a result, other mode bits could be set.
         &quot;items&quot;: [ # If unspecified, the volume will expose a file whose name is the secret, relative to VolumeMount.mount_path. If specified, the key will be used as the version to fetch from Cloud Secret Manager and the path will be the name of the file exposed in the volume. When items are defined, they must specify a path and a version.
@@ -309,14 +321,14 @@ Returns:
       },
     },
   ],
-  &quot;vpcAccess&quot;: { # VPC Access settings. For more information on creating a VPC Connector, visit https://cloud.google.com/vpc/docs/configure-serverless-vpc-access For information on how to configure Cloud Run with an existing VPC Connector, visit https://cloud.google.com/run/docs/configuring/connecting-vpc # VPC Access configuration for this Revision. For more information, visit https://cloud.google.com/run/docs/configuring/connecting-vpc.
-    &quot;connector&quot;: &quot;A String&quot;, # VPC Access connector name. Format: projects/{project}/locations/{location}/connectors/{connector}, where {project} can be project id or number.
+  &quot;vpcAccess&quot;: { # VPC Access settings. For more information on sending traffic to a VPC network, visit https://cloud.google.com/run/docs/configuring/connecting-vpc. # VPC Access configuration for this Revision. For more information, visit https://cloud.google.com/run/docs/configuring/connecting-vpc.
+    &quot;connector&quot;: &quot;A String&quot;, # VPC Access connector name. Format: projects/{project}/locations/{location}/connectors/{connector}, where {project} can be project id or number. For more information on sending traffic to a VPC network via a connector, visit https://cloud.google.com/run/docs/configuring/vpc-connectors.
     &quot;egress&quot;: &quot;A String&quot;, # Traffic VPC egress settings. If not provided, it defaults to PRIVATE_RANGES_ONLY.
-    &quot;networkInterfaces&quot;: [ # VPC network to access to. Currently only single network interface is supported.
-      { # VPC network settings.
-        &quot;network&quot;: &quot;A String&quot;, # The VPC network name to access to. Defaults to &quot;default&quot; network.
-        &quot;subnetwork&quot;: &quot;A String&quot;, # The VPC subnetwork name to access to. Defaults to the same vaule of network.
-        &quot;tags&quot;: [ # Network tags applied to this VPC network.
+    &quot;networkInterfaces&quot;: [ # Direct VPC egress settings. Currently only single network interface is supported.
+      { # Direct VPC egress settings.
+        &quot;network&quot;: &quot;A String&quot;, # The VPC network that the Cloud Run resource will be able to send traffic to. At least one of network or subnetwork must be specified. If both network and subnetwork are specified, the given VPC subnetwork must belong to the given VPC network. If network is not specified, it will be looked up from the subnetwork.
+        &quot;subnetwork&quot;: &quot;A String&quot;, # The VPC subnetwork that the Cloud Run resource will get IPs from. At least one of network or subnetwork must be specified. If both network and subnetwork are specified, the given VPC subnetwork must belong to the given VPC network. If subnetwork is not specified, the subnetwork with the same name with the network will be used.
+        &quot;tags&quot;: [ # Network tags applied to this Cloud Run resource.
           &quot;A String&quot;,
         ],
       },
@@ -374,7 +386,7 @@ Returns:
           ],
           &quot;env&quot;: [ # List of environment variables to set in the container.
             { # EnvVar represents an environment variable present in a Container.
-              &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must be a C_IDENTIFIER, and must not exceed 32768 characters.
+              &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must not exceed 32768 characters.
               &quot;value&quot;: &quot;A String&quot;, # Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any route environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to &quot;&quot;, and the maximum length is 32768 bytes.
               &quot;valueSource&quot;: { # EnvVarSource represents a source for the value of an EnvVar. # Source for the environment variable&#x27;s value.
                 &quot;secretKeyRef&quot;: { # SecretEnvVarSource represents a source for the value of an EnvVar. # Selects a secret and a specific version from Cloud Secret Manager.
@@ -416,8 +428,8 @@ Returns:
             },
           ],
           &quot;resources&quot;: { # ResourceRequirements describes the compute resource requirements. # Compute Resource requirements by this container.
-            &quot;cpuIdle&quot;: True or False, # Determines whether CPU should be throttled or not outside of requests.
-            &quot;limits&quot;: { # Only ´memory´ and &#x27;cpu&#x27; are supported. Notes: * The only supported values for CPU are &#x27;1&#x27;, &#x27;2&#x27;, &#x27;4&#x27;, and &#x27;8&#x27;. Setting 4 CPU requires at least 2Gi of memory. For more information, go to https://cloud.google.com/run/docs/configuring/cpu. * For supported &#x27;memory&#x27; values and syntax, go to https://cloud.google.com/run/docs/configuring/memory-limits
+            &quot;cpuIdle&quot;: True or False, # Determines whether CPU is only allocated during requests (true by default). However, if ResourceRequirements is set, the caller must explicitly set this field to true to preserve the default behavior.
+            &quot;limits&quot;: { # Only `memory` and `cpu` keys in the map are supported. Notes: * The only supported values for CPU are &#x27;1&#x27;, &#x27;2&#x27;, &#x27;4&#x27;, and &#x27;8&#x27;. Setting 4 CPU requires at least 2Gi of memory. For more information, go to https://cloud.google.com/run/docs/configuring/cpu. * For supported &#x27;memory&#x27; values and syntax, go to https://cloud.google.com/run/docs/configuring/memory-limits
               &quot;a_key&quot;: &quot;A String&quot;,
             },
             &quot;startupCpuBoost&quot;: True or False, # Determines whether CPU should be boosted on startup of a new container instance above the requested CPU threshold, this can help reduce cold-start latency.
@@ -477,6 +489,9 @@ Returns:
         &quot;maxInstanceCount&quot;: 42, # Maximum number of serving instances that this resource should have.
         &quot;minInstanceCount&quot;: 42, # Minimum number of serving instances that this resource should have.
       },
+      &quot;scalingStatus&quot;: { # Effective settings for the current revision # Output only. The current effective scaling settings for the revision.
+        &quot;desiredMinInstanceCount&quot;: 42, # The current number of min instances provisioned for this revision.
+      },
       &quot;service&quot;: &quot;A String&quot;, # Output only. The name of the parent service.
       &quot;serviceAccount&quot;: &quot;A String&quot;, # Email address of the IAM service account associated with the revision of the service. The service account represents the identity of the running revision, and determines what permissions the revision has.
       &quot;sessionAffinity&quot;: True or False, # Enable session affinity.
@@ -494,7 +509,16 @@ Returns:
             &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values today is only MEMORY or none. When none, the default will currently be backed by memory but could change over time. +optional
             &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. More info: https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume. Info in Kubernetes: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
           },
+          &quot;gcs&quot;: { # Represents a GCS Bucket mounted as a volume. # Persistent storage backed by a Google Cloud Storage bucket.
+            &quot;bucket&quot;: &quot;A String&quot;, # GCS Bucket name
+            &quot;readOnly&quot;: True or False, # If true, mount the GCS bucket as read-only
+          },
           &quot;name&quot;: &quot;A String&quot;, # Required. Volume&#x27;s name.
+          &quot;nfs&quot;: { # Represents an NFS mount. # For NFS Voumes, contains the path to the nfs Volume
+            &quot;path&quot;: &quot;A String&quot;, # Path that is exported by the NFS server.
+            &quot;readOnly&quot;: True or False, # If true, mount the NFS volume as read only
+            &quot;server&quot;: &quot;A String&quot;, # Hostname or IP address of the NFS server
+          },
           &quot;secret&quot;: { # The secret&#x27;s value will be presented as the content of a file whose name is defined in the item path. If no items are defined, the name of the file is the secret. # Secret represents a secret that should populate this volume.
             &quot;defaultMode&quot;: 42, # Integer representation of mode bits to use on created files by default. Must be a value between 0000 and 0777 (octal), defaulting to 0444. Directories within the path are not affected by this setting. Notes * Internally, a umask of 0222 will be applied to any non-zero value. * This is an integer representation of the mode bits. So, the octal integer value should look exactly as the chmod numeric notation with a leading zero. Some examples: for chmod 777 (a=rwx), set to 0777 (octal) or 511 (base-10). For chmod 640 (u=rw,g=r), set to 0640 (octal) or 416 (base-10). For chmod 755 (u=rwx,g=rx,o=rx), set to 0755 (octal) or 493 (base-10). * This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set. This might be in conflict with other options that affect the file mode, like fsGroup, and as a result, other mode bits could be set.
             &quot;items&quot;: [ # If unspecified, the volume will expose a file whose name is the secret, relative to VolumeMount.mount_path. If specified, the key will be used as the version to fetch from Cloud Secret Manager and the path will be the name of the file exposed in the volume. When items are defined, they must specify a path and a version.
@@ -508,14 +532,14 @@ Returns:
           },
         },
       ],
-      &quot;vpcAccess&quot;: { # VPC Access settings. For more information on creating a VPC Connector, visit https://cloud.google.com/vpc/docs/configure-serverless-vpc-access For information on how to configure Cloud Run with an existing VPC Connector, visit https://cloud.google.com/run/docs/configuring/connecting-vpc # VPC Access configuration for this Revision. For more information, visit https://cloud.google.com/run/docs/configuring/connecting-vpc.
-        &quot;connector&quot;: &quot;A String&quot;, # VPC Access connector name. Format: projects/{project}/locations/{location}/connectors/{connector}, where {project} can be project id or number.
+      &quot;vpcAccess&quot;: { # VPC Access settings. For more information on sending traffic to a VPC network, visit https://cloud.google.com/run/docs/configuring/connecting-vpc. # VPC Access configuration for this Revision. For more information, visit https://cloud.google.com/run/docs/configuring/connecting-vpc.
+        &quot;connector&quot;: &quot;A String&quot;, # VPC Access connector name. Format: projects/{project}/locations/{location}/connectors/{connector}, where {project} can be project id or number. For more information on sending traffic to a VPC network via a connector, visit https://cloud.google.com/run/docs/configuring/vpc-connectors.
         &quot;egress&quot;: &quot;A String&quot;, # Traffic VPC egress settings. If not provided, it defaults to PRIVATE_RANGES_ONLY.
-        &quot;networkInterfaces&quot;: [ # VPC network to access to. Currently only single network interface is supported.
-          { # VPC network settings.
-            &quot;network&quot;: &quot;A String&quot;, # The VPC network name to access to. Defaults to &quot;default&quot; network.
-            &quot;subnetwork&quot;: &quot;A String&quot;, # The VPC subnetwork name to access to. Defaults to the same vaule of network.
-            &quot;tags&quot;: [ # Network tags applied to this VPC network.
+        &quot;networkInterfaces&quot;: [ # Direct VPC egress settings. Currently only single network interface is supported.
+          { # Direct VPC egress settings.
+            &quot;network&quot;: &quot;A String&quot;, # The VPC network that the Cloud Run resource will be able to send traffic to. At least one of network or subnetwork must be specified. If both network and subnetwork are specified, the given VPC subnetwork must belong to the given VPC network. If network is not specified, it will be looked up from the subnetwork.
+            &quot;subnetwork&quot;: &quot;A String&quot;, # The VPC subnetwork that the Cloud Run resource will get IPs from. At least one of network or subnetwork must be specified. If both network and subnetwork are specified, the given VPC subnetwork must belong to the given VPC network. If subnetwork is not specified, the subnetwork with the same name with the network will be used.
+            &quot;tags&quot;: [ # Network tags applied to this Cloud Run resource.
               &quot;A String&quot;,
             ],
           },

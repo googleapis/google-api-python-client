@@ -2193,7 +2193,7 @@ class Discovery(unittest.TestCase):
         client_id = "some_client_id"
         client_secret = "cOuDdkfjxxnv+"
         refresh_token = "1/0/a.df219fjls0"
-        token_expiry = datetime.datetime.utcnow()
+        token_expiry = datetime.datetime.now(datetime.timezone.utc)
         user_agent = "refresh_checker/1.0"
         return OAuth2Credentials(
             access_token,

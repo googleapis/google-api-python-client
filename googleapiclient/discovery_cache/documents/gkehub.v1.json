@@ -1801,7 +1801,7 @@
                       ],
                       "parameters": {
                         "name": {
-                          "description": "The resource name for the rbacrolebinding `projects/{project}/locations/{location}/namespaces/{namespace}/rbacrolebindings/{rbacrolebinding}` or `projects/{project}/locations/{location}/memberships/{membership}/rbacrolebindings/{rbacrolebinding}`",
+                          "description": "The resource name for the rbacrolebinding `projects/{project}/locations/{location}/scopes/{scope}/rbacrolebindings/{rbacrolebinding}` or `projects/{project}/locations/{location}/memberships/{membership}/rbacrolebindings/{rbacrolebinding}`",
                           "location": "path",
                           "pattern": "^projects/[^/]+/locations/[^/]+/scopes/[^/]+/rbacrolebindings/[^/]+$",
                           "required": true,
@@ -1834,7 +1834,7 @@
       }
     }
   },
-  "revision": "20230907",
+  "revision": "20231206",
   "rootUrl": "https://gkehub.googleapis.com/",
   "schemas": {
     "AppDevExperienceFeatureSpec": {
@@ -1939,6 +1939,34 @@
       },
       "type": "object"
     },
+    "BinaryAuthorizationConfig": {
+      "description": "BinaryAuthorizationConfig defines the fleet level configuration of binary authorization feature.",
+      "id": "BinaryAuthorizationConfig",
+      "properties": {
+        "evaluationMode": {
+          "description": "Optional. Mode of operation for binauthz policy evaluation.",
+          "enum": [
+            "EVALUATION_MODE_UNSPECIFIED",
+            "DISABLED",
+            "POLICY_BINDINGS"
+          ],
+          "enumDescriptions": [
+            "Default value",
+            "Disable BinaryAuthorization",
+            "Use Binary Authorization with the policies specified in policy_bindings."
+          ],
+          "type": "string"
+        },
+        "policyBindings": {
+          "description": "Optional. Binauthz policies that apply to this cluster.",
+          "items": {
+            "$ref": "PolicyBinding"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "Binding": {
       "description": "Associates `members`, or principals, with a `role`.",
       "id": "Binding",
@@ -1967,6 +1995,253 @@
       "properties": {},
       "type": "object"
     },
+    "ClusterUpgradeFleetSpec": {
+      "description": "**ClusterUpgrade**: The configuration for the fleet-level ClusterUpgrade feature.",
+      "id": "ClusterUpgradeFleetSpec",
+      "properties": {
+        "gkeUpgradeOverrides": {
+          "description": "Allow users to override some properties of each GKE upgrade.",
+          "items": {
+            "$ref": "ClusterUpgradeGKEUpgradeOverride"
+          },
+          "type": "array"
+        },
+        "postConditions": {
+          "$ref": "ClusterUpgradePostConditions",
+          "description": "Required. Post conditions to evaluate to mark an upgrade COMPLETE. Required."
+        },
+        "upstreamFleets": {
+          "description": "This fleet consumes upgrades that have COMPLETE status code in the upstream fleets. See UpgradeStatus.Code for code definitions. The fleet name should be either fleet project number or id. This is defined as repeated for future proof reasons. Initial implementation will enforce at most one upstream fleet.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeFleetState": {
+      "description": "**ClusterUpgrade**: The state for the fleet-level ClusterUpgrade feature.",
+      "id": "ClusterUpgradeFleetState",
+      "properties": {
+        "downstreamFleets": {
+          "description": "This fleets whose upstream_fleets contain the current fleet. The fleet name should be either fleet project number or id.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "gkeState": {
+          "$ref": "ClusterUpgradeGKEUpgradeFeatureState",
+          "description": "Feature state for GKE clusters."
+        },
+        "ignored": {
+          "additionalProperties": {
+            "$ref": "ClusterUpgradeIgnoredMembership"
+          },
+          "description": "A list of memberships ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel. The membership resource is in the format: `projects/{p}/locations/{l}/membership/{m}`.",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeGKEUpgrade": {
+      "description": "GKEUpgrade represents a GKE provided upgrade, e.g., control plane upgrade.",
+      "id": "ClusterUpgradeGKEUpgrade",
+      "properties": {
+        "name": {
+          "description": "Name of the upgrade, e.g., \"k8s_control_plane\". It should be a valid upgrade name. It must not exceet 99 characters.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Version of the upgrade, e.g., \"1.22.1-gke.100\". It should be a valid version. It must not exceet 99 characters.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeGKEUpgradeFeatureCondition": {
+      "description": "GKEUpgradeFeatureCondition describes the condition of the feature for GKE clusters at a certain point of time.",
+      "id": "ClusterUpgradeGKEUpgradeFeatureCondition",
+      "properties": {
+        "reason": {
+          "description": "Reason why the feature is in this status.",
+          "type": "string"
+        },
+        "status": {
+          "description": "Status of the condition, one of True, False, Unknown.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Type of the condition, for example, \"ready\".",
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Last timestamp the condition was updated.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeGKEUpgradeFeatureState": {
+      "description": "GKEUpgradeFeatureState contains feature states for GKE clusters in the scope.",
+      "id": "ClusterUpgradeGKEUpgradeFeatureState",
+      "properties": {
+        "conditions": {
+          "description": "Current conditions of the feature.",
+          "items": {
+            "$ref": "ClusterUpgradeGKEUpgradeFeatureCondition"
+          },
+          "type": "array"
+        },
+        "upgradeState": {
+          "description": "Upgrade state. It will eventually replace `state`.",
+          "items": {
+            "$ref": "ClusterUpgradeGKEUpgradeState"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeGKEUpgradeOverride": {
+      "description": "Properties of a GKE upgrade that can be overridden by the user. For example, a user can skip soaking by overriding the soaking to 0.",
+      "id": "ClusterUpgradeGKEUpgradeOverride",
+      "properties": {
+        "postConditions": {
+          "$ref": "ClusterUpgradePostConditions",
+          "description": "Required. Post conditions to override for the specified upgrade (name + version). Required."
+        },
+        "upgrade": {
+          "$ref": "ClusterUpgradeGKEUpgrade",
+          "description": "Required. Which upgrade to override. Required."
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeGKEUpgradeState": {
+      "description": "GKEUpgradeState is a GKEUpgrade and its state at the scope and fleet level.",
+      "id": "ClusterUpgradeGKEUpgradeState",
+      "properties": {
+        "stats": {
+          "additionalProperties": {
+            "format": "int64",
+            "type": "string"
+          },
+          "description": "Number of GKE clusters in each status code.",
+          "type": "object"
+        },
+        "status": {
+          "$ref": "ClusterUpgradeUpgradeStatus",
+          "description": "Status of the upgrade."
+        },
+        "upgrade": {
+          "$ref": "ClusterUpgradeGKEUpgrade",
+          "description": "Which upgrade to track the state."
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeIgnoredMembership": {
+      "description": "IgnoredMembership represents a membership ignored by the feature. A membership can be ignored because it was manually upgraded to a newer version than RC default.",
+      "id": "ClusterUpgradeIgnoredMembership",
+      "properties": {
+        "ignoredTime": {
+          "description": "Time when the membership was first set to ignored.",
+          "format": "google-datetime",
+          "type": "string"
+        },
+        "reason": {
+          "description": "Reason why the membership is ignored.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeMembershipGKEUpgradeState": {
+      "description": "ScopeGKEUpgradeState is a GKEUpgrade and its state per-membership.",
+      "id": "ClusterUpgradeMembershipGKEUpgradeState",
+      "properties": {
+        "status": {
+          "$ref": "ClusterUpgradeUpgradeStatus",
+          "description": "Status of the upgrade."
+        },
+        "upgrade": {
+          "$ref": "ClusterUpgradeGKEUpgrade",
+          "description": "Which upgrade to track the state."
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeMembershipState": {
+      "description": "Per-membership state for this feature.",
+      "id": "ClusterUpgradeMembershipState",
+      "properties": {
+        "ignored": {
+          "$ref": "ClusterUpgradeIgnoredMembership",
+          "description": "Whether this membership is ignored by the feature. For example, manually upgraded clusters can be ignored if they are newer than the default versions of its release channel."
+        },
+        "upgrades": {
+          "description": "Actual upgrade state against desired.",
+          "items": {
+            "$ref": "ClusterUpgradeMembershipGKEUpgradeState"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradePostConditions": {
+      "description": "Post conditional checks after an upgrade has been applied on all eligible clusters.",
+      "id": "ClusterUpgradePostConditions",
+      "properties": {
+        "soaking": {
+          "description": "Required. Amount of time to \"soak\" after a rollout has been finished before marking it COMPLETE. Cannot exceed 30 days. Required.",
+          "format": "google-duration",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ClusterUpgradeUpgradeStatus": {
+      "description": "UpgradeStatus provides status information for each upgrade.",
+      "id": "ClusterUpgradeUpgradeStatus",
+      "properties": {
+        "code": {
+          "description": "Status code of the upgrade.",
+          "enum": [
+            "CODE_UNSPECIFIED",
+            "INELIGIBLE",
+            "PENDING",
+            "IN_PROGRESS",
+            "SOAKING",
+            "FORCED_SOAKING",
+            "COMPLETE"
+          ],
+          "enumDescriptions": [
+            "Required by https://linter.aip.dev/126/unspecified.",
+            "The upgrade is ineligible. At the scope level, this means the upgrade is ineligible for all the clusters in the scope.",
+            "The upgrade is pending. At the scope level, this means the upgrade is pending for all the clusters in the scope.",
+            "The upgrade is in progress. At the scope level, this means the upgrade is in progress for at least one cluster in the scope.",
+            "The upgrade has finished and is soaking until the soaking time is up. At the scope level, this means at least one cluster is in soaking while the rest are either soaking or complete.",
+            "A cluster will be forced to enter soaking if an upgrade doesn't finish within a certain limit, despite it's actual status.",
+            "The upgrade has passed all post conditions (soaking). At the scope level, this means all eligible clusters are in COMPLETE status."
+          ],
+          "type": "string"
+        },
+        "reason": {
+          "description": "Reason for this status.",
+          "type": "string"
+        },
+        "updateTime": {
+          "description": "Last timestamp the status was updated.",
+          "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "CommonFeatureSpec": {
       "description": "CommonFeatureSpec contains Hub-wide configuration information",
       "id": "CommonFeatureSpec",
@@ -1974,6 +2249,10 @@
         "appdevexperience": {
           "$ref": "AppDevExperienceFeatureSpec",
           "description": "Appdevexperience specific spec."
+        },
+        "clusterupgrade": {
+          "$ref": "ClusterUpgradeFleetSpec",
+          "description": "ClusterUpgrade (fleet-based) feature spec."
         },
         "fleetobservability": {
           "$ref": "FleetObservabilityFeatureSpec",
@@ -1994,6 +2273,10 @@
           "$ref": "AppDevExperienceFeatureState",
           "description": "Appdevexperience specific state."
         },
+        "clusterupgrade": {
+          "$ref": "ClusterUpgradeFleetState",
+          "description": "ClusterUpgrade fleet-level state."
+        },
         "fleetobservability": {
           "$ref": "FleetObservabilityFeatureState",
           "description": "FleetObservability feature state."
@@ -2009,7 +2292,24 @@
     "CommonFleetDefaultMemberConfigSpec": {
       "description": "CommonFleetDefaultMemberConfigSpec contains default configuration information for memberships of a fleet",
       "id": "CommonFleetDefaultMemberConfigSpec",
-      "properties": {},
+      "properties": {
+        "configmanagement": {
+          "$ref": "ConfigManagementMembershipSpec",
+          "description": "Config Management-specific spec."
+        },
+        "identityservice": {
+          "$ref": "IdentityServiceMembershipSpec",
+          "description": "Identity Service-specific spec."
+        },
+        "mesh": {
+          "$ref": "ServiceMeshMembershipSpec",
+          "description": "Anthos Service Mesh-specific spec"
+        },
+        "policycontroller": {
+          "$ref": "PolicyControllerMembershipSpec",
+          "description": "Policy Controller spec."
+        }
+      },
       "type": "object"
     },
     "ConfigManagementConfigSync": {
@@ -2030,7 +2330,7 @@
           "description": "Git repo configuration for the cluster."
         },
         "metricsGcpServiceAccountEmail": {
-          "description": "The Email of the Google Cloud Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be bound to the GSA. This field is required when automatic Feature management is enabled.",
+          "description": "The Email of the Google Cloud Service Account (GSA) used for exporting Config Sync metrics to Cloud Monitoring and Cloud Monarch when Workload Identity is enabled. The GSA should have the Monitoring Metric Writer (roles/monitoring.metricWriter) IAM role. The Kubernetes ServiceAccount `default` in the namespace `config-management-monitoring` should be bound to the GSA.",
           "type": "string"
         },
         "oci": {
@@ -2044,10 +2344,6 @@
         "sourceFormat": {
           "description": "Specifies whether the Config Sync Repo is in \"hierarchical\" or \"unstructured\" mode.",
           "type": "string"
-        },
-        "stopSyncing": {
-          "description": "Set to true to stop syncing configs for a single cluster when automatic Feature management is enabled. Default to false. The field will be ignored when automatic Feature management is disabled.",
-          "type": "boolean"
         }
       },
       "type": "object"
@@ -2062,13 +2358,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2078,13 +2376,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2094,13 +2394,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2110,13 +2412,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2126,13 +2430,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2142,13 +2448,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2158,13 +2466,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         }
@@ -2276,13 +2586,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2292,13 +2604,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2308,13 +2622,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         }
@@ -2409,13 +2725,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2425,13 +2743,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         }
@@ -2494,20 +2814,6 @@
         "hierarchyController": {
           "$ref": "ConfigManagementHierarchyControllerConfig",
           "description": "Hierarchy Controller configuration for the cluster."
-        },
-        "management": {
-          "description": "Enables automatic Feature management.",
-          "enum": [
-            "MANAGEMENT_UNSPECIFIED",
-            "MANAGEMENT_AUTOMATIC",
-            "MANAGEMENT_MANUAL"
-          ],
-          "enumDescriptions": [
-            "Unspecified",
-            "Google will manage the Feature for the cluster.",
-            "User will manually manage the Feature for the cluster."
-          ],
-          "type": "string"
         },
         "policyController": {
           "$ref": "ConfigManagementPolicyController",
@@ -2589,13 +2895,15 @@
             "DEPLOYMENT_STATE_UNSPECIFIED",
             "NOT_INSTALLED",
             "INSTALLED",
-            "ERROR"
+            "ERROR",
+            "PENDING"
           ],
           "enumDescriptions": [
             "Deployment's state cannot be determined",
             "Deployment is not installed",
             "Deployment is installed",
-            "Deployment was attempted to be installed, but has errors"
+            "Deployment was attempted to be installed, but has errors",
+            "Deployment is installing or terminating"
           ],
           "type": "string"
         },
@@ -2839,6 +3147,21 @@
       },
       "type": "object"
     },
+    "DefaultClusterConfig": {
+      "description": "DefaultClusterConfig describes the default cluster configurations to be applied to all clusters born-in-fleet.",
+      "id": "DefaultClusterConfig",
+      "properties": {
+        "binaryAuthorizationConfig": {
+          "$ref": "BinaryAuthorizationConfig",
+          "description": "Optional. Enable/Disable binary authorization features for the cluster."
+        },
+        "securityPostureConfig": {
+          "$ref": "SecurityPostureConfig",
+          "description": "Enable/Disable Security Posture features for the cluster."
+        }
+      },
+      "type": "object"
+    },
     "EdgeCluster": {
       "description": "EdgeCluster contains information specific to Google Edge Clusters.",
       "id": "EdgeCluster",
@@ -3032,6 +3355,10 @@
           "format": "google-datetime",
           "readOnly": true,
           "type": "string"
+        },
+        "defaultClusterConfig": {
+          "$ref": "DefaultClusterConfig",
+          "description": "Optional. The default cluster configurations to apply across the fleet."
         },
         "deleteTime": {
           "description": "Output only. When the Fleet was deleted.",
@@ -3968,6 +4295,10 @@
         "origin": {
           "$ref": "Origin",
           "description": "Whether this per-Membership spec was inherited from a fleet-level default. This field can be updated by users by either overriding a Membership config (updated to USER implicitly) or setting to FLEET explicitly."
+        },
+        "policycontroller": {
+          "$ref": "PolicyControllerMembershipSpec",
+          "description": "Policy Controller spec."
         }
       },
       "type": "object"
@@ -3980,6 +4311,10 @@
           "$ref": "AppDevExperienceFeatureState",
           "description": "Appdevexperience specific state."
         },
+        "clusterupgrade": {
+          "$ref": "ClusterUpgradeMembershipState",
+          "description": "ClusterUpgrade state."
+        },
         "configmanagement": {
           "$ref": "ConfigManagementMembershipState",
           "description": "Config Management-specific state."
@@ -3991,6 +4326,10 @@
         "identityservice": {
           "$ref": "IdentityServiceMembershipState",
           "description": "Identity Service-specific state."
+        },
+        "policycontroller": {
+          "$ref": "PolicyControllerMembershipState",
+          "description": "Policycontroller-specific state."
         },
         "servicemesh": {
           "$ref": "ServiceMeshMembershipState",
@@ -4032,27 +4371,27 @@
       "type": "object"
     },
     "MonitoringConfig": {
-      "description": "This field informs Fleet-based applications/services/UIs with the necessary information for where each underlying Cluster reports its metrics.",
+      "description": "MonitoringConfig informs Fleet-based applications/services/UIs how the metrics for the underlying cluster is reported to cloud monitoring services. It can be set from empty to non-empty, but can't be mutated directly to prevent accidentally breaking the constinousty of metrics.",
       "id": "MonitoringConfig",
       "properties": {
         "cluster": {
-          "description": "Immutable. Cluster name used to report metrics. For Anthos on VMWare/Baremetal, it would be in format `memberClusters/cluster_name`; And for Anthos on MultiCloud, it would be in format `{azureClusters, awsClusters}/cluster_name`.",
+          "description": "Optional. Cluster name used to report metrics. For Anthos on VMWare/Baremetal/MultiCloud clusters, it would be in format {cluster_type}/{cluster_name}, e.g., \"awsClusters/cluster_1\".",
           "type": "string"
         },
         "clusterHash": {
-          "description": "Immutable. Cluster hash, this is a unique string generated by google code, which does not contain any PII, which we can use to reference the cluster. This is expected to be created by the monitoring stack and persisted into the Cluster object as well as to GKE-Hub.",
+          "description": "Optional. For GKE and Multicloud clusters, this is the UUID of the cluster resource. For VMWare and Baremetal clusters, this is the kube-system UID.",
           "type": "string"
         },
         "kubernetesMetricsPrefix": {
-          "description": "Kubernetes system metrics, if available, are written to this prefix. This defaults to kubernetes.io for GKE, and kubernetes.io/anthos for Anthos eventually. Noted: Anthos MultiCloud will have kubernetes.io prefix today but will migration to be under kubernetes.io/anthos",
+          "description": "Optional. Kubernetes system metrics, if available, are written to this prefix. This defaults to kubernetes.io for GKE, and kubernetes.io/anthos for Anthos eventually. Noted: Anthos MultiCloud will have kubernetes.io prefix today but will migration to be under kubernetes.io/anthos.",
           "type": "string"
         },
         "location": {
-          "description": "Immutable. Location used to report Metrics",
+          "description": "Optional. Location used to report Metrics",
           "type": "string"
         },
         "projectId": {
-          "description": "Immutable. Project used to report Metrics",
+          "description": "Optional. Project used to report Metrics",
           "type": "string"
         }
       },
@@ -4339,6 +4678,380 @@
       },
       "type": "object"
     },
+    "PolicyBinding": {
+      "description": "Binauthz policy that applies to this cluster.",
+      "id": "PolicyBinding",
+      "properties": {
+        "name": {
+          "description": "The relative resource name of the binauthz platform policy to audit. GKE platform policies have the following format: `projects/{project_number}/platforms/gke/policies/{policy_id}`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerBundleInstallSpec": {
+      "description": "BundleInstallSpec is the specification configuration for a single managed bundle.",
+      "id": "PolicyControllerBundleInstallSpec",
+      "properties": {
+        "exemptedNamespaces": {
+          "description": "The set of namespaces to be exempted from the bundle.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerHubConfig": {
+      "description": "Configuration for Policy Controller",
+      "id": "PolicyControllerHubConfig",
+      "properties": {
+        "auditIntervalSeconds": {
+          "description": "Sets the interval for Policy Controller Audit Scans (in seconds). When set to 0, this disables audit functionality altogether.",
+          "format": "int64",
+          "type": "string"
+        },
+        "constraintViolationLimit": {
+          "description": "The maximum number of audit violations to be stored in a constraint. If not set, the internal default (currently 20) will be used.",
+          "format": "int64",
+          "type": "string"
+        },
+        "deploymentConfigs": {
+          "additionalProperties": {
+            "$ref": "PolicyControllerPolicyControllerDeploymentConfig"
+          },
+          "description": "Map of deployment configs to deployments (\"admission\", \"audit\", \"mutation').",
+          "type": "object"
+        },
+        "exemptableNamespaces": {
+          "description": "The set of namespaces that are excluded from Policy Controller checks. Namespaces do not need to currently exist on the cluster.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "installSpec": {
+          "description": "The install_spec represents the intended state specified by the latest request that mutated install_spec in the feature spec, not the lifecycle state of the feature observed by the Hub feature controller that is reported in the feature state.",
+          "enum": [
+            "INSTALL_SPEC_UNSPECIFIED",
+            "INSTALL_SPEC_NOT_INSTALLED",
+            "INSTALL_SPEC_ENABLED",
+            "INSTALL_SPEC_SUSPENDED",
+            "INSTALL_SPEC_DETACHED"
+          ],
+          "enumDescriptions": [
+            "Spec is unknown.",
+            "Request to uninstall Policy Controller.",
+            "Request to install and enable Policy Controller.",
+            "Request to suspend Policy Controller i.e. its webhooks. If Policy Controller is not installed, it will be installed but suspended.",
+            "Request to stop all reconciliation actions by PoCo Hub controller. This is a breakglass mechanism to stop PoCo Hub from affecting cluster resources."
+          ],
+          "type": "string"
+        },
+        "logDeniesEnabled": {
+          "description": "Logs all denies and dry run failures.",
+          "type": "boolean"
+        },
+        "monitoring": {
+          "$ref": "PolicyControllerMonitoringConfig",
+          "description": "Monitoring specifies the configuration of monitoring."
+        },
+        "mutationEnabled": {
+          "description": "Enables the ability to mutate resources using Policy Controller.",
+          "type": "boolean"
+        },
+        "policyContent": {
+          "$ref": "PolicyControllerPolicyContentSpec",
+          "description": "Specifies the desired policy content on the cluster"
+        },
+        "referentialRulesEnabled": {
+          "description": "Enables the ability to use Constraint Templates that reference to objects other than the object currently being evaluated.",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerMembershipSpec": {
+      "description": "**Policy Controller**: Configuration for a single cluster. Intended to parallel the PolicyController CR.",
+      "id": "PolicyControllerMembershipSpec",
+      "properties": {
+        "policyControllerHubConfig": {
+          "$ref": "PolicyControllerHubConfig",
+          "description": "Policy Controller configuration for the cluster."
+        },
+        "version": {
+          "description": "Version of Policy Controller installed.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerMembershipState": {
+      "description": "**Policy Controller**: State for a single cluster.",
+      "id": "PolicyControllerMembershipState",
+      "properties": {
+        "componentStates": {
+          "additionalProperties": {
+            "$ref": "PolicyControllerOnClusterState"
+          },
+          "description": "Currently these include (also serving as map keys): 1. \"admission\" 2. \"audit\" 3. \"mutation\"",
+          "type": "object"
+        },
+        "policyContentState": {
+          "$ref": "PolicyControllerPolicyContentState",
+          "description": "The overall content state observed by the Hub Feature controller."
+        },
+        "state": {
+          "description": "The overall Policy Controller lifecycle state observed by the Hub Feature controller.",
+          "enum": [
+            "LIFECYCLE_STATE_UNSPECIFIED",
+            "NOT_INSTALLED",
+            "INSTALLING",
+            "ACTIVE",
+            "UPDATING",
+            "DECOMMISSIONING",
+            "CLUSTER_ERROR",
+            "HUB_ERROR",
+            "SUSPENDED",
+            "DETACHED"
+          ],
+          "enumDescriptions": [
+            "The lifecycle state is unspecified.",
+            "The PC does not exist on the given cluster, and no k8s resources of any type that are associated with the PC should exist there. The cluster does not possess a membership with the PCH.",
+            "The PCH possesses a Membership, however the PC is not fully installed on the cluster. In this state the hub can be expected to be taking actions to install the PC on the cluster.",
+            "The PC is fully installed on the cluster and in an operational mode. In this state PCH will be reconciling state with the PC, and the PC will be performing it's operational tasks per that software. Entering a READY state requires that the hub has confirmed the PC is installed and its pods are operational with the version of the PC the PCH expects.",
+            "The PC is fully installed, but in the process of changing the configuration (including changing the version of PC either up and down, or modifying the manifests of PC) of the resources running on the cluster. The PCH has a Membership, is aware of the version the cluster should be running in, but has not confirmed for itself that the PC is running with that version.",
+            "The PC may have resources on the cluster, but the PCH wishes to remove the Membership. The Membership still exists.",
+            "The PC is not operational, and the PCH is unable to act to make it operational. Entering a CLUSTER_ERROR state happens automatically when the PCH determines that a PC installed on the cluster is non-operative or that the cluster does not meet requirements set for the PCH to administer the cluster but has nevertheless been given an instruction to do so (such as 'install').",
+            "In this state, the PC may still be operational, and only the PCH is unable to act. The hub should not issue instructions to change the PC state, or otherwise interfere with the on-cluster resources. Entering a HUB_ERROR state happens automatically when the PCH determines the hub is in an unhealthy state and it wishes to 'take hands off' to avoid corrupting the PC or other data.",
+            "Policy Controller (PC) is installed but suspended. This means that the policies are not enforced, but violations are still recorded (through audit).",
+            "PoCo Hub is not taking any action to reconcile cluster objects. Changes to those objects will not be overwritten by PoCo Hub."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerMonitoringConfig": {
+      "description": "MonitoringConfig specifies the backends Policy Controller should export metrics to. For example, to specify metrics should be exported to Cloud Monitoring and Prometheus, specify backends: [\"cloudmonitoring\", \"prometheus\"]",
+      "id": "PolicyControllerMonitoringConfig",
+      "properties": {
+        "backends": {
+          "description": "Specifies the list of backends Policy Controller will export to. An empty list would effectively disable metrics export.",
+          "items": {
+            "enum": [
+              "MONITORING_BACKEND_UNSPECIFIED",
+              "PROMETHEUS",
+              "CLOUD_MONITORING"
+            ],
+            "enumDescriptions": [
+              "Backend cannot be determined",
+              "Prometheus backend for monitoring",
+              "Stackdriver/Cloud Monitoring backend for monitoring"
+            ],
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerOnClusterState": {
+      "description": "OnClusterState represents the state of a sub-component of Policy Controller.",
+      "id": "PolicyControllerOnClusterState",
+      "properties": {
+        "details": {
+          "description": "Surface potential errors or information logs.",
+          "type": "string"
+        },
+        "state": {
+          "description": "The lifecycle state of this component.",
+          "enum": [
+            "LIFECYCLE_STATE_UNSPECIFIED",
+            "NOT_INSTALLED",
+            "INSTALLING",
+            "ACTIVE",
+            "UPDATING",
+            "DECOMMISSIONING",
+            "CLUSTER_ERROR",
+            "HUB_ERROR",
+            "SUSPENDED",
+            "DETACHED"
+          ],
+          "enumDescriptions": [
+            "The lifecycle state is unspecified.",
+            "The PC does not exist on the given cluster, and no k8s resources of any type that are associated with the PC should exist there. The cluster does not possess a membership with the PCH.",
+            "The PCH possesses a Membership, however the PC is not fully installed on the cluster. In this state the hub can be expected to be taking actions to install the PC on the cluster.",
+            "The PC is fully installed on the cluster and in an operational mode. In this state PCH will be reconciling state with the PC, and the PC will be performing it's operational tasks per that software. Entering a READY state requires that the hub has confirmed the PC is installed and its pods are operational with the version of the PC the PCH expects.",
+            "The PC is fully installed, but in the process of changing the configuration (including changing the version of PC either up and down, or modifying the manifests of PC) of the resources running on the cluster. The PCH has a Membership, is aware of the version the cluster should be running in, but has not confirmed for itself that the PC is running with that version.",
+            "The PC may have resources on the cluster, but the PCH wishes to remove the Membership. The Membership still exists.",
+            "The PC is not operational, and the PCH is unable to act to make it operational. Entering a CLUSTER_ERROR state happens automatically when the PCH determines that a PC installed on the cluster is non-operative or that the cluster does not meet requirements set for the PCH to administer the cluster but has nevertheless been given an instruction to do so (such as 'install').",
+            "In this state, the PC may still be operational, and only the PCH is unable to act. The hub should not issue instructions to change the PC state, or otherwise interfere with the on-cluster resources. Entering a HUB_ERROR state happens automatically when the PCH determines the hub is in an unhealthy state and it wishes to 'take hands off' to avoid corrupting the PC or other data.",
+            "Policy Controller (PC) is installed but suspended. This means that the policies are not enforced, but violations are still recorded (through audit).",
+            "PoCo Hub is not taking any action to reconcile cluster objects. Changes to those objects will not be overwritten by PoCo Hub."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerPolicyContentSpec": {
+      "description": "PolicyContentSpec defines the user's desired content configuration on the cluster.",
+      "id": "PolicyControllerPolicyContentSpec",
+      "properties": {
+        "bundles": {
+          "additionalProperties": {
+            "$ref": "PolicyControllerBundleInstallSpec"
+          },
+          "description": "map of bundle name to BundleInstallSpec. The bundle name maps to the `bundleName` key in the `policycontroller.gke.io/constraintData` annotation on a constraint.",
+          "type": "object"
+        },
+        "templateLibrary": {
+          "$ref": "PolicyControllerTemplateLibraryConfig",
+          "description": "Configures the installation of the Template Library."
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerPolicyContentState": {
+      "description": "The state of the policy controller policy content",
+      "id": "PolicyControllerPolicyContentState",
+      "properties": {
+        "bundleStates": {
+          "additionalProperties": {
+            "$ref": "PolicyControllerOnClusterState"
+          },
+          "description": "The state of the any bundles included in the chosen version of the manifest",
+          "type": "object"
+        },
+        "referentialSyncConfigState": {
+          "$ref": "PolicyControllerOnClusterState",
+          "description": "The state of the referential data sync configuration. This could represent the state of either the syncSet object(s) or the config object, depending on the version of PoCo configured by the user."
+        },
+        "templateLibraryState": {
+          "$ref": "PolicyControllerOnClusterState",
+          "description": "The state of the template library"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerPolicyControllerDeploymentConfig": {
+      "description": "Deployment-specific configuration.",
+      "id": "PolicyControllerPolicyControllerDeploymentConfig",
+      "properties": {
+        "containerResources": {
+          "$ref": "PolicyControllerResourceRequirements",
+          "description": "Container resource requirements."
+        },
+        "podAffinity": {
+          "description": "Pod affinity configuration.",
+          "enum": [
+            "AFFINITY_UNSPECIFIED",
+            "NO_AFFINITY",
+            "ANTI_AFFINITY"
+          ],
+          "enumDescriptions": [
+            "No affinity configuration has been specified.",
+            "Affinity configurations will be removed from the deployment.",
+            "Anti-affinity configuration will be applied to this deployment. Default for admissions deployment."
+          ],
+          "type": "string"
+        },
+        "podAntiAffinity": {
+          "deprecated": true,
+          "description": "Pod anti-affinity enablement. Deprecated: use `pod_affinity` instead.",
+          "type": "boolean"
+        },
+        "podTolerations": {
+          "description": "Pod tolerations of node taints.",
+          "items": {
+            "$ref": "PolicyControllerToleration"
+          },
+          "type": "array"
+        },
+        "replicaCount": {
+          "description": "Pod replica count.",
+          "format": "int64",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerResourceList": {
+      "description": "ResourceList contains container resource requirements.",
+      "id": "PolicyControllerResourceList",
+      "properties": {
+        "cpu": {
+          "description": "CPU requirement expressed in Kubernetes resource units.",
+          "type": "string"
+        },
+        "memory": {
+          "description": "Memory requirement expressed in Kubernetes resource units.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerResourceRequirements": {
+      "description": "ResourceRequirements describes the compute resource requirements.",
+      "id": "PolicyControllerResourceRequirements",
+      "properties": {
+        "limits": {
+          "$ref": "PolicyControllerResourceList",
+          "description": "Limits describes the maximum amount of compute resources allowed for use by the running container."
+        },
+        "requests": {
+          "$ref": "PolicyControllerResourceList",
+          "description": "Requests describes the amount of compute resources reserved for the container by the kube-scheduler."
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerTemplateLibraryConfig": {
+      "description": "The config specifying which default library templates to install.",
+      "id": "PolicyControllerTemplateLibraryConfig",
+      "properties": {
+        "installation": {
+          "description": "Configures the manner in which the template library is installed on the cluster.",
+          "enum": [
+            "INSTALLATION_UNSPECIFIED",
+            "NOT_INSTALLED",
+            "ALL"
+          ],
+          "enumDescriptions": [
+            "No installation strategy has been specified.",
+            "Do not install the template library.",
+            "Install the entire template library."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PolicyControllerToleration": {
+      "description": "Toleration of a node taint.",
+      "id": "PolicyControllerToleration",
+      "properties": {
+        "effect": {
+          "description": "Matches a taint effect.",
+          "type": "string"
+        },
+        "key": {
+          "description": "Matches a taint key (not necessarily unique).",
+          "type": "string"
+        },
+        "operator": {
+          "description": "Matches a taint operator.",
+          "type": "string"
+        },
+        "value": {
+          "description": "Matches a taint value.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "RBACRoleBinding": {
       "description": "RBACRoleBinding represents a rbacrolebinding across the Fleet",
       "id": "RBACRoleBinding",
@@ -4367,7 +5080,7 @@
           "type": "object"
         },
         "name": {
-          "description": "The resource name for the rbacrolebinding `projects/{project}/locations/{location}/namespaces/{namespace}/rbacrolebindings/{rbacrolebinding}` or `projects/{project}/locations/{location}/memberships/{membership}/rbacrolebindings/{rbacrolebinding}`",
+          "description": "The resource name for the rbacrolebinding `projects/{project}/locations/{location}/scopes/{scope}/rbacrolebindings/{rbacrolebinding}` or `projects/{project}/locations/{location}/memberships/{membership}/rbacrolebindings/{rbacrolebinding}`",
           "type": "string"
         },
         "role": {
@@ -4486,10 +5199,6 @@
       "description": "Scope represents a Scope in a Fleet.",
       "id": "Scope",
       "properties": {
-        "allMemberships": {
-          "description": "If true, all Memberships in the Fleet bind to this Scope.",
-          "type": "boolean"
-        },
         "createTime": {
           "description": "Output only. When the scope was created.",
           "format": "google-datetime",
@@ -4578,6 +5287,43 @@
             "The scope is being updated."
           ],
           "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SecurityPostureConfig": {
+      "description": "SecurityPostureConfig defines the flags needed to enable/disable features for the Security Posture API.",
+      "id": "SecurityPostureConfig",
+      "properties": {
+        "mode": {
+          "description": "Sets which mode to use for Security Posture features.",
+          "enum": [
+            "MODE_UNSPECIFIED",
+            "DISABLED",
+            "BASIC"
+          ],
+          "enumDescriptions": [
+            "Default value not specified.",
+            "Disables Security Posture features on the cluster.",
+            "Applies Security Posture features on the cluster."
+          ],
+          "type": "string"
+        },
+        "vulnerabilityMode": {
+          "description": "Sets which mode to use for vulnerability scanning.",
+          "enum": [
+            "VULNERABILITY_MODE_UNSPECIFIED",
+            "VULNERABILITY_DISABLED",
+            "VULNERABILITY_BASIC",
+            "VULNERABILITY_ENTERPRISE"
+          ],
+          "enumDescriptions": [
+            "Default value not specified.",
+            "Disables vulnerability scanning on the cluster.",
+            "Applies basic vulnerability scanning on the cluster.",
+            "Applies the Security Posture's vulnerability on cluster Enterprise level features."
+          ],
           "type": "string"
         }
       },

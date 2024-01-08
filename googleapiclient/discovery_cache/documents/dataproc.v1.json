@@ -2028,6 +2028,11 @@
                           "required": true,
                           "type": "string"
                         },
+                        "parentOperationId": {
+                          "description": "Optional. operation id of the parent operation sending the create request",
+                          "location": "query",
+                          "type": "string"
+                        },
                         "requestId": {
                           "description": "Optional. A unique ID used to identify the request. If the server receives two CreateNodeGroupRequest (https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1#google.cloud.dataproc.v1.CreateNodeGroupRequests) with the same ID, the second request is ignored and the first google.longrunning.Operation created and stored in the backend is returned.Recommendation: Set this value to a UUID (https://en.wikipedia.org/wiki/Universally_unique_identifier).The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.",
                           "location": "query",
@@ -3001,7 +3006,7 @@
       }
     }
   },
-  "revision": "20230830",
+  "revision": "20231207",
   "rootUrl": "https://dataproc.googleapis.com/",
   "schemas": {
     "AcceleratorConfig": {
@@ -3752,6 +3757,20 @@
           },
           "type": "array"
         },
+        "tarballAccess": {
+          "description": "Optional. (Optional) The access type to the diagnostic tarball. If not specified, falls back to default access of the bucket",
+          "enum": [
+            "TARBALL_ACCESS_UNSPECIFIED",
+            "GOOGLE_CLOUD_SUPPORT",
+            "GOOGLE_DATAPROC_DIAGNOSE"
+          ],
+          "enumDescriptions": [
+            "Tarball Access unspecified. Falls back to default access of the bucket",
+            "Google Cloud Support group has read access to the diagnostic tarball",
+            "Google Cloud Dataproc Diagnose service account has read access to the diagnostic tarball"
+          ],
+          "type": "string"
+        },
         "tarballGcsDir": {
           "description": "Optional. (Optional) The output Cloud Storage directory for the diagnostic tarball. If not specified, a task-specific directory in the cluster's staging bucket will be used.",
           "type": "string"
@@ -3836,11 +3855,11 @@
       "id": "EncryptionConfig",
       "properties": {
         "gcePdKmsKeyName": {
-          "description": "Optional. The Cloud KMS key name to use for PD disk encryption for all instances in the cluster.",
+          "description": "Optional. The Cloud KMS key resource name to use for persistent disk encryption for all instances in the cluster. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.",
           "type": "string"
         },
         "kmsKey": {
-          "description": "Optional. The Cloud KMS key name to use for encrypting customer core content and cluster PD disk for all instances in the cluster.",
+          "description": "Optional. The Cloud KMS key resource name to use for cluster persistent disk and job argument encryption. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.When this key resource name is provided, the following job arguments of the following job types submitted to the cluster are encrypted using CMEK: FlinkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/FlinkJob) HadoopJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/HadoopJob) SparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkJob) SparkRJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkRJob) PySparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/PySparkJob) SparkSqlJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkSqlJob) scriptVariables and queryList.queries HiveJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/HiveJob) scriptVariables and queryList.queries PigJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PigJob) scriptVariables and queryList.queries PrestoJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PrestoJob) scriptVariables and queryList.queries",
           "type": "string"
         }
       },
@@ -3917,7 +3936,7 @@
           "type": "string"
         },
         "ttl": {
-          "description": "Optional. The duration after which the workload will be terminated. When the workload exceeds this duration, it will be unconditionally terminated without waiting for ongoing work to finish. If ttl is not specified for a batch workload, the workload will be allowed to run until it exits naturally (or runs forever without exiting). If ttl is not specified for an interactive session, it defaults to 24h. If ttl is not specified for a batch that uses 2.1+ runtime version, it defaults to 4h. Minimum value is 10 minutes; maximum value is 14 days (see JSON representation of Duration (https://developers.google.com/protocol-buffers/docs/proto3#json)). If both ttl and idle_ttl are specified (for an interactive session), the conditions are treated as OR conditions: the workload will be terminated when it has been idle for idle_ttl or when ttl has been exceeded, whichever occurs first.",
+          "description": "Optional. The duration after which the workload will be terminated, specified as the JSON representation for Duration (https://protobuf.dev/programming-guides/proto3/#json). When the workload exceeds this duration, it will be unconditionally terminated without waiting for ongoing work to finish. If ttl is not specified for a batch workload, the workload will be allowed to run until it exits naturally (or run forever without exiting). If ttl is not specified for an interactive session, it defaults to 24 hours. If ttl is not specified for a batch that uses 2.1+ runtime version, it defaults to 4 hours. Minimum value is 10 minutes; maximum value is 14 days. If both ttl and idle_ttl are specified (for an interactive session), the conditions are treated as OR conditions: the workload will be terminated when it has been idle for idle_ttl or when ttl has been exceeded, whichever occurs first.",
           "format": "google-duration",
           "type": "string"
         }
@@ -3948,11 +3967,11 @@
       "type": "object"
     },
     "FlinkJob": {
-      "description": "A Dataproc job for running Apache Flink (https://flink.apache.org/) applications on YARN.",
+      "description": "A Dataproc job for running Apache Flink applications on YARN.",
       "id": "FlinkJob",
       "properties": {
         "args": {
-          "description": "Optional. The arguments to pass to the driver. Do not include arguments, such as --conf, that can be set as job properties, since a collision may occur that causes an incorrect job submission.",
+          "description": "Optional. The arguments to pass to the driver. Do not include arguments, such as --conf, that can be set as job properties, since a collision might occur that causes an incorrect job submission.",
           "items": {
             "type": "string"
           },
@@ -3970,7 +3989,7 @@
           "description": "Optional. The runtime log config for job execution."
         },
         "mainClass": {
-          "description": "The name of the driver's main class. The jar file that contains the class must be in the default CLASSPATH or specified in jar_file_uris.",
+          "description": "The name of the driver's main class. The jar file that contains the class must be in the default CLASSPATH or specified in jarFileUris.",
           "type": "string"
         },
         "mainJarFileUri": {
@@ -3981,11 +4000,11 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure Flink. Properties that conflict with values set by the Dataproc API may beoverwritten. Can include properties set in/etc/flink/conf/flink-defaults.conf and classes in user code.",
+          "description": "Optional. A mapping of property names to values, used to configure Flink. Properties that conflict with values set by the Dataproc API might beoverwritten. Can include properties set in/etc/flink/conf/flink-defaults.conf and classes in user code.",
           "type": "object"
         },
         "savepointUri": {
-          "description": "Optional. HCFS URI of the savepoint which contains the last saved progress for this job",
+          "description": "Optional. HCFS URI of the savepoint, which contains the last saved progress for starting the current job.",
           "type": "string"
         }
       },
@@ -4251,6 +4270,17 @@
       },
       "type": "object"
     },
+    "GoogleCloudDataprocV1WorkflowTemplateEncryptionConfig": {
+      "description": "Encryption settings for encrypting workflow template job arguments.",
+      "id": "GoogleCloudDataprocV1WorkflowTemplateEncryptionConfig",
+      "properties": {
+        "kmsKey": {
+          "description": "Optional. The Cloud KMS key name to use for encrypting workflow template job arguments.When this this key is provided, the following workflow template job arguments (https://cloud.google.com/dataproc/docs/concepts/workflows/use-workflows#adding_jobs_to_a_template), if present, are CMEK encrypted (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_workflow_template_data): FlinkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/FlinkJob) HadoopJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/HadoopJob) SparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkJob) SparkRJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkRJob) PySparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/PySparkJob) SparkSqlJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkSqlJob) scriptVariables and queryList.queries HiveJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/HiveJob) scriptVariables and queryList.queries PigJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PigJob) scriptVariables and queryList.queries PrestoJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PrestoJob) scriptVariables and queryList.queries",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "HadoopJob": {
       "description": "A Dataproc job for running Apache Hadoop MapReduce (https://hadoop.apache.org/docs/current/hadoop-mapreduce-client/hadoop-mapreduce-client-core/MapReduceTutorial.html) jobs on Apache Hadoop YARN (https://hadoop.apache.org/docs/r2.7.1/hadoop-yarn/hadoop-yarn-site/YARN.html).",
       "id": "HadoopJob",
@@ -4263,7 +4293,7 @@
           "type": "array"
         },
         "args": {
-          "description": "Optional. The arguments to pass to the driver. Do not include arguments, such as -libjars or -Dfoo=bar, that can be set as job properties, since a collision may occur that causes an incorrect job submission.",
+          "description": "Optional. The arguments to pass to the driver. Do not include arguments, such as -libjars or -Dfoo=bar, that can be set as job properties, since a collision might occur that causes an incorrect job submission.",
           "items": {
             "type": "string"
           },
@@ -4299,7 +4329,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure Hadoop. Properties that conflict with values set by the Dataproc API may be overwritten. Can include properties set in /etc/hadoop/conf/*-site and classes in user code.",
+          "description": "Optional. A mapping of property names to values, used to configure Hadoop. Properties that conflict with values set by the Dataproc API might be overwritten. Can include properties set in /etc/hadoop/conf/*-site and classes in user code.",
           "type": "object"
         }
       },
@@ -4324,7 +4354,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names and values, used to configure Hive. Properties that conflict with values set by the Dataproc API may be overwritten. Can include properties set in /etc/hadoop/conf/*-site.xml, /etc/hive/conf/hive-site.xml, and classes in user code.",
+          "description": "Optional. A mapping of property names and values, used to configure Hive. Properties that conflict with values set by the Dataproc API might be overwritten. Can include properties set in /etc/hadoop/conf/*-site.xml, /etc/hive/conf/hive-site.xml, and classes in user code.",
           "type": "object"
         },
         "queryFileUri": {
@@ -4500,6 +4530,10 @@
             "Instances are Spot VMs (https://cloud.google.com/compute/docs/instances/spot).This option is allowed only for secondary worker (https://cloud.google.com/dataproc/docs/concepts/compute/secondary-vms) groups. Spot VMs are the latest version of preemptible VMs (https://cloud.google.com/compute/docs/instances/preemptible), and provide additional features."
           ],
           "type": "string"
+        },
+        "startupConfig": {
+          "$ref": "StartupConfig",
+          "description": "Optional. Configuration to handle the startup of instances during cluster create and update process."
         }
       },
       "type": "object"
@@ -4614,7 +4648,7 @@
           "type": "boolean"
         },
         "driverControlFilesUri": {
-          "description": "Output only. If present, the location of miscellaneous control files which may be used as part of job setup and handling. If not present, control files may be placed in the same location as driver_output_uri.",
+          "description": "Output only. If present, the location of miscellaneous control files which can be used as part of job setup and handling. If not present, control files might be placed in the same location as driver_output_uri.",
           "readOnly": true,
           "type": "string"
         },
@@ -4640,7 +4674,7 @@
           "description": "Optional. Job is a Hive job."
         },
         "jobUuid": {
-          "description": "Output only. A UUID that uniquely identifies a job within the project over time. This is in contrast to a user-settable reference.job_id that may be reused over time.",
+          "description": "Output only. A UUID that uniquely identifies a job within the project over time. This is in contrast to a user-settable reference.job_id that might be reused over time.",
           "readOnly": true,
           "type": "string"
         },
@@ -4648,7 +4682,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. The labels to associate with this job. Label keys must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). Label values may be empty, but, if present, must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). No more than 32 labels can be associated with a job.",
+          "description": "Optional. The labels to associate with this job. Label keys must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). Label values can be empty, but, if present, must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). No more than 32 labels can be associated with a job.",
           "type": "object"
         },
         "pigJob": {
@@ -4689,7 +4723,7 @@
         },
         "status": {
           "$ref": "JobStatus",
-          "description": "Output only. The job status. Additional application-specific status information may be contained in the type_job and yarn_applications fields.",
+          "description": "Output only. The job status. Additional application-specific status information might be contained in the type_job and yarn_applications fields.",
           "readOnly": true
         },
         "statusHistory": {
@@ -4705,7 +4739,7 @@
           "description": "Optional. Job is a Trino job."
         },
         "yarnApplications": {
-          "description": "Output only. The collection of YARN applications spun up by this job.Beta Feature: This report is available for testing purposes only. It may be changed before final release.",
+          "description": "Output only. The collection of YARN applications spun up by this job.Beta Feature: This report is available for testing purposes only. It might be changed before final release.",
           "items": {
             "$ref": "YarnApplication"
           },
@@ -4786,12 +4820,12 @@
       "id": "JobScheduling",
       "properties": {
         "maxFailuresPerHour": {
-          "description": "Optional. Maximum number of times per hour a driver may be restarted as a result of driver exiting with non-zero code before job is reported failed.A job may be reported as thrashing if the driver exits with a non-zero code four times within a 10-minute window.Maximum value is 10.Note: This restartable job option is not supported in Dataproc workflow templates (https://cloud.google.com/dataproc/docs/concepts/workflows/using-workflows#adding_jobs_to_a_template).",
+          "description": "Optional. Maximum number of times per hour a driver can be restarted as a result of driver exiting with non-zero code before job is reported failed.A job might be reported as thrashing if the driver exits with a non-zero code four times within a 10-minute window.Maximum value is 10.Note: This restartable job option is not supported in Dataproc workflow templates (https://cloud.google.com/dataproc/docs/concepts/workflows/using-workflows#adding_jobs_to_a_template).",
           "format": "int32",
           "type": "integer"
         },
         "maxFailuresTotal": {
-          "description": "Optional. Maximum total number of times a driver may be restarted as a result of the driver exiting with a non-zero code. After the maximum number is reached, the job will be reported as failed.Maximum value is 240.Note: Currently, this restartable job option is not supported in Dataproc workflow templates (https://cloud.google.com/dataproc/docs/concepts/workflows/using-workflows#adding_jobs_to_a_template).",
+          "description": "Optional. Maximum total number of times a driver can be restarted as a result of the driver exiting with a non-zero code. After the maximum number is reached, the job will be reported as failed.Maximum value is 240.Note: Currently, this restartable job option is not supported in Dataproc workflow templates (https://cloud.google.com/dataproc/docs/concepts/workflows/using-workflows#adding_jobs_to_a_template).",
           "format": "int32",
           "type": "integer"
         }
@@ -4853,8 +4887,8 @@
           "enumDescriptions": [
             "The job substate is unknown.",
             "The Job is submitted to the agent.Applies to RUNNING state.",
-            "The Job has been received and is awaiting execution (it may be waiting for a condition to be met). See the \"details\" field for the reason for the delay.Applies to RUNNING state.",
-            "The agent-reported status is out of date, which may be caused by a loss of communication between the agent and Dataproc. If the agent does not send a timely update, the job will fail.Applies to RUNNING state."
+            "The Job has been received and is awaiting execution (it might be waiting for a condition to be met). See the \"details\" field for the reason for the delay.Applies to RUNNING state.",
+            "The agent-reported status is out of date, which can be caused by a loss of communication between the agent and Dataproc. If the agent does not send a timely update, the job will fail.Applies to RUNNING state."
           ],
           "readOnly": true,
           "type": "string"
@@ -4928,7 +4962,7 @@
           "type": "string"
         },
         "kmsKeyUri": {
-          "description": "Optional. The uri of the KMS key used to encrypt various sensitive files.",
+          "description": "Optional. The URI of the KMS key used to encrypt sensitive files.",
           "type": "string"
         },
         "realm": {
@@ -5058,6 +5092,14 @@
         "nextPageToken": {
           "description": "A token, which can be sent as page_token to retrieve the next page. If this field is omitted, there are no subsequent pages.",
           "type": "string"
+        },
+        "unreachable": {
+          "description": "Output only. List of Batches that could not be included in the response. Attempting to get one of these resources may indicate why it was not included in the list response.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
         }
       },
       "type": "object"
@@ -5097,6 +5139,14 @@
         "nextPageToken": {
           "description": "Optional. This token is included in the response if there are more results to fetch. To fetch additional results, provide this value as the page_token in a subsequent ListJobsRequest.",
           "type": "string"
+        },
+        "unreachable": {
+          "description": "Output only. List of jobs with kms_key-encrypted parameters that could not be decrypted. A response to a jobs.get request may indicate the reason for the decryption failure for a specific job.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
         }
       },
       "type": "object"
@@ -5173,6 +5223,14 @@
           },
           "readOnly": true,
           "type": "array"
+        },
+        "unreachable": {
+          "description": "Output only. List of workflow templates that could not be included in the response. Attempting to get one of these resources may indicate why it was not included in the list response.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
         }
       },
       "type": "object"
@@ -5207,7 +5265,7 @@
             ],
             "type": "string"
           },
-          "description": "The per-package log levels for the driver. This may include \"root\" package name to configure rootLogger. Examples: - 'com.google = FATAL' - 'root = INFO' - 'org.apache = DEBUG'",
+          "description": "The per-package log levels for the driver. This can include \"root\" package name to configure rootLogger. Examples: - 'com.google = FATAL' - 'root = INFO' - 'org.apache = DEBUG'",
           "type": "object"
         }
       },
@@ -5406,14 +5464,16 @@
             "CREATE",
             "UPDATE",
             "DELETE",
-            "RESIZE"
+            "RESIZE",
+            "REPAIR"
           ],
           "enumDescriptions": [
             "Node group operation type is unknown.",
             "Create node group operation type.",
             "Update node group operation type.",
             "Delete node group operation type.",
-            "Resize node group operation type."
+            "Resize node group operation type.",
+            "Repair node group operation type."
           ],
           "type": "string"
         },
@@ -5526,6 +5586,10 @@
       "description": "A job executed by the workflow.",
       "id": "OrderedJob",
       "properties": {
+        "flinkJob": {
+          "$ref": "FlinkJob",
+          "description": "Optional. Job is a Flink job."
+        },
         "hadoopJob": {
           "$ref": "HadoopJob",
           "description": "Optional. Job is a Hadoop job."
@@ -5640,7 +5704,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure Pig. Properties that conflict with values set by the Dataproc API may be overwritten. Can include properties set in /etc/hadoop/conf/*-site.xml, /etc/pig/conf/pig.properties, and classes in user code.",
+          "description": "Optional. A mapping of property names to values, used to configure Pig. Properties that conflict with values set by the Dataproc API might be overwritten. Can include properties set in /etc/hadoop/conf/*-site.xml, /etc/pig/conf/pig.properties, and classes in user code.",
           "type": "object"
         },
         "queryFileUri": {
@@ -5827,7 +5891,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure PySpark. Properties that conflict with values set by the Dataproc API may be overwritten. Can include properties set in /etc/spark/conf/spark-defaults.conf and classes in user code.",
+          "description": "Optional. A mapping of property names to values, used to configure PySpark. Properties that conflict with values set by the Dataproc API might be overwritten. Can include properties set in /etc/spark/conf/spark-defaults.conf and classes in user code.",
           "type": "object"
         },
         "pythonFileUris": {
@@ -5951,6 +6015,10 @@
         "gracefulDecommissionTimeout": {
           "description": "Optional. Timeout for graceful YARN decommissioning. Graceful decommissioning (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/scaling-clusters#graceful_decommissioning) allows the removal of nodes from the Compute Engine node group without interrupting jobs in progress. This timeout specifies how long to wait for jobs in progress to finish before forcefully removing nodes (and potentially interrupting jobs). Default timeout is 0 (for forceful decommission), and the maximum allowed timeout is 1 day. (see JSON representation of Duration (https://developers.google.com/protocol-buffers/docs/proto3#json)).Only supported on Dataproc image versions 1.2 and higher.",
           "format": "google-duration",
+          "type": "string"
+        },
+        "parentOperationId": {
+          "description": "Optional. operation id of the parent operation sending the resize request",
           "type": "string"
         },
         "requestId": {
@@ -6285,6 +6353,11 @@
           "format": "google-datetime",
           "readOnly": true,
           "type": "string"
+        },
+        "uuid": {
+          "description": "Output only. A session template UUID (Unique Universal Identifier). The service generates this value when it creates the session template.",
+          "readOnly": true,
+          "type": "string"
         }
       },
       "type": "object"
@@ -6469,7 +6542,7 @@
           "description": "Optional. The runtime log config for job execution."
         },
         "mainClass": {
-          "description": "The name of the driver's main class. The jar file that contains the class must be in the default CLASSPATH or specified in jar_file_uris.",
+          "description": "The name of the driver's main class. The jar file that contains the class must be in the default CLASSPATH or specified in SparkJob.jar_file_uris.",
           "type": "string"
         },
         "mainJarFileUri": {
@@ -6480,7 +6553,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure Spark. Properties that conflict with values set by the Dataproc API may be overwritten. Can include properties set in /etc/spark/conf/spark-defaults.conf and classes in user code.",
+          "description": "Optional. A mapping of property names to values, used to configure Spark. Properties that conflict with values set by the Dataproc API might be overwritten. Can include properties set in /etc/spark/conf/spark-defaults.conf and classes in user code.",
           "type": "object"
         }
       },
@@ -6555,7 +6628,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure SparkR. Properties that conflict with values set by the Dataproc API may be overwritten. Can include properties set in /etc/spark/conf/spark-defaults.conf and classes in user code.",
+          "description": "Optional. A mapping of property names to values, used to configure SparkR. Properties that conflict with values set by the Dataproc API might be overwritten. Can include properties set in /etc/spark/conf/spark-defaults.conf and classes in user code.",
           "type": "object"
         }
       },
@@ -6605,7 +6678,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional. A mapping of property names to values, used to configure Spark SQL's SparkConf. Properties that conflict with values set by the Dataproc API may be overwritten.",
+          "description": "Optional. A mapping of property names to values, used to configure Spark SQL's SparkConf. Properties that conflict with values set by the Dataproc API might be overwritten.",
           "type": "object"
         },
         "queryFileUri": {
@@ -6634,6 +6707,10 @@
           "description": "Required. Timeout for Spark graceful decommissioning of spark workers. Specifies the duration to wait for spark worker to complete spark decommissioning tasks before forcefully removing workers. Only applicable to downscaling operations.Bounds: 0s, 1d.",
           "format": "google-duration",
           "type": "string"
+        },
+        "removeOnlyIdleWorkers": {
+          "description": "Optional. Remove only idle workers when scaling down cluster",
+          "type": "boolean"
         },
         "scaleDownFactor": {
           "description": "Required. Fraction of required executors to remove from Spark Serverless clusters. A scale-down factor of 1.0 will result in scaling down so that there are no more executors for the Spark Job.(more aggressive scaling). A scale-down factor closer to 0 will result in a smaller magnitude of scaling donw (less aggressive scaling).Bounds: 0.0, 1.0.",
@@ -6669,6 +6746,18 @@
         "requestId": {
           "description": "Optional. A unique ID used to identify the request. If the server receives two StartClusterRequest (https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1#google.cloud.dataproc.v1.StartClusterRequest)s with the same id, then the second request will be ignored and the first google.longrunning.Operation created and stored in the backend is returned.Recommendation: Set this value to a UUID (https://en.wikipedia.org/wiki/Universally_unique_identifier).The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "StartupConfig": {
+      "description": "Configuration to handle the startup of instances during cluster create and update process.",
+      "id": "StartupConfig",
+      "properties": {
+        "requiredRegistrationFraction": {
+          "description": "Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).",
+          "format": "double",
+          "type": "number"
         }
       },
       "type": "object"
@@ -6881,6 +6970,15 @@
       "description": "Usage metrics represent approximate total resources consumed by a workload.",
       "id": "UsageMetrics",
       "properties": {
+        "acceleratorType": {
+          "description": "Optional. Accelerator type being used, if any",
+          "type": "string"
+        },
+        "milliAcceleratorSeconds": {
+          "description": "Optional. Accelerator usage in (milliAccelerator x seconds) (see Dataproc Serverless pricing (https://cloud.google.com/dataproc-serverless/pricing)).",
+          "format": "int64",
+          "type": "string"
+        },
         "milliDcuSeconds": {
           "description": "Optional. DCU (Dataproc Compute Units) usage in (milliDCU x seconds) (see Dataproc Serverless pricing (https://cloud.google.com/dataproc-serverless/pricing)).",
           "format": "int64",
@@ -6898,6 +6996,15 @@
       "description": "The usage snapshot represents the resources consumed by a workload at a specified time.",
       "id": "UsageSnapshot",
       "properties": {
+        "acceleratorType": {
+          "description": "Optional. Accelerator type being used, if any",
+          "type": "string"
+        },
+        "milliAccelerator": {
+          "description": "Optional. Milli (one-thousandth) accelerator. (see Dataproc Serverless pricing (https://cloud.google.com/dataproc-serverless/pricing))",
+          "format": "int64",
+          "type": "string"
+        },
         "milliDcu": {
           "description": "Optional. Milli (one-thousandth) Dataproc Compute Units (DCUs) (see Dataproc Serverless pricing (https://cloud.google.com/dataproc-serverless/pricing)).",
           "format": "int64",
@@ -7136,6 +7243,10 @@
           "description": "Optional. Timeout duration for the DAG of jobs, expressed in seconds (see JSON representation of duration (https://developers.google.com/protocol-buffers/docs/proto3#json)). The timeout duration must be from 10 minutes (\"600s\") to 24 hours (\"86400s\"). The timer begins when the first job is submitted. If the workflow is running at the end of the timeout period, any remaining jobs are cancelled, the workflow is ended, and if the workflow was running on a managed cluster, the cluster is deleted.",
           "format": "google-duration",
           "type": "string"
+        },
+        "encryptionConfig": {
+          "$ref": "GoogleCloudDataprocV1WorkflowTemplateEncryptionConfig",
+          "description": "Optional. Encryption settings for encrypting workflow template job arguments."
         },
         "id": {
           "type": "string"

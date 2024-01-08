@@ -80,7 +80,7 @@ def format(session):
     )
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"])
 @nox.parametrize(
     "oauth2client",
     [
@@ -101,6 +101,7 @@ def unit(session, oauth2client):
         session.install(oauth2client)
 
     # Create and install wheels
+    session.install("setuptools", "wheel")
     session.run("python3", "setup.py", "bdist_wheel")
     session.install(os.path.join("dist", os.listdir("dist").pop()))
 
