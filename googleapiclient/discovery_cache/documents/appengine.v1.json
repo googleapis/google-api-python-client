@@ -144,11 +144,67 @@
               "location": "path",
               "required": true,
               "type": "string"
+            },
+            "includeExtraData": {
+              "description": "Options to include extra data",
+              "enum": [
+                "INCLUDE_EXTRA_DATA_UNSPECIFIED",
+                "INCLUDE_EXTRA_DATA_NONE",
+                "INCLUDE_GOOGLE_GENERATED_METADATA"
+              ],
+              "enumDescriptions": [
+                "Unspecified: No extra data will be returned",
+                "Do not return any extra data",
+                "Return GGCM associated with the resources"
+              ],
+              "location": "query",
+              "type": "string"
             }
           },
           "path": "v1/apps/{appsId}",
           "response": {
             "$ref": "Application"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/appengine.admin",
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/cloud-platform.read-only"
+          ]
+        },
+        "listRuntimes": {
+          "description": "Lists all the available runtimes for the application.",
+          "flatPath": "v1/apps/{appsId}:listRuntimes",
+          "httpMethod": "GET",
+          "id": "appengine.apps.listRuntimes",
+          "parameterOrder": [
+            "appsId"
+          ],
+          "parameters": {
+            "appsId": {
+              "description": "Part of `parent`. Required. Name of the parent Application resource. Example: apps/myapp.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "environment": {
+              "description": "Optional. The environment of the Application.",
+              "enum": [
+                "ENVIRONMENT_UNSPECIFIED",
+                "STANDARD",
+                "FLEXIBLE"
+              ],
+              "enumDescriptions": [
+                "Default value.",
+                "App Engine Standard.",
+                "App Engine Flexible"
+              ],
+              "location": "query",
+              "type": "string"
+            }
+          },
+          "path": "v1/apps/{appsId}:listRuntimes",
+          "response": {
+            "$ref": "ListRuntimesResponse"
           },
           "scopes": [
             "https://www.googleapis.com/auth/appengine.admin",
@@ -1595,7 +1651,7 @@
       }
     }
   },
-  "revision": "20230731",
+  "revision": "20231214",
   "rootUrl": "https://appengine.googleapis.com/",
   "schemas": {
     "ApiConfigHandler": {
@@ -1731,6 +1787,14 @@
           "description": "Output only. The Google Container Registry domain used for storing managed build docker images for this application.",
           "readOnly": true,
           "type": "string"
+        },
+        "generatedCustomerMetadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Additional Google Generated Customer Metadata, this field won't be provided by default and can be requested by setting the IncludeExtraData field in GetApplicationRequest",
+          "type": "object"
         },
         "iap": {
           "$ref": "IdentityAwareProxy"
@@ -1991,6 +2055,38 @@
       },
       "type": "object"
     },
+    "ContainerState": {
+      "description": "ContainerState contains the externally-visible container state that is used to communicate the state and reasoning for that state to the CLH. This data is not persisted by CCFE, but is instead derived from CCFE's internal representation of the container state.",
+      "id": "ContainerState",
+      "properties": {
+        "currentReasons": {
+          "$ref": "Reasons",
+          "deprecated": true
+        },
+        "previousReasons": {
+          "$ref": "Reasons",
+          "deprecated": true,
+          "description": "The previous and current reasons for a container state will be sent for a container event. CLHs that need to know the signal that caused the container event to trigger (edges) as opposed to just knowing the state can act upon differences in the previous and current reasons.Reasons will be provided for every system: service management, data governance, abuse, and billing.If this is a CCFE-triggered event used for reconciliation then the current reasons will be set to their *_CONTROL_PLANE_SYNC state. The previous reasons will contain the last known set of non-unknown non-control_plane_sync reasons for the state.Reasons fields are deprecated. New tenants should only use the state field. If you must know the reason(s) behind a specific state, please consult with CCFE team first (cloud-ccfe-discuss@google.com)."
+        },
+        "state": {
+          "description": "The current state of the container. This state is the culmination of all of the opinions from external systems that CCFE knows about of the container.",
+          "enum": [
+            "UNKNOWN_STATE",
+            "ON",
+            "OFF",
+            "DELETED"
+          ],
+          "enumDescriptions": [
+            "A container should never be in an unknown state. Receipt of a container with this state is an error.",
+            "CCFE considers the container to be serving or transitioning into serving.",
+            "CCFE considers the container to be in an OFF state. This could occur due to various factors. The state could be triggered by Google-internal audits (ex. abuse suspension, billing closed) or cleanups trigged by compliance systems (ex. data governance hide). User-initiated events such as service management deactivation trigger a container to an OFF state.CLHs might choose to do nothing in this case or to turn off costly resources. CLHs need to consider the customer experience if an ON/OFF/ON sequence of state transitions occurs vs. the cost of deleting resources, keeping metadata about resources, or even keeping resources live for a period of time.CCFE will not send any new customer requests to the CLH when the container is in an OFF state. However, CCFE will allow all previous customer requests relayed to CLH to complete.",
+            "This state indicates that the container has been (or is being) completely removed. This is often due to a data governance purge request and therefore resources should be deleted when this state is reached."
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "CpuUtilization": {
       "description": "Target scaling by CPU usage.",
       "id": "CpuUtilization",
@@ -2037,6 +2133,28 @@
         "cloudBuildId": {
           "description": "The Cloud Build ID if one was created as part of the version create. @OutputOnly",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Date": {
+      "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: A full date, with non-zero year, month, and day values. A month and day, with a zero year (for example, an anniversary). A year on its own, with a zero month and a zero day. A year and month, with a zero day (for example, a credit card expiration date).Related types: google.type.TimeOfDay google.type.DateTime google.protobuf.Timestamp",
+      "id": "Date",
+      "properties": {
+        "day": {
+          "description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "month": {
+          "description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+          "format": "int32",
+          "type": "integer"
+        },
+        "year": {
+          "description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+          "format": "int32",
+          "type": "integer"
         }
       },
       "type": "object"
@@ -2646,6 +2764,24 @@
       },
       "type": "object"
     },
+    "ListRuntimesResponse": {
+      "description": "Response message for Applications.ListRuntimes.",
+      "id": "ListRuntimesResponse",
+      "properties": {
+        "nextPageToken": {
+          "description": "Continuation token for fetching the next page of results.",
+          "type": "string"
+        },
+        "runtimes": {
+          "description": "The runtimes available to the requested application.",
+          "items": {
+            "$ref": "Runtime"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "ListServicesResponse": {
       "description": "Response message for Services.ListServices.",
       "id": "ListServicesResponse",
@@ -2945,7 +3081,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.",
           "type": "object"
         }
       },
@@ -3106,40 +3242,8 @@
           "description": "The projects metadata for this project. required"
         },
         "state": {
-          "$ref": "ProjectState",
+          "$ref": "ContainerState",
           "description": "The state of the project that led to this event."
-        }
-      },
-      "type": "object"
-    },
-    "ProjectState": {
-      "description": "ProjectState contains the externally-visible project state that is used to communicate the state and reasoning for that state to the CLH. This data is not persisted by CCFE, but is instead derived from CCFE's internal representation of the project state.",
-      "id": "ProjectState",
-      "properties": {
-        "currentReasons": {
-          "$ref": "Reasons",
-          "deprecated": true
-        },
-        "previousReasons": {
-          "$ref": "Reasons",
-          "deprecated": true,
-          "description": "The previous and current reasons for a project state will be sent for a project event. CLHs that need to know the signal that caused the project event to trigger (edges) as opposed to just knowing the state can act upon differences in the previous and current reasons.Reasons will be provided for every system: service management, data governance, abuse, and billing.If this is a CCFE-triggered event used for reconciliation then the current reasons will be set to their *_CONTROL_PLANE_SYNC state. The previous reasons will contain the last known set of non-unknown non-control_plane_sync reasons for the state.Reasons fields are deprecated. New tenants should only use the state field. If you must know the reason(s) behind a specific state, please consult with CCFE team first (cloud-ccfe-discuss@google.com)."
-        },
-        "state": {
-          "description": "The current state of the project. This state is the culmination of all of the opinions from external systems that CCFE knows about of the project.",
-          "enum": [
-            "UNKNOWN_STATE",
-            "ON",
-            "OFF",
-            "DELETED"
-          ],
-          "enumDescriptions": [
-            "A project should never be in an unknown state. Receipt of a project with this state is an error.",
-            "CCFE considers the project to be serving or transitioning into serving.",
-            "CCFE considers the project to be in an OFF state. This could occur due to various factors. The state could be triggered by Google-internal audits (ex. abuse suspension, billing closed) or cleanups trigged by compliance systems (ex. data governance hide). User-initiated events such as service management deactivation trigger a project to an OFF state.CLHs might choose to do nothing in this case or to turn off costly resources. CLHs need to consider the customer experience if an ON/OFF/ON sequence of state transitions occurs vs. the cost of deleting resources, keeping metadata about resources, or even keeping resources live for a period of time.CCFE will not send any new customer requests to the CLH when the project is in an OFF state. However, CCFE will allow all previous customer requests relayed to CLH to complete.",
-            "This state indicates that the project has been (or is being) completely removed. This is often due to a data governance purge request and therefore resources should be deleted when this state is reached."
-          ],
-          "type": "string"
         }
       },
       "type": "object"
@@ -3166,10 +3270,10 @@
             "DELETED"
           ],
           "enumDescriptions": [
-            "A project should never be in an unknown state. Receipt of a project with this state is an error.",
-            "CCFE considers the project to be serving or transitioning into serving.",
-            "CCFE considers the project to be in an OFF state. This could occur due to various factors. The state could be triggered by Google-internal audits (ex. abuse suspension, billing closed) or cleanups trigged by compliance systems (ex. data governance hide). User-initiated events such as service management deactivation trigger a project to an OFF state.CLHs might choose to do nothing in this case or to turn off costly resources. CLHs need to consider the customer experience if an ON/OFF/ON sequence of state transitions occurs vs. the cost of deleting resources, keeping metadata about resources, or even keeping resources live for a period of time.CCFE will not send any new customer requests to the CLH when the project is in an OFF state. However, CCFE will allow all previous customer requests relayed to CLH to complete.",
-            "This state indicates that the project has been (or is being) completely removed. This is often due to a data governance purge request and therefore resources should be deleted when this state is reached."
+            "A container should never be in an unknown state. Receipt of a container with this state is an error.",
+            "CCFE considers the container to be serving or transitioning into serving.",
+            "CCFE considers the container to be in an OFF state. This could occur due to various factors. The state could be triggered by Google-internal audits (ex. abuse suspension, billing closed) or cleanups trigged by compliance systems (ex. data governance hide). User-initiated events such as service management deactivation trigger a container to an OFF state.CLHs might choose to do nothing in this case or to turn off costly resources. CLHs need to consider the customer experience if an ON/OFF/ON sequence of state transitions occurs vs. the cost of deleting resources, keeping metadata about resources, or even keeping resources live for a period of time.CCFE will not send any new customer requests to the CLH when the container is in an OFF state. However, CCFE will allow all previous customer requests relayed to CLH to complete.",
+            "This state indicates that the container has been (or is being) completely removed. This is often due to a data governance purge request and therefore resources should be deleted when this state is reached."
           ],
           "type": "string"
         },
@@ -3239,7 +3343,7 @@
       "type": "object"
     },
     "Reasons": {
-      "description": "Projects transition between and within states based on reasons sent from various systems. CCFE will provide the CLH with reasons for the current state per system.The current systems that CCFE supports are: Service Management (Inception) Data Governance (Wipeout) Abuse (Ares) Billing (Internal Cloud Billing API)",
+      "description": "Containers transition between and within states based on reasons sent from various systems. CCFE will provide the CLH with reasons for the current state per system.The current systems that CCFE supports are: Service Management (Inception) Data Governance (Wipeout) Abuse (Ares) Billing (Internal Cloud Billing API)",
       "id": "Reasons",
       "properties": {
         "abuse": {
@@ -3250,10 +3354,10 @@
             "REINSTATE"
           ],
           "enumDescriptions": [
-            "An unknown reason indicates that the abuse system has not sent a signal for this project.",
-            "Due to various reasons CCFE might proactively restate a project state to a CLH to ensure that the CLH and CCFE are both aware of the project state. This reason can be tied to any of the states.",
-            "If a project is deemed abusive we receive a suspend signal. Suspend is a reason to put the project into an INTERNAL_OFF state.",
-            "Projects that were once considered abusive can later be deemed non-abusive. When this happens we must reinstate the project. Reinstate is a reason to put the project into an ON state."
+            "An unknown reason indicates that the abuse system has not sent a signal for this container.",
+            "Due to various reasons CCFE might proactively restate a container state to a CLH to ensure that the CLH and CCFE are both aware of the container state. This reason can be tied to any of the states.",
+            "If a container is deemed abusive we receive a suspend signal. Suspend is a reason to put the container into an INTERNAL_OFF state.",
+            "Containers that were once considered abusive can later be deemed non-abusive. When this happens we must reinstate the container. Reinstate is a reason to put the container into an ON state."
           ],
           "type": "string"
         },
@@ -3266,11 +3370,11 @@
             "OPEN"
           ],
           "enumDescriptions": [
-            "An unknown reason indicates that the billing system has not sent a signal for this project.",
-            "Due to various reasons CCFE might proactively restate a project state to a CLH to ensure that the CLH and CCFE are both aware of the project state. This reason can be tied to any of the states.",
-            "Minor infractions cause a probation signal to be sent. Probation is a reason to put the project into a ON state even though it is a negative signal. CCFE will block mutations for this project while it is on billing probation, but the CLH is expected to serve non-mutation requests.",
-            "When a billing account is closed, it is a stronger signal about non-payment. Close is a reason to put the project into an INTERNAL_OFF state.",
-            "Consumers can re-open billing accounts and update accounts to pull them out of probation. When this happens, we get a signal that the account is open. Open is a reason to put the project into an ON state."
+            "An unknown reason indicates that the billing system has not sent a signal for this container.",
+            "Due to various reasons CCFE might proactively restate a container state to a CLH to ensure that the CLH and CCFE are both aware of the container state. This reason can be tied to any of the states.",
+            "Minor infractions cause a probation signal to be sent. Probation is a reason to put the container into a ON state even though it is a negative signal. CCFE will block mutations for this container while it is on billing probation, but the CLH is expected to serve non-mutation requests.",
+            "When a billing account is closed, it is a stronger signal about non-payment. Close is a reason to put the container into an INTERNAL_OFF state.",
+            "Consumers can re-open billing accounts and update accounts to pull them out of probation. When this happens, we get a signal that the account is open. Open is a reason to put the container into an ON state."
           ],
           "type": "string"
         },
@@ -3283,11 +3387,11 @@
             "PURGE"
           ],
           "enumDescriptions": [
-            "An unknown reason indicates that data governance has not sent a signal for this project.",
-            "Due to various reasons CCFE might proactively restate a project state to a CLH to ensure that the CLH and CCFE are both aware of the project state. This reason can be tied to any of the states.",
-            "When a project is deleted we retain some data for a period of time to allow the consumer to change their mind. Data governance sends a signal to hide the data when this occurs. Hide is a reason to put the project in an INTERNAL_OFF state.",
-            "The decision to un-delete a project can be made. When this happens data governance tells us to unhide any hidden data. Unhide is a reason to put the project in an ON state.",
-            "After a period of time data must be completely removed from our systems. When data governance sends a purge signal we need to remove data. Purge is a reason to put the project in a DELETED state. Purge is the only event that triggers a delete mutation. All other events have update semantics."
+            "An unknown reason indicates that data governance has not sent a signal for this container.",
+            "Due to various reasons CCFE might proactively restate a container state to a CLH to ensure that the CLH and CCFE are both aware of the container state. This reason can be tied to any of the states.",
+            "When a container is deleted we retain some data for a period of time to allow the consumer to change their mind. Data governance sends a signal to hide the data when this occurs. Hide is a reason to put the container in an INTERNAL_OFF state.",
+            "The decision to un-delete a container can be made. When this happens data governance tells us to unhide any hidden data. Unhide is a reason to put the container in an ON state.",
+            "After a period of time data must be completely removed from our systems. When data governance sends a purge signal we need to remove data. Purge is a reason to put the container in a DELETED state. Purge is the only event that triggers a delete mutation. All other events have update semantics."
           ],
           "type": "string"
         },
@@ -3309,12 +3413,12 @@
             true
           ],
           "enumDescriptions": [
-            "An unknown reason indicates that we have not received a signal from service management about this project. Since projects are created by request of service management, this reason should never be set.",
-            "Due to various reasons CCFE might proactively restate a project state to a CLH to ensure that the CLH and CCFE are both aware of the project state. This reason can be tied to any of the states.",
-            "When a customer activates an API CCFE notifies the CLH and sets the project to the ON state.",
-            "When a customer deactivates and API service management starts a two-step process to perform the deactivation. The first step is to prepare. Prepare is a reason to put the project in a EXTERNAL_OFF state.",
-            "If the deactivation is cancelled, service managed needs to abort the deactivation. Abort is a reason to put the project in an ON state.",
-            "If the deactivation is followed through with, service management needs to finish deactivation. Commit is a reason to put the project in a DELETED state."
+            "An unknown reason indicates that we have not received a signal from service management about this container. Since containers are created by request of service management, this reason should never be set.",
+            "Due to various reasons CCFE might proactively restate a container state to a CLH to ensure that the CLH and CCFE are both aware of the container state. This reason can be tied to any of the states.",
+            "When a customer activates an API CCFE notifies the CLH and sets the container to the ON state.",
+            "When a customer deactivates and API service management starts a two-step process to perform the deactivation. The first step is to prepare. Prepare is a reason to put the container in a EXTERNAL_OFF state.",
+            "If the deactivation is cancelled, service managed needs to abort the deactivation. Abort is a reason to put the container in an ON state.",
+            "If the deactivation is followed through with, service management needs to finish deactivation. Commit is a reason to put the container in a DELETED state."
           ],
           "type": "string"
         }
@@ -3408,6 +3512,74 @@
       },
       "type": "object"
     },
+    "Runtime": {
+      "description": "Runtime versions for App Engine.",
+      "id": "Runtime",
+      "properties": {
+        "decommissionedDate": {
+          "$ref": "Date",
+          "description": "Date when Runtime is decommissioned."
+        },
+        "deprecationDate": {
+          "$ref": "Date",
+          "description": "Date when Runtime is deprecated."
+        },
+        "endOfSupportDate": {
+          "$ref": "Date",
+          "description": "Date when Runtime is end of support."
+        },
+        "environment": {
+          "description": "The environment of the runtime.",
+          "enum": [
+            "ENVIRONMENT_UNSPECIFIED",
+            "STANDARD",
+            "FLEXIBLE"
+          ],
+          "enumDescriptions": [
+            "Default value.",
+            "App Engine Standard.",
+            "App Engine Flexible"
+          ],
+          "type": "string"
+        },
+        "name": {
+          "description": "The name of the runtime, e.g., 'go113', 'nodejs12', etc.",
+          "type": "string"
+        },
+        "stage": {
+          "description": "The stage of life this runtime is in, e.g., BETA, GA, etc.",
+          "enum": [
+            "RUNTIME_STAGE_UNSPECIFIED",
+            "DEVELOPMENT",
+            "ALPHA",
+            "BETA",
+            "GA",
+            "DEPRECATED",
+            "DECOMMISSIONED",
+            "END_OF_SUPPORT"
+          ],
+          "enumDescriptions": [
+            "Not specified.",
+            "The runtime is in development.",
+            "The runtime is in the Alpha stage.",
+            "The runtime is in the Beta stage.",
+            "The runtime is generally available.",
+            "The runtime is deprecated.",
+            "The runtime is no longer supported.",
+            "The runtime is end of support."
+          ],
+          "type": "string"
+        },
+        "warnings": {
+          "description": "Warning messages, e.g., a deprecation warning.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "ScriptHandler": {
       "description": "Executes a script to handle the request that matches the URL pattern.",
       "id": "ScriptHandler",
@@ -3423,6 +3595,14 @@
       "description": "A Service resource is a logical component of an application that can share state and communicate in a secure fashion with other services. For example, an application that handles customer requests might include separate services to handle tasks such as backend data analysis or API requests from mobile devices. Each service has a collection of versions that define a specific set of code used to implement the functionality of that service.",
       "id": "Service",
       "properties": {
+        "generatedCustomerMetadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Additional Google Generated Customer Metadata, this field won't be provided by default and can be requested by setting the IncludeExtraData field in GetServiceRequest",
+          "type": "object"
+        },
         "id": {
           "description": "Relative name of the service within the application. Example: default.@OutputOnly",
           "type": "string"
@@ -3716,6 +3896,7 @@
       "properties": {
         "apiConfig": {
           "$ref": "ApiConfigHandler",
+          "deprecated": true,
           "description": "Serving configuration for Google Cloud Endpoints (https://cloud.google.com/endpoints).Only returned in GET requests if view=FULL is set."
         },
         "appEngineApis": {
@@ -3797,6 +3978,14 @@
           "$ref": "FlexibleRuntimeSettings",
           "description": "Settings for App Engine flexible runtimes."
         },
+        "generatedCustomerMetadata": {
+          "additionalProperties": {
+            "description": "Properties of the object. Contains field @type with type URL.",
+            "type": "any"
+          },
+          "description": "Additional Google Generated Customer Metadata, this field won't be provided by default and can be requested by setting the IncludeExtraData field in GetVersionRequest",
+          "type": "object"
+        },
         "handlers": {
           "description": "An ordered list of URL-matching patterns that should be applied to incoming requests. The first matching URL handles the request and other request handlers are not attempted.Only returned in GET requests if view=FULL is set.",
           "items": {
@@ -3806,7 +3995,7 @@
         },
         "healthCheck": {
           "$ref": "HealthCheck",
-          "description": "Configures health checking for instances. Unhealthy instances are stopped and replaced with new instances. Only applicable in the App Engine flexible environment.Only returned in GET requests if view=FULL is set."
+          "description": "Configures health checking for instances. Unhealthy instances are stopped and replaced with new instances. Only applicable in the App Engine flexible environment."
         },
         "id": {
           "description": "Relative name of the version within the service. Example: v1. Version names can contain only lowercase letters, numbers, or hyphens. Reserved names: \"default\", \"latest\", and any name with the prefix \"ah-\".",
@@ -3854,7 +4043,7 @@
         },
         "livenessCheck": {
           "$ref": "LivenessCheck",
-          "description": "Configures liveness health checking for instances. Unhealthy instances are stopped and replaced with new instancesOnly returned in GET requests if view=FULL is set."
+          "description": "Configures liveness health checking for instances. Unhealthy instances are stopped and replaced with new instances"
         },
         "manualScaling": {
           "$ref": "ManualScaling",
@@ -3874,7 +4063,7 @@
         },
         "readinessCheck": {
           "$ref": "ReadinessCheck",
-          "description": "Configures readiness health checking for instances. Unhealthy instances are not put into the backend traffic rotation.Only returned in GET requests if view=FULL is set."
+          "description": "Configures readiness health checking for instances. Unhealthy instances are not put into the backend traffic rotation."
         },
         "resources": {
           "$ref": "Resources",
@@ -3979,7 +4168,7 @@
           "type": "string"
         },
         "name": {
-          "description": "Full Serverless VPC Access Connector name e.g. /projects/my-project/locations/us-central1/connectors/c1.",
+          "description": "Full Serverless VPC Access Connector name e.g. projects/my-project/locations/us-central1/connectors/c1.",
           "type": "string"
         }
       },

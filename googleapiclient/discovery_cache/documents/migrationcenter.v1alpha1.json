@@ -436,6 +436,11 @@
                       "required": true,
                       "type": "string"
                     },
+                    "showHidden": {
+                      "description": "Optional. When this value is set to 'true' the response will include all assets, including those that are hidden.",
+                      "location": "query",
+                      "type": "boolean"
+                    },
                     "view": {
                       "description": "View of the assets. Defaults to BASIC.",
                       "enum": [
@@ -2102,7 +2107,7 @@
       }
     }
   },
-  "revision": "20230725",
+  "revision": "20231215",
   "rootUrl": "https://migrationcenter.googleapis.com/",
   "schemas": {
     "AddAssetsToGroupRequest": {
@@ -2138,6 +2143,10 @@
         "filter": {
           "description": "The aggregation will be performed on assets that match the provided filter.",
           "type": "string"
+        },
+        "showHidden": {
+          "description": "Optional. When this value is set to 'true' the response will include all assets, including those that are hidden.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -2331,6 +2340,20 @@
         },
         "createTime": {
           "description": "Output only. The timestamp when the asset was created.",
+          "format": "google-datetime",
+          "readOnly": true,
+          "type": "string"
+        },
+        "hidden": {
+          "description": "Optional. Indicates if the asset is hidden.",
+          "type": "boolean"
+        },
+        "hideReason": {
+          "description": "Optional. An optional reason for marking this asset as hidden.",
+          "type": "string"
+        },
+        "hideTime": {
+          "description": "Output only. The timestamp when the asset was marked as hidden.",
           "format": "google-datetime",
           "readOnly": true,
           "type": "string"
@@ -2865,6 +2888,23 @@
       },
       "type": "object"
     },
+    "DetectedSoftware": {
+      "description": "Information about software detected on an asset.",
+      "id": "DetectedSoftware",
+      "properties": {
+        "softwareFamily": {
+          "description": "Output only. Software family of the detected software, e.g. Database, SAP family.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "softwareName": {
+          "description": "Output only. Software's name.",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "DiskEntry": {
       "description": "Single disk entry.",
       "id": "DiskEntry",
@@ -2980,7 +3020,7 @@
       "id": "DiskUsageSample",
       "properties": {
         "averageIops": {
-          "description": "Average IOPS sampled over a short window. Must be non-negative.",
+          "description": "Average IOPS sampled over a short window. Must be non-negative. Must be equal to the sum of read and write if one of them is positive. if both read and write are zero they are ignored.",
           "format": "float",
           "type": "number"
         }
@@ -3223,6 +3263,32 @@
       },
       "type": "object"
     },
+    "GenericInsight": {
+      "description": "A generic insight about an asset.",
+      "id": "GenericInsight",
+      "properties": {
+        "additionalInformation": {
+          "description": "Output only. Additional information about the insight, each entry can be a logical entry and must make sense if it is displayed with line breaks between each entry. Text can contain md style links.",
+          "items": {
+            "type": "string"
+          },
+          "readOnly": true,
+          "type": "array"
+        },
+        "defaultMessage": {
+          "description": "Output only. In case message_code is not yet known by the client default_message will be the message to be used instead. Text can contain md file style links.",
+          "readOnly": true,
+          "type": "string"
+        },
+        "messageId": {
+          "description": "Output only. Represents a globally unique message id for this insight, can be used for localization purposes, in case message_code is not yet known by the client use default_message instead.",
+          "format": "int64",
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "GenericPlatformDetails": {
       "description": "Generic platform details.",
       "id": "GenericPlatformDetails",
@@ -3251,11 +3317,11 @@
           "type": "string"
         },
         "description": {
-          "description": "The description of the resource.",
+          "description": "Optional. The description of the group.",
           "type": "string"
         },
         "displayName": {
-          "description": "User-friendly display name.",
+          "description": "Optional. User-friendly display name.",
           "type": "string"
         },
         "labels": {
@@ -3310,6 +3376,13 @@
       "description": "Guest installed application information.",
       "id": "GuestInstalledApplication",
       "properties": {
+        "licenses": {
+          "description": "License strings associated with the installed application.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "name": {
           "description": "Installed application name.",
           "type": "string"
@@ -3444,7 +3517,7 @@
           "type": "string"
         },
         "displayName": {
-          "description": "User-friendly display name. Maximum length is 63 characters.",
+          "description": "Optional. User-friendly display name. Maximum length is 256 characters.",
           "type": "string"
         },
         "format": {
@@ -3698,9 +3771,19 @@
       "description": "An insight about an asset.",
       "id": "Insight",
       "properties": {
+        "genericInsight": {
+          "$ref": "GenericInsight",
+          "description": "Output only. A generic insight about an asset.",
+          "readOnly": true
+        },
         "migrationInsight": {
           "$ref": "MigrationInsight",
           "description": "Output only. An insight about potential migrations for an asset.",
+          "readOnly": true
+        },
+        "softwareInsight": {
+          "$ref": "SoftwareInsight",
+          "description": "Output only. An insight regarding software detected on an asset.",
           "readOnly": true
         }
       },
@@ -4361,7 +4444,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
           "type": "object"
         }
       },
@@ -4737,7 +4820,7 @@
         },
         "storageBytesHistogram": {
           "$ref": "ReportSummaryHistogramChartData",
-          "description": "Histogram showing a distribution of memory sizes."
+          "description": "Histogram showing a distribution of storage sizes."
         },
         "storageUtilization": {
           "$ref": "ReportSummaryChartData",
@@ -4818,7 +4901,8 @@
           "type": "string"
         },
         "overlappingAssetCount": {
-          "description": "Count of the number of assets in this group which are also included in another group within the same report.",
+          "deprecated": true,
+          "description": "This field is deprecated, do not rely on it having a value.",
           "format": "int64",
           "type": "string"
         },
@@ -5277,6 +5361,18 @@
         "preferenceSet": {
           "description": "The preference set used by default for a project.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SoftwareInsight": {
+      "description": "An insight regarding software detected on an asset.",
+      "id": "SoftwareInsight",
+      "properties": {
+        "detectedSoftware": {
+          "$ref": "DetectedSoftware",
+          "description": "Output only. Information about the detected software.",
+          "readOnly": true
         }
       },
       "type": "object"
@@ -5749,7 +5845,7 @@
       "type": "object"
     },
     "VirtualMachinePreferences": {
-      "description": "VirtualMachinePreferences enables you to create sets of assumptions, for example, a geographical location and pricing track, for your migrated virtual machines. The set of preferences influence recommendations for migrating virtual machine assets.",
+      "description": "VirtualMachinePreferences enables you to create sets of preferences, for example, a geographical location and pricing track, for your migrated virtual machines. The set of preferences influence recommendations for migrating virtual machine assets.",
       "id": "VirtualMachinePreferences",
       "properties": {
         "commitmentPlan": {
@@ -5772,9 +5868,17 @@
           "$ref": "ComputeEnginePreferences",
           "description": "Compute Engine preferences concern insights and recommendations for Compute Engine target."
         },
+        "networkCostParameters": {
+          "$ref": "VirtualMachinePreferencesNetworkCostParameters",
+          "description": "Optional. Parameters that affect network cost estimations. If not set, default values will be used for the parameters."
+        },
         "regionPreferences": {
           "$ref": "RegionPreferences",
-          "description": "Region preferences for assets using this preference set. If you are unsure which value to set, the migration service API region is often a good value to start with."
+          "description": "Region preferences for assets using this preference set. If you are unsure which value to set, the migration service API region is often a good value to start with. If PreferenceSet.RegionPreferences is specified, it overrides this field."
+        },
+        "sizingOptimizationCustomParameters": {
+          "$ref": "VirtualMachinePreferencesSizingOptimizationCustomParameters",
+          "description": "Optional. Custom data to use for sizing optimizations. Relevant when SizingOptimizationStrategy is set to \"custom\"."
         },
         "sizingOptimizationStrategy": {
           "description": "Sizing optimization strategy specifies the preferred strategy used when extrapolating usage data to calculate insights and recommendations for a virtual machine. If you are unsure which value to set, a moderate sizing optimization strategy is often a good value to start with.",
@@ -5782,13 +5886,15 @@
             "SIZING_OPTIMIZATION_STRATEGY_UNSPECIFIED",
             "SIZING_OPTIMIZATION_STRATEGY_SAME_AS_SOURCE",
             "SIZING_OPTIMIZATION_STRATEGY_MODERATE",
-            "SIZING_OPTIMIZATION_STRATEGY_AGGRESSIVE"
+            "SIZING_OPTIMIZATION_STRATEGY_AGGRESSIVE",
+            "SIZING_OPTIMIZATION_STRATEGY_CUSTOM"
           ],
           "enumDescriptions": [
             "Unspecified (default value).",
             "No optimization applied. Virtual machine sizing matches as closely as possible the machine shape on the source site, not considering any actual performance data.",
             "Virtual machine sizing will match the reported usage and shape, with some slack. This a good value to start with.",
-            "Virtual machine sizing will match the reported usage, with little slack. Using this option can help reduce costs."
+            "Virtual machine sizing will match the reported usage, with little slack. Using this option can help reduce costs.",
+            "Virtual machine sizing will be determined by custom parameters. While not supported in the v1 API, this value is converted to UNSPECIFIED in conversions to the v1 API."
           ],
           "type": "string"
         },
@@ -5815,6 +5921,58 @@
         "vmwareEnginePreferences": {
           "$ref": "VmwareEnginePreferences",
           "description": "Preferences concerning insights and recommendations for Google Cloud VMware Engine."
+        }
+      },
+      "type": "object"
+    },
+    "VirtualMachinePreferencesNetworkCostParameters": {
+      "description": "Parameters that affect network cost estimations.",
+      "id": "VirtualMachinePreferencesNetworkCostParameters",
+      "properties": {
+        "estimatedEgressTrafficPercentage": {
+          "description": "Optional. An estimated percentage of priced outbound traffic (egress traffic) from the measured outbound traffic. Must be in the interval [0, 100].",
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "VirtualMachinePreferencesSizingOptimizationCustomParameters": {
+      "description": "Custom data to use for sizing optimizations.",
+      "id": "VirtualMachinePreferencesSizingOptimizationCustomParameters",
+      "properties": {
+        "aggregationMethod": {
+          "description": "Optional. Type of statistical aggregation of a resource utilization data, on which to base the sizing metrics.",
+          "enum": [
+            "AGGREGATION_METHOD_UNSPECIFIED",
+            "AGGREGATION_METHOD_AVERAGE",
+            "AGGREGATION_METHOD_MEDIAN",
+            "AGGREGATION_METHOD_NINETY_FIFTH_PERCENTILE",
+            "AGGREGATION_METHOD_PEAK"
+          ],
+          "enumDescriptions": [
+            "Unspecified aggregation method. Can be used for default value.",
+            "Average of utilization data.",
+            "Median of utilization data.",
+            "95th percentile of utilization data.",
+            "Peak of utilization data."
+          ],
+          "type": "string"
+        },
+        "cpuUsagePercentage": {
+          "description": "Optional. Desired percentage of CPU usage. Must be in the interval [1, 100] (or 0 for default value).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "memoryUsagePercentage": {
+          "description": "Optional. Desired percentage of memory usage. Must be in the interval [1, 100] (or 0 for default value).",
+          "format": "int32",
+          "type": "integer"
+        },
+        "storageMultiplier": {
+          "description": "Optional. Desired increase factor of storage, relative to currently used storage. Must be in the interval [1.0, 2.0] (or 0 for default value).",
+          "format": "double",
+          "type": "number"
         }
       },
       "type": "object"

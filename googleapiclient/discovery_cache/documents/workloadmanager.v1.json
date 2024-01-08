@@ -707,7 +707,7 @@
       }
     }
   },
-  "revision": "20230719",
+  "revision": "20231211",
   "rootUrl": "https://workloadmanager.googleapis.com/",
   "schemas": {
     "CancelOperationRequest": {
@@ -915,11 +915,11 @@
         },
         "sapDiscovery": {
           "$ref": "SapDiscovery",
-          "description": "The insights data for sap system discovery. This is a copy of SAP System proto and should get updated whenever that one changes."
+          "description": "The insights data for SAP system discovery. This is a copy of SAP System proto and should get updated whenever that one changes."
         },
         "sapValidation": {
           "$ref": "SapValidation",
-          "description": "The insights data for the sap workload validation."
+          "description": "The insights data for the SAP workload validation."
         },
         "sentTime": {
           "description": "Output only. [Output only] Create time stamp",
@@ -1137,7 +1137,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
           "type": "object"
         }
       },
@@ -1337,27 +1337,32 @@
       "type": "object"
     },
     "SapDiscovery": {
-      "description": "LINT.IfChange The schema of SAP system discovery data.",
+      "description": "The schema of SAP system discovery data.",
       "id": "SapDiscovery",
       "properties": {
         "applicationLayer": {
           "$ref": "SapDiscoveryComponent",
-          "description": "An SAP system may run without an application layer."
+          "description": "Optional. An SAP system may run without an application layer."
         },
         "databaseLayer": {
           "$ref": "SapDiscoveryComponent",
-          "description": "An SAP System must have a database."
+          "description": "Required. An SAP System must have a database."
         },
         "metadata": {
           "$ref": "SapDiscoveryMetadata",
-          "description": "The metadata for SAP system discovery data."
+          "description": "Optional. The metadata for SAP system discovery data."
+        },
+        "projectNumber": {
+          "description": "Optional. The GCP project number that this SapSystem belongs to.",
+          "type": "string"
         },
         "systemId": {
-          "description": "A combination of database SID, database instance URI and tenant DB name to make a unique identifier per-system.",
+          "description": "Output only. A combination of database SID, database instance URI and tenant DB name to make a unique identifier per-system.",
+          "readOnly": true,
           "type": "string"
         },
         "updateTime": {
-          "description": "Unix timestamp this system has been updated last.",
+          "description": "Required. Unix timestamp this system has been updated last.",
           "format": "google-datetime",
           "type": "string"
         }
@@ -1376,19 +1381,40 @@
           "$ref": "SapDiscoveryComponentDatabaseProperties",
           "description": "Optional. The component is a SAP database."
         },
+        "haHosts": {
+          "description": "Optional. A list of host URIs that are part of the HA configuration if present. An empty list indicates the component is not configured for HA.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "hostProject": {
-          "description": "Pantheon Project in which the resources reside.",
+          "description": "Required. Pantheon Project in which the resources reside.",
           "type": "string"
         },
         "resources": {
-          "description": "The resources in a component.",
+          "description": "Optional. The resources in a component.",
           "items": {
             "$ref": "SapDiscoveryResource"
           },
           "type": "array"
         },
         "sid": {
-          "description": "The sap identifier, used by the SAP software and helps differentiate systems for customers.",
+          "description": "Optional. The SAP identifier, used by the SAP software and helps differentiate systems for customers.",
+          "type": "string"
+        },
+        "topologyType": {
+          "description": "Optional. The detected topology of the component.",
+          "enum": [
+            "TOPOLOGY_TYPE_UNSPECIFIED",
+            "TOPOLOGY_SCALE_UP",
+            "TOPOLOGY_SCALE_OUT"
+          ],
+          "enumDescriptions": [
+            "Unspecified topology.",
+            "A scale-up single node system.",
+            "A scale-out multi-node system."
+          ],
           "type": "string"
         }
       },
@@ -1398,6 +1424,10 @@
       "description": "A set of properties describing an SAP Application layer.",
       "id": "SapDiscoveryComponentApplicationProperties",
       "properties": {
+        "abap": {
+          "description": "Optional. Indicates whether this is a Java or ABAP Netweaver instance. true means it is ABAP, false means it is Java.",
+          "type": "boolean"
+        },
         "applicationType": {
           "description": "Required. Type of the application. Netweaver, etc.",
           "enum": [
@@ -1411,7 +1441,11 @@
           "type": "string"
         },
         "ascsUri": {
-          "description": "Required. Resource URI of the recognized ASCS host of the application.",
+          "description": "Optional. Resource URI of the recognized ASCS host of the application.",
+          "type": "string"
+        },
+        "kernelVersion": {
+          "description": "Optional. Kernel version for Netweaver running in the system.",
           "type": "string"
         },
         "nfsUri": {
@@ -1441,6 +1475,10 @@
           ],
           "type": "string"
         },
+        "databaseVersion": {
+          "description": "Optional. The version of the database software running in the system.",
+          "type": "string"
+        },
         "primaryInstanceUri": {
           "description": "Required. URI of the recognized primary instance of the database.",
           "type": "string"
@@ -1457,19 +1495,19 @@
       "id": "SapDiscoveryMetadata",
       "properties": {
         "customerRegion": {
-          "description": "Customer region string for customer's use. Does not represent GCP region.",
+          "description": "Optional. Customer region string for customer's use. Does not represent GCP region.",
           "type": "string"
         },
         "definedSystem": {
-          "description": "Customer defined, something like \"E-commerce pre prod\"",
+          "description": "Optional. Customer defined, something like \"E-commerce pre prod\"",
           "type": "string"
         },
         "environmentType": {
-          "description": "Should be \"prod\", \"QA\", \"dev\", \"staging\", etc.",
+          "description": "Optional. Should be \"prod\", \"QA\", \"dev\", \"staging\", etc.",
           "type": "string"
         },
         "sapProduct": {
-          "description": "This sap product name",
+          "description": "Optional. This SAP product name",
           "type": "string"
         }
       },
@@ -1479,8 +1517,12 @@
       "description": "Message describing a resource.",
       "id": "SapDiscoveryResource",
       "properties": {
+        "instanceProperties": {
+          "$ref": "SapDiscoveryResourceInstanceProperties",
+          "description": "Optional. A set of properties only applying to instance type resources."
+        },
         "relatedResources": {
-          "description": "A list of resource URIs related to this resource.",
+          "description": "Optional. A list of resource URIs related to this resource.",
           "items": {
             "type": "string"
           },
@@ -1535,12 +1577,30 @@
           "type": "string"
         },
         "resourceUri": {
-          "description": "URI of the resource, includes project, location, and name.",
+          "description": "Required. URI of the resource, includes project, location, and name.",
           "type": "string"
         },
         "updateTime": {
-          "description": "Unix timestamp of when this resource last had its discovery data updated.",
+          "description": "Required. Unix timestamp of when this resource last had its discovery data updated.",
           "format": "google-datetime",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SapDiscoveryResourceInstanceProperties": {
+      "description": "A set of properties only present for an instance type resource",
+      "id": "SapDiscoveryResourceInstanceProperties",
+      "properties": {
+        "clusterInstances": {
+          "description": "Optional. A list of instance URIs that are part of a cluster with this one.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "virtualHostname": {
+          "description": "Optional. A virtual hostname of the instance if it has one.",
           "type": "string"
         }
       },
@@ -1550,12 +1610,20 @@
       "description": "A presentation of SAP workload insight. The schema of SAP workloads validation related data.",
       "id": "SapValidation",
       "properties": {
+        "projectId": {
+          "description": "Required. The project_id of the cloud project that the Insight data comes from.",
+          "type": "string"
+        },
         "validationDetails": {
-          "description": "A list of SAP validation metrics data.",
+          "description": "Optional. A list of SAP validation metrics data.",
           "items": {
             "$ref": "SapValidationValidationDetail"
           },
           "type": "array"
+        },
+        "zone": {
+          "description": "Optional. The zone of the instance that the Insight data comes from.",
+          "type": "string"
         }
       },
       "type": "object"
@@ -1568,26 +1636,34 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "The pairs of metrics data: field name & field value.",
+          "description": "Optional. The pairs of metrics data: field name & field value.",
           "type": "object"
         },
+        "isPresent": {
+          "description": "Optional. Was there a SAP system detected for this validation type.",
+          "type": "boolean"
+        },
         "sapValidationType": {
-          "description": "The SAP system that the validation data is from.",
+          "description": "Optional. The SAP system that the validation data is from.",
           "enum": [
             "SAP_VALIDATION_TYPE_UNSPECIFIED",
             "SYSTEM",
             "COROSYNC",
             "PACEMAKER",
             "HANA",
-            "NETWEAVER"
+            "NETWEAVER",
+            "HANA_SECURITY",
+            "CUSTOM"
           ],
           "enumDescriptions": [
             "Unspecified type.",
-            "The SAP system named SYSTEM.",
-            "The SAP system named COROSYNC.",
-            "The SAP system named PACEMAKER.",
-            "The SAP system named HANA.",
-            "The SAP system named NETWEAVER."
+            "The SYSTEM validation type collects underlying system data from the VM.",
+            "The COROSYNC validation type collects Corosync configuration and runtime data. Corosync enables servers to interact as a HA cluster.",
+            "The PACEMAKER validation type collects Pacemaker configuration data. Pacemaker is a high-availability cluster resource manager.",
+            "The HANA validation type collects HANA configuration data. SAP HANA is an in-memory, column-oriented, relational database management system.",
+            "The NETWEAVER validation type collects NetWeaver configuration data. SAP NetWeaver is a software stack for many of SAP SE's applications.",
+            "The HANA_SECURITY validation type collects HANA configuration data as it relates to SAP security best practices.",
+            "The CUSTOM validation type collects any customer-defined data that does not fall into any of the other categories of validations."
           ],
           "type": "string"
         }
@@ -1610,7 +1686,7 @@
       "id": "SqlserverValidation",
       "properties": {
         "agentVersion": {
-          "description": "The agent version collected this data point",
+          "description": "Optional. The agent version collected this data point",
           "type": "string"
         },
         "instance": {
@@ -1622,7 +1698,7 @@
           "type": "string"
         },
         "validationDetails": {
-          "description": "A list of SqlServer validation metrics data.",
+          "description": "Optional. A list of SqlServer validation metrics data.",
           "items": {
             "$ref": "SqlserverValidationValidationDetail"
           },
@@ -1657,7 +1733,7 @@
           "type": "array"
         },
         "type": {
-          "description": "The Sqlserver system that the validation data is from.",
+          "description": "Optional. The Sqlserver system that the validation data is from.",
           "enum": [
             "SQLSERVER_VALIDATION_TYPE_UNSPECIFIED",
             "OS",
@@ -1668,7 +1744,10 @@
             "DB_VIRTUAL_LOG_FILE_COUNT",
             "DB_BUFFER_POOL_EXTENSION",
             "DB_MAX_SERVER_MEMORY",
-            "INSTANCE_METRICS"
+            "INSTANCE_METRICS",
+            "DB_INDEX_FRAGMENTATION",
+            "DB_TABLE_INDEX_COMPRESSION",
+            "DB_BACKUP_POLICY"
           ],
           "enumDescriptions": [
             "Unspecified type.",
@@ -1680,7 +1759,10 @@
             "The VIRTUAL_LOG_FILE_COUNT table.",
             "The BUFFER_POOL_EXTENSION table.",
             "The MAX_SERVER_MEMORY table.",
-            "The INSTANCE_METRICS table."
+            "The INSTANCE_METRICS table.",
+            "The DB_INDEX_FRAGMENTATION table.",
+            "The DB_TABLE_INDEX_COMPRESSION table.",
+            "The DB_BACKUP_POLICY table."
           ],
           "type": "string"
         }

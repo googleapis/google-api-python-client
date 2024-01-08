@@ -159,11 +159,19 @@ Args:
     &quot;gcsDestination&quot;: &quot;A String&quot;, # The output Cloud Storage directory to put the processed documents.
   },
   &quot;processOptions&quot;: { # Options for Process API # Inference-time options for the process API
+    &quot;fromEnd&quot;: 42, # Only process certain pages from the end, same as above.
+    &quot;fromStart&quot;: 42, # Only process certain pages from the start. Process all if the document has fewer pages.
+    &quot;individualPageSelector&quot;: { # A list of individual page numbers. # Which pages to process (1-indexed).
+      &quot;pages&quot;: [ # Optional. Indices of the pages (starting from 1).
+        42,
+      ],
+    },
     &quot;ocrConfig&quot;: { # Config for Document OCR. # Only applicable to `OCR_PROCESSOR`. Returns error if set on other processor types.
       &quot;advancedOcrOptions&quot;: [ # A list of advanced OCR options to further fine-tune OCR behavior. Current valid values are: - `legacy_layout`: a heuristics layout detection algorithm, which serves as an alternative to the current ML-based layout detection algorithm. Customers can choose the best suitable layout algorithm based on their situation.
         &quot;A String&quot;,
       ],
-      &quot;computeStyleInfo&quot;: True or False, # Turn on font id model and returns font style information.
+      &quot;computeStyleInfo&quot;: True or False, # Turn on font identification model and return font style information. Deprecated, use PremiumFeatures.compute_style_info instead.
+      &quot;disableCharacterBoxesDetection&quot;: True or False, # Turn off character box detector in OCR engine. Character box detection is enabled by default in OCR 2.0 (and later) processors.
       &quot;enableImageQualityScores&quot;: True or False, # Enables intelligent document quality scores after OCR. Can help with diagnosing why OCR responses are of poor quality for a given input. Adds additional latency comparable to regular OCR to the process call.
       &quot;enableNativePdfParsing&quot;: True or False, # Enables special handling for PDFs with existing text information. Results in better text extraction quality in such PDF inputs.
       &quot;enableSymbol&quot;: True or False, # Includes symbol level OCR information if set to true.
@@ -171,6 +179,54 @@ Args:
         &quot;languageHints&quot;: [ # List of BCP-47 language codes to use for OCR. In most cases, not specifying it yields the best results since it enables automatic language detection. For languages based on the Latin alphabet, setting hints is not needed. In rare cases, when the language of the text in the image is known, setting a hint will help get better results (although it will be a significant hindrance if the hint is wrong).
           &quot;A String&quot;,
         ],
+      },
+      &quot;premiumFeatures&quot;: { # Configurations for premium OCR features. # Configurations for premium OCR features.
+        &quot;computeStyleInfo&quot;: True or False, # Turn on font identification model and return font style information.
+        &quot;enableMathOcr&quot;: True or False, # Turn on the model that can extract LaTeX math formulas.
+        &quot;enableSelectionMarkDetection&quot;: True or False, # Turn on selection mark detector in OCR engine. Only available in OCR 2.0 (and later) processors.
+      },
+    },
+    &quot;schemaOverride&quot;: { # The schema defines the output of the processed document by a processor. # Optional. Override the schema of the ProcessorVersion. Will return an Invalid Argument error if this field is set when the underlying ProcessorVersion doesn&#x27;t support schema override.
+      &quot;description&quot;: &quot;A String&quot;, # Description of the schema.
+      &quot;displayName&quot;: &quot;A String&quot;, # Display name to show to users.
+      &quot;entityTypes&quot;: [ # Entity types of the schema.
+        { # EntityType is the wrapper of a label of the corresponding model with detailed attributes and limitations for entity-based processors. Multiple types can also compose a dependency tree to represent nested types.
+          &quot;baseTypes&quot;: [ # The entity type that this type is derived from. For now, one and only one should be set.
+            &quot;A String&quot;,
+          ],
+          &quot;displayName&quot;: &quot;A String&quot;, # User defined name for the type.
+          &quot;entityTypeMetadata&quot;: { # Metadata about an entity type. # Metadata for the entity type.
+            &quot;inactive&quot;: True or False, # Whether the entity type should be considered inactive.
+          },
+          &quot;enumValues&quot;: { # Defines the a list of enum values. # If specified, lists all the possible values for this entity. This should not be more than a handful of values. If the number of values is &gt;10 or could change frequently use the `EntityType.value_ontology` field and specify a list of all possible values in a value ontology file.
+            &quot;values&quot;: [ # The individual values that this enum values type can include.
+              &quot;A String&quot;,
+            ],
+          },
+          &quot;name&quot;: &quot;A String&quot;, # Name of the type. It must be unique within the schema file and cannot be a &quot;Common Type&quot;. The following naming conventions are used: - Use `snake_casing`. - Name matching is case-sensitive. - Maximum 64 characters. - Must start with a letter. - Allowed characters: ASCII letters `[a-z0-9_-]`. (For backward compatibility internal infrastructure and tooling can handle any ascii character.) - The `/` is sometimes used to denote a property of a type. For example `line_item/amount`. This convention is deprecated, but will still be honored for backward compatibility.
+          &quot;properties&quot;: [ # Description the nested structure, or composition of an entity.
+            { # Defines properties that can be part of the entity type.
+              &quot;name&quot;: &quot;A String&quot;, # The name of the property. Follows the same guidelines as the EntityType name.
+              &quot;occurrenceType&quot;: &quot;A String&quot;, # Occurrence type limits the number of instances an entity type appears in the document.
+              &quot;propertyMetadata&quot;: { # Metadata about a property. # Any additional metadata about the property can be added here.
+                &quot;fieldExtractionMetadata&quot;: { # Metadata for how this field value is extracted. # Field extraction metadata on the property.
+                  &quot;summaryOptions&quot;: { # Metadata for document summarization. # Summary options config.
+                    &quot;format&quot;: &quot;A String&quot;, # The format the summary should be in.
+                    &quot;length&quot;: &quot;A String&quot;, # How long the summary should be.
+                  },
+                },
+                &quot;inactive&quot;: True or False, # Whether the property should be considered as &quot;inactive&quot;.
+              },
+              &quot;valueType&quot;: &quot;A String&quot;, # A reference to the value type of the property. This type is subject to the same conventions as the `Entity.base_types` field.
+            },
+          ],
+        },
+      ],
+      &quot;metadata&quot;: { # Metadata for global schema behavior. # Metadata of the schema.
+        &quot;documentAllowMultipleLabels&quot;: True or False, # If true, on a given page, there can be multiple `document` annotations covering it.
+        &quot;documentSplitter&quot;: True or False, # If true, a `document` entity type can be applied to subdocument (splitting). Otherwise, it can only be applied to the entire document (classification).
+        &quot;prefixedNamingOnProperties&quot;: True or False, # If set, all the nested entities must be prefixed with the parents.
+        &quot;skipNamingValidation&quot;: True or False, # If set, we will skip the naming format validation in the schema. So the string values in `DocumentSchema.EntityType.name` and `DocumentSchema.EntityType.Property.name` will not be checked.
       },
     },
   },
@@ -200,7 +256,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -240,7 +296,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -281,7 +337,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -335,7 +391,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -385,6 +441,12 @@ Returns:
             &quot;name&quot;: &quot;A String&quot;, # The name of the property. Follows the same guidelines as the EntityType name.
             &quot;occurrenceType&quot;: &quot;A String&quot;, # Occurrence type limits the number of instances an entity type appears in the document.
             &quot;propertyMetadata&quot;: { # Metadata about a property. # Any additional metadata about the property can be added here.
+              &quot;fieldExtractionMetadata&quot;: { # Metadata for how this field value is extracted. # Field extraction metadata on the property.
+                &quot;summaryOptions&quot;: { # Metadata for document summarization. # Summary options config.
+                  &quot;format&quot;: &quot;A String&quot;, # The format the summary should be in.
+                  &quot;length&quot;: &quot;A String&quot;, # How long the summary should be.
+                },
+              },
               &quot;inactive&quot;: True or False, # Whether the property should be considered as &quot;inactive&quot;.
             },
             &quot;valueType&quot;: &quot;A String&quot;, # A reference to the value type of the property. This type is subject to the same conventions as the `Entity.base_types` field.
@@ -446,8 +508,8 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # The request message for the ImportProcessorVersion method. Requirements: - The Document AI [Service Agent](https://cloud.google.com/iam/docs/service-agents) of the destination project must have [Document AI Editor role](https://cloud.google.com/document-ai/docs/access-control/iam-roles) on the source project. The destination project is specified as part of the parent field. The source project is specified as part of the source field.
-  &quot;externalProcessorVersionSource&quot;: { # The external source processor version. # The source processor version to import from, and can be from different environment and region than the destination processor.
+{ # The request message for the ImportProcessorVersion method. The Document AI [Service Agent](https://cloud.google.com/iam/docs/service-agents) of the destination project must have [Document AI Editor role](https://cloud.google.com/document-ai/docs/access-control/iam-roles) on the source project. The destination project is specified as part of the parent field. The source project is specified as part of the source or external_processor_version_source field.
+  &quot;externalProcessorVersionSource&quot;: { # The external source processor version. # The source processor version to import from. It can be from a different environment and region than the destination processor.
     &quot;processorVersion&quot;: &quot;A String&quot;, # Required. The processor version name. Format: `projects/{project}/locations/{location}/processors/{processor}/processorVersions/{processorVersion}`
     &quot;serviceEndpoint&quot;: &quot;A String&quot;, # Optional. The Document AI service endpoint. For example, &#x27;https://us-documentai.googleapis.com&#x27;
   },
@@ -477,7 +539,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -532,6 +594,12 @@ Returns:
                 &quot;name&quot;: &quot;A String&quot;, # The name of the property. Follows the same guidelines as the EntityType name.
                 &quot;occurrenceType&quot;: &quot;A String&quot;, # Occurrence type limits the number of instances an entity type appears in the document.
                 &quot;propertyMetadata&quot;: { # Metadata about a property. # Any additional metadata about the property can be added here.
+                  &quot;fieldExtractionMetadata&quot;: { # Metadata for how this field value is extracted. # Field extraction metadata on the property.
+                    &quot;summaryOptions&quot;: { # Metadata for document summarization. # Summary options config.
+                      &quot;format&quot;: &quot;A String&quot;, # The format the summary should be in.
+                      &quot;length&quot;: &quot;A String&quot;, # How long the summary should be.
+                    },
+                  },
                   &quot;inactive&quot;: True or False, # Whether the property should be considered as &quot;inactive&quot;.
                 },
                 &quot;valueType&quot;: &quot;A String&quot;, # A reference to the value type of the property. This type is subject to the same conventions as the `Entity.base_types` field.
@@ -2308,11 +2376,19 @@ Args:
     &quot;uri&quot;: &quot;A String&quot;, # Optional. Currently supports Google Cloud Storage URI of the form `gs://bucket_name/object_name`. Object versioning is not supported. For more information, refer to [Google Cloud Storage Request URIs](https://cloud.google.com/storage/docs/reference-uris).
   },
   &quot;processOptions&quot;: { # Options for Process API # Inference-time options for the process API
+    &quot;fromEnd&quot;: 42, # Only process certain pages from the end, same as above.
+    &quot;fromStart&quot;: 42, # Only process certain pages from the start. Process all if the document has fewer pages.
+    &quot;individualPageSelector&quot;: { # A list of individual page numbers. # Which pages to process (1-indexed).
+      &quot;pages&quot;: [ # Optional. Indices of the pages (starting from 1).
+        42,
+      ],
+    },
     &quot;ocrConfig&quot;: { # Config for Document OCR. # Only applicable to `OCR_PROCESSOR`. Returns error if set on other processor types.
       &quot;advancedOcrOptions&quot;: [ # A list of advanced OCR options to further fine-tune OCR behavior. Current valid values are: - `legacy_layout`: a heuristics layout detection algorithm, which serves as an alternative to the current ML-based layout detection algorithm. Customers can choose the best suitable layout algorithm based on their situation.
         &quot;A String&quot;,
       ],
-      &quot;computeStyleInfo&quot;: True or False, # Turn on font id model and returns font style information.
+      &quot;computeStyleInfo&quot;: True or False, # Turn on font identification model and return font style information. Deprecated, use PremiumFeatures.compute_style_info instead.
+      &quot;disableCharacterBoxesDetection&quot;: True or False, # Turn off character box detector in OCR engine. Character box detection is enabled by default in OCR 2.0 (and later) processors.
       &quot;enableImageQualityScores&quot;: True or False, # Enables intelligent document quality scores after OCR. Can help with diagnosing why OCR responses are of poor quality for a given input. Adds additional latency comparable to regular OCR to the process call.
       &quot;enableNativePdfParsing&quot;: True or False, # Enables special handling for PDFs with existing text information. Results in better text extraction quality in such PDF inputs.
       &quot;enableSymbol&quot;: True or False, # Includes symbol level OCR information if set to true.
@@ -2321,11 +2397,59 @@ Args:
           &quot;A String&quot;,
         ],
       },
+      &quot;premiumFeatures&quot;: { # Configurations for premium OCR features. # Configurations for premium OCR features.
+        &quot;computeStyleInfo&quot;: True or False, # Turn on font identification model and return font style information.
+        &quot;enableMathOcr&quot;: True or False, # Turn on the model that can extract LaTeX math formulas.
+        &quot;enableSelectionMarkDetection&quot;: True or False, # Turn on selection mark detector in OCR engine. Only available in OCR 2.0 (and later) processors.
+      },
+    },
+    &quot;schemaOverride&quot;: { # The schema defines the output of the processed document by a processor. # Optional. Override the schema of the ProcessorVersion. Will return an Invalid Argument error if this field is set when the underlying ProcessorVersion doesn&#x27;t support schema override.
+      &quot;description&quot;: &quot;A String&quot;, # Description of the schema.
+      &quot;displayName&quot;: &quot;A String&quot;, # Display name to show to users.
+      &quot;entityTypes&quot;: [ # Entity types of the schema.
+        { # EntityType is the wrapper of a label of the corresponding model with detailed attributes and limitations for entity-based processors. Multiple types can also compose a dependency tree to represent nested types.
+          &quot;baseTypes&quot;: [ # The entity type that this type is derived from. For now, one and only one should be set.
+            &quot;A String&quot;,
+          ],
+          &quot;displayName&quot;: &quot;A String&quot;, # User defined name for the type.
+          &quot;entityTypeMetadata&quot;: { # Metadata about an entity type. # Metadata for the entity type.
+            &quot;inactive&quot;: True or False, # Whether the entity type should be considered inactive.
+          },
+          &quot;enumValues&quot;: { # Defines the a list of enum values. # If specified, lists all the possible values for this entity. This should not be more than a handful of values. If the number of values is &gt;10 or could change frequently use the `EntityType.value_ontology` field and specify a list of all possible values in a value ontology file.
+            &quot;values&quot;: [ # The individual values that this enum values type can include.
+              &quot;A String&quot;,
+            ],
+          },
+          &quot;name&quot;: &quot;A String&quot;, # Name of the type. It must be unique within the schema file and cannot be a &quot;Common Type&quot;. The following naming conventions are used: - Use `snake_casing`. - Name matching is case-sensitive. - Maximum 64 characters. - Must start with a letter. - Allowed characters: ASCII letters `[a-z0-9_-]`. (For backward compatibility internal infrastructure and tooling can handle any ascii character.) - The `/` is sometimes used to denote a property of a type. For example `line_item/amount`. This convention is deprecated, but will still be honored for backward compatibility.
+          &quot;properties&quot;: [ # Description the nested structure, or composition of an entity.
+            { # Defines properties that can be part of the entity type.
+              &quot;name&quot;: &quot;A String&quot;, # The name of the property. Follows the same guidelines as the EntityType name.
+              &quot;occurrenceType&quot;: &quot;A String&quot;, # Occurrence type limits the number of instances an entity type appears in the document.
+              &quot;propertyMetadata&quot;: { # Metadata about a property. # Any additional metadata about the property can be added here.
+                &quot;fieldExtractionMetadata&quot;: { # Metadata for how this field value is extracted. # Field extraction metadata on the property.
+                  &quot;summaryOptions&quot;: { # Metadata for document summarization. # Summary options config.
+                    &quot;format&quot;: &quot;A String&quot;, # The format the summary should be in.
+                    &quot;length&quot;: &quot;A String&quot;, # How long the summary should be.
+                  },
+                },
+                &quot;inactive&quot;: True or False, # Whether the property should be considered as &quot;inactive&quot;.
+              },
+              &quot;valueType&quot;: &quot;A String&quot;, # A reference to the value type of the property. This type is subject to the same conventions as the `Entity.base_types` field.
+            },
+          ],
+        },
+      ],
+      &quot;metadata&quot;: { # Metadata for global schema behavior. # Metadata of the schema.
+        &quot;documentAllowMultipleLabels&quot;: True or False, # If true, on a given page, there can be multiple `document` annotations covering it.
+        &quot;documentSplitter&quot;: True or False, # If true, a `document` entity type can be applied to subdocument (splitting). Otherwise, it can only be applied to the entire document (classification).
+        &quot;prefixedNamingOnProperties&quot;: True or False, # If set, all the nested entities must be prefixed with the parents.
+        &quot;skipNamingValidation&quot;: True or False, # If set, we will skip the naming format validation in the schema. So the string values in `DocumentSchema.EntityType.name` and `DocumentSchema.EntityType.Property.name` will not be checked.
+      },
     },
   },
   &quot;rawDocument&quot;: { # Payload message of raw document content (bytes). # A raw document content (bytes).
     &quot;content&quot;: &quot;A String&quot;, # Inline document content.
-    &quot;displayName&quot;: &quot;A String&quot;, # The display name of the document, it supports all Unicode characters except the following: `*`, `?`, `[`, `]`, `%`, `{`, `}`,`&#x27;`, `\&quot;`, `,` `~`, `=` and `:` are reserved. If not specified, a default ID will be generated.
+    &quot;displayName&quot;: &quot;A String&quot;, # The display name of the document, it supports all Unicode characters except the following: `*`, `?`, `[`, `]`, `%`, `{`, `}`,`&#x27;`, `\&quot;`, `,` `~`, `=` and `:` are reserved. If not specified, a default ID is generated.
     &quot;mimeType&quot;: &quot;A String&quot;, # An IANA MIME type (RFC6838) indicating the nature and format of the content.
   },
   &quot;skipHumanReview&quot;: True or False, # Whether human review should be skipped for this request. Default to `false`.
@@ -3232,6 +3356,12 @@ Args:
             &quot;name&quot;: &quot;A String&quot;, # The name of the property. Follows the same guidelines as the EntityType name.
             &quot;occurrenceType&quot;: &quot;A String&quot;, # Occurrence type limits the number of instances an entity type appears in the document.
             &quot;propertyMetadata&quot;: { # Metadata about a property. # Any additional metadata about the property can be added here.
+              &quot;fieldExtractionMetadata&quot;: { # Metadata for how this field value is extracted. # Field extraction metadata on the property.
+                &quot;summaryOptions&quot;: { # Metadata for document summarization. # Summary options config.
+                  &quot;format&quot;: &quot;A String&quot;, # The format the summary should be in.
+                  &quot;length&quot;: &quot;A String&quot;, # How long the summary should be.
+                },
+              },
               &quot;inactive&quot;: True or False, # Whether the property should be considered as &quot;inactive&quot;.
             },
             &quot;valueType&quot;: &quot;A String&quot;, # A reference to the value type of the property. This type is subject to the same conventions as the `Entity.base_types` field.
@@ -3245,6 +3375,10 @@ Args:
       &quot;prefixedNamingOnProperties&quot;: True or False, # If set, all the nested entities must be prefixed with the parents.
       &quot;skipNamingValidation&quot;: True or False, # If set, we will skip the naming format validation in the schema. So the string values in `DocumentSchema.EntityType.name` and `DocumentSchema.EntityType.Property.name` will not be checked.
     },
+  },
+  &quot;foundationModelTuningOptions&quot;: { # Options to control foundation model tuning of the processor. # Options to control foundation model tuning of a processor.
+    &quot;learningRateMultiplier&quot;: 3.14, # Optional. The multiplier to apply to the recommended learning rate. Valid values are between [0.1, 10]. If not provided, recommended learning rate will be used.
+    &quot;trainSteps&quot;: 42, # Optional. The number of steps to run for model tuning. Valid values are between [1, 400]. If not provided, recommended steps will be used.
   },
   &quot;inputData&quot;: { # The input data used to train a new ProcessorVersion. # Optional. The input data used to train the ProcessorVersion.
     &quot;testDocuments&quot;: { # The common config to specify a set of documents used as input. # The documents used for testing the trained version.
@@ -3304,6 +3438,12 @@ Args:
               &quot;name&quot;: &quot;A String&quot;, # The name of the property. Follows the same guidelines as the EntityType name.
               &quot;occurrenceType&quot;: &quot;A String&quot;, # Occurrence type limits the number of instances an entity type appears in the document.
               &quot;propertyMetadata&quot;: { # Metadata about a property. # Any additional metadata about the property can be added here.
+                &quot;fieldExtractionMetadata&quot;: { # Metadata for how this field value is extracted. # Field extraction metadata on the property.
+                  &quot;summaryOptions&quot;: { # Metadata for document summarization. # Summary options config.
+                    &quot;format&quot;: &quot;A String&quot;, # The format the summary should be in.
+                    &quot;length&quot;: &quot;A String&quot;, # How long the summary should be.
+                  },
+                },
                 &quot;inactive&quot;: True or False, # Whether the property should be considered as &quot;inactive&quot;.
               },
               &quot;valueType&quot;: &quot;A String&quot;, # A reference to the value type of the property. This type is subject to the same conventions as the `Entity.base_types` field.
@@ -3379,7 +3519,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -3420,7 +3560,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>

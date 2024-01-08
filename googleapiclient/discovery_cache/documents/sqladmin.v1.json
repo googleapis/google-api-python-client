@@ -707,6 +707,41 @@
             "https://www.googleapis.com/auth/sqlservice.admin"
           ]
         },
+        "demote": {
+          "description": "Demotes an existing standalone instance to be a Cloud SQL read replica for an external database server.",
+          "flatPath": "v1/projects/{project}/instances/{instance}/demote",
+          "httpMethod": "POST",
+          "id": "sql.instances.demote",
+          "parameterOrder": [
+            "project",
+            "instance"
+          ],
+          "parameters": {
+            "instance": {
+              "description": "Required. Cloud SQL instance name.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "project": {
+              "description": "Required. ID of the project that contains the instance.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "v1/projects/{project}/instances/{instance}/demote",
+          "request": {
+            "$ref": "InstancesDemoteRequest"
+          },
+          "response": {
+            "$ref": "Operation"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/sqlservice.admin"
+          ]
+        },
         "demoteMaster": {
           "description": "Demotes the stand-alone instance to be a Cloud SQL read replica for an external database server.",
           "flatPath": "v1/projects/{project}/instances/{instance}/demoteMaster",
@@ -1023,6 +1058,11 @@
             "instance"
           ],
           "parameters": {
+            "failover": {
+              "description": "Set to true if the promote operation should attempt to re-add the original primary as a replica when it comes back online. Otherwise, if this value is false or not set, the original primary will be a standalone instance.",
+              "location": "query",
+              "type": "boolean"
+            },
             "instance": {
               "description": "Cloud SQL read replica instance name.",
               "location": "path",
@@ -1270,6 +1310,44 @@
             }
           },
           "path": "v1/projects/{project}/instances/{instance}/stopReplica",
+          "response": {
+            "$ref": "Operation"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/cloud-platform",
+            "https://www.googleapis.com/auth/sqlservice.admin"
+          ]
+        },
+        "switchover": {
+          "description": "Switches over from the primary instance to the replica instance.",
+          "flatPath": "v1/projects/{project}/instances/{instance}/switchover",
+          "httpMethod": "POST",
+          "id": "sql.instances.switchover",
+          "parameterOrder": [
+            "project",
+            "instance"
+          ],
+          "parameters": {
+            "dbTimeout": {
+              "description": "Optional. (MySQL only) Cloud SQL instance operations timeout, which is a sum of all database operations. Default value is 10 minutes and can be modified to a maximum value of 24 hours.",
+              "format": "google-duration",
+              "location": "query",
+              "type": "string"
+            },
+            "instance": {
+              "description": "Cloud SQL read replica instance name.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "project": {
+              "description": "ID of the project that contains the replica.",
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          },
+          "path": "v1/projects/{project}/instances/{instance}/switchover",
           "response": {
             "$ref": "Operation"
           },
@@ -2122,7 +2200,7 @@
       }
     }
   },
-  "revision": "20230721",
+  "revision": "20231211",
   "rootUrl": "https://sqladmin.googleapis.com/",
   "schemas": {
     "AclEntry": {
@@ -2170,12 +2248,16 @@
           "enum": [
             "SQL_API_WARNING_CODE_UNSPECIFIED",
             "REGION_UNREACHABLE",
-            "MAX_RESULTS_EXCEEDS_LIMIT"
+            "MAX_RESULTS_EXCEEDS_LIMIT",
+            "COMPROMISED_CREDENTIALS",
+            "INTERNAL_STATE_FAILURE"
           ],
           "enumDescriptions": [
             "An unknown or unset warning type from Cloud SQL API.",
             "Warning when one or more regions are not reachable. The returned result set may be incomplete.",
-            "Warning when user provided maxResults parameter exceeds the limit. The returned result set may be incomplete."
+            "Warning when user provided maxResults parameter exceeds the limit. The returned result set may be incomplete.",
+            "Warning when user tries to create/update a user with credentials that have previously been compromised by a public data breach.",
+            "Warning when the operation succeeds but some non-critical workflow state failed."
           ],
           "type": "string"
         },
@@ -3024,6 +3106,12 @@
           "$ref": "SqlOutOfDiskReport",
           "description": "This field represents the report generated by the proactive database wellness job for OutOfDisk issues. * Writers: * the proactive database wellness job for OOD. * Readers: * the proactive database wellness job"
         },
+        "primaryDnsName": {
+          "deprecated": true,
+          "description": "Output only. DEPRECATED: please use write_endpoint instead.",
+          "readOnly": true,
+          "type": "string"
+        },
         "project": {
           "description": "The project ID of the project containing the Cloud SQL instance. The Google apps domain is prefixed if applicable.",
           "type": "string"
@@ -3080,6 +3168,19 @@
           "$ref": "Settings",
           "description": "The user settings."
         },
+        "sqlNetworkArchitecture": {
+          "enum": [
+            "SQL_NETWORK_ARCHITECTURE_UNSPECIFIED",
+            "NEW_NETWORK_ARCHITECTURE",
+            "OLD_NETWORK_ARCHITECTURE"
+          ],
+          "enumDescriptions": [
+            "",
+            "Instance is a Tenancy Unit (TU) instance.",
+            "Instance is an Umbrella instance."
+          ],
+          "type": "string"
+        },
         "state": {
           "description": "The current serving state of the Cloud SQL instance.",
           "enum": [
@@ -3134,6 +3235,11 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "writeEndpoint": {
+          "description": "Output only. The dns name of the primary instance in a replication group.",
+          "readOnly": true,
+          "type": "string"
         }
       },
       "type": "object"
@@ -3151,6 +3257,21 @@
         },
         "kind": {
           "description": "This is always `sql#databasesList`.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "DemoteContext": {
+      "description": "This context is used to demote an existing standalone instance to be a Cloud SQL read replica for an external database server.",
+      "id": "DemoteContext",
+      "properties": {
+        "kind": {
+          "description": "This is always `sql#demoteContext`.",
+          "type": "string"
+        },
+        "sourceRepresentativeInstanceName": {
+          "description": "Required. The name of the instance which acts as the on-premises primary instance in the replication setup.",
           "type": "string"
         }
       },
@@ -3735,12 +3856,12 @@
               "type": "boolean"
             },
             "stopAt": {
-              "description": "Optional. StopAt keyword for transaction log import, Applies to Cloud SQL for SQL Server only",
+              "description": "Optional. The timestamp when the import should stop. This timestamp is in the [RFC 3339](https://tools.ietf.org/html/rfc3339) format (for example, `2023-10-01T16:19:00.094`). This field is equivalent to the STOPAT keyword and applies to Cloud SQL for SQL Server only.",
               "format": "google-datetime",
               "type": "string"
             },
             "stopAtMark": {
-              "description": "Optional. StopAtMark keyword for transaction log import, Applies to Cloud SQL for SQL Server only",
+              "description": "Optional. The marked transaction where the import should stop. This field is equivalent to the STOPATMARK keyword and applies to Cloud SQL for SQL Server only.",
               "type": "string"
             },
             "striped": {
@@ -3884,6 +4005,17 @@
         "demoteMasterContext": {
           "$ref": "DemoteMasterContext",
           "description": "Contains details about the demoteMaster operation."
+        }
+      },
+      "type": "object"
+    },
+    "InstancesDemoteRequest": {
+      "description": "This request is used to demote an existing standalone instance to be a Cloud SQL read replica for an external database server.",
+      "id": "InstancesDemoteRequest",
+      "properties": {
+        "demoteContext": {
+          "$ref": "DemoteContext",
+          "description": "Required. Contains details about the demote operation."
         }
       },
       "type": "object"
@@ -4047,14 +4179,30 @@
           "description": "PSC settings for this instance."
         },
         "requireSsl": {
-          "description": "Whether SSL connections over IP are enforced or not.",
+          "description": "Use `ssl_mode` instead for MySQL and PostgreSQL. SQL Server uses this flag. Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won't be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the `require_ssl` flag.",
           "type": "boolean"
+        },
+        "sslMode": {
+          "description": "SQL Server uses the `require_ssl` flag. You can set the value for this flag to 'true' or 'false'.",
+          "enum": [
+            "SSL_MODE_UNSPECIFIED",
+            "ALLOW_UNENCRYPTED_AND_ENCRYPTED",
+            "ENCRYPTED_ONLY",
+            "TRUSTED_CLIENT_CERTIFICATE_REQUIRED"
+          ],
+          "enumDescriptions": [
+            "The SSL mode is unknown.",
+            "Allow non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won't be verified. When this value is used, the legacy `require_ssl` flag must be false or cleared to avoid the conflict between values of two flags.",
+            "Only allow connections encrypted with SSL/TLS. When this value is used, the legacy `require_ssl` flag must be false or cleared to avoid the conflict between values of two flags.",
+            "Only allow connections encrypted with SSL/TLS and with valid client certificates. When this value is used, the legacy `require_ssl` flag must be true or cleared to avoid the conflict between values of two flags."
+          ],
+          "type": "string"
         }
       },
       "type": "object"
     },
     "IpMapping": {
-      "description": "Database instance IP Mapping.",
+      "description": "Database instance IP mapping",
       "id": "IpMapping",
       "properties": {
         "ipAddress": {
@@ -4101,7 +4249,7 @@
           "type": "string"
         },
         "secondaryZone": {
-          "description": "The preferred Compute Engine zone for the secondary/failover (for example: us-central1-a, us-central1-b, etc.).",
+          "description": "The preferred Compute Engine zone for the secondary/failover (for example: us-central1-a, us-central1-b, etc.). To disable this field, set it to 'no_secondary_zone'.",
           "type": "string"
         },
         "zone": {
@@ -4134,12 +4282,14 @@
           "enum": [
             "SQL_UPDATE_TRACK_UNSPECIFIED",
             "canary",
-            "stable"
+            "stable",
+            "week5"
           ],
           "enumDescriptions": [
             "This is an unknown maintenance timing preference.",
             "For instance update that requires a restart, this update track indicates your instance prefer to restart for new version early in maintenance window.",
-            "For instance update that requires a restart, this update track indicates your instance prefer to let Cloud SQL choose the timing of restart (within its Maintenance window, if applicable)."
+            "For instance update that requires a restart, this update track indicates your instance prefer to let Cloud SQL choose the timing of restart (within its Maintenance window, if applicable).",
+            "For instance update that requires a restart, this update track indicates your instance prefer to let Cloud SQL choose the timing of restart (within its Maintenance window, if applicable) to be at least 5 weeks after the notification."
           ],
           "type": "string"
         }
@@ -4260,6 +4410,10 @@
       "description": "An Operation resource. For successful operations that return an Operation resource, only the fields relevant to the operation are populated in the resource.",
       "id": "Operation",
       "properties": {
+        "apiWarning": {
+          "$ref": "ApiWarning",
+          "description": "An Admin API warning message."
+        },
         "backupContext": {
           "$ref": "BackupContext",
           "description": "The context for backup operation, if applicable."
@@ -4599,6 +4753,10 @@
           ],
           "type": "string"
         },
+        "disallowCompromisedCredentials": {
+          "description": "Disallow credentials that have been previously compromised by a public data breach.",
+          "type": "boolean"
+        },
         "disallowUsernameSubstring": {
           "description": "Disallow username as a part of the password.",
           "type": "boolean"
@@ -4642,7 +4800,7 @@
       "id": "PscConfig",
       "properties": {
         "allowedConsumerProjects": {
-          "description": "List of consumer projects that are allow-listed for PSC connections to this instance. This instance can be connected to with PSC from any network in these projects. Each consumer project in this list may be represented by a project number (numeric) or by a project id (alphanumeric).",
+          "description": "Optional. The list of consumer projects that are allow-listed for PSC connections to this instance. This instance can be connected to with PSC from any network in these projects. Each consumer project in this list may be represented by a project number (numeric) or by a project id (alphanumeric).",
           "items": {
             "type": "string"
           },
@@ -4659,6 +4817,10 @@
       "description": "Read-replica configuration for connecting to the primary instance.",
       "id": "ReplicaConfiguration",
       "properties": {
+        "cascadableReplica": {
+          "description": "Optional. Specifies if a SQL Server replica is a cascadable replica. A cascadable replica is a SQL Server cross region replica that supports replica(s) under it.",
+          "type": "boolean"
+        },
         "failoverTarget": {
           "description": "Specifies if the replica is the failover target. If the field is set to `true`, the replica will be designated as a failover replica. In case the primary instance fails, the replica instance will be promoted as the new primary instance. Only one replica can be specified as failover target, and the replica has to be in different zone with the primary instance.",
           "type": "boolean"
@@ -5043,7 +5205,11 @@
             "INSUFFICIENT_GCS_PERMISSIONS",
             "INVALID_FILE_INFO",
             "UNSUPPORTED_DATABASE_SETTINGS",
-            "MYSQL_PARALLEL_IMPORT_INSUFFICIENT_PRIVILEGE"
+            "MYSQL_PARALLEL_IMPORT_INSUFFICIENT_PRIVILEGE",
+            "LOCAL_INFILE_OFF",
+            "TURN_ON_PITR_AFTER_PROMOTE",
+            "INCOMPATIBLE_DATABASE_MINOR_VERSION",
+            "SOURCE_MAX_SUBSCRIPTIONS"
           ],
           "enumDescriptions": [
             "",
@@ -5080,7 +5246,11 @@
             "The Cloud Storage bucket is missing necessary permissions.",
             "The Cloud Storage bucket has an error in the file or contains invalid file information.",
             "The source instance has unsupported database settings for migration.",
-            "The replication user is missing parallel import specific privileges. (e.g. LOCK TABLES) for MySQL."
+            "The replication user is missing parallel import specific privileges. (e.g. LOCK TABLES) for MySQL.",
+            "The global variable local_infile is off on external server replica.",
+            "This code instructs customers to turn on point-in-time recovery manually for the instance after promoting the Cloud SQL for PostgreSQL instance.",
+            "The minor version of replica database is incompatible with the source.",
+            "This warning message indicates that Cloud SQL uses the maximum number of subscriptions to migrate data from the source to the destination."
           ],
           "type": "string"
         }
@@ -5620,12 +5790,18 @@
           "enum": [
             "BUILT_IN",
             "CLOUD_IAM_USER",
-            "CLOUD_IAM_SERVICE_ACCOUNT"
+            "CLOUD_IAM_SERVICE_ACCOUNT",
+            "CLOUD_IAM_GROUP",
+            "CLOUD_IAM_GROUP_USER",
+            "CLOUD_IAM_GROUP_SERVICE_ACCOUNT"
           ],
           "enumDescriptions": [
             "The database's built-in user type.",
             "Cloud IAM user.",
-            "Cloud IAM service account."
+            "Cloud IAM service account.",
+            "Cloud IAM Group non-login user.",
+            "Cloud IAM Group login user.",
+            "Cloud IAM Group login service account."
           ],
           "type": "string"
         }

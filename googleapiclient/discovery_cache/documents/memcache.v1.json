@@ -425,6 +425,34 @@
                   "scopes": [
                     "https://www.googleapis.com/auth/cloud-platform"
                   ]
+                },
+                "upgrade": {
+                  "description": "Upgrades the Memcache instance to a newer memcached engine version specified in the request.",
+                  "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/instances/{instancesId}:upgrade",
+                  "httpMethod": "POST",
+                  "id": "memcache.projects.locations.instances.upgrade",
+                  "parameterOrder": [
+                    "name"
+                  ],
+                  "parameters": {
+                    "name": {
+                      "description": "Required. Memcache instance resource name using the form: `projects/{project}/locations/{location}/instances/{instance}` where `location_id` refers to a GCP region.",
+                      "location": "path",
+                      "pattern": "^projects/[^/]+/locations/[^/]+/instances/[^/]+$",
+                      "required": true,
+                      "type": "string"
+                    }
+                  },
+                  "path": "v1/{+name}:upgrade",
+                  "request": {
+                    "$ref": "GoogleCloudMemcacheV1UpgradeInstanceRequest"
+                  },
+                  "response": {
+                    "$ref": "Operation"
+                  },
+                  "scopes": [
+                    "https://www.googleapis.com/auth/cloud-platform"
+                  ]
                 }
               }
             },
@@ -556,7 +584,7 @@
       }
     }
   },
-  "revision": "20230720",
+  "revision": "20231012",
   "rootUrl": "https://memcache.googleapis.com/",
   "schemas": {
     "ApplyParametersRequest": {
@@ -730,6 +758,27 @@
         "verb": {
           "description": "Output only. Name of the verb executed by the operation.",
           "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "GoogleCloudMemcacheV1UpgradeInstanceRequest": {
+      "description": "Request for UpgradeInstance.",
+      "id": "GoogleCloudMemcacheV1UpgradeInstanceRequest",
+      "properties": {
+        "memcacheVersion": {
+          "description": "Required. Specifies the target version of memcached engine to upgrade to.",
+          "enum": [
+            "MEMCACHE_VERSION_UNSPECIFIED",
+            "MEMCACHE_1_5",
+            "MEMCACHE_1_6_15"
+          ],
+          "enumDescriptions": [
+            "Memcache version is not specified by customer",
+            "Memcached 1.5 version.",
+            "Memcached 1.6.15 version."
+          ],
           "type": "string"
         }
       },
@@ -1078,11 +1127,13 @@
           "description": "The major version of Memcached software. If not provided, latest supported version will be used. Currently the latest supported major version is `MEMCACHE_1_5`. The minor version will be automatically determined by our system based on the latest supported minor version.",
           "enum": [
             "MEMCACHE_VERSION_UNSPECIFIED",
-            "MEMCACHE_1_5"
+            "MEMCACHE_1_5",
+            "MEMCACHE_1_6_15"
           ],
           "enumDescriptions": [
             "Memcache version is not specified by customer",
-            "Memcached 1.5 version."
+            "Memcached 1.5 version.",
+            "Memcached 1.6.15 version."
           ],
           "type": "string"
         },
@@ -1118,7 +1169,8 @@
             "READY",
             "UPDATING",
             "DELETING",
-            "PERFORMING_MAINTENANCE"
+            "PERFORMING_MAINTENANCE",
+            "MEMCACHE_VERSION_UPGRADING"
           ],
           "enumDescriptions": [
             "State not set.",
@@ -1126,7 +1178,8 @@
             "Memcached instance has been created and ready to be used.",
             "Memcached instance is updating configuration such as maintenance policy and schedule.",
             "Memcached instance is being deleted.",
-            "Memcached instance is going through maintenance, e.g. data plane rollout."
+            "Memcached instance is going through maintenance, e.g. data plane rollout.",
+            "Memcached instance is undergoing memcached engine version upgrade."
           ],
           "readOnly": true,
           "type": "string"
@@ -1395,6 +1448,26 @@
           "readOnly": true,
           "type": "string"
         },
+        "memcacheFullVersion": {
+          "description": "Output only. The full version of memcached server running on this node. e.g. - memcached-1.5.16",
+          "readOnly": true,
+          "type": "string"
+        },
+        "memcacheVersion": {
+          "description": "Output only. Major version of memcached server running on this node, e.g. MEMCACHE_1_5",
+          "enum": [
+            "MEMCACHE_VERSION_UNSPECIFIED",
+            "MEMCACHE_1_5",
+            "MEMCACHE_1_6_15"
+          ],
+          "enumDescriptions": [
+            "Memcache version is not specified by customer",
+            "Memcached 1.5 version.",
+            "Memcached 1.6.15 version."
+          ],
+          "readOnly": true,
+          "type": "string"
+        },
         "nodeId": {
           "description": "Output only. Identifier of the Memcached node. The node id does not include project or location like the Memcached instance name.",
           "readOnly": true,
@@ -1483,7 +1556,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
           "type": "object"
         }
       },
@@ -1696,7 +1769,7 @@
           "type": "string"
         },
         "denyMaintenancePeriods": {
-          "description": "Deny Maintenance Period that is applied to resource to indicate when maintenance is forbidden. User can specify zero or more non-overlapping deny periods. Maximum number of deny_maintenance_periods expected is one.",
+          "description": "Deny Maintenance Period that is applied to resource to indicate when maintenance is forbidden. The protocol supports zero-to-many such periods, but the current SLM Rollout implementation only supports zero-to-one.",
           "items": {
             "$ref": "DenyMaintenancePeriod"
           },

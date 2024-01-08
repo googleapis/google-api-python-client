@@ -2540,7 +2540,7 @@
       }
     }
   },
-  "revision": "20230724",
+  "revision": "20231204",
   "rootUrl": "https://container.googleapis.com/",
   "schemas": {
     "AcceleratorConfig": {
@@ -2685,6 +2685,10 @@
       "properties": {
         "enableMetrics": {
           "description": "Expose flow metrics on nodes",
+          "type": "boolean"
+        },
+        "enableRelay": {
+          "description": "Enable Relay component",
           "type": "boolean"
         },
         "relayMode": {
@@ -3173,6 +3177,10 @@
           "description": "[Output only] The IP address of this cluster's master endpoint. The endpoint can be accessed from the internet at `https://username:password@endpoint/`. See the `masterAuth` property of this resource for username and password information.",
           "type": "string"
         },
+        "enterpriseConfig": {
+          "$ref": "EnterpriseConfig",
+          "description": "GKE Enterprise Configuration."
+        },
         "etag": {
           "description": "This checksum is computed by the server based on the value of cluster fields, and may be sent on update requests to ensure the client has an up-to-date value before proceeding.",
           "type": "string"
@@ -3311,6 +3319,10 @@
         "notificationConfig": {
           "$ref": "NotificationConfig",
           "description": "Notification configuration of the cluster."
+        },
+        "parentProductConfig": {
+          "$ref": "ParentProductConfig",
+          "description": "The configuration of the parent product of the cluster. This field is used by Google internal products that are built on top of the GKE cluster and take the ownership of the cluster."
         },
         "privateClusterConfig": {
           "$ref": "PrivateClusterConfig",
@@ -3601,6 +3613,10 @@
           "$ref": "NetworkTags",
           "description": "The desired network tags that apply to all auto-provisioned node pools in autopilot clusters and node auto-provisioning enabled clusters."
         },
+        "desiredNodePoolAutoConfigResourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "The desired resource manager tags that apply to all auto-provisioned node pools in autopilot clusters and node auto-provisioning enabled clusters."
+        },
         "desiredNodePoolAutoscaling": {
           "$ref": "NodePoolAutoscaling",
           "description": "Autoscaler configuration for the node pool specified in desired_node_pool_id. If there is only one pool in the cluster and desired_node_pool_id is not provided then the change applies to that single node pool."
@@ -3620,6 +3636,10 @@
         "desiredNotificationConfig": {
           "$ref": "NotificationConfig",
           "description": "The desired notification configuration."
+        },
+        "desiredParentProductConfig": {
+          "$ref": "ParentProductConfig",
+          "description": "The desired parent product config for the cluster."
         },
         "desiredPrivateClusterConfig": {
           "$ref": "PrivateClusterConfig",
@@ -3938,12 +3958,34 @@
       "properties": {},
       "type": "object"
     },
+    "EnterpriseConfig": {
+      "description": "EnterpriseConfig is the cluster enterprise configuration.",
+      "id": "EnterpriseConfig",
+      "properties": {
+        "clusterTier": {
+          "description": "Output only. [Output only] cluster_tier specifies the premium tier of the cluster.",
+          "enum": [
+            "CLUSTER_TIER_UNSPECIFIED",
+            "STANDARD",
+            "ENTERPRISE"
+          ],
+          "enumDescriptions": [
+            "CLUSTER_TIER_UNSPECIFIED is when cluster_tier is not set.",
+            "STANDARD indicates a standard GKE cluster.",
+            "ENTERPRISE indicates a GKE Enterprise cluster."
+          ],
+          "readOnly": true,
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "EphemeralStorageLocalSsdConfig": {
-      "description": "EphemeralStorageLocalSsdConfig contains configuration for the node ephemeral storage using Local SSD.",
+      "description": "EphemeralStorageLocalSsdConfig contains configuration for the node ephemeral storage using Local SSDs.",
       "id": "EphemeralStorageLocalSsdConfig",
       "properties": {
         "localSsdCount": {
-          "description": "Number of local SSDs to use to back ephemeral storage. Uses NVMe interfaces. Each local SSD is 375 GB in size. If zero, it means to disable using local SSDs as ephemeral storage. The limit for this value is dependent upon the maximum number of disks available on a machine per zone. See: https://cloud.google.com/compute/docs/disks/local-ssd for more information.",
+          "description": "Number of local SSDs to use to back ephemeral storage. Uses NVMe interfaces. A zero (or unset) value has different meanings depending on machine type being used: 1. For pre-Gen3 machines, which support flexible numbers of local ssds, zero (or unset) means to disable using local SSDs as ephemeral storage. The limit for this value is dependent upon the maximum number of disk available on a machine per zone. See: https://cloud.google.com/compute/docs/disks/local-ssd for more information. 2. For Gen3 machines which dictate a specific number of local ssds, zero (or unset) means to use the default number of local ssds that goes with that machine type. For example, for a c3-standard-8-lssd machine, 2 local ssds would be provisioned. For c3-standard-8 (which doesn't support local ssds), 0 will be provisioned. See https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds for more info.",
           "format": "int32",
           "type": "integer"
         }
@@ -4575,11 +4617,11 @@
       "type": "object"
     },
     "LocalNvmeSsdBlockConfig": {
-      "description": "LocalNvmeSsdBlockConfig contains configuration for using raw-block local NVMe SSD.",
+      "description": "LocalNvmeSsdBlockConfig contains configuration for using raw-block local NVMe SSDs",
       "id": "LocalNvmeSsdBlockConfig",
       "properties": {
         "localSsdCount": {
-          "description": "The number of raw-block local NVMe SSD disks to be attached to the node. Each local SSD is 375 GB in size. If zero, it means no raw-block local NVMe SSD disks to be attached to the node. The limit for this value is dependent upon the maximum number of disks available on a machine per zone. See: https://cloud.google.com/compute/docs/disks/local-ssd for more information.",
+          "description": "Number of local NVMe SSDs to use. The limit for this value is dependent upon the maximum number of disk available on a machine per zone. See: https://cloud.google.com/compute/docs/disks/local-ssd for more information. A zero (or unset) value has different meanings depending on machine type being used: 1. For pre-Gen3 machines, which support flexible numbers of local ssds, zero (or unset) means to disable using local SSDs as ephemeral storage. 2. For Gen3 machines which dictate a specific number of local ssds, zero (or unset) means to use the default number of local ssds that goes with that machine type. For example, for a c3-standard-8-lssd machine, 2 local ssds would be provisioned. For c3-standard-8 (which doesn't support local ssds), 0 will be provisioned. See https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds for more info.",
           "format": "int32",
           "type": "integer"
         }
@@ -5180,6 +5222,10 @@
           "description": "The resource labels for the node pool to use to annotate any related Google Compute Engine resources.",
           "type": "object"
         },
+        "resourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "A map of resource manager tag keys and values to be attached to the nodes."
+        },
         "sandboxConfig": {
           "$ref": "SandboxConfig",
           "description": "Sandbox configuration for this node."
@@ -5423,6 +5469,10 @@
           "format": "int32",
           "type": "integer"
         },
+        "queuedProvisioning": {
+          "$ref": "QueuedProvisioning",
+          "description": "Specifies the configuration of queued provisioning."
+        },
         "selfLink": {
           "description": "[Output only] Server-defined URL for the resource.",
           "type": "string"
@@ -5477,6 +5527,10 @@
         "networkTags": {
           "$ref": "NetworkTags",
           "description": "The list of instance tags applied to all nodes. Tags are used to identify valid sources or targets for network firewalls and are specified by the client during cluster creation. Each tag within the list must comply with RFC1035."
+        },
+        "resourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "Resource manager tag keys and values to be attached to the nodes for managing Compute Engine firewalls using Network Firewall Policies."
         }
       },
       "type": "object"
@@ -5668,7 +5722,8 @@
             "SET_NODE_POOL_SIZE",
             "SET_NETWORK_POLICY",
             "SET_MAINTENANCE_POLICY",
-            "RESIZE_CLUSTER"
+            "RESIZE_CLUSTER",
+            "FLEET_FEATURE_UPGRADE"
           ],
           "enumDeprecated": [
             false,
@@ -5688,6 +5743,7 @@
             false,
             true,
             true,
+            false,
             false
           ],
           "enumDescriptions": [
@@ -5708,7 +5764,8 @@
             "The node pool is being resized. With the exception of resizing to or from size zero, the node pool is generally usable during this operation.",
             "Unused. Updating network policy uses UPDATE_CLUSTER.",
             "Unused. Updating maintenance policy uses UPDATE_CLUSTER.",
-            "The control plane is being resized. This operation type is initiated by GKE. These operations are often performed preemptively to ensure that the control plane has sufficient resources and is not typically an indication of issues. For more details, see [documentation on resizes](https://cloud.google.com/kubernetes-engine/docs/concepts/maintenance-windows-and-exclusions#repairs)."
+            "The control plane is being resized. This operation type is initiated by GKE. These operations are often performed preemptively to ensure that the control plane has sufficient resources and is not typically an indication of issues. For more details, see [documentation on resizes](https://cloud.google.com/kubernetes-engine/docs/concepts/maintenance-windows-and-exclusions#repairs).",
+            "Fleet features of GKE Enterprise are being upgraded. The cluster should be assumed to be blocked for other upgrades until the operation finishes."
           ],
           "type": "string"
         },
@@ -5804,12 +5861,34 @@
       },
       "type": "object"
     },
+    "ParentProductConfig": {
+      "description": "ParentProductConfig is the configuration of the parent product of the cluster. This field is used by Google internal products that are built on top of a GKE cluster and take the ownership of the cluster.",
+      "id": "ParentProductConfig",
+      "properties": {
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Labels contain the configuration of the parent product.",
+          "type": "object"
+        },
+        "productName": {
+          "description": "Name of the parent product associated with the cluster.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
     "PlacementPolicy": {
       "description": "PlacementPolicy defines the placement policy used by the node pool.",
       "id": "PlacementPolicy",
       "properties": {
         "policyName": {
           "description": "If set, refers to the name of a custom resource policy supplied by the user. The resource policy must be in the same project and region as the node pool. If not found, InvalidArgument error is returned.",
+          "type": "string"
+        },
+        "tpuTopology": {
+          "description": "Optional. TPU placement topology for pod slice node pool. https://cloud.google.com/tpu/docs/types-topologies#tpu_topologies",
           "type": "string"
         },
         "type": {
@@ -5903,6 +5982,17 @@
         "topic": {
           "description": "The desired Pub/Sub topic to which notifications will be sent by GKE. Format is `projects/{project}/topics/{topic}`.",
           "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "QueuedProvisioning": {
+      "description": "QueuedProvisioning defines the queued provisioning used by the node pool.",
+      "id": "QueuedProvisioning",
+      "properties": {
+        "enabled": {
+          "description": "Denotes that this nodepool is QRM specific, meaning nodes can be only obtained through queuing via the Cluster Autoscaler ProvisioningRequest API.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -6066,6 +6156,20 @@
       },
       "type": "object"
     },
+    "ResourceManagerTags": {
+      "description": "A map of resource manager tag keys and values to be attached to the nodes for managing Compute Engine firewalls using Network Firewall Policies. Tags must be according to specifications in https://cloud.google.com/vpc/docs/tags-firewalls-overview#specifications. A maximum of 5 tag key-value pairs can be specified. Existing tags will be replaced with new values.",
+      "id": "ResourceManagerTags",
+      "properties": {
+        "tags": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "TagKeyValue must be in one of the following formats ([KEY]=[VALUE]) 1. `tagKeys/{tag_key_id}=tagValues/{tag_value_id}` 2. `{org_id}/{tag_key_name}={tag_value_name}` 3. `{project_id}/{tag_key_name}={tag_value_name}`",
+          "type": "object"
+        }
+      },
+      "type": "object"
+    },
     "ResourceUsageExportConfig": {
       "description": "Configuration for exporting cluster resource usages.",
       "id": "ResourceUsageExportConfig",
@@ -6218,12 +6322,14 @@
           "enum": [
             "VULNERABILITY_MODE_UNSPECIFIED",
             "VULNERABILITY_DISABLED",
-            "VULNERABILITY_BASIC"
+            "VULNERABILITY_BASIC",
+            "VULNERABILITY_ENTERPRISE"
           ],
           "enumDescriptions": [
             "Default value not specified.",
             "Disables vulnerability scanning on the cluster.",
-            "Applies basic vulnerability scanning on the cluster."
+            "Applies basic vulnerability scanning on the cluster.",
+            "Applies the Security Posture's vulnerability on cluster Enterprise level features."
           ],
           "type": "string"
         }
@@ -6983,6 +7089,15 @@
           "$ref": "ConfidentialNodes",
           "description": "Confidential nodes config. All the nodes in the node pool will be Confidential VM once enabled."
         },
+        "diskSizeGb": {
+          "description": "Optional. The desired disk size for nodes in the node pool specified in GB. The smallest allowed disk size is 10GB. Initiates an upgrade operation that migrates the nodes in the node pool to the specified disk size.",
+          "format": "int64",
+          "type": "string"
+        },
+        "diskType": {
+          "description": "Optional. The desired disk type (e.g. 'pd-standard', 'pd-ssd' or 'pd-balanced') for nodes in the node pool. Initiates an upgrade operation that migrates the nodes in the node pool to the specified disk type.",
+          "type": "string"
+        },
         "etag": {
           "description": "The current etag of the node pool. If an etag is provided and does not match the current etag of the node pool, update will be blocked and an ABORTED error will be returned.",
           "type": "string"
@@ -7026,6 +7141,10 @@
           "$ref": "NodePoolLoggingConfig",
           "description": "Logging configuration."
         },
+        "machineType": {
+          "description": "Optional. The desired [Google Compute Engine machine type](https://cloud.google.com/compute/docs/machine-types) for nodes in the node pool. Initiates an upgrade operation that migrates the nodes in the node pool to the specified machine type.",
+          "type": "string"
+        },
         "name": {
           "description": "The name (project, location, cluster, node pool) of the node pool to update. Specified in the format `projects/*/locations/*/clusters/*/nodePools/*`.",
           "type": "string"
@@ -7051,6 +7170,10 @@
         "resourceLabels": {
           "$ref": "ResourceLabels",
           "description": "The resource labels for the node pool to use to annotate any related Google Compute Engine resources."
+        },
+        "resourceManagerTags": {
+          "$ref": "ResourceManagerTags",
+          "description": "Desired resource manager tag keys and values to be attached to the nodes for managing Compute Engine firewalls using Network Firewall Policies. Existing tags will be replaced with new values."
         },
         "tags": {
           "$ref": "NetworkTags",

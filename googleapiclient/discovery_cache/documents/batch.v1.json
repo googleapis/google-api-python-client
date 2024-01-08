@@ -561,7 +561,7 @@
       }
     }
   },
-  "revision": "20230726",
+  "revision": "20231206",
   "rootUrl": "https://batch.googleapis.com/",
   "schemas": {
     "Accelerator": {
@@ -917,6 +917,27 @@
             "$ref": "AgentTaskRunnable"
           },
           "type": "array"
+        },
+        "userAccount": {
+          "$ref": "AgentTaskUserAccount",
+          "description": "User account on the VM to run the runnables in the agentTaskSpec. If not set, the runnable will be run under root user."
+        }
+      },
+      "type": "object"
+    },
+    "AgentTaskUserAccount": {
+      "description": "AgentTaskUserAccount contains the information of a POSIX account on the guest os which is used to execute the runnables.",
+      "id": "AgentTaskUserAccount",
+      "properties": {
+        "gid": {
+          "description": "gid id an unique identifier of the POSIX account group corresponding to the user account.",
+          "format": "int64",
+          "type": "string"
+        },
+        "uid": {
+          "description": "uid is an unique identifier of the POSIX account corresponding to the user account.",
+          "format": "int64",
+          "type": "string"
         }
       },
       "type": "object"
@@ -967,7 +988,7 @@
         },
         "network": {
           "$ref": "NetworkPolicy",
-          "description": "The network policy."
+          "description": "The network policy. If you define an instance template in the InstancePolicyOrTemplate field, Batch will use the network settings in the instance template instead of this field."
         },
         "placement": {
           "$ref": "PlacementPolicy",
@@ -1052,6 +1073,10 @@
           },
           "type": "array"
         },
+        "enableImageStreaming": {
+          "description": "Optional. If set to true, container will run with Image streaming. The container runtime will be changed to containerd instead of docker. Currently, only imageUri, commands, entrypoint and volumes are supported and any other fields will be ignored. Please refer [here](https://github.com/GoogleCloudPlatform/batch-samples/tree/main/api-samples/image-streaming) for the feature requirements and limitations.",
+          "type": "boolean"
+        },
         "entrypoint": {
           "description": "Overrides the `ENTRYPOINT` specified in the container.",
           "type": "string"
@@ -1073,7 +1098,7 @@
           "type": "string"
         },
         "volumes": {
-          "description": "Volumes to mount (bind mount) from the host machine files or directories into the container, formatted to match docker run's --volume option, e.g. /foo:/bar, or /foo:/bar:ro",
+          "description": "Volumes to mount (bind mount) from the host machine files or directories into the container, formatted to match docker run's --volume option, e.g. /foo:/bar, or /foo:/bar:ro If the `TaskSpec.Volumes` field is specified but this field is not, Batch will mount each volume from the host machine to the container with the same mount path by default. In this case, the default mount option for containers will be read-only (ro) for existing persistent disks and read-write (rw) for other volume types, regardless of the original mount options specified in `TaskSpec.Volumes`. If you need different mount settings, you can explicitly configure them in this field.",
           "items": {
             "type": "string"
           },
@@ -1087,15 +1112,15 @@
       "id": "Disk",
       "properties": {
         "diskInterface": {
-          "description": "Local SSDs are available through both \"SCSI\" and \"NVMe\" interfaces. If not indicated, \"NVMe\" will be the default one for local ssds. We only support \"SCSI\" for persistent disks now.",
+          "description": "Local SSDs are available through both \"SCSI\" and \"NVMe\" interfaces. If not indicated, \"NVMe\" will be the default one for local ssds. This field is ignored for persistent disks as the interface is chosen automatically. See https://cloud.google.com/compute/docs/disks/persistent-disks#choose_an_interface.",
           "type": "string"
         },
         "image": {
-          "description": "Name of an image used as the data source. For example, the following are all valid URLs: * Specify the image by its family name: projects/project/global/images/family/image_family * Specify the image version: projects/project/global/images/image_version You can also use Batch customized image in short names. The following image values are supported for a boot disk: * `batch-debian`: use Batch Debian images. * `batch-centos`: use Batch CentOS images. * `batch-cos`: use Batch Container-Optimized images. * `batch-hpc-centos`: use Batch HPC CentOS images.",
+          "description": "URL for a VM image to use as the data source for this disk. For example, the following are all valid URLs: * Specify the image by its family name: projects/{project}/global/images/family/{image_family} * Specify the image version: projects/{project}/global/images/{image_version} You can also use Batch customized image in short names. The following image values are supported for a boot disk: * `batch-debian`: use Batch Debian images. * `batch-centos`: use Batch CentOS images. * `batch-cos`: use Batch Container-Optimized images. * `batch-hpc-centos`: use Batch HPC CentOS images. * `batch-hpc-rocky`: use Batch HPC Rocky Linux images.",
           "type": "string"
         },
         "sizeGb": {
-          "description": "Disk size in GB. For persistent disk, this field is ignored if `data_source` is `image` or `snapshot`. For local SSD, size_gb should be a multiple of 375GB, otherwise, the final size will be the next greater multiple of 375 GB. For boot disk, Batch will calculate the boot disk size based on source image and task requirements if you do not speicify the size. If both this field and the boot_disk_mib field in task spec's compute_resource are defined, Batch will only honor this field.",
+          "description": "Disk size in GB. **Non-Boot Disk**: If the `type` specifies a persistent disk, this field is ignored if `data_source` is set as `image` or `snapshot`. If the `type` specifies a local SSD, this field should be a multiple of 375 GB, otherwise, the final size will be the next greater multiple of 375 GB. **Boot Disk**: Batch will calculate the boot disk size based on source image and task requirements if you do not speicify the size. If both this field and the `boot_disk_mib` field in task spec's `compute_resource` are defined, Batch will only honor this field. Also, this field should be no smaller than the source disk's size when the `data_source` is set as `snapshot` or `image`. For example, if you set an image as the `data_source` field and the image's default disk size 30 GB, you can only use this field to make the disk larger or equal to 30 GB.",
           "format": "int64",
           "type": "string"
         },
@@ -1168,7 +1193,7 @@
           "description": "Boot disk to be created and attached to each VM by this InstancePolicy. Boot disk will be deleted when the VM is deleted. Batch API now only supports booting from image."
         },
         "disks": {
-          "description": "Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted. A non bootable disk is a disk that can be of a device with a file system or a raw storage drive that is not ready for data storage and accessing.",
+          "description": "Non-boot disks to be attached for each VM created by this InstancePolicy. New disks will be deleted when the VM is deleted. A non-boot disk is a disk that can be of a device with a file system or a raw storage drive that is not ready for data storage and accessing.",
           "items": {
             "$ref": "AttachedDisk"
           },
@@ -1196,6 +1221,10 @@
             "SPOT VM.",
             "Preemptible VM (PVM). Above SPOT VM is the preferable model for preemptible VM instances: the old preemptible VM model (indicated by this field) is the older model, and has been migrated to use the SPOT model as the underlying technology. This old model will still be supported."
           ],
+          "type": "string"
+        },
+        "reservation": {
+          "description": "Optional. If specified, VMs will consume only the specified reservation. If not specified (default), VMs will consume any applicable reservation.",
           "type": "string"
         }
       },
@@ -1669,7 +1698,7 @@
       "id": "NetworkInterface",
       "properties": {
         "network": {
-          "description": "The URL of an existing network resource. You can specify the network as a full or partial URL. For example, the following are all valid URLs: https://www.googleapis.com/compute/v1/projects/project/global/networks/network projects/project/global/networks/network global/networks/network ",
+          "description": "The URL of an existing network resource. You can specify the network as a full or partial URL. For example, the following are all valid URLs: * https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network} * projects/{project}/global/networks/{network} * global/networks/{network}",
           "type": "string"
         },
         "noExternalIpAddress": {
@@ -1677,7 +1706,7 @@
           "type": "boolean"
         },
         "subnetwork": {
-          "description": "The URL of an existing subnetwork resource in the network. You can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs: https://www.googleapis.com/compute/v1/projects/project/regions/region/subnetworks/subnetwork projects/project/regions/region/subnetworks/subnetwork regions/region/subnetworks/subnetwork ",
+          "description": "The URL of an existing subnetwork resource in the network. You can specify the subnetwork as a full or partial URL. For example, the following are all valid URLs: * https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/subnetworks/{subnetwork} * projects/{project}/regions/{region}/subnetworks/{subnetwork} * regions/{region}/subnetworks/{subnetwork}",
           "type": "string"
         }
       },
@@ -1726,7 +1755,7 @@
             "description": "Properties of the object. Contains field @type with type URL.",
             "type": "any"
           },
-          "description": "The normal response of the operation in case of success. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
+          "description": "The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.",
           "type": "object"
         }
       },
@@ -1831,6 +1860,10 @@
             "$ref": "AgentTask"
           },
           "type": "array"
+        },
+        "useBatchMonitoredResource": {
+          "description": "If true, the cloud logging for batch agent will use batch.googleapis.com/Job as monitored resource for Batch job related logging.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -1854,6 +1887,10 @@
         "container": {
           "$ref": "Container",
           "description": "Container runnable."
+        },
+        "displayName": {
+          "description": "Optional. DisplayName is an optional field that can be provided by the caller. If provided, it will be used in logs and other outputs to identify the script, making it easier for users to understand the logs. If not provided the index of the runnable will be used for outputs.",
+          "type": "string"
         },
         "environment": {
           "$ref": "Environment",
@@ -2025,7 +2062,7 @@
           "type": "string"
         },
         "parallelism": {
-          "description": "Max number of tasks that can run in parallel. Default to min(task_count, 1000). Field parallelism must be 1 if the scheduling_policy is IN_ORDER.",
+          "description": "Max number of tasks that can run in parallel. Default to min(task_count, parallel tasks per job limit). See: [Job Limits](https://cloud.google.com/batch/quotas#job_limits). Field parallelism must be 1 if the scheduling_policy is IN_ORDER.",
           "format": "int64",
           "type": "string"
         },

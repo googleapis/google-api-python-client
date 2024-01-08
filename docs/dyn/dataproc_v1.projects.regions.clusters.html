@@ -86,7 +86,7 @@ h1, h2, h3 {
   <code><a href="#create">create(projectId, region, actionOnFailedPrimaryWorkers=None, body=None, requestId=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Creates a cluster in a project. The returned Operation.metadata will be ClusterOperationMetadata (https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1#clusteroperationmetadata).</p>
 <p class="toc_element">
-  <code><a href="#delete">delete(projectId, region, clusterName, clusterUuid=None, requestId=None, x__xgafv=None)</a></code></p>
+  <code><a href="#delete">delete(projectId, region, clusterName, clusterUuid=None, gracefulTerminationTimeout=None, requestId=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Deletes a cluster in a project. The returned Operation.metadata will be ClusterOperationMetadata (https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1#clusteroperationmetadata).</p>
 <p class="toc_element">
   <code><a href="#diagnose">diagnose(projectId, region, clusterName, body=None, x__xgafv=None)</a></code></p>
@@ -168,6 +168,22 @@ Args:
               &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
             },
             &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+            &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+              &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+                { # Defines machines types and a rank to which the machines types belong.
+                  &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                    &quot;A String&quot;,
+                  ],
+                  &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+                },
+              ],
+              &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+                { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                  &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                  &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+                },
+              ],
+            },
             &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
               &quot;A String&quot;,
             ],
@@ -183,11 +199,16 @@ Args:
             &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
             &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
               &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+              &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
               &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
             },
             &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+            &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
             &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
             &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+            &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+              &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+            },
           },
           &quot;roles&quot;: [ # Required. Node group roles.
             &quot;A String&quot;,
@@ -208,8 +229,8 @@ Args:
       ],
     },
     &quot;encryptionConfig&quot;: { # Encryption settings for the cluster. # Optional. Encryption settings for the cluster.
-      &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for PD disk encryption for all instances in the cluster.
-      &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for encrypting customer core content and cluster PD disk for all instances in the cluster.
+      &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for persistent disk encryption for all instances in the cluster. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.
+      &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for cluster persistent disk and job argument encryption. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.When this key resource name is provided, the following job arguments of the following job types submitted to the cluster are encrypted using CMEK: FlinkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/FlinkJob) HadoopJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/HadoopJob) SparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkJob) SparkRJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkRJob) PySparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/PySparkJob) SparkSqlJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkSqlJob) scriptVariables and queryList.queries HiveJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/HiveJob) scriptVariables and queryList.queries PigJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PigJob) scriptVariables and queryList.queries PrestoJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PrestoJob) scriptVariables and queryList.queries
     },
     &quot;endpointConfig&quot;: { # Endpoint config for this cluster # Optional. Port/endpoint configuration for this cluster
       &quot;enableHttpPortAccess&quot;: True or False, # Optional. If true, enable http access to specific ports on the cluster from external sources. Defaults to false.
@@ -317,6 +338,22 @@ Args:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -332,11 +369,16 @@ Args:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
     &quot;metastoreConfig&quot;: { # Specifies a Metastore configuration. # Optional. Metastore configuration.
       &quot;dataprocMetastoreService&quot;: &quot;A String&quot;, # Required. Resource name of an existing Dataproc Metastore service.Example: projects/[project_id]/locations/[dataproc_region]/services/[service-name]
@@ -355,6 +397,22 @@ Args:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -370,11 +428,16 @@ Args:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
     &quot;securityConfig&quot;: { # Security related configuration, including encryption, Kerberos, etc. # Optional. Security settings for the cluster.
       &quot;identityConfig&quot;: { # Identity related configuration, including service account based secure multi-tenancy user mappings. # Optional. Identity related configuration, including service account based secure multi-tenancy user mappings.
@@ -392,7 +455,7 @@ Args:
         &quot;keyPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided key. For the self-signed certificate, this password is generated by Dataproc.
         &quot;keystorePasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided keystore. For the self-signed certificate, this password is generated by Dataproc.
         &quot;keystoreUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of the keystore file used for SSL encryption. If not provided, Dataproc will provide a self-signed certificate.
-        &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The uri of the KMS key used to encrypt various sensitive files.
+        &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The URI of the KMS key used to encrypt sensitive files.
         &quot;realm&quot;: &quot;A String&quot;, # Optional. The name of the on-cluster Kerberos realm. If not specified, the uppercased domain of hostnames will be the realm.
         &quot;rootPrincipalPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the root principal password.
         &quot;tgtLifetimeHours&quot;: 42, # Optional. The lifetime of the ticket granting ticket, in hours. If not specified, or user specifies 0, then default value 10 will be used.
@@ -424,6 +487,22 @@ Args:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -439,11 +518,16 @@ Args:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
   },
   &quot;labels&quot;: { # Optional. The labels to associate with this cluster. Label keys must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). Label values may be empty, but, if present, must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). No more than 32 labels can be associated with a cluster.
@@ -564,14 +648,14 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="delete">delete(projectId, region, clusterName, clusterUuid=None, requestId=None, x__xgafv=None)</code>
+    <code class="details" id="delete">delete(projectId, region, clusterName, clusterUuid=None, gracefulTerminationTimeout=None, requestId=None, x__xgafv=None)</code>
   <pre>Deletes a cluster in a project. The returned Operation.metadata will be ClusterOperationMetadata (https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1#clusteroperationmetadata).
 
 Args:
@@ -579,6 +663,7 @@ Args:
   region: string, Required. The Dataproc region in which to handle the request. (required)
   clusterName: string, Required. The cluster name. (required)
   clusterUuid: string, Optional. Specifying the cluster_uuid means the RPC should fail (with error NOT_FOUND) if cluster with specified UUID does not exist.
+  gracefulTerminationTimeout: string, Optional. The graceful termination timeout for the deletion of the cluster. Indicate the time the request will wait to complete the running jobs on the cluster before its forceful deletion. Default value is 0 indicating that the user has not enabled the graceful termination. Value can be between 60 second and 6 Hours, in case the graceful termination is enabled. (There is no separate flag to check the enabling or disabling of graceful termination, it can be checked by the values in the field).
   requestId: string, Optional. A unique ID used to identify the request. If the server receives two DeleteClusterRequest (https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1#google.cloud.dataproc.v1.DeleteClusterRequest)s with the same id, then the second request will be ignored and the first google.longrunning.Operation created and stored in the backend is returned.It is recommended to always set this value to a UUID (https://en.wikipedia.org/wiki/Universally_unique_identifier).The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). The maximum length is 40 characters.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -603,7 +688,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -629,6 +714,8 @@ Args:
   &quot;jobs&quot;: [ # Optional. Specifies a list of jobs on which diagnosis is to be performed. Format: projects/{project}/regions/{region}/jobs/{job}
     &quot;A String&quot;,
   ],
+  &quot;tarballAccess&quot;: &quot;A String&quot;, # Optional. (Optional) The access type to the diagnostic tarball. If not specified, falls back to default access of the bucket
+  &quot;tarballGcsDir&quot;: &quot;A String&quot;, # Optional. (Optional) The output Cloud Storage directory for the diagnostic tarball. If not specified, a task-specific directory in the cluster&#x27;s staging bucket will be used.
   &quot;yarnApplicationId&quot;: &quot;A String&quot;, # Optional. DEPRECATED Specifies the yarn application on which diagnosis is to be performed.
   &quot;yarnApplicationIds&quot;: [ # Optional. Specifies a list of yarn applications on which diagnosis is to be performed.
     &quot;A String&quot;,
@@ -658,7 +745,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -708,6 +795,22 @@ Returns:
               &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
             },
             &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+            &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+              &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+                { # Defines machines types and a rank to which the machines types belong.
+                  &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                    &quot;A String&quot;,
+                  ],
+                  &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+                },
+              ],
+              &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+                { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                  &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                  &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+                },
+              ],
+            },
             &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
               &quot;A String&quot;,
             ],
@@ -723,11 +826,16 @@ Returns:
             &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
             &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
               &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+              &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
               &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
             },
             &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+            &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
             &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
             &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+            &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+              &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+            },
           },
           &quot;roles&quot;: [ # Required. Node group roles.
             &quot;A String&quot;,
@@ -748,8 +856,8 @@ Returns:
       ],
     },
     &quot;encryptionConfig&quot;: { # Encryption settings for the cluster. # Optional. Encryption settings for the cluster.
-      &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for PD disk encryption for all instances in the cluster.
-      &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for encrypting customer core content and cluster PD disk for all instances in the cluster.
+      &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for persistent disk encryption for all instances in the cluster. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.
+      &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for cluster persistent disk and job argument encryption. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.When this key resource name is provided, the following job arguments of the following job types submitted to the cluster are encrypted using CMEK: FlinkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/FlinkJob) HadoopJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/HadoopJob) SparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkJob) SparkRJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkRJob) PySparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/PySparkJob) SparkSqlJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkSqlJob) scriptVariables and queryList.queries HiveJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/HiveJob) scriptVariables and queryList.queries PigJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PigJob) scriptVariables and queryList.queries PrestoJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PrestoJob) scriptVariables and queryList.queries
     },
     &quot;endpointConfig&quot;: { # Endpoint config for this cluster # Optional. Port/endpoint configuration for this cluster
       &quot;enableHttpPortAccess&quot;: True or False, # Optional. If true, enable http access to specific ports on the cluster from external sources. Defaults to false.
@@ -857,6 +965,22 @@ Returns:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -872,11 +996,16 @@ Returns:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
     &quot;metastoreConfig&quot;: { # Specifies a Metastore configuration. # Optional. Metastore configuration.
       &quot;dataprocMetastoreService&quot;: &quot;A String&quot;, # Required. Resource name of an existing Dataproc Metastore service.Example: projects/[project_id]/locations/[dataproc_region]/services/[service-name]
@@ -895,6 +1024,22 @@ Returns:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -910,11 +1055,16 @@ Returns:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
     &quot;securityConfig&quot;: { # Security related configuration, including encryption, Kerberos, etc. # Optional. Security settings for the cluster.
       &quot;identityConfig&quot;: { # Identity related configuration, including service account based secure multi-tenancy user mappings. # Optional. Identity related configuration, including service account based secure multi-tenancy user mappings.
@@ -932,7 +1082,7 @@ Returns:
         &quot;keyPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided key. For the self-signed certificate, this password is generated by Dataproc.
         &quot;keystorePasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided keystore. For the self-signed certificate, this password is generated by Dataproc.
         &quot;keystoreUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of the keystore file used for SSL encryption. If not provided, Dataproc will provide a self-signed certificate.
-        &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The uri of the KMS key used to encrypt various sensitive files.
+        &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The URI of the KMS key used to encrypt sensitive files.
         &quot;realm&quot;: &quot;A String&quot;, # Optional. The name of the on-cluster Kerberos realm. If not specified, the uppercased domain of hostnames will be the realm.
         &quot;rootPrincipalPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the root principal password.
         &quot;tgtLifetimeHours&quot;: 42, # Optional. The lifetime of the ticket granting ticket, in hours. If not specified, or user specifies 0, then default value 10 will be used.
@@ -964,6 +1114,22 @@ Returns:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -979,11 +1145,16 @@ Returns:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
   },
   &quot;labels&quot;: { # Optional. The labels to associate with this cluster. Label keys must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). Label values may be empty, but, if present, must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). No more than 32 labels can be associated with a cluster.
@@ -1158,7 +1329,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -1212,6 +1383,22 @@ Returns:
                   &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
                 },
                 &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+                &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+                  &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+                    { # Defines machines types and a rank to which the machines types belong.
+                      &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                        &quot;A String&quot;,
+                      ],
+                      &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+                    },
+                  ],
+                  &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+                    { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                      &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                      &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+                    },
+                  ],
+                },
                 &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
                   &quot;A String&quot;,
                 ],
@@ -1227,11 +1414,16 @@ Returns:
                 &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
                 &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
                   &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+                  &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
                   &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
                 },
                 &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+                &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
                 &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
                 &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+                &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+                  &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+                },
               },
               &quot;roles&quot;: [ # Required. Node group roles.
                 &quot;A String&quot;,
@@ -1252,8 +1444,8 @@ Returns:
           ],
         },
         &quot;encryptionConfig&quot;: { # Encryption settings for the cluster. # Optional. Encryption settings for the cluster.
-          &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for PD disk encryption for all instances in the cluster.
-          &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for encrypting customer core content and cluster PD disk for all instances in the cluster.
+          &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for persistent disk encryption for all instances in the cluster. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.
+          &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for cluster persistent disk and job argument encryption. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.When this key resource name is provided, the following job arguments of the following job types submitted to the cluster are encrypted using CMEK: FlinkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/FlinkJob) HadoopJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/HadoopJob) SparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkJob) SparkRJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkRJob) PySparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/PySparkJob) SparkSqlJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkSqlJob) scriptVariables and queryList.queries HiveJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/HiveJob) scriptVariables and queryList.queries PigJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PigJob) scriptVariables and queryList.queries PrestoJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PrestoJob) scriptVariables and queryList.queries
         },
         &quot;endpointConfig&quot;: { # Endpoint config for this cluster # Optional. Port/endpoint configuration for this cluster
           &quot;enableHttpPortAccess&quot;: True or False, # Optional. If true, enable http access to specific ports on the cluster from external sources. Defaults to false.
@@ -1361,6 +1553,22 @@ Returns:
             &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
           },
           &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+          &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+            &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+              { # Defines machines types and a rank to which the machines types belong.
+                &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                  &quot;A String&quot;,
+                ],
+                &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+              },
+            ],
+            &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+              { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+              },
+            ],
+          },
           &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
             &quot;A String&quot;,
           ],
@@ -1376,11 +1584,16 @@ Returns:
           &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
           &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
             &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+            &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
             &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
           },
           &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+          &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
           &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
           &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+          &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+            &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+          },
         },
         &quot;metastoreConfig&quot;: { # Specifies a Metastore configuration. # Optional. Metastore configuration.
           &quot;dataprocMetastoreService&quot;: &quot;A String&quot;, # Required. Resource name of an existing Dataproc Metastore service.Example: projects/[project_id]/locations/[dataproc_region]/services/[service-name]
@@ -1399,6 +1612,22 @@ Returns:
             &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
           },
           &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+          &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+            &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+              { # Defines machines types and a rank to which the machines types belong.
+                &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                  &quot;A String&quot;,
+                ],
+                &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+              },
+            ],
+            &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+              { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+              },
+            ],
+          },
           &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
             &quot;A String&quot;,
           ],
@@ -1414,11 +1643,16 @@ Returns:
           &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
           &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
             &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+            &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
             &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
           },
           &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+          &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
           &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
           &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+          &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+            &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+          },
         },
         &quot;securityConfig&quot;: { # Security related configuration, including encryption, Kerberos, etc. # Optional. Security settings for the cluster.
           &quot;identityConfig&quot;: { # Identity related configuration, including service account based secure multi-tenancy user mappings. # Optional. Identity related configuration, including service account based secure multi-tenancy user mappings.
@@ -1436,7 +1670,7 @@ Returns:
             &quot;keyPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided key. For the self-signed certificate, this password is generated by Dataproc.
             &quot;keystorePasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided keystore. For the self-signed certificate, this password is generated by Dataproc.
             &quot;keystoreUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of the keystore file used for SSL encryption. If not provided, Dataproc will provide a self-signed certificate.
-            &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The uri of the KMS key used to encrypt various sensitive files.
+            &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The URI of the KMS key used to encrypt sensitive files.
             &quot;realm&quot;: &quot;A String&quot;, # Optional. The name of the on-cluster Kerberos realm. If not specified, the uppercased domain of hostnames will be the realm.
             &quot;rootPrincipalPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the root principal password.
             &quot;tgtLifetimeHours&quot;: 42, # Optional. The lifetime of the ticket granting ticket, in hours. If not specified, or user specifies 0, then default value 10 will be used.
@@ -1468,6 +1702,22 @@ Returns:
             &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
           },
           &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+          &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+            &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+              { # Defines machines types and a rank to which the machines types belong.
+                &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                  &quot;A String&quot;,
+                ],
+                &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+              },
+            ],
+            &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+              { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+              },
+            ],
+          },
           &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
             &quot;A String&quot;,
           ],
@@ -1483,11 +1733,16 @@ Returns:
           &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
           &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
             &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+            &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
             &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
           },
           &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+          &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
           &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
           &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+          &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+            &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+          },
         },
       },
       &quot;labels&quot;: { # Optional. The labels to associate with this cluster. Label keys must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). Label values may be empty, but, if present, must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). No more than 32 labels can be associated with a cluster.
@@ -1636,6 +1891,22 @@ Args:
               &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
             },
             &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+            &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+              &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+                { # Defines machines types and a rank to which the machines types belong.
+                  &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                    &quot;A String&quot;,
+                  ],
+                  &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+                },
+              ],
+              &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+                { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+                  &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+                  &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+                },
+              ],
+            },
             &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
               &quot;A String&quot;,
             ],
@@ -1651,11 +1922,16 @@ Args:
             &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
             &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
               &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+              &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
               &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
             },
             &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+            &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
             &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
             &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+            &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+              &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+            },
           },
           &quot;roles&quot;: [ # Required. Node group roles.
             &quot;A String&quot;,
@@ -1676,8 +1952,8 @@ Args:
       ],
     },
     &quot;encryptionConfig&quot;: { # Encryption settings for the cluster. # Optional. Encryption settings for the cluster.
-      &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for PD disk encryption for all instances in the cluster.
-      &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key name to use for encrypting customer core content and cluster PD disk for all instances in the cluster.
+      &quot;gcePdKmsKeyName&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for persistent disk encryption for all instances in the cluster. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.
+      &quot;kmsKey&quot;: &quot;A String&quot;, # Optional. The Cloud KMS key resource name to use for cluster persistent disk and job argument encryption. See Use CMEK with cluster data (https://cloud.google.com//dataproc/docs/concepts/configuring-clusters/customer-managed-encryption#use_cmek_with_cluster_data) for more information.When this key resource name is provided, the following job arguments of the following job types submitted to the cluster are encrypted using CMEK: FlinkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/FlinkJob) HadoopJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/HadoopJob) SparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkJob) SparkRJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkRJob) PySparkJob args (https://cloud.google.com/dataproc/docs/reference/rest/v1/PySparkJob) SparkSqlJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/SparkSqlJob) scriptVariables and queryList.queries HiveJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/HiveJob) scriptVariables and queryList.queries PigJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PigJob) scriptVariables and queryList.queries PrestoJob (https://cloud.google.com/dataproc/docs/reference/rest/v1/PrestoJob) scriptVariables and queryList.queries
     },
     &quot;endpointConfig&quot;: { # Endpoint config for this cluster # Optional. Port/endpoint configuration for this cluster
       &quot;enableHttpPortAccess&quot;: True or False, # Optional. If true, enable http access to specific ports on the cluster from external sources. Defaults to false.
@@ -1785,6 +2061,22 @@ Args:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -1800,11 +2092,16 @@ Args:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
     &quot;metastoreConfig&quot;: { # Specifies a Metastore configuration. # Optional. Metastore configuration.
       &quot;dataprocMetastoreService&quot;: &quot;A String&quot;, # Required. Resource name of an existing Dataproc Metastore service.Example: projects/[project_id]/locations/[dataproc_region]/services/[service-name]
@@ -1823,6 +2120,22 @@ Args:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -1838,11 +2151,16 @@ Args:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
     &quot;securityConfig&quot;: { # Security related configuration, including encryption, Kerberos, etc. # Optional. Security settings for the cluster.
       &quot;identityConfig&quot;: { # Identity related configuration, including service account based secure multi-tenancy user mappings. # Optional. Identity related configuration, including service account based secure multi-tenancy user mappings.
@@ -1860,7 +2178,7 @@ Args:
         &quot;keyPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided key. For the self-signed certificate, this password is generated by Dataproc.
         &quot;keystorePasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the password to the user provided keystore. For the self-signed certificate, this password is generated by Dataproc.
         &quot;keystoreUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of the keystore file used for SSL encryption. If not provided, Dataproc will provide a self-signed certificate.
-        &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The uri of the KMS key used to encrypt various sensitive files.
+        &quot;kmsKeyUri&quot;: &quot;A String&quot;, # Optional. The URI of the KMS key used to encrypt sensitive files.
         &quot;realm&quot;: &quot;A String&quot;, # Optional. The name of the on-cluster Kerberos realm. If not specified, the uppercased domain of hostnames will be the realm.
         &quot;rootPrincipalPasswordUri&quot;: &quot;A String&quot;, # Optional. The Cloud Storage URI of a KMS encrypted file containing the root principal password.
         &quot;tgtLifetimeHours&quot;: 42, # Optional. The lifetime of the ticket granting ticket, in hours. If not specified, or user specifies 0, then default value 10 will be used.
@@ -1892,6 +2210,22 @@ Args:
         &quot;numLocalSsds&quot;: 42, # Optional. Number of attached SSDs, from 0 to 8 (default is 0). If SSDs are not attached, the boot disk is used to store runtime logs and HDFS (https://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html) data. If one or more SSDs are attached, this runtime bulk data is spread across them, and the boot disk contains only basic config and installed binaries.Note: Local SSD options may vary by machine type and number of vCPUs selected.
       },
       &quot;imageUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine image resource used for cluster instances.The URI can represent an image or image family.Image examples: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/[image-id] projects/[project_id]/global/images/[image-id] image-idImage family examples. Dataproc will use the most recent image from the family: https://www.googleapis.com/compute/v1/projects/[project_id]/global/images/family/[custom-image-family-name] projects/[project_id]/global/images/family/[custom-image-family-name]If the URI is unspecified, it will be inferred from SoftwareConfig.image_version or the system default.
+      &quot;instanceFlexibilityPolicy&quot;: { # Instance flexibility Policy allowing a mixture of VM shapes and provisioning models. # Optional. Instance flexibility Policy allowing a mixture of VM shapes and provisioning models.
+        &quot;instanceSelectionList&quot;: [ # Optional. List of instance selection options that the group will use when creating new VMs.
+          { # Defines machines types and a rank to which the machines types belong.
+            &quot;machineTypes&quot;: [ # Optional. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+              &quot;A String&quot;,
+            ],
+            &quot;rank&quot;: 42, # Optional. Preference of this instance selection. Lower number means higher preference. Dataproc will first try to create a VM based on the machine-type with priority rank and fallback to next rank based on availability. Machine types and instance selections with the same priority have the same preference.
+          },
+        ],
+        &quot;instanceSelectionResults&quot;: [ # Output only. A list of instance selection results in the group.
+          { # Defines a mapping from machine types to the number of VMs that are created with each machine type.
+            &quot;machineType&quot;: &quot;A String&quot;, # Output only. Full machine-type names, e.g. &quot;n1-standard-16&quot;.
+            &quot;vmCount&quot;: 42, # Output only. Number of VM provisioned with the machine_type.
+          },
+        ],
+      },
       &quot;instanceNames&quot;: [ # Output only. The list of instance names. Dataproc derives the names from cluster_name, num_instances, and the instance group.
         &quot;A String&quot;,
       ],
@@ -1907,11 +2241,16 @@ Args:
       &quot;machineTypeUri&quot;: &quot;A String&quot;, # Optional. The Compute Engine machine type used for cluster instances.A full URL, partial URI, or short name are valid. Examples: https://www.googleapis.com/compute/v1/projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 projects/[project_id]/zones/[zone]/machineTypes/n1-standard-2 n1-standard-2Auto Zone Exception: If you are using the Dataproc Auto Zone Placement (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/auto-zone#using_auto_zone_placement) feature, you must use the short name of the machine type resource, for example, n1-standard-2.
       &quot;managedGroupConfig&quot;: { # Specifies the resources used to actively manage an instance group. # Output only. The config for Compute Engine Instance Group Manager that manages this group. This is only used for preemptible instance groups.
         &quot;instanceGroupManagerName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Group Manager for this group.
+        &quot;instanceGroupManagerUri&quot;: &quot;A String&quot;, # Output only. The partial URI to the instance group manager for this group. E.g. projects/my-project/regions/us-central1/instanceGroupManagers/my-igm.
         &quot;instanceTemplateName&quot;: &quot;A String&quot;, # Output only. The name of the Instance Template used for the Managed Instance Group.
       },
       &quot;minCpuPlatform&quot;: &quot;A String&quot;, # Optional. Specifies the minimum cpu platform for the Instance Group. See Dataproc -&gt; Minimum CPU Platform (https://cloud.google.com/dataproc/docs/concepts/compute/dataproc-min-cpu).
+      &quot;minNumInstances&quot;: 42, # Optional. The minimum number of primary worker instances to create. If min_num_instances is set, cluster creation will succeed if the number of primary workers created is at least equal to the min_num_instances number.Example: Cluster creation request with num_instances = 5 and min_num_instances = 3: If 4 VMs are created and 1 instance fails, the failed VM is deleted. The cluster is resized to 4 instances and placed in a RUNNING state. If 2 instances are created and 3 instances fail, the cluster in placed in an ERROR state. The failed VMs are not deleted.
       &quot;numInstances&quot;: 42, # Optional. The number of VM instances in the instance group. For HA cluster master_config groups, must be set to 3. For standard cluster master_config groups, must be set to 1.
       &quot;preemptibility&quot;: &quot;A String&quot;, # Optional. Specifies the preemptibility of the instance group.The default value for master and worker groups is NON_PREEMPTIBLE. This default cannot be changed.The default value for secondary instances is PREEMPTIBLE.
+      &quot;startupConfig&quot;: { # Configuration to handle the startup of instances during cluster create and update process. # Optional. Configuration to handle the startup of instances during cluster create and update process.
+        &quot;requiredRegistrationFraction&quot;: 3.14, # Optional. The config setting to enable cluster creation/ updation to be successful only after required_registration_fraction of instances are up and running. This configuration is applicable to only secondary workers for now. The cluster will fail if required_registration_fraction of instances are not available. This will include instance creation, agent registration, and service registration (if enabled).
+      },
     },
   },
   &quot;labels&quot;: { # Optional. The labels to associate with this cluster. Label keys must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). Label values may be empty, but, if present, must contain 1 to 63 characters, and must conform to RFC 1035 (https://www.ietf.org/rfc/rfc1035.txt). No more than 32 labels can be associated with a cluster.
@@ -2029,7 +2368,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -2085,7 +2424,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -2188,7 +2527,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
@@ -2233,7 +2572,7 @@ Returns:
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
   &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the name should be a resource name ending with operations/{unique_id}.
-  &quot;response&quot;: { # The normal response of the operation in case of success. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as Delete, the response is google.protobuf.Empty. If the original method is standard Get/Create/Update, the response should be the resource. For other methods, the response should have the type XxxResponse, where Xxx is the original method name. For example, if the original method name is TakeSnapshot(), the inferred response type is TakeSnapshotResponse.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
   },
 }</pre>
