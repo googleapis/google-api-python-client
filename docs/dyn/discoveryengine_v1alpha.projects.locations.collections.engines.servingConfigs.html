@@ -97,7 +97,7 @@ h1, h2, h3 {
   <pre>Makes a recommendation, which requires a contextual user event.
 
 Args:
-  servingConfig: string, Required. Full resource name of the format: `projects/*/locations/global/collections/*/dataStores/*/servingConfigs/*` Before you can request recommendations from your model, you must create at least one serving config for it. (required)
+  servingConfig: string, Required. Full resource name of a ServingConfig: `projects/*/locations/global/collections/*/engines/*/servingConfigs/*`, or `projects/*/locations/global/collections/*/dataStores/*/servingConfigs/*` One default serving config is created along with your recommendation engine creation. The engine ID will be used as the ID of the default serving config. For example, for Engine `projects/*/locations/global/collections/*/engines/my-engine`, you can use `projects/*/locations/global/collections/*/engines/my-engine/servingConfigs/my-engine` for your RecommendationService.Recommend requests. (required)
   body: object, The request body.
     The object takes the form of:
 
@@ -137,7 +137,7 @@ Args:
     ],
     &quot;eventTime&quot;: &quot;A String&quot;, # Only required for UserEventService.ImportUserEvents method. Timestamp of when the user event happened.
     &quot;eventType&quot;: &quot;A String&quot;, # Required. User event type. Allowed values are: Generic values: * `search`: Search for Documents. * `view-item`: Detailed page view of a Document. * `view-item-list`: View of a panel or ordered list of Documents. * `view-home-page`: View of the home page. * `view-category-page`: View of a category page, e.g. Home &gt; Men &gt; Jeans Retail-related values: * `add-to-cart`: Add an item(s) to cart, e.g. in Retail online shopping * `purchase`: Purchase an item(s) Media-related values: * `media-play`: Start/resume watching a video, playing a song, etc. * `media-complete`: Finished or stopped midway through a video, song, etc.
-    &quot;filter&quot;: &quot;A String&quot;, # The filter syntax consists of an expression language for constructing a predicate from one or more fields of the documents being filtered. One example is for `search` events, the associated SearchRequest may contain a filter expression in SearchRequest.filter conforming to https://google.aip.dev/160#filtering. Similarly, for `view-item-list` events that are generated from a RecommendationService.RecommendRequest, this field may be populated directly from RecommendationService.RecommendRequest.filter conforming to https://google.aip.dev/160#filtering. The value must be a UTF-8 encoded string with a length limit of 1,000 characters. Otherwise, an `INVALID_ARGUMENT` error is returned.
+    &quot;filter&quot;: &quot;A String&quot;, # The filter syntax consists of an expression language for constructing a predicate from one or more fields of the documents being filtered. One example is for `search` events, the associated SearchRequest may contain a filter expression in SearchRequest.filter conforming to https://google.aip.dev/160#filtering. Similarly, for `view-item-list` events that are generated from a RecommendRequest, this field may be populated directly from RecommendRequest.filter conforming to https://google.aip.dev/160#filtering. The value must be a UTF-8 encoded string with a length limit of 1,000 characters. Otherwise, an `INVALID_ARGUMENT` error is returned.
     &quot;mediaInfo&quot;: { # Media-specific user event information. # Media-specific info.
       &quot;mediaProgressDuration&quot;: &quot;A String&quot;, # The media progress time in seconds, if applicable. For example, if the end user has finished 90 seconds of a playback video, then MediaInfo.media_progress_duration.seconds should be set to 90.
       &quot;mediaProgressPercentage&quot;: 3.14, # Media progress should be computed using only the media_progress_duration relative to the media total length. This value must be between `[0, 1.0]` inclusive. If this is not a playback or the progress cannot be computed (e.g. ongoing livestream), this field should be unset.
@@ -205,7 +205,7 @@ Returns:
         &quot;content&quot;: { # Unstructured data linked to this document. # The unstructured data linked to this document. Content must be set if this document is under a `CONTENT_REQUIRED` data store.
           &quot;mimeType&quot;: &quot;A String&quot;, # The MIME type of the content. Supported types: * `application/pdf` (PDF, only native PDFs are supported for now) * `text/html` (HTML) * `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX) * `application/vnd.openxmlformats-officedocument.presentationml.presentation` (PPTX) * `text/plain` (TXT) See https://www.iana.org/assignments/media-types/media-types.xhtml.
           &quot;rawBytes&quot;: &quot;A String&quot;, # The content represented as a stream of bytes. The maximum length is 1,000,000 bytes (1 MB / ~0.95 MiB). Note: As with all `bytes` fields, this field is represented as pure binary in Protocol Buffers and base64-encoded string in JSON. For example, `abc123!?$*&amp;()&#x27;-=@~` should be represented as `YWJjMTIzIT8kKiYoKSctPUB+` in JSON. See https://developers.google.com/protocol-buffers/docs/proto3#json.
-          &quot;uri&quot;: &quot;A String&quot;, # The URI of the content. Only Cloud Storage URIs (e.g. `gs://bucket-name/path/to/file`) are supported. The maximum file size is 100 MB.
+          &quot;uri&quot;: &quot;A String&quot;, # The URI of the content. Only Cloud Storage URIs (e.g. `gs://bucket-name/path/to/file`) are supported. The maximum file size is 2.5 MB for text-based formats, 100 MB for other formats.
         },
         &quot;derivedStructData&quot;: { # Output only. This field is OUTPUT_ONLY. It contains derived data that are not in the original input document.
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
@@ -234,7 +234,7 @@ Returns:
   <pre>Performs a search.
 
 Args:
-  servingConfig: string, Required. The resource name of the Search serving config, such as `projects/*/locations/global/collections/default_collection/dataStores/default_data_store/servingConfigs/default_serving_config`. This field is used to identify the serving configuration name, set of models used to make the search. (required)
+  servingConfig: string, Required. The resource name of the Search serving config, such as `projects/*/locations/global/collections/default_collection/engines/*/servingConfigs/default_serving_config`, or `projects/*/locations/global/collections/default_collection/dataStores/default_data_store/servingConfigs/default_serving_config`. This field is used to identify the serving configuration name, set of models used to make the search. (required)
   body: object, The request body.
     The object takes the form of:
 
@@ -248,9 +248,10 @@ Args:
     ],
   },
   &quot;branch&quot;: &quot;A String&quot;, # The branch resource name, such as `projects/*/locations/global/collections/default_collection/dataStores/default_data_store/branches/0`. Use `default_branch` as the branch ID or leave this field empty, to search documents under the default branch.
+  &quot;canonicalFilter&quot;: &quot;A String&quot;, # The default filter that is applied when a user performs a search without checking any filters on the search page. The filter applied to every search request when quality improvement such as query expansion is needed. In the case a query does not have a sufficient amount of results this filter will be used to determine whether or not to enable the query expansion flow. The original filter will still be used for the query expanded search. This field is strongly recommended to achieve high search quality. For more information about filter syntax, see SearchRequest.filter.
   &quot;contentSearchSpec&quot;: { # A specification for configuring the behavior of content search. # A specification for configuring the behavior of content search.
     &quot;extractiveContentSpec&quot;: { # A specification for configuring the extractive content in a search response. # If there is no extractive_content_spec provided, there will be no extractive answer in the search response.
-      &quot;maxExtractiveAnswerCount&quot;: 42, # The maximum number of extractive answers returned in each search result. An extractive answer is a verbatim answer extracted from the original document, which provides a precise and contextually relevant answer to the search query. If the number of matching answers is less than the `max_extractive_answer_count`, return all of the answers. Otherwise, return the `max_extractive_answer_count`. At most one answer is returned for each SearchResult.
+      &quot;maxExtractiveAnswerCount&quot;: 42, # The maximum number of extractive answers returned in each search result. An extractive answer is a verbatim answer extracted from the original document, which provides a precise and contextually relevant answer to the search query. If the number of matching answers is less than the `max_extractive_answer_count`, return all of the answers. Otherwise, return the `max_extractive_answer_count`. At most five answers are returned for each SearchResult.
       &quot;maxExtractiveSegmentCount&quot;: 42, # The max number of extractive segments returned in each search result. Only applied if the DataStore is set to DataStore.ContentConfig.CONTENT_REQUIRED or DataStore.solution_types is SOLUTION_TYPE_CHAT. An extractive segment is a text segment extracted from the original document that is relevant to the search query, and, in general, more verbose than an extractive answer. The segment could then be used as input for LLMs to generate summaries and answers. If the number of matching segments is less than `max_extractive_segment_count`, return all of the segments. Otherwise, return the `max_extractive_segment_count`.
       &quot;numNextSegments&quot;: 42, # Return at most `num_next_segments` segments after each selected segments.
       &quot;numPreviousSegments&quot;: 42, # Specifies whether to also include the adjacent from each selected segments. Return at most `num_previous_segments` segments before each selected segments.
@@ -265,10 +266,16 @@ Args:
       &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
       &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
       &quot;languageCode&quot;: &quot;A String&quot;, # Language code for Summary. Use language tags defined by [BCP47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt). Note: This is an experimental feature.
+      &quot;modelPromptSpec&quot;: { # Specification of the prompt to use with the model. # If specified, the spec will be used to modify the prompt provided to the LLM.
+        &quot;preamble&quot;: &quot;A String&quot;, # Text at the beginning of the prompt that instructs the assistant. Examples are available in the user guide.
+      },
+      &quot;modelSpec&quot;: { # Specification of the model. # If specified, the spec will be used to modify the model specification provided to the LLM.
+        &quot;version&quot;: &quot;A String&quot;, # The model version used to generate the summary. Supported values are: * `stable`: string. Default value when no value is specified. Uses a generally available, fine-tuned version of the text-bison@001 model. * `preview`: string. (Public preview) Uses a fine-tuned version of the text-bison@002 model. This model works only for summaries in English.
+      },
       &quot;summaryResultCount&quot;: 42, # The number of top results to generate the summary from. If the number of results returned is less than `summaryResultCount`, the summary is generated from all of the results. At most five results can be used to generate a summary.
     },
   },
-  &quot;embeddingSpec&quot;: { # The specification that uses customized query embedding vector to do semantic document retrieval. # Uses the provided embedding to do additional semantic document retrieval. The retrieval is based on the dot product of SearchRequest.embedding_spec.embedding_vectors.vector and the document embedding that is provided in SearchRequest.embedding_spec.embedding_vectors.field_path. If SearchRequest.embedding_spec.embedding_vectors.field_path is not provided, it will use ServingConfig.embedding_config.field_paths.
+  &quot;embeddingSpec&quot;: { # The specification that uses customized query embedding vector to do semantic document retrieval. # Uses the provided embedding to do additional semantic document retrieval. The retrieval is based on the dot product of SearchRequest.EmbeddingSpec.EmbeddingVector.vector and the document embedding that is provided in SearchRequest.EmbeddingSpec.EmbeddingVector.field_path. If SearchRequest.EmbeddingSpec.EmbeddingVector.field_path is not provided, it will use ServingConfig.EmbeddingConfig.field_paths.
     &quot;embeddingVectors&quot;: [ # The embedding vector used for retrieval. Limit to 1.
       { # Embedding vector.
         &quot;fieldPath&quot;: &quot;A String&quot;, # Embedding field path in schema.
@@ -317,7 +324,7 @@ Args:
   &quot;orderBy&quot;: &quot;A String&quot;, # The order in which documents are returned. Documents can be ordered by a field in an Document object. Leave it unset if ordered by relevance. `order_by` expression is case-sensitive. For more information on ordering, see [Ordering](https://cloud.google.com/retail/docs/filter-and-order#order) If this field is unrecognizable, an `INVALID_ARGUMENT` is returned.
   &quot;pageSize&quot;: 42, # Maximum number of Documents to return. If unspecified, defaults to a reasonable value. The maximum allowed value is 100. Values above 100 are coerced to 100. If this field is negative, an `INVALID_ARGUMENT` is returned.
   &quot;pageToken&quot;: &quot;A String&quot;, # A page token received from a previous SearchService.Search call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to SearchService.Search must match the call that provided the page token. Otherwise, an `INVALID_ARGUMENT` error is returned.
-  &quot;params&quot;: { # Additional search parameters. For public website search only, supported values are: * `user_country_code`: string. Default empty. If set to non-empty, results are restricted or boosted based on the location provided. * `search_type`: double. Default empty. Enables non-webpage searching depending on the value. The only valid non-default value is 1, which enables image searching.
+  &quot;params&quot;: { # Additional search parameters. For public website search only, supported values are: * `user_country_code`: string. Default empty. If set to non-empty, results are restricted or boosted based on the location provided. Example: user_country_code: &quot;au&quot; For available codes see [Country Codes](https://developers.google.com/custom-search/docs/json_api_reference#countryCodes) * `search_type`: double. Default empty. Enables non-webpage searching depending on the value. The only valid non-default value is 1, which enables image searching. Example: search_type: 1
     &quot;a_key&quot;: &quot;&quot;,
   },
   &quot;query&quot;: &quot;A String&quot;, # Raw search query.
@@ -327,7 +334,7 @@ Args:
   },
   &quot;rankingExpression&quot;: &quot;A String&quot;, # The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The ranking expression is a single function or multiple functions that are joint by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: `relevance_score`: pre-defined keywords, used for measure relevance between query and document. `embedding_field_path`: the document embedding field used with query embedding vector. `dotProduct`: embedding function between embedding_field_path and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`.
   &quot;safeSearch&quot;: True or False, # Whether to turn on safe search. This is only supported for website search.
-  &quot;servingConfig&quot;: &quot;A String&quot;, # Required. The resource name of the Search serving config, such as `projects/*/locations/global/collections/default_collection/dataStores/default_data_store/servingConfigs/default_serving_config`. This field is used to identify the serving configuration name, set of models used to make the search.
+  &quot;servingConfig&quot;: &quot;A String&quot;, # Required. The resource name of the Search serving config, such as `projects/*/locations/global/collections/default_collection/engines/*/servingConfigs/default_serving_config`, or `projects/*/locations/global/collections/default_collection/dataStores/default_data_store/servingConfigs/default_serving_config`. This field is used to identify the serving configuration name, set of models used to make the search.
   &quot;spellCorrectionSpec&quot;: { # The specification for query spell correction. # The spell correction specification that specifies the mode under which spell correction takes effect.
     &quot;mode&quot;: &quot;A String&quot;, # The mode under which spell correction should take effect to replace the original search query. Default to Mode.AUTO.
   },
@@ -402,7 +409,7 @@ Returns:
         &quot;content&quot;: { # Unstructured data linked to this document. # The unstructured data linked to this document. Content must be set if this document is under a `CONTENT_REQUIRED` data store.
           &quot;mimeType&quot;: &quot;A String&quot;, # The MIME type of the content. Supported types: * `application/pdf` (PDF, only native PDFs are supported for now) * `text/html` (HTML) * `application/vnd.openxmlformats-officedocument.wordprocessingml.document` (DOCX) * `application/vnd.openxmlformats-officedocument.presentationml.presentation` (PPTX) * `text/plain` (TXT) See https://www.iana.org/assignments/media-types/media-types.xhtml.
           &quot;rawBytes&quot;: &quot;A String&quot;, # The content represented as a stream of bytes. The maximum length is 1,000,000 bytes (1 MB / ~0.95 MiB). Note: As with all `bytes` fields, this field is represented as pure binary in Protocol Buffers and base64-encoded string in JSON. For example, `abc123!?$*&amp;()&#x27;-=@~` should be represented as `YWJjMTIzIT8kKiYoKSctPUB+` in JSON. See https://developers.google.com/protocol-buffers/docs/proto3#json.
-          &quot;uri&quot;: &quot;A String&quot;, # The URI of the content. Only Cloud Storage URIs (e.g. `gs://bucket-name/path/to/file`) are supported. The maximum file size is 100 MB.
+          &quot;uri&quot;: &quot;A String&quot;, # The URI of the content. Only Cloud Storage URIs (e.g. `gs://bucket-name/path/to/file`) are supported. The maximum file size is 2.5 MB for text-based formats, 100 MB for other formats.
         },
         &quot;derivedStructData&quot;: { # Output only. This field is OUTPUT_ONLY. It contains derived data that are not in the original input document.
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
@@ -439,6 +446,29 @@ Returns:
       &quot;A String&quot;,
     ],
     &quot;summaryText&quot;: &quot;A String&quot;, # The summary content.
+    &quot;summaryWithMetadata&quot;: { # Summary with metadata information.
+      &quot;citationMetadata&quot;: { # Citation metadata. # Citation metadata for given summary.
+        &quot;citations&quot;: [ # Citations for segments.
+          { # Citation info for a segment.
+            &quot;endIndex&quot;: &quot;A String&quot;, # End of the attributed segment, exclusive.
+            &quot;sources&quot;: [ # Citation sources for the attributed segment.
+              { # Citation source.
+                &quot;referenceIndex&quot;: &quot;A String&quot;, # Document reference index from SummaryWithMetadata.references. It is 0-indexed and the value will be zero if the reference_index is not set explicitly.
+              },
+            ],
+            &quot;startIndex&quot;: &quot;A String&quot;, # Index indicates the start of the segment, measured in bytes/unicode.
+          },
+        ],
+      },
+      &quot;references&quot;: [ # Document References.
+        { # Document reference.
+          &quot;document&quot;: &quot;A String&quot;, # Required. Document.name of the document. Full resource name of the referenced document, in the format `projects/*/locations/*/collections/*/dataStores/*/branches/*/documents/*`.
+          &quot;title&quot;: &quot;A String&quot;, # Title of the document.
+          &quot;uri&quot;: &quot;A String&quot;, # Cloud Storage or HTTP uri for the document.
+        },
+      ],
+      &quot;summary&quot;: &quot;A String&quot;, # Summary text with no citation information.
+    },
   },
   &quot;totalSize&quot;: 42, # The estimated total count of matched items irrespective of pagination. The count of results returned by pagination may be less than the total_size that matches.
 }</pre>
