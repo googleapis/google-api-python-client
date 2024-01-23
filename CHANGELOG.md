@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.115.0](https://github.com/googleapis/google-api-python-client/compare/v2.114.0...v2.115.0) (2024-01-23)
+
+
+### Features
+
+* **aiplatform:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/5955fc9210d3a40f28bdfb1b56df9d223dbad97b ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **analyticsadmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b863607987e5c29975f4cc7d0bc0187d78768fb1 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **apigee:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/358a88079e12bf85f954ae09f82b74daf94ea626 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **apphub:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d48507971fdfc5f71ec67ba31c8e38e70a2a647b ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **cloudsupport:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b3cdcb64f42f3e88ecc0f5ba481e23908915eda8 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **compute:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e12e7c50c76d2edc3bd38d7de20412154e466420 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **connectors:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a23804b142fcd94b814670d1a4618a75dc17eeb2 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **dataflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ac90f1ee7ad4b23ab066afd9bb144abfff70ecb5 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **dialogflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c565530e21357a144160690dd5147bac4f4c29e8 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **discoveryengine:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/9aa16e1fa90421c837926a566269bdb4d122504c ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **displayvideo:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a5ce56473f5c0ca41dbf753ccc92539de958d6dd ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **documentai:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/132fea06cf026e078725383ad536e46b5132b58b ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **gkehub:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/3273b94fc7f18630b0df2f8486ea77b81abbd4ad ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **logging:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1a1df9bd0458b6c830e730f5655282a253ca882f ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **monitoring:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/424cc24e9b240ae467aff56e8034d4d84da97b62 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **notebooks:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/980d86029db2fd3bd54bd885bb932ccdddcb1029 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **policysimulator:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c916d4ac381dd1936484fe5347ec6ad990890939 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **prod_tt_sasportal:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/268437c568609174c01b54b69745d28e388ca465 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **recaptchaenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/4490a592e8084c3ff720d05b09aea42fab76abb0 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **retail:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/6dc53afa0157834b92c6657379ead9535d33e08a ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **securitycenter:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a7471da8d3314e29359442bac1fb0603e1c26d4f ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **tpu:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1c471fb99490120f9ab551e9fd805e49ed8a299a ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+* **vmwareengine:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/de91454faf920b9dc4fd032f199558cb6200e994 ([808e77a](https://github.com/googleapis/google-api-python-client/commit/808e77a6cc1f01f08660aa60af6ecbbe0b1f4531))
+
 ## [2.114.0](https://github.com/googleapis/google-api-python-client/compare/v2.113.0...v2.114.0) (2024-01-16)
 
 
