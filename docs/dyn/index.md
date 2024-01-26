@@ -1231,6 +1231,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workloadmanager_v1.html)
 
 
+## workspaceevents
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workspaceevents_v1.html)
+
+
 ## workstations
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/workstations_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/workstations_v1beta.html)
