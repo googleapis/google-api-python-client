@@ -661,7 +661,6 @@ class DiscoveryFromDocument(unittest.TestCase):
         self.assertEqual(plus._baseUrl, api_endpoint)
 
     def test_api_endpoint_override_from_client_options_mapping_object(self):
-
         discovery = read_datafile("plus.json")
         api_endpoint = "https://foo.googleapis.com/"
         mapping_object = defaultdict(str)
@@ -2276,7 +2275,9 @@ class Next(unittest.TestCase):
     def test_next_successful_with_next_page_token_alternate_name(self):
         self.http = HttpMock(datafile("bigquery.json"), {"status": "200"})
         bigquery = build("bigquery", "v2", http=self.http)
-        request = bigquery.tabledata().list(datasetId="", projectId="", tableId="")
+        request = bigquery.tabledata().list(
+            datasetId="test_dataset", projectId="test_project", tableId="test_table"
+        )
         next_request = bigquery.tabledata().list_next(request, {"pageToken": "123abc"})
         parsed = urllib.parse.urlparse(next_request.uri)
         q = urllib.parse.parse_qs(parsed.query)
