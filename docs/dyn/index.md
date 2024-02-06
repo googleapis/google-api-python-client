@@ -432,6 +432,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataplex_v1.html)
 
 
+## dataportability
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/dataportability_v1beta.html)
+
+
 ## dataproc
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v1.html)
 
