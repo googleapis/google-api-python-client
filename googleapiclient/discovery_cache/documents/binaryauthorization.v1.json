@@ -430,6 +430,42 @@
 },
 "platforms": {
 "resources": {
+"gke": {
+"resources": {
+"policies": {
+"methods": {
+"evaluate": {
+"description": "Evaluates a Kubernetes object versus a GKE platform policy. Returns `NOT_FOUND` if the policy doesn't exist, `INVALID_ARGUMENT` if the policy or request is malformed and `PERMISSION_DENIED` if the client does not have sufficient permissions.",
+"flatPath": "v1/projects/{projectsId}/platforms/gke/policies/{policiesId}:evaluate",
+"httpMethod": "POST",
+"id": "binaryauthorization.projects.platforms.gke.policies.evaluate",
+"parameterOrder": [
+"name"
+],
+"parameters": {
+"name": {
+"description": "Required. The name of the platform policy to evaluate in the format `projects/*/platforms/*/policies/*`.",
+"location": "path",
+"pattern": "^projects/[^/]+/platforms/gke/policies/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1/{+name}:evaluate",
+"request": {
+"$ref": "EvaluateGkePolicyRequest"
+},
+"response": {
+"$ref": "EvaluateGkePolicyResponse"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+}
+}
+}
+}
+},
 "policies": {
 "methods": {
 "create": {
@@ -706,7 +742,7 @@
 }
 }
 },
-"revision": "20240209",
+"revision": "20240220",
 "rootUrl": "https://binaryauthorization.googleapis.com/",
 "schemas": {
 "AdmissionRule": {
@@ -759,6 +795,17 @@
 "properties": {
 "namePattern": {
 "description": "An image name pattern to allowlist, in the form `registry/path/to/image`. This supports a trailing `*` wildcard, but this is allowed only in text after the `registry/` part. This also supports a trailing `**` wildcard which matches subdirectories of a given entry.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"AllowlistResult": {
+"description": "Result of evaluating an image name allowlist.",
+"id": "AllowlistResult",
+"properties": {
+"matchedPattern": {
+"description": "The allowlist pattern that the image matched.",
 "type": "string"
 }
 },
@@ -936,6 +983,52 @@
 },
 "type": "object"
 },
+"CheckResult": {
+"description": "Result of evaluating one check.",
+"id": "CheckResult",
+"properties": {
+"allowlistResult": {
+"$ref": "AllowlistResult",
+"description": "If the image was exempted by an allow_pattern in the check, contains the pattern that the image name matched."
+},
+"displayName": {
+"description": "The name of the check.",
+"type": "string"
+},
+"evaluationResult": {
+"$ref": "EvaluationResult",
+"description": "If a check was evaluated, contains the result of the check."
+},
+"explanation": {
+"description": "Explanation of this check result.",
+"type": "string"
+},
+"index": {
+"description": "The index of the check.",
+"format": "int64",
+"type": "string"
+},
+"type": {
+"description": "The type of the check.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"CheckResults": {
+"description": "Result of evaluating one or more checks.",
+"id": "CheckResults",
+"properties": {
+"results": {
+"description": "Per-check details.",
+"items": {
+"$ref": "CheckResult"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "CheckSet": {
 "description": "A conjunction of policy checks, scoped to a particular namespace or Kubernetes service account. In order for evaluation of a `CheckSet` to return \"allowed\" for a given image in a given Pod, one of the following conditions must be satisfied: * The image is explicitly exempted by an entry in `image_allowlist`, OR * ALL of the `checks` evaluate to \"allowed\".",
 "id": "CheckSet",
@@ -962,10 +1055,110 @@
 },
 "type": "object"
 },
+"CheckSetResult": {
+"description": "Result of evaluating one check set.",
+"id": "CheckSetResult",
+"properties": {
+"allowlistResult": {
+"$ref": "AllowlistResult",
+"description": "If the image was exempted by an allow_pattern in the check set, contains the pattern that the image name matched."
+},
+"checkResults": {
+"$ref": "CheckResults",
+"description": "If checks were evaluated, contains the results of evaluating each check."
+},
+"displayName": {
+"description": "The name of the check set.",
+"type": "string"
+},
+"explanation": {
+"description": "Explanation of this check set result. Only populated if no checks were evaluated.",
+"type": "string"
+},
+"index": {
+"description": "The index of the check set.",
+"format": "int64",
+"type": "string"
+},
+"scope": {
+"$ref": "Scope",
+"description": "The scope of the check set."
+}
+},
+"type": "object"
+},
 "Empty": {
 "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
 "id": "Empty",
 "properties": {},
+"type": "object"
+},
+"EvaluateGkePolicyRequest": {
+"description": "Request message for PlatformPolicyEvaluationService.EvaluateGkePolicy.",
+"id": "EvaluateGkePolicyRequest",
+"properties": {
+"resource": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Required. JSON or YAML blob representing a Kubernetes resource.",
+"type": "object"
+}
+},
+"type": "object"
+},
+"EvaluateGkePolicyResponse": {
+"description": "Response message for PlatformPolicyEvaluationService.EvaluateGkePolicy.",
+"id": "EvaluateGkePolicyResponse",
+"properties": {
+"results": {
+"description": "Evaluation result for each Pod contained in the request.",
+"items": {
+"$ref": "PodResult"
+},
+"type": "array"
+},
+"verdict": {
+"description": "The result of evaluating all Pods in the request.",
+"enum": [
+"VERDICT_UNSPECIFIED",
+"CONFORMANT",
+"NON_CONFORMANT",
+"ERROR"
+],
+"enumDescriptions": [
+"Not specified. This should never be used.",
+"All Pods in the request conform to the policy.",
+"At least one Pod does not conform to the policy.",
+"Encountered at least one error evaluating a Pod and all other Pods conform to the policy. Non-conformance has precedence over errors."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"EvaluationResult": {
+"description": "Result of evaluating one check.",
+"id": "EvaluationResult",
+"properties": {
+"verdict": {
+"description": "The result of evaluating this check.",
+"enum": [
+"CHECK_VERDICT_UNSPECIFIED",
+"CONFORMANT",
+"NON_CONFORMANT",
+"ERROR"
+],
+"enumDescriptions": [
+"Not specified. This should never be used.",
+"The check was successfully evaluated and the image satisfied the check.",
+"The check was successfully evaluated and the image did not satisfy the check.",
+"The check was not successfully evaluated."
+],
+"type": "string"
+}
+},
 "type": "object"
 },
 "Expr": {
@@ -1055,6 +1248,45 @@
 "description": "Required. The max number of days that is allowed since the image was uploaded. Must be greater than zero.",
 "format": "int32",
 "type": "integer"
+}
+},
+"type": "object"
+},
+"ImageResult": {
+"description": "Result of evaluating one image.",
+"id": "ImageResult",
+"properties": {
+"allowlistResult": {
+"$ref": "AllowlistResult",
+"description": "If the image was exempted by a top-level allow_pattern, contains the allowlist pattern that the image name matched."
+},
+"checkSetResult": {
+"$ref": "CheckSetResult",
+"description": "If a check set was evaluated, contains the result of the check set. Empty if there were no check sets."
+},
+"explanation": {
+"description": "Explanation of this image result. Only populated if no check sets were evaluated.",
+"type": "string"
+},
+"imageUri": {
+"description": "Image URI from the request.",
+"type": "string"
+},
+"verdict": {
+"description": "The result of evaluating this image.",
+"enum": [
+"IMAGE_VERDICT_UNSPECIFIED",
+"CONFORMANT",
+"NON_CONFORMANT",
+"ERROR"
+],
+"enumDescriptions": [
+"Not specified. This should never be used.",
+"Image conforms to the policy.",
+"Image does not conform to the policy.",
+"Error evaluating the image. Non-conformance has precedence over errors."
+],
+"type": "string"
 }
 },
 "type": "object"
@@ -1201,6 +1433,48 @@
 "description": "Output only. Time when the policy was last updated.",
 "format": "google-datetime",
 "readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"PodResult": {
+"description": "Result of evaluating the whole GKE policy for one Pod.",
+"id": "PodResult",
+"properties": {
+"imageResults": {
+"description": "Per-image details.",
+"items": {
+"$ref": "ImageResult"
+},
+"type": "array"
+},
+"kubernetesNamespace": {
+"description": "The Kubernetes namespace of the Pod.",
+"type": "string"
+},
+"kubernetesServiceAccount": {
+"description": "The Kubernetes service account of the Pod.",
+"type": "string"
+},
+"podName": {
+"description": "The name of the Pod.",
+"type": "string"
+},
+"verdict": {
+"description": "The result of evaluating this Pod.",
+"enum": [
+"POD_VERDICT_UNSPECIFIED",
+"CONFORMANT",
+"NON_CONFORMANT",
+"ERROR"
+],
+"enumDescriptions": [
+"Not specified. This should never be used.",
+"All images conform to the policy.",
+"At least one image does not conform to the policy.",
+"Encountered at least one error evaluating an image and all other images with non-error verdicts conform to the policy. Non-conformance has precedence over errors."
+],
 "type": "string"
 }
 },
