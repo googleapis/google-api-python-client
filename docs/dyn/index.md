@@ -764,6 +764,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/manufacturers_v1.html)
 
 
+## marketingplatformadmin
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/marketingplatformadmin_v1alpha.html)
+
+
 ## memcache
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1beta2.html)
