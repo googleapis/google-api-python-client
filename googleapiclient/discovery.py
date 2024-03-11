@@ -40,6 +40,7 @@ import re
 import urllib
 
 import google.api_core.client_options
+import google.api_core.universe_helpers as universe_helpers
 from google.auth.exceptions import MutualTLSChannelError
 from google.auth.transport import mtls
 from google.oauth2 import service_account
@@ -542,6 +543,12 @@ def build_from_document(
         )
         raise InvalidJsonError()
 
+    # update rootUrl with user provided universe.
+    universe_domain_opt = getattr(client_options, 'universe_domain', None)
+    universe_domain_env = os.getenv("GOOGLE_CLOUD_UNIVERSE_DOMAIN")
+    universe_domain = universe_helpers._get_universe_domain(universe_domain_opt, universe_domain_env)
+    rootUrl = service["rootUrl"].replace(universe_helpers._DEFAULT_UNIVERSE, universe_domain)
+
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
     audience_for_self_signed_jwt = base
@@ -666,6 +673,10 @@ def build_from_document(
             if use_mtls_endpoint == "always" or (
                 use_mtls_endpoint == "auto" and client_cert_to_use
             ):
+                _default_universe = universe_helpers._DEFAULT_UNIVERSE
+                if universe_domain != _default_universe:
+                    raise universe_helpers._MTLS_UNIVERSE_ERROR
+                
                 base = mtls_endpoint
 
     if model is None:
@@ -681,6 +692,7 @@ def build_from_document(
         resourceDesc=service,
         rootDesc=service,
         schema=schema,
+        universe_domain=universe_domain
     )
 
 
@@ -1042,6 +1054,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
 
     def method(self, **kwargs):
         # Don't bother with doc string, it will be over-written by createMethod.
+        
+        # Check that the credentials are valid for the provided universe.
+        self._validate_universe_domain()
 
         for name in kwargs:
             if name not in parameters.argmap:
@@ -1311,6 +1326,9 @@ def createNextMethod(
         # Retrieve nextPageToken from previous_response
         # Use as pageToken in previous_request to create new request.
 
+        # Check that the credentials are valid for the provided universe.
+        self._validate_universe_domain()
+
         nextPageToken = previous_response.get(nextPageTokenName, None)
         if not nextPageToken:
             return None
@@ -1352,6 +1370,7 @@ class Resource(object):
         resourceDesc,
         rootDesc,
         schema,
+        universe_domain=None
     ):
         """Build a Resource from the API description.
 
@@ -1380,9 +1399,24 @@ class Resource(object):
         self._resourceDesc = resourceDesc
         self._rootDesc = rootDesc
         self._schema = schema
+        self._universe_domain = universe_domain
+        self._is_universe_domain_valid = False
 
         self._set_service_methods()
+    
+    def _validate_universe_domain(self):
+        """Validates client's and credentials' universe domains are consistent.
 
+        Returns:
+            bool: True iff the configured universe domain is valid.
+
+        Raises:
+            ValueError: If the configured universe domain is not valid.
+        """
+        self._is_universe_domain_valid = (self._is_universe_domain_valid or
+            universe_helpers._compare_universes(self._universe_domain, self._http.credentials))
+        return self._is_universe_domain_valid
+    
     def _set_dynamic_attr(self, attr_name, value):
         """Sets an instance attribute and tracks it in a list of dynamic attributes.
 
@@ -1481,7 +1515,6 @@ class Resource(object):
     def _add_nested_resources(self, resourceDesc, rootDesc, schema):
         # Add in nested resources
         if "resources" in resourceDesc:
-
             def createResourceMethod(methodName, methodDesc):
                 """Create a method on the Resource to access a nested Resource.
 
@@ -1502,6 +1535,7 @@ class Resource(object):
                         resourceDesc=methodDesc,
                         rootDesc=rootDesc,
                         schema=schema,
+                        universe_domain=self._universe_domain
                     )
 
                 setattr(methodResource, "__doc__", "A collection resource.")
