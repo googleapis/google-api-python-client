@@ -433,6 +433,7 @@
 
 
 ## dataportability
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataportability_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/dataportability_v1beta.html)
 
 
@@ -1028,6 +1029,7 @@
 ## secretmanager
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1beta1.html)
+* [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1beta2.html)
 
 
 ## securitycenter
