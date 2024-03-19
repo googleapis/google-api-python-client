@@ -39,7 +39,6 @@ from unittest import mock
 import urllib
 
 import google.api_core.exceptions
-import google.api_core.universe as universe
 import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
@@ -2146,6 +2145,9 @@ class Discovery(unittest.TestCase):
             "scopedAnimals",
         ]
 
+        if not HAS_UNIVERSE:
+            sorted_resource_keys.remove("_universe_domain")
+
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         self.assertEqual(sorted(zoo.__dict__.keys()), sorted_resource_keys)
@@ -2339,7 +2341,6 @@ class MediaGet(unittest.TestCase):
         http = HttpMockSequence([({"status": "200"}, "standing in for media")])
         response = request.execute(http=http)
         self.assertEqual(b"standing in for media", response)
-
 
 if HAS_UNIVERSE:
 
