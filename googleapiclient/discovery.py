@@ -55,6 +55,7 @@ except ImportError:  # pragma: NO COVER
 
 try:
     from google.api_core import universe as universe
+
     HAS_UNIVERSE = True
 except ImportError:
     HAS_UNIVERSE = False
@@ -1567,9 +1568,15 @@ class Resource(object):
             ValueError: If the configured universe domain is not valid.
         """
         self._credentials_validated = (
-            self._credentials_validated
-            or universe.compare_domains(self._universe_domain, self._http.credentials)
-        ) if HAS_UNIVERSE else True
+            (
+                self._credentials_validated
+                or universe.compare_domains(
+                    self._universe_domain, self._http.credentials
+                )
+            )
+            if HAS_UNIVERSE
+            else True
+        )
         return self._credentials_validated
 
 
