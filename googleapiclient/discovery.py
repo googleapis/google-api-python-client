@@ -40,6 +40,7 @@ import re
 import urllib
 
 import google.api_core.client_options
+import google.api_core.universe as universe
 from google.auth.exceptions import MutualTLSChannelError
 from google.auth.transport import mtls
 from google.oauth2 import service_account

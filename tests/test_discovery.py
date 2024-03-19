@@ -39,6 +39,7 @@ from unittest import mock
 import urllib
 
 import google.api_core.exceptions
+import google.api_core.universe as universe
 import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
