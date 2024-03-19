@@ -1371,7 +1371,7 @@ class Resource(object):
               is considered a resource.
           rootDesc: object, the entire deserialized discovery document.
           schema: object, mapping of schema names to schema descriptions.
-          universe_domain: string, the universe for the the API. The default universe
+          universe_domain: string, the universe for the API. The default universe
           is "googleapis.com".
         """
         self._dynamic_attrs = []
