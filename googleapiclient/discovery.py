@@ -40,6 +40,7 @@ import re
 import urllib
 
 import google.api_core.client_options
+import google.api_core.universe as universe
 from google.auth.exceptions import MutualTLSChannelError
 from google.auth.transport import mtls
 from google.oauth2 import service_account
@@ -1352,6 +1353,7 @@ class Resource(object):
         resourceDesc,
         rootDesc,
         schema,
+        universe_domain=universe.DEFAULT_UNIVERSE,
     ):
         """Build a Resource from the API description.
 
@@ -1369,6 +1371,8 @@ class Resource(object):
               is considered a resource.
           rootDesc: object, the entire deserialized discovery document.
           schema: object, mapping of schema names to schema descriptions.
+          universe_domain: string, the universe for the the API. The default universe
+          is "googleapis.com".
         """
         self._dynamic_attrs = []
 
@@ -1380,6 +1384,8 @@ class Resource(object):
         self._resourceDesc = resourceDesc
         self._rootDesc = rootDesc
         self._schema = schema
+        self._universe_domain = universe_domain
+        self._credentials_validated = False
 
         self._set_service_methods()
 
@@ -1545,6 +1551,21 @@ class Resource(object):
             self._set_dynamic_attr(
                 fixedMethodName, method.__get__(self, self.__class__)
             )
+
+    def _validate_credentials(self):
+        """Validates client's and credentials' universe domains are consistent.
+
+        Returns:
+            bool: True iff the configured universe domain is valid.
+
+        Raises:
+            ValueError: If the configured universe domain is not valid.
+        """
+        self._credentials_validated = (
+            self._credentials_validated
+            or universe.compare_domains(self._universe_domain, self._http.credentials)
+        )
+        return self._credentials_validated
 
 
 def _findPageTokenName(fields):

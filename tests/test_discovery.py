@@ -39,6 +39,7 @@ from unittest import mock
 import urllib
 
 import google.api_core.exceptions
+import google.api_core.universe as universe
 import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
@@ -2329,6 +2330,126 @@ class MediaGet(unittest.TestCase):
         http = HttpMockSequence([({"status": "200"}, "standing in for media")])
         response = request.execute(http=http)
         self.assertEqual(b"standing in for media", response)
+
+
+class Universe(unittest.TestCase):
+    def test_validate_credentials_with_no_universe(self):
+        fake_universe = "foo.com"
+
+        http = google_auth_httplib2.AuthorizedHttp(credentials=None, http=build_http())
+        discovery = read_datafile("zoo.json")
+        service = build_from_document(
+            discovery,
+            http=http,
+            client_options=google.api_core.client_options.ClientOptions(
+                universe_domain=universe.DEFAULT_UNIVERSE
+            ),
+        )
+
+        assert service._validate_credentials()
+
+        # TODO(omairn): uncomment when universe is passed down as a client_option.
+        # http = google_auth_httplib2.AuthorizedHttp(credentials=None, http=build_http())
+        # discovery = read_datafile("zoo.json")
+        # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
+
+        # with self.assertRaises(universe.UniverseMismatchError):
+        #     service._validate_credentials()
+
+        # TODO(omairn): Add test case for not specifying universe domain via client option.
+
+    def test_validate_credentials_with_default_universe(self):
+        fake_universe = "foo.com"
+
+        http = google_auth_httplib2.AuthorizedHttp(
+            credentials=mock.Mock(universe_domain=universe.DEFAULT_UNIVERSE),
+            http=build_http(),
+        )
+        discovery = read_datafile("zoo.json")
+        service = build_from_document(
+            discovery,
+            http=http,
+            client_options=google.api_core.client_options.ClientOptions(
+                universe_domain=universe.DEFAULT_UNIVERSE
+            ),
+        )
+
+        assert service._validate_credentials()
+
+        # TODO(omairn): uncomment when universe configured universe is leveraged.
+        # http = google_auth_httplib2.AuthorizedHttp(credentials=mock.Mock(universe_domain=universe.DEFAULT_UNIVERSE), http=build_http())
+        # discovery = read_datafile("zoo.json")
+        # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
+
+        # with self.assertRaises(universe.UniverseMismatchError):
+        #     service._validate_credentials()
+
+    def test_validate_credentials_with_a_different_universe(self):
+        fake_universe = "foo.com"
+
+        # TODO(omairn): uncomment when universe configured universe is leveraged.
+        # http = google_auth_httplib2.AuthorizedHttp(credentials=mock.Mock(universe_domain=fake_universe), http=build_http())
+        # discovery = read_datafile("zoo.json")
+        # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
+        # assert service._validate_credentials()
+
+        http = google_auth_httplib2.AuthorizedHttp(
+            credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
+        )
+        discovery = read_datafile("zoo.json")
+        service = build_from_document(
+            discovery,
+            http=http,
+            client_options=google.api_core.client_options.ClientOptions(
+                universe_domain=universe.DEFAULT_UNIVERSE
+            ),
+        )
+
+        with self.assertRaises(universe.UniverseMismatchError):
+            service._validate_credentials()
+
+    def test_validate_credentials_with_already_validated_credentials(self):
+        fake_universe = "foo.com"
+
+        http = google_auth_httplib2.AuthorizedHttp(
+            credentials=mock.Mock(universe_domain=universe.DEFAULT_UNIVERSE),
+            http=build_http(),
+        )
+        discovery = read_datafile("zoo.json")
+        service = build_from_document(
+            discovery,
+            http=http,
+            client_options=google.api_core.client_options.ClientOptions(
+                universe_domain=universe.DEFAULT_UNIVERSE
+            ),
+        )
+
+        assert service._validate_credentials()
+        assert service._credentials_validated
+        assert service._validate_credentials()
+
+        # TODO(omairn): uncomment when universe configured universe is leveraged.
+        # http = google_auth_httplib2.AuthorizedHttp(credentials=mock.Mock(universe_domain=fake_universe), http=build_http())
+        # discovery = read_datafile("zoo.json")
+        # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
+
+        # assert service._validate_credentials()
+        # assert service._credentials_validated
+        # assert service._validate_credentials()
+
+    # TODO(omairn):
+    # Once _validate_universe() is added to the API call, verify that:
+    # the API call succeeds when the credentials match.
+    # the API call fails when there is a mismatch.
+    # the credentials are not verified twice for an already verified Resource.
+
+    # Add test case once universe domain is supported via environment variable.
+
+    # Once universe.determine_domain() is leveraged:
+    # add test case for empty universe.
+    # add test cases when universe domain is provided via both client option and env var.
+
+    # Add test case when credentials are passed instead of http.
 
 
 if __name__ == "__main__":
