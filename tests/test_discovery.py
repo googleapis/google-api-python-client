@@ -2144,8 +2144,6 @@ class Discovery(unittest.TestCase):
             "scopedAnimals",
         ]
 
-        if not HAS_UNIVERSE:
-            sorted_resource_keys.remove("_universe_domain")
 
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=http, static_discovery=False)
