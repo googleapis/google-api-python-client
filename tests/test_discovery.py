@@ -2350,7 +2350,7 @@ class Universe(unittest.TestCase):
 
         assert service._validate_credentials()
 
-        # TODO(omairn): uncomment when universe is passed down as a client_option.
+        # TODO(omairn): uncomment when universe configured universe is leveraged.
         # http = google_auth_httplib2.AuthorizedHttp(credentials=None, http=build_http())
         # discovery = read_datafile("zoo.json")
         # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
