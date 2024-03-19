@@ -40,7 +40,6 @@ import re
 import urllib
 
 import google.api_core.client_options
-import google.api_core.universe as universe
 from google.auth.exceptions import MutualTLSChannelError
 from google.auth.transport import mtls
 from google.oauth2 import service_account
@@ -53,6 +52,12 @@ try:
     import google_auth_httplib2
 except ImportError:  # pragma: NO COVER
     google_auth_httplib2 = None
+
+try:
+    from google.api_core import universe as universe
+    HAS_UNIVERSE = True
+except ImportError:
+    HAS_UNIVERSE = False
 
 # Local imports
 from googleapiclient import _auth, mimeparse
@@ -1353,7 +1358,7 @@ class Resource(object):
         resourceDesc,
         rootDesc,
         schema,
-        universe_domain=universe.DEFAULT_UNIVERSE,
+        universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else None,
     ):
         """Build a Resource from the API description.
 
@@ -1564,7 +1569,7 @@ class Resource(object):
         self._credentials_validated = (
             self._credentials_validated
             or universe.compare_domains(self._universe_domain, self._http.credentials)
-        )
+        ) if HAS_UNIVERSE else True
         return self._credentials_validated
 
 
