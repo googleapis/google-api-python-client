@@ -2340,6 +2340,7 @@ class MediaGet(unittest.TestCase):
         response = request.execute(http=http)
         self.assertEqual(b"standing in for media", response)
 
+
 if HAS_UNIVERSE:
 
     class Universe(unittest.TestCase):
