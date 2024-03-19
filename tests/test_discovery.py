@@ -2119,6 +2119,7 @@ class Discovery(unittest.TestCase):
     def test_pickle(self):
         sorted_resource_keys = [
             "_baseUrl",
+            "_credentials_validated",
             "_developerKey",
             "_dynamic_attrs",
             "_http",
@@ -2127,6 +2128,7 @@ class Discovery(unittest.TestCase):
             "_resourceDesc",
             "_rootDesc",
             "_schema",
+            "_universe_domain",
             "animals",
             "global_",
             "load",
