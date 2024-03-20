@@ -1565,13 +1565,15 @@ class Resource(object):
             bool: True iff the configured universe domain is valid.
 
         Raises:
-            ValueError: If the configured universe domain is not valid.
+            UniverseMismatchError: If the configured universe domain is not valid.
         """
+        credentials = getattr(self._http, "credentials", None)
+
         self._credentials_validated = (
             (
                 self._credentials_validated
                 or universe.compare_domains(
-                    self._universe_domain, self._http.credentials
+                    self._universe_domain, credentials
                 )
             )
             if HAS_UNIVERSE
