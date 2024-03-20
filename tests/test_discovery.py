@@ -56,6 +56,7 @@ except ImportError:
 
 try:
     from google.api_core import universe as universe
+
     HAS_UNIVERSE = True
 except ImportError:
     HAS_UNIVERSE = False
@@ -2339,13 +2340,16 @@ class MediaGet(unittest.TestCase):
         response = request.execute(http=http)
         self.assertEqual(b"standing in for media", response)
 
+
 if HAS_UNIVERSE:
 
     class Universe(unittest.TestCase):
         def test_validate_credentials_with_no_universe(self):
             fake_universe = "foo.com"
 
-            http = google_auth_httplib2.AuthorizedHttp(credentials=None, http=build_http())
+            http = google_auth_httplib2.AuthorizedHttp(
+                credentials=None, http=build_http()
+            )
             discovery = read_datafile("zoo.json")
             service = build_from_document(
                 discovery,
