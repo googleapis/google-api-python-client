@@ -2145,7 +2145,6 @@ class Discovery(unittest.TestCase):
             "scopedAnimals",
         ]
 
-
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=http, static_discovery=False)
         self.assertEqual(sorted(zoo.__dict__.keys()), sorted_resource_keys)
