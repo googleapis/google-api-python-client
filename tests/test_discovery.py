@@ -2384,7 +2384,6 @@ if HAS_UNIVERSE:
 
             # TODO(google-api-python-client/issues/2365): # Add test case for "googleapis.com" configured universe and fake credentials' universe.
 
-
         def test_validate_credentials_with_a_different_universe(self):
             fake_universe = "foo.com"
 
@@ -2423,6 +2422,8 @@ if HAS_UNIVERSE:
 
             assert service._validate_credentials()
             assert service._credentials_validated
+
+            # Calling service._validate_credentials() again returns service.credentials_validated.
             assert service._validate_credentials()
 
             # TODO(google-api-python-client/issues/2365): Add test case for fake configured universe and fake credentials' universe.
