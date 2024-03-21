@@ -1572,9 +1572,7 @@ class Resource(object):
         self._credentials_validated = (
             (
                 self._credentials_validated
-                or universe.compare_domains(
-                    self._universe_domain, credentials
-                )
+                or universe.compare_domains(self._universe_domain, credentials)
             )
             if HAS_UNIVERSE
             else True
