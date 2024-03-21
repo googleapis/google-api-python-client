@@ -55,7 +55,7 @@ except ImportError:
     HAS_OAUTH2CLIENT = False
 
 try:
-    from google.api_core import universe as universe
+    from google.api_core import universe
 
     HAS_UNIVERSE = True
 except ImportError:
@@ -2360,15 +2360,9 @@ if HAS_UNIVERSE:
 
             assert service._validate_credentials()
 
-            # TODO(omairn): uncomment when universe configured universe is leveraged.
-            # http = google_auth_httplib2.AuthorizedHttp(credentials=None, http=build_http())
-            # discovery = read_datafile("zoo.json")
-            # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
+            # TODO(google-api-python-client/issues/2365): Add test case for no configured  universe and fake credentials' universe.
 
-            # with self.assertRaises(universe.UniverseMismatchError):
-            #     service._validate_credentials()
-
-            # TODO(omairn): Add test case for not specifying universe domain via client option.
+            # TODO(google-api-python-client/issues/2365): Add test case for not specifying universe domain via client option.
 
         def test_validate_credentials_with_default_universe(self):
             fake_universe = "foo.com"
@@ -2388,22 +2382,13 @@ if HAS_UNIVERSE:
 
             assert service._validate_credentials()
 
-            # TODO(omairn): uncomment when universe configured universe is leveraged.
-            # http = google_auth_httplib2.AuthorizedHttp(credentials=mock.Mock(universe_domain=universe.DEFAULT_UNIVERSE), http=build_http())
-            # discovery = read_datafile("zoo.json")
-            # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
+            # TODO(google-api-python-client/issues/2365): # Add test case for "googleapis.com" configured universe and fake credentials' universe.
 
-            # with self.assertRaises(universe.UniverseMismatchError):
-            #     service._validate_credentials()
 
         def test_validate_credentials_with_a_different_universe(self):
             fake_universe = "foo.com"
 
-            # TODO(omairn): uncomment when universe configured universe is leveraged.
-            # http = google_auth_httplib2.AuthorizedHttp(credentials=mock.Mock(universe_domain=fake_universe), http=build_http())
-            # discovery = read_datafile("zoo.json")
-            # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
-            # assert service._validate_credentials()
+            # TODO(google-api-python-client/issues/2365): Add test case for fake configured universe and fake credentials' universe.
 
             http = google_auth_httplib2.AuthorizedHttp(
                 credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
@@ -2440,28 +2425,7 @@ if HAS_UNIVERSE:
             assert service._credentials_validated
             assert service._validate_credentials()
 
-            # TODO(omairn): uncomment when universe configured universe is leveraged.
-            # http = google_auth_httplib2.AuthorizedHttp(credentials=mock.Mock(universe_domain=fake_universe), http=build_http())
-            # discovery = read_datafile("zoo.json")
-            # service = build_from_document(discovery, http=http, client_options=google.api_core.client_options.ClientOptions(universe_domain=fake_universe))
-
-            # assert service._validate_credentials()
-            # assert service._credentials_validated
-            # assert service._validate_credentials()
-
-        # TODO(omairn):
-        # Once _validate_universe() is added to the API call, verify that:
-        # the API call succeeds when the credentials match.
-        # the API call fails when there is a mismatch.
-        # the credentials are not verified twice for an already verified Resource.
-
-        # Add test case once universe domain is supported via environment variable.
-
-        # Once universe.determine_domain() is leveraged:
-        # add test case for empty universe.
-        # add test cases when universe domain is provided via both client option and env var.
-
-        # Add test case when credentials are passed instead of http.
+            # TODO(google-api-python-client/issues/2365): Add test case for fake configured universe and fake credentials' universe.
 
 
 if __name__ == "__main__":

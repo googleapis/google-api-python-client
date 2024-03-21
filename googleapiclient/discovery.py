@@ -54,7 +54,7 @@ except ImportError:  # pragma: NO COVER
     google_auth_httplib2 = None
 
 try:
-    from google.api_core import universe as universe
+    from google.api_core import universe
 
     HAS_UNIVERSE = True
 except ImportError:
@@ -1359,7 +1359,7 @@ class Resource(object):
         resourceDesc,
         rootDesc,
         schema,
-        universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else None,
+        universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else "",
     ):
         """Build a Resource from the API description.
 
