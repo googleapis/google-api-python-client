@@ -2469,7 +2469,7 @@ if HAS_UNIVERSE:
             with self.assertRaises(universe.UniverseMismatchError):
                 request = tasks.tasklists().list()
 
-            # Check that credentials are indeed verified before request.
+            # Check that credentials are verified before next request.
             with self.assertRaises(universe.UniverseMismatchError):
                 next_request = tasks.tasklists().list_next(request, {})
 
