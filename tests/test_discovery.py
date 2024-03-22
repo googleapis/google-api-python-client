@@ -2428,6 +2428,50 @@ if HAS_UNIVERSE:
 
             # TODO(google-api-python-client/issues/2365): Add test case for fake configured universe and fake credentials' universe.
 
+        def test_validate_credentials_before_api_request(self):
+            fake_universe = "foo.com"
+
+            http = google_auth_httplib2.AuthorizedHttp(
+                credentials=mock.Mock(universe_domain=universe.DEFAULT_UNIVERSE),
+                http=build_http(),
+            )
+            discovery = read_datafile("tasks.json")
+            tasks = build_from_document(
+                discovery,
+                http=http,
+                client_options=google.api_core.client_options.ClientOptions(
+                    universe_domain=universe.DEFAULT_UNIVERSE
+                ),
+            )
+
+            tasklists = tasks.tasklists()
+            request = tasklists.list()
+
+            # Check that credentials are indeed verified before request.
+            assert tasklists._validate_credentials()
+
+            # Check that credentials are verified before next request.
+            self.assertEqual(None, tasks.tasklists().list_next(request, {}))
+
+            http = google_auth_httplib2.AuthorizedHttp(
+                credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
+            )
+            discovery = read_datafile("tasks.json")
+            tasks = build_from_document(
+                discovery,
+                http=http,
+                client_options=google.api_core.client_options.ClientOptions(
+                    universe_domain=universe.DEFAULT_UNIVERSE
+                ),
+            )
+
+            # Check that credentials are verified before request.
+            with self.assertRaises(universe.UniverseMismatchError):
+                request = tasks.tasklists().list()
+
+            # Check that credentials are indeed verified before request.
+            with self.assertRaises(universe.UniverseMismatchError):
+                next_request = tasks.tasklists().list_next(request, {})
 
 if __name__ == "__main__":
     unittest.main()
