@@ -53,6 +53,13 @@ try:
 except ImportError:  # pragma: NO COVER
     google_auth_httplib2 = None
 
+try:
+    from google.api_core import universe
+
+    HAS_UNIVERSE = True
+except ImportError:
+    HAS_UNIVERSE = False
+
 # Local imports
 from googleapiclient import _auth, mimeparse
 from googleapiclient._helpers import _add_query_parameter, positional
@@ -1352,6 +1359,7 @@ class Resource(object):
         resourceDesc,
         rootDesc,
         schema,
+        universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else "",
     ):
         """Build a Resource from the API description.
 
@@ -1369,6 +1377,8 @@ class Resource(object):
               is considered a resource.
           rootDesc: object, the entire deserialized discovery document.
           schema: object, mapping of schema names to schema descriptions.
+          universe_domain: string, the universe for the API. The default universe
+          is "googleapis.com".
         """
         self._dynamic_attrs = []
 
@@ -1380,6 +1390,8 @@ class Resource(object):
         self._resourceDesc = resourceDesc
         self._rootDesc = rootDesc
         self._schema = schema
+        self._universe_domain = universe_domain
+        self._credentials_validated = False
 
         self._set_service_methods()
 
@@ -1545,6 +1557,27 @@ class Resource(object):
             self._set_dynamic_attr(
                 fixedMethodName, method.__get__(self, self.__class__)
             )
+
+    def _validate_credentials(self):
+        """Validates client's and credentials' universe domains are consistent.
+
+        Returns:
+            bool: True iff the configured universe domain is valid.
+
+        Raises:
+            UniverseMismatchError: If the configured universe domain is not valid.
+        """
+        credentials = getattr(self._http, "credentials", None)
+
+        self._credentials_validated = (
+            (
+                self._credentials_validated
+                or universe.compare_domains(self._universe_domain, credentials)
+            )
+            if HAS_UNIVERSE
+            else True
+        )
+        return self._credentials_validated
 
 
 def _findPageTokenName(fields):
