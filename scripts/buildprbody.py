@@ -80,7 +80,7 @@ class BuildPrBody:
 
         prestable_and_breaking = (
             dataframe[
-                (dataframe["IsStable"] == False)
+                (dataframe["IsStable"] is False)
                 & (dataframe["ChangeType"] == ChangeType.DELETED)
             ][["Name", "Version", "Commit"]]
             .drop_duplicates()

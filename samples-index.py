@@ -65,17 +65,17 @@ KEYWORDS = {
 def get_lines(name, lines):
     """Return lines that begin with name.
 
-  Lines are expected to look like:
+    Lines are expected to look like:
 
-     name: space separated values
+       name: space separated values
 
-  Args:
-    name: string, parameter name.
-    lines: iterable of string, lines in the file.
+    Args:
+      name: string, parameter name.
+      lines: iterable of string, lines in the file.
 
-  Returns:
-    List of values in the lines that match.
-  """
+    Returns:
+      List of values in the lines that match.
+    """
     retval = []
     matches = itertools.ifilter(lambda x: x.startswith(name + ":"), lines)
     for line in matches:
@@ -96,16 +96,16 @@ def wiki_escape(s):
 def context_from_sample(api, keywords, dirname, desc, uri):
     """Return info for expanding a sample into a template.
 
-  Args:
-    api: string, name of api.
-    keywords: list of string, list of keywords for the given api.
-    dirname: string, directory name of the sample.
-    desc: string, long description of the sample.
-    uri: string, uri of the sample code if provided in the README.
+    Args:
+      api: string, name of api.
+      keywords: list of string, list of keywords for the given api.
+      dirname: string, directory name of the sample.
+      desc: string, long description of the sample.
+      uri: string, uri of the sample code if provided in the README.
 
-  Returns:
-    A dictionary of values useful for template expansion.
-  """
+    Returns:
+      A dictionary of values useful for template expansion.
+    """
     if uri is None:
         uri = BASE_HG_URI + dirname.replace("/", "%2F")
     else:
@@ -131,17 +131,17 @@ def context_from_sample(api, keywords, dirname, desc, uri):
 def keyword_context_from_sample(keywords, dirname, desc, uri):
     """Return info for expanding a sample into a template.
 
-  Sample may not be about a specific api.
+    Sample may not be about a specific api.
 
-  Args:
-    keywords: list of string, list of keywords for the given api.
-    dirname: string, directory name of the sample.
-    desc: string, long description of the sample.
-    uri: string, uri of the sample code if provided in the README.
+    Args:
+      keywords: list of string, list of keywords for the given api.
+      dirname: string, directory name of the sample.
+      desc: string, long description of the sample.
+      uri: string, uri of the sample code if provided in the README.
 
-  Returns:
-    A dictionary of values useful for template expansion.
-  """
+    Returns:
+      A dictionary of values useful for template expansion.
+    """
     if uri is None:
         uri = BASE_HG_URI + dirname.replace("/", "%2F")
     else:
@@ -158,13 +158,13 @@ def keyword_context_from_sample(keywords, dirname, desc, uri):
 def scan_readme_files(dirname):
     """Scans all subdirs of dirname for README files.
 
-  Args:
-    dirname: string, name of directory to walk.
+    Args:
+      dirname: string, name of directory to walk.
 
-  Returns:
-    (samples, keyword_set): list of information about all samples, the union
-      of all keywords found.
-  """
+    Returns:
+      (samples, keyword_set): list of information about all samples, the union
+        of all keywords found.
+    """
     samples = []
     keyword_set = set()
 

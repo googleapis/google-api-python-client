@@ -322,7 +322,7 @@ class TestMediaIoBaseUpload(unittest.TestCase):
         upload = MediaIoBaseUpload(fd=f, mimetype="image/png")
 
         try:
-            json = upload.to_json()
+            upload.to_json()
             self.fail("MediaIoBaseUpload should not be serializable.")
         except NotImplementedError:
             pass
@@ -959,7 +959,7 @@ class TestHttpRequest(unittest.TestCase):
         request._sleep = lambda _x: 0  # do nothing
         request._rand = lambda: 10
         with self.assertRaises(OSError):
-            response = request.execute(num_retries=3)
+            request.execute(num_retries=3)
 
     def test_retry_connection_errors_non_resumable(self):
         model = JsonModel()
@@ -1237,7 +1237,7 @@ class TestBatch(unittest.TestCase):
             resumable=None,
         )
         # Just testing it shouldn't raise an exception.
-        s = batch._serialize_request(request).splitlines()
+        batch._serialize_request(request).splitlines()
 
     def test_serialize_request_no_body(self):
         batch = BatchHttpRequest()

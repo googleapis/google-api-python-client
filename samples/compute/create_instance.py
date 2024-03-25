@@ -163,9 +163,7 @@ Instance created.
 It will take a minute or two for the instance to complete work.
 Check this URL: http://storage.googleapis.com/{}/output.png
 Once the image is uploaded press enter to delete the instance.
-""".format(
-            bucket
-        )
+""".format(bucket)
     )
 
     if wait:

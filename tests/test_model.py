@@ -64,7 +64,7 @@ TEST_CASES = [
 
 class TestPatch(unittest.TestCase):
     def test_patch(self):
-        for (msg, orig, mod, expected_patch) in TEST_CASES:
+        for msg, orig, mod, expected_patch in TEST_CASES:
             self.assertEqual(expected_patch, makepatch(orig, mod), msg=msg)
 
 
@@ -77,8 +77,16 @@ class TestBaseModel(unittest.TestCase):
             ("hello", "world", "?hello=world"),
             ("hello", "세계", "?hello=%EC%84%B8%EA%B3%84"),
             ("hello", "세계", "?hello=%EC%84%B8%EA%B3%84"),
-            ("hello", "こんにちは", "?hello=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF"),
-            ("hello", "こんにちは", "?hello=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF"),
+            (
+                "hello",
+                "こんにちは",
+                "?hello=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF",
+            ),
+            (
+                "hello",
+                "こんにちは",
+                "?hello=%E3%81%93%E3%82%93%E3%81%AB%E3%81%A1%E3%81%AF",
+            ),
             ("hello", "你好", "?hello=%E4%BD%A0%E5%A5%BD"),
             ("hello", "你好", "?hello=%E4%BD%A0%E5%A5%BD"),
             ("hello", "مرحبا", "?hello=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7"),

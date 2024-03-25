@@ -307,7 +307,7 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
     """
     collections = []
     methods = []
-    resource_name = path.split(".")[-2]
+    path.split(".")[-2]
     html = [
         "<html><body>",
         css,
@@ -347,7 +347,7 @@ def document_collection(resource, path, root_discovery, discovery, css=CSS):
     if methods:
         html.append("<h3>Method Details</h3>")
         for name in methods:
-            dname = name.rsplit("_")[0]
+            name.rsplit("_")[0]
             html.append(method(name, getattr(resource, name).__doc__))
 
     html.append("</body></html>")
