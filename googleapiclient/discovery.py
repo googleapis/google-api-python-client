@@ -553,7 +553,9 @@ def build_from_document(
     base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
     universe_domain = None
     if HAS_UNIVERSE:
-        universe_domain = universe.determine_domain(client_options.universe_domain, None)
+        universe_domain = universe.determine_domain(
+            client_options.universe_domain, None
+        )
         base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
 
     audience_for_self_signed_jwt = base
@@ -681,7 +683,7 @@ def build_from_document(
                 if HAS_UNIVERSE and universe_domain != universe.DEFAULT_UNIVERSE:
                     raise MutualTLSChannelError(
                         f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
-                    ) 
+                    )
                 base = mtls_endpoint
 
     if model is None:
@@ -697,7 +699,7 @@ def build_from_document(
         resourceDesc=service,
         rootDesc=service,
         schema=schema,
-        universe_domain=universe_domain 
+        universe_domain=universe_domain,
     )
 
 
