@@ -1050,6 +1050,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     def method(self, **kwargs):
         # Don't bother with doc string, it will be over-written by createMethod.
 
+        # Validate credentials for the configured universe.
+        self._validate_credentials()
+
         for name in kwargs:
             if name not in parameters.argmap:
                 raise TypeError("Got an unexpected keyword argument {}".format(name))
