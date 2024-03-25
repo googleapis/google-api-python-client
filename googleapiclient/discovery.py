@@ -1321,7 +1321,6 @@ def createNextMethod(
         # Retrieve nextPageToken from previous_response
         # Use as pageToken in previous_request to create new request.
 
-
         nextPageToken = previous_response.get(nextPageTokenName, None)
         if not nextPageToken:
             return None
