@@ -551,6 +551,13 @@ def build_from_document(
 
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
+    universe_domain = None
+    if HAS_UNIVERSE:
+        universe_domain = universe.determine_domain(
+            client_options.universe_domain, None
+        )
+        base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
+
     audience_for_self_signed_jwt = base
     if client_options.api_endpoint:
         base = client_options.api_endpoint
@@ -673,6 +680,10 @@ def build_from_document(
             if use_mtls_endpoint == "always" or (
                 use_mtls_endpoint == "auto" and client_cert_to_use
             ):
+                if HAS_UNIVERSE and universe_domain != universe.DEFAULT_UNIVERSE:
+                    raise MutualTLSChannelError(
+                        f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
+                    )
                 base = mtls_endpoint
 
     if model is None:
@@ -688,6 +699,7 @@ def build_from_document(
         resourceDesc=service,
         rootDesc=service,
         schema=schema,
+        universe_domain=universe_domain,
     )
 
 
@@ -1517,6 +1529,7 @@ class Resource(object):
                         resourceDesc=methodDesc,
                         rootDesc=rootDesc,
                         schema=schema,
+                        universe_domain=self._universe_domain,
                     )
 
                 setattr(methodResource, "__doc__", "A collection resource.")
