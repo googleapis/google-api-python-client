@@ -1321,8 +1321,6 @@ def createNextMethod(
         # Retrieve nextPageToken from previous_response
         # Use as pageToken in previous_request to create new request.
 
-        # Validate credentials for the configured universe.
-        self._validate_credentials()
 
         nextPageToken = previous_response.get(nextPageTokenName, None)
         if not nextPageToken:

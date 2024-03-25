@@ -2450,9 +2450,6 @@ if HAS_UNIVERSE:
             # Check that credentials are indeed verified before request.
             assert tasklists._validate_credentials()
 
-            # Check that credentials are verified before next request.
-            self.assertEqual(None, tasks.tasklists().list_next(request, {}))
-
             http = google_auth_httplib2.AuthorizedHttp(
                 credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
             )
@@ -2469,9 +2466,6 @@ if HAS_UNIVERSE:
             with self.assertRaises(universe.UniverseMismatchError):
                 request = tasks.tasklists().list()
 
-            # Check that credentials are verified before next request.
-            with self.assertRaises(universe.UniverseMismatchError):
-                next_request = tasks.tasklists().list_next(request, {})
 
 
 if __name__ == "__main__":
