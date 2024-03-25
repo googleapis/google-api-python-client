@@ -123,6 +123,7 @@ _PAGE_TOKEN_NAMES = ("pageToken", "nextPageToken")
 # Parameters controlling mTLS behavior. See https://google.aip.dev/auth/4114.
 GOOGLE_API_USE_CLIENT_CERTIFICATE = "GOOGLE_API_USE_CLIENT_CERTIFICATE"
 GOOGLE_API_USE_MTLS_ENDPOINT = "GOOGLE_API_USE_MTLS_ENDPOINT"
+GOOGLE_CLOUD_UNIVERSE_DOMAIN = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
 
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
@@ -553,8 +554,9 @@ def build_from_document(
     base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
     universe_domain = None
     if HAS_UNIVERSE:
+        universe_domain_env = os.getenv(GOOGLE_CLOUD_UNIVERSE_DOMAIN, None)
         universe_domain = universe.determine_domain(
-            client_options.universe_domain, None
+            client_options.universe_domain, universe_domain_env
         )
         base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
 
