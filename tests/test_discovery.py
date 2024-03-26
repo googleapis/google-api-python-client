@@ -2619,11 +2619,14 @@ if HAS_UNIVERSE:
 
             with self.assertRaises(MutualTLSChannelError):
                 with mock.patch.dict(
-                    "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": "always",
-                                   "GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe}
+                    "os.environ",
+                    {
+                        "GOOGLE_API_USE_MTLS_ENDPOINT": "always",
+                        "GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe,
+                    },
                 ):
                     tasks = build_from_document(discovery)
-        
+
         def test_universe_env_var_configured_with_api_override(self):
             fake_universe = "foo.com"
             fake_api_endpoint = "https://www.bar.com/"
@@ -2631,14 +2634,14 @@ if HAS_UNIVERSE:
             discovery = read_datafile("tasks.json")
 
             with mock.patch.dict(
-                    "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe}
-                ):
+                "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe}
+            ):
                 tasks = build_from_document(
                     discovery,
                     credentials=credentials,
                     client_options=google.api_core.client_options.ClientOptions(
-                    api_endpoint=fake_api_endpoint
-                ),
+                        api_endpoint=fake_api_endpoint
+                    ),
                 )
 
             assert tasks._baseUrl == fake_api_endpoint
@@ -2650,8 +2653,8 @@ if HAS_UNIVERSE:
             discovery = read_datafile("tasks.json")
 
             with mock.patch.dict(
-                    "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": another_fake_universe}
-                ):
+                "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": another_fake_universe}
+            ):
                 tasks = build_from_document(
                     discovery,
                     credentials=credentials,
@@ -2661,6 +2664,7 @@ if HAS_UNIVERSE:
                 )
 
             assert tasks._universe_domain == fake_universe
+
 
 if __name__ == "__main__":
     unittest.main()
