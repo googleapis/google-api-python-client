@@ -448,6 +448,11 @@ def _retrieve_discovery_doc(
         cache.set(url, content)
     return content
 
+def _check_api_core_compatible_with_credentials_universe(credentials):
+    if not HAS_UNIVERSE:
+        credentials_universe = getattr(credentials, "universe_domain", None)
+        if credentials_universe and credentials_universe != DEFAULT_UNIVERSE:
+            raise APICoreVersionError
 
 @positional(1)
 def build_from_document(
@@ -607,10 +612,8 @@ def build_from_document(
                     quota_project_id=client_options.quota_project_id,
                 )
 
-            if not HAS_UNIVERSE:
-                credentials_universe = getattr(credentials, "universe_domain", None)
-                if credentials_universe and credentials_universe != DEFAULT_UNIVERSE:
-                    raise APICoreVersionError
+            # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
+            _check_api_core_compatible_with_credentials_universe(credentials)
 
             # The credentials need to be scoped.
             # If the user provided scopes via client_options don't override them
@@ -701,6 +704,10 @@ def build_from_document(
                         f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
                     )
                 base = mtls_endpoint
+    else:
+        # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
+        http_credentials = getattr(http, "credentials", None)
+        _check_api_core_compatible_with_credentials_universe(http_credentials)
 
     if model is None:
         features = service.get("features", [])
