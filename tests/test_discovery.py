@@ -71,6 +71,7 @@ from googleapiclient.discovery import (
     V1_DISCOVERY_URI,
     V2_DISCOVERY_URI,
     ResourceMethodParameters,
+    APICoreVersionError,
     _fix_up_media_path_base_url,
     _fix_up_media_upload,
     _fix_up_method_description,
@@ -2501,160 +2502,11 @@ class Universe(unittest.TestCase):
             # Calling service._validate_credentials() again returns service.credentials_validated.
             assert service._validate_credentials()
 
-    def test_validate_credentials_before_api_request_success(self):
-        fake_universe = "foo.com"
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        credentials.universe_domain = fake_universe
-        discovery = read_datafile("tasks.json")
-        tasks = build_from_document(
-            discovery,
-            credentials=credentials,
-            client_options=google.api_core.client_options.ClientOptions(
-                universe_domain=fake_universe
-            ),
-        )
-
-        tasklists = tasks.tasklists()
-        request = tasklists.list()
-
-        # Check that credentials are indeed verified before request.
-        assert tasklists._validate_credentials()
-
-    def test_validate_credentials_before_api_request_failure(self):
-        fake_universe = "foo.com"
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        credentials.universe_domain = fake_universe
-        discovery = read_datafile("tasks.json")
-        tasks = build_from_document(
-            discovery,
-            credentials=credentials,
-            client_options=google.api_core.client_options.ClientOptions(
-                universe_domain=universe.DEFAULT_UNIVERSE
-            ),
-        )
-
-        # Check that credentials are verified before request.
-        with self.assertRaises(universe.UniverseMismatchError):
-            request = tasks.tasklists().list()
-
-    def test_validate_credentials_before_another_universe_api_request_failure(self):
-        fake_universe = "foo.com"
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        credentials.universe_domain = fake_universe
-        another_fake_universe = "bar.com"
-        discovery = read_datafile("tasks.json")
-        tasks = build_from_document(
-            discovery,
-            credentials=credentials,
-            client_options=google.api_core.client_options.ClientOptions(
-                universe_domain=another_fake_universe
-            ),
-        )
-
-        # Check that credentials are verified before request.
-        with self.assertRaises(universe.UniverseMismatchError):
-            request = tasks.tasklists().list()
-
-    def test_client_options_with_empty_universe(self):
-        fake_universe = "foo.com"
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        discovery = read_datafile("tasks.json")
-
-        with self.assertRaises(universe.EmptyUniverseError):
-            tasks = build_from_document(
-                discovery,
-                credentials=credentials,
-                client_options=google.api_core.client_options.ClientOptions(
-                    universe_domain=""
-                ),
-            )
-
-    def test_client_options_universe_configured_with_mtls(self):
-        fake_universe = "foo.com"
-        discovery = read_datafile("tasks.json")
-
-        with self.assertRaises(MutualTLSChannelError):
-            with mock.patch.dict(
-                "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": "always"}
-            ):
-                tasks = build_from_document(
-                    discovery,
-                    client_options=google.api_core.client_options.ClientOptions(
-                        universe_domain=fake_universe
-                    ),
-                )
-
-    def test_client_options_universe_configured_with_api_override(self):
-        fake_universe = "foo.com"
-        fake_api_endpoint = "https://www.bar.com/"
-        credentials = mock.Mock(universe_domain=fake_universe)
-        discovery = read_datafile("tasks.json")
-
-        tasks = build_from_document(
-            discovery,
-            credentials=credentials,
-            client_options=google.api_core.client_options.ClientOptions(
-                api_endpoint=fake_api_endpoint, universe_domain=fake_universe
-            ),
-        )
-
-        assert tasks._baseUrl == fake_api_endpoint
-
-    def test_universe_env_var_configured_empty(self):
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        discovery = read_datafile("tasks.json")
-
-        with self.assertRaises(universe.EmptyUniverseError):
-            with mock.patch.dict(
-                "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": ""}
-            ):
-                tasks = build_from_document(
-                    discovery,
-                    credentials=credentials,
-                )
-
-    def test_universe_env_var_configured_with_mtls(self):
-        fake_universe = "foo.com"
-        discovery = read_datafile("tasks.json")
-
-        with self.assertRaises(MutualTLSChannelError):
-            with mock.patch.dict(
-                "os.environ",
-                {
-                    "GOOGLE_API_USE_MTLS_ENDPOINT": "always",
-                    "GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe,
-                },
-            ):
-                tasks = build_from_document(discovery)
-
-    def test_universe_env_var_configured_with_api_override(self):
-        fake_universe = "foo.com"
-        fake_api_endpoint = "https://www.bar.com/"
-        credentials = mock.Mock(universe_domain=fake_universe)
-        discovery = read_datafile("tasks.json")
-
-        with mock.patch.dict(
-            "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe}
-        ):
-            tasks = build_from_document(
-                discovery,
-                credentials=credentials,
-                client_options=google.api_core.client_options.ClientOptions(
-                    api_endpoint=fake_api_endpoint
-                ),
-            )
-
-        assert tasks._baseUrl == fake_api_endpoint
-
-    def test_universe_env_var_configured_with_client_options_universe(self):
-        fake_universe = "foo.com"
-        another_fake_universe = "bar.com"
-        credentials = mock.Mock(universe_domain=fake_universe)
-        discovery = read_datafile("tasks.json")
-
-        with mock.patch.dict(
-            "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": another_fake_universe}
-        ):
+        def test_validate_credentials_before_api_request_success(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = fake_universe
+            discovery = read_datafile("tasks.json")
             tasks = build_from_document(
                 discovery,
                 credentials=credentials,
@@ -2663,8 +2515,183 @@ class Universe(unittest.TestCase):
                 ),
             )
 
-        assert tasks._universe_domain == fake_universe
+            tasklists = tasks.tasklists()
+            request = tasklists.list()
 
+            # Check that credentials are indeed verified before request.
+            assert tasklists._validate_credentials()
+
+        def test_validate_credentials_before_api_request_failure(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = fake_universe
+            discovery = read_datafile("tasks.json")
+            tasks = build_from_document(
+                discovery,
+                credentials=credentials,
+                client_options=google.api_core.client_options.ClientOptions(
+                    universe_domain=universe.DEFAULT_UNIVERSE
+                ),
+            )
+
+            # Check that credentials are verified before request.
+            with self.assertRaises(universe.UniverseMismatchError):
+                request = tasks.tasklists().list()
+
+        def test_validate_credentials_before_another_universe_api_request_failure(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = fake_universe
+            another_fake_universe = "bar.com"
+            discovery = read_datafile("tasks.json")
+            tasks = build_from_document(
+                discovery,
+                credentials=credentials,
+                client_options=google.api_core.client_options.ClientOptions(
+                    universe_domain=another_fake_universe
+                ),
+            )
+
+            # Check that credentials are verified before request.
+            with self.assertRaises(universe.UniverseMismatchError):
+                request = tasks.tasklists().list()
+
+        def test_client_options_with_empty_universe(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            discovery = read_datafile("tasks.json")
+
+            with self.assertRaises(universe.EmptyUniverseError):
+                tasks = build_from_document(
+                    discovery,
+                    credentials=credentials,
+                    client_options=google.api_core.client_options.ClientOptions(
+                        universe_domain=""
+                    ),
+                )
+
+        def test_client_options_universe_configured_with_mtls(self):
+            fake_universe = "foo.com"
+            discovery = read_datafile("tasks.json")
+
+            with self.assertRaises(MutualTLSChannelError):
+                with mock.patch.dict(
+                    "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": "always"}
+                ):
+                    tasks = build_from_document(
+                        discovery,
+                        client_options=google.api_core.client_options.ClientOptions(
+                            universe_domain=fake_universe
+                        ),
+                    )
+
+        def test_client_options_universe_configured_with_api_override(self):
+            fake_universe = "foo.com"
+            fake_api_endpoint = "https://www.bar.com/"
+            credentials = mock.Mock(universe_domain=fake_universe)
+            discovery = read_datafile("tasks.json")
+
+            tasks = build_from_document(
+                discovery,
+                credentials=credentials,
+                client_options=google.api_core.client_options.ClientOptions(
+                    api_endpoint=fake_api_endpoint, universe_domain=fake_universe
+                ),
+            )
+
+            assert tasks._baseUrl == fake_api_endpoint
+
+        def test_universe_env_var_configured_empty(self):
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            discovery = read_datafile("tasks.json")
+
+            with self.assertRaises(universe.EmptyUniverseError):
+                with mock.patch.dict(
+                    "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": ""}
+                ):
+                    tasks = build_from_document(
+                        discovery,
+                        credentials=credentials,
+                    )
+
+        def test_universe_env_var_configured_with_mtls(self):
+            fake_universe = "foo.com"
+            discovery = read_datafile("tasks.json")
+
+            with self.assertRaises(MutualTLSChannelError):
+                with mock.patch.dict(
+                    "os.environ",
+                    {
+                        "GOOGLE_API_USE_MTLS_ENDPOINT": "always",
+                        "GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe,
+                    },
+                ):
+                    tasks = build_from_document(discovery)
+
+        def test_universe_env_var_configured_with_api_override(self):
+            fake_universe = "foo.com"
+            fake_api_endpoint = "https://www.bar.com/"
+            credentials = mock.Mock(universe_domain=fake_universe)
+            discovery = read_datafile("tasks.json")
+
+            with mock.patch.dict(
+                "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": fake_universe}
+            ):
+                tasks = build_from_document(
+                    discovery,
+                    credentials=credentials,
+                    client_options=google.api_core.client_options.ClientOptions(
+                        api_endpoint=fake_api_endpoint
+                    ),
+                )
+
+            assert tasks._baseUrl == fake_api_endpoint
+
+        def test_universe_env_var_configured_with_client_options_universe(self):
+            fake_universe = "foo.com"
+            another_fake_universe = "bar.com"
+            credentials = mock.Mock(universe_domain=fake_universe)
+            discovery = read_datafile("tasks.json")
+
+            with mock.patch.dict(
+                "os.environ", {"GOOGLE_CLOUD_UNIVERSE_DOMAIN": another_fake_universe}
+            ):
+                tasks = build_from_document(
+                    discovery,
+                    credentials=credentials,
+                    client_options=google.api_core.client_options.ClientOptions(
+                        universe_domain=fake_universe
+                    ),
+                )
+
+            assert tasks._universe_domain == fake_universe
+    
+    def test_client_options_universe_with_older_version_of_api_core(self):
+        fake_universe = "foo.com"
+        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+        credentials.universe_domain = fake_universe
+        discovery = read_datafile("tasks.json")
+        with self.assertRaises(APICoreVersionError):
+            tasks = build_from_document(
+                discovery,
+                credentials=credentials,
+                client_options=google.api_core.client_options.ClientOptions(
+                    universe_domain=fake_universe
+                ),
+            )
+
+
+    def test_credentials_universe_with_older_version_of_api_core(self):
+        fake_universe = "foo.com"
+        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+        credentials.universe_domain = fake_universe
+        discovery = read_datafile("tasks.json")
+        with self.assertRaises(APICoreVersionError):
+            tasks = build_from_document(
+                discovery,
+                credentials=credentials,
+            )
+            
 
 if __name__ == "__main__":
     unittest.main()

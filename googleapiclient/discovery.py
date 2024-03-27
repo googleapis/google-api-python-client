@@ -130,6 +130,11 @@ GOOGLE_CLOUD_UNIVERSE_DOMAIN = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
 STACK_QUERY_PARAMETER_DEFAULT_VALUE = {"type": "string", "location": "query"}
 
+class APICoreVersionError(ValueError):
+    def __init__(self):
+        message = "google-api-core >= 2.18.0 is required to use the universe domain feature."
+        super().__init__(message)
+
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(["body"])
 
@@ -559,6 +564,9 @@ def build_from_document(
             client_options.universe_domain, universe_domain_env
         )
         base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
+    else:
+        if client_options.universe_domain:
+            raise APICoreVersionError
 
     audience_for_self_signed_jwt = base
     if client_options.api_endpoint:
@@ -613,7 +621,7 @@ def build_from_document(
         ):
             credentials = credentials.with_always_use_jwt_access(always_use_jwt_access)
             credentials._create_self_signed_jwt(audience_for_self_signed_jwt)
-
+        
         # If credentials are provided, create an authorized http instance;
         # otherwise, skip authentication.
         if credentials:
@@ -687,6 +695,12 @@ def build_from_document(
                         f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
                     )
                 base = mtls_endpoint
+
+    if not HAS_UNIVERSE:
+        credentials = getattr(http, "credentials", None)
+        universe_domain = getattr(credentials, "universe_domain", None)
+        if universe_domain != "googleapis.com":
+                raise APICoreVersionError
 
     if model is None:
         features = service.get("features", [])
