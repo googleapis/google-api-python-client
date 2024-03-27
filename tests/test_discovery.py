@@ -2671,63 +2671,63 @@ class Universe(unittest.TestCase):
                 )
 
             assert tasks._universe_domain == fake_universe
-    
-    def test_client_options_universe_with_older_version_of_api_core(self):
-        fake_universe = "foo.com"
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        credentials.universe_domain = fake_universe
-        discovery = read_datafile("tasks.json")
-        with self.assertRaises(APICoreVersionError):
+    else:
+        def test_client_options_universe_with_older_version_of_api_core(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = fake_universe
+            discovery = read_datafile("tasks.json")
+            with self.assertRaises(APICoreVersionError):
+                tasks = build_from_document(
+                    discovery,
+                    credentials=credentials,
+                    client_options=google.api_core.client_options.ClientOptions(
+                        universe_domain=fake_universe
+                    ),
+                )
+
+
+        def test_credentials_universe_with_older_version_of_api_core(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = fake_universe
+            discovery = read_datafile("tasks.json")
+            with self.assertRaises(APICoreVersionError):
+                tasks = build_from_document(
+                    discovery,
+                    credentials=credentials,
+                )
+        
+        def test_credentials_default_universe_with_older_version_of_api_core(self):
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = "googleapis.com"
+            discovery = read_datafile("tasks.json")
             tasks = build_from_document(
                 discovery,
                 credentials=credentials,
-                client_options=google.api_core.client_options.ClientOptions(
-                    universe_domain=fake_universe
-                ),
             )
-
-
-    def test_credentials_universe_with_older_version_of_api_core(self):
-        fake_universe = "foo.com"
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        credentials.universe_domain = fake_universe
-        discovery = read_datafile("tasks.json")
-        with self.assertRaises(APICoreVersionError):
-            tasks = build_from_document(
-                discovery,
-                credentials=credentials,
-            )
-    
-    def test_credentials_default_universe_with_older_version_of_api_core(self):
-        credentials = mock.Mock(spec=google.auth.credentials.Credentials)
-        credentials.universe_domain = "googleapis.com"
-        discovery = read_datafile("tasks.json")
-        tasks = build_from_document(
-            discovery,
-            credentials=credentials,
-        )
-    
-    def test_http_credentials_universe_with_older_version_of_api_core(self):
-        fake_universe = "foo.com"
-        http = google_auth_httplib2.AuthorizedHttp(
-                credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
-            )
-        discovery = read_datafile("tasks.json")
-        with self.assertRaises(APICoreVersionError):
+        
+        def test_http_credentials_universe_with_older_version_of_api_core(self):
+            fake_universe = "foo.com"
+            http = google_auth_httplib2.AuthorizedHttp(
+                    credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
+                )
+            discovery = read_datafile("tasks.json")
+            with self.assertRaises(APICoreVersionError):
+                tasks = build_from_document(
+                    discovery,
+                    http=http,
+                )
+        
+        def test_http_credentials_default_universe_with_older_version_of_api_core(self):
+            http = google_auth_httplib2.AuthorizedHttp(
+                    credentials=mock.Mock(universe_domain="googleapis.com"), http=build_http()
+                )
+            discovery = read_datafile("tasks.json")
             tasks = build_from_document(
                 discovery,
                 http=http,
             )
-    
-    def test_http_credentials_default_universe_with_older_version_of_api_core(self):
-        http = google_auth_httplib2.AuthorizedHttp(
-                credentials=mock.Mock(universe_domain="googleapis.com"), http=build_http()
-            )
-        discovery = read_datafile("tasks.json")
-        tasks = build_from_document(
-            discovery,
-            http=http,
-        )
                
 
 if __name__ == "__main__":
