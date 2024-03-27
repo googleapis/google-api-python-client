@@ -124,7 +124,7 @@ _PAGE_TOKEN_NAMES = ("pageToken", "nextPageToken")
 GOOGLE_API_USE_CLIENT_CERTIFICATE = "GOOGLE_API_USE_CLIENT_CERTIFICATE"
 GOOGLE_API_USE_MTLS_ENDPOINT = "GOOGLE_API_USE_MTLS_ENDPOINT"
 GOOGLE_CLOUD_UNIVERSE_DOMAIN = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
-
+DEFAULT_UNIVERSE = "googleapis.com"
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
@@ -565,7 +565,8 @@ def build_from_document(
         )
         base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
     else:
-        if client_options.universe_domain:
+        client_universe = getattr(client_options, "universe_domain", None)
+        if client_universe:
             raise APICoreVersionError
 
     audience_for_self_signed_jwt = base
@@ -605,6 +606,11 @@ def build_from_document(
                     scopes=client_options.scopes,
                     quota_project_id=client_options.quota_project_id,
                 )
+
+            if not HAS_UNIVERSE:
+                credentials_universe = getattr(credentials, "universe_domain", None)
+                if credentials_universe and credentials_universe != DEFAULT_UNIVERSE:
+                    raise APICoreVersionError
 
             # The credentials need to be scoped.
             # If the user provided scopes via client_options don't override them
@@ -695,12 +701,6 @@ def build_from_document(
                         f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
                     )
                 base = mtls_endpoint
-
-    if not HAS_UNIVERSE:
-        credentials = getattr(http, "credentials", None)
-        universe_domain = getattr(credentials, "universe_domain", None)
-        if universe_domain != "googleapis.com":
-                raise APICoreVersionError
 
     if model is None:
         features = service.get("features", [])

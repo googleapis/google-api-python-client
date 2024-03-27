@@ -542,7 +542,7 @@ class DiscoveryErrors(unittest.TestCase):
 
 class DiscoveryFromDocument(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
-
+    MOCK_CREDENTIALS.universe_domain = None
     def test_can_build_from_local_document(self):
         discovery = read_datafile("plus.json")
         plus = build_from_document(
@@ -694,6 +694,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.default_credentials") as default:
+            default.return_value.universe_domain = None
             plus = build_from_document(
                 discovery,
                 client_options={"scopes": ["1", "2"]},
@@ -705,6 +706,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.default_credentials") as default:
+            default.return_value.universe_domain = None
             plus = build_from_document(
                 discovery,
                 client_options=google.api_core.client_options.ClientOptions(
@@ -718,6 +720,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.credentials_from_file") as default:
+            default.return_value.universe_domain = None
             plus = build_from_document(
                 discovery,
                 client_options=google.api_core.client_options.ClientOptions(
@@ -773,6 +776,7 @@ MTLS_ENDPOINT = "https://www.mtls.googleapis.com/plus/v1/"
 
 class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
+    MOCK_CREDENTIALS.universe_domain = None
     ADC_CERT_PATH = "adc_cert_path"
     ADC_KEY_PATH = "adc_key_path"
     ADC_PASSPHRASE = "adc_passphrase"
@@ -1529,6 +1533,7 @@ class Discovery(unittest.TestCase):
     @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
     def test_oauth2client_credentials(self):
         credentials = mock.Mock(spec=GoogleCredentials)
+        credentials.universe_domain = None
         credentials.create_scoped_required.return_value = False
 
         discovery = read_datafile("plus.json")
@@ -1537,6 +1542,7 @@ class Discovery(unittest.TestCase):
 
     def test_google_auth_credentials(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+        credentials.universe_domain = None
         discovery = read_datafile("plus.json")
         service = build_from_document(discovery, credentials=credentials)
 
