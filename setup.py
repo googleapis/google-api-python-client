@@ -38,7 +38,7 @@ install_requires = [
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
     "google-auth>=1.32.0,<3.0.0.dev0,!=2.24.0,!=2.25.0",
-    "google-auth-httplib2>=0.2.0",
+    "google-auth-httplib2>=0.2.0, <1.0.0",
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
