@@ -1062,10 +1062,14 @@ class HttpRequest(object):
             "Content-Length": str(chunk_end - self.resumable_progress + 1),
         }
 
-        # An empty file results in chunk_end = -1 and size = 0
-        # sending "bytes 0--1/0" results in an invalid request
-        # Only add header "Content-Range" if chunk_end != -1
+        if chunk_end - self.resumable_progress + 1 == 0 and chunk_end != -1:
+            # This is the last chunk, it's empty but the file is not empty.
+            # Send a Content-Range that ends this file.
+            headers["Content-Range"] = "bytes */%s" % (size,)
         if chunk_end != -1:
+            # An empty file results in chunk_end = -1 and size = 0
+            # sending "bytes 0--1/0" results in an invalid request
+            # Only add header "Content-Range" if chunk_end != -1
             headers["Content-Range"] = "bytes %d-%d/%s" % (
                 self.resumable_progress,
                 chunk_end,
