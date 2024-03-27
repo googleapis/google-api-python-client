@@ -104,9 +104,11 @@ def unit(session, oauth2client):
     session.install("setuptools", "wheel")
     session.run("python3", "setup.py", "bdist_wheel")
     session.install(os.path.join("dist", os.listdir("dist").pop()))
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    constraints_path = str(f"{root_dir}/testing/constraints-{session.python}.txt")
+    session.install("-r", constraints_path)
 
     # Run tests from a different directory to test the package artifacts
-    root_dir = os.path.dirname(os.path.realpath(__file__))
     temp_dir = session.create_tmp()
     session.chdir(temp_dir)
     shutil.copytree(os.path.join(root_dir, "tests"), "tests")

@@ -33,12 +33,12 @@ from setuptools import setup
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
-    "httplib2>=0.15.0,<1.dev0",
+    "httplib2>=0.19.0,<1.dev0",
     # NOTE: Maintainers, please do not require google-auth>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-auth>=1.19.0,<3.0.0.dev0",
-    "google-auth-httplib2>=0.1.0",
+    "google-auth>=1.32.0,<3.0.0.dev0,!=2.24.0,!=2.25.0",
+    "google-auth-httplib2>=0.2.0, <1.0.0",
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
