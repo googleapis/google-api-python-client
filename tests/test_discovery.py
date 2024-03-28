@@ -70,8 +70,8 @@ from googleapiclient.discovery import (
     STACK_QUERY_PARAMETERS,
     V1_DISCOVERY_URI,
     V2_DISCOVERY_URI,
-    ResourceMethodParameters,
     APICoreVersionError,
+    ResourceMethodParameters,
     _fix_up_media_path_base_url,
     _fix_up_media_upload,
     _fix_up_method_description,
@@ -107,9 +107,11 @@ from googleapiclient.schema import Schemas
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
+
 def _reset_universe_domain(credentials, universe_domain=None):
     if hasattr(credentials, "universe_domain"):
         credentials.universe_domain = universe_domain
+
 
 def assertUrisEqual(testcase, expected, actual):
     """Test that URIs are the same, up to reordering of query parameters."""
@@ -546,7 +548,7 @@ class DiscoveryErrors(unittest.TestCase):
 class DiscoveryFromDocument(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
     _reset_universe_domain(MOCK_CREDENTIALS)
-    
+
     def test_can_build_from_local_document(self):
         discovery = read_datafile("plus.json")
         plus = build_from_document(
@@ -2351,9 +2353,9 @@ class MediaGet(unittest.TestCase):
         self.assertEqual(b"standing in for media", response)
 
 
-
 class Universe(unittest.TestCase):
     if HAS_UNIVERSE:
+
         def test_validate_credentials_with_no_client_options(self):
             http = build_http()
             discovery = read_datafile("zoo.json")
@@ -2675,9 +2677,10 @@ class Universe(unittest.TestCase):
                 )
 
             assert tasks._universe_domain == fake_universe
-    
+
     else:
         if hasattr(google.api_core.client_options.ClientOptions, "universe_domain"):
+
             def test_client_options_universe_with_older_version_of_api_core(self):
                 fake_universe = "foo.com"
                 credentials = mock.Mock(spec=google.auth.credentials.Credentials)
@@ -2702,7 +2705,7 @@ class Universe(unittest.TestCase):
                     discovery,
                     credentials=credentials,
                 )
-        
+
         def test_credentials_default_universe_with_older_version_of_api_core(self):
             credentials = mock.Mock(spec=google.auth.credentials.Credentials)
             credentials.universe_domain = "googleapis.com"
@@ -2711,29 +2714,30 @@ class Universe(unittest.TestCase):
                 discovery,
                 credentials=credentials,
             )
-        
+
         def test_http_credentials_universe_with_older_version_of_api_core(self):
             fake_universe = "foo.com"
             http = google_auth_httplib2.AuthorizedHttp(
-                    credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
-                )
+                credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
+            )
             discovery = read_datafile("tasks.json")
             with self.assertRaises(APICoreVersionError):
                 tasks = build_from_document(
                     discovery,
                     http=http,
                 )
-        
+
         def test_http_credentials_default_universe_with_older_version_of_api_core(self):
             http = google_auth_httplib2.AuthorizedHttp(
-                    credentials=mock.Mock(universe_domain="googleapis.com"), http=build_http()
-                )
+                credentials=mock.Mock(universe_domain="googleapis.com"),
+                http=build_http(),
+            )
             discovery = read_datafile("tasks.json")
             tasks = build_from_document(
                 discovery,
                 http=http,
             )
-               
+
 
 if __name__ == "__main__":
     unittest.main()

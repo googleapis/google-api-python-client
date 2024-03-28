@@ -130,10 +130,14 @@ DEFAULT_UNIVERSE = "googleapis.com"
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
 STACK_QUERY_PARAMETER_DEFAULT_VALUE = {"type": "string", "location": "query"}
 
+
 class APICoreVersionError(ValueError):
     def __init__(self):
-        message = "google-api-core >= 2.18.0 is required to use the universe domain feature."
+        message = (
+            "google-api-core >= 2.18.0 is required to use the universe domain feature."
+        )
         super().__init__(message)
+
 
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(["body"])
@@ -448,11 +452,13 @@ def _retrieve_discovery_doc(
         cache.set(url, content)
     return content
 
+
 def _check_api_core_compatible_with_credentials_universe(credentials):
     if not HAS_UNIVERSE:
         credentials_universe = getattr(credentials, "universe_domain", None)
         if credentials_universe and credentials_universe != DEFAULT_UNIVERSE:
             raise APICoreVersionError
+
 
 @positional(1)
 def build_from_document(
@@ -630,7 +636,7 @@ def build_from_document(
         ):
             credentials = credentials.with_always_use_jwt_access(always_use_jwt_access)
             credentials._create_self_signed_jwt(audience_for_self_signed_jwt)
-        
+
         # If credentials are provided, create an authorized http instance;
         # otherwise, skip authentication.
         if credentials:
