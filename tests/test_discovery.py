@@ -70,6 +70,7 @@ from googleapiclient.discovery import (
     STACK_QUERY_PARAMETERS,
     V1_DISCOVERY_URI,
     V2_DISCOVERY_URI,
+    APICoreVersionError,
     ResourceMethodParameters,
     _fix_up_media_path_base_url,
     _fix_up_media_upload,
@@ -105,6 +106,11 @@ from googleapiclient.model import JsonModel
 from googleapiclient.schema import Schemas
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
+
+def _reset_universe_domain(credentials, universe_domain=None):
+    if hasattr(credentials, "universe_domain"):
+        credentials.universe_domain = universe_domain
 
 
 def assertUrisEqual(testcase, expected, actual):
@@ -541,6 +547,7 @@ class DiscoveryErrors(unittest.TestCase):
 
 class DiscoveryFromDocument(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
+    _reset_universe_domain(MOCK_CREDENTIALS)
 
     def test_can_build_from_local_document(self):
         discovery = read_datafile("plus.json")
@@ -693,6 +700,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.default_credentials") as default:
+            _reset_universe_domain(default.return_value)
             plus = build_from_document(
                 discovery,
                 client_options={"scopes": ["1", "2"]},
@@ -704,6 +712,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.default_credentials") as default:
+            _reset_universe_domain(default.return_value)
             plus = build_from_document(
                 discovery,
                 client_options=google.api_core.client_options.ClientOptions(
@@ -717,6 +726,7 @@ class DiscoveryFromDocument(unittest.TestCase):
         discovery = read_datafile("plus.json")
 
         with mock.patch("googleapiclient._auth.credentials_from_file") as default:
+            _reset_universe_domain(default.return_value)
             plus = build_from_document(
                 discovery,
                 client_options=google.api_core.client_options.ClientOptions(
@@ -772,6 +782,7 @@ MTLS_ENDPOINT = "https://www.mtls.googleapis.com/plus/v1/"
 
 class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
+    _reset_universe_domain(MOCK_CREDENTIALS)
     ADC_CERT_PATH = "adc_cert_path"
     ADC_KEY_PATH = "adc_key_path"
     ADC_PASSPHRASE = "adc_passphrase"
@@ -1528,6 +1539,7 @@ class Discovery(unittest.TestCase):
     @unittest.skipIf(not HAS_OAUTH2CLIENT, "oauth2client unavailable.")
     def test_oauth2client_credentials(self):
         credentials = mock.Mock(spec=GoogleCredentials)
+        _reset_universe_domain(credentials)
         credentials.create_scoped_required.return_value = False
 
         discovery = read_datafile("plus.json")
@@ -1536,6 +1548,7 @@ class Discovery(unittest.TestCase):
 
     def test_google_auth_credentials(self):
         credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+        _reset_universe_domain(credentials)
         discovery = read_datafile("plus.json")
         service = build_from_document(discovery, credentials=credentials)
 
@@ -2340,9 +2353,9 @@ class MediaGet(unittest.TestCase):
         self.assertEqual(b"standing in for media", response)
 
 
-if HAS_UNIVERSE:
+class Universe(unittest.TestCase):
+    if HAS_UNIVERSE:
 
-    class Universe(unittest.TestCase):
         def test_validate_credentials_with_no_client_options(self):
             http = build_http()
             discovery = read_datafile("zoo.json")
@@ -2664,6 +2677,66 @@ if HAS_UNIVERSE:
                 )
 
             assert tasks._universe_domain == fake_universe
+
+    else:
+        if hasattr(google.api_core.client_options.ClientOptions, "universe_domain"):
+
+            def test_client_options_universe_with_older_version_of_api_core(self):
+                fake_universe = "foo.com"
+                credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+                credentials.universe_domain = fake_universe
+                discovery = read_datafile("tasks.json")
+                with self.assertRaises(APICoreVersionError):
+                    tasks = build_from_document(
+                        discovery,
+                        credentials=credentials,
+                        client_options=google.api_core.client_options.ClientOptions(
+                            universe_domain=fake_universe
+                        ),
+                    )
+
+        def test_credentials_universe_with_older_version_of_api_core(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = fake_universe
+            discovery = read_datafile("tasks.json")
+            with self.assertRaises(APICoreVersionError):
+                tasks = build_from_document(
+                    discovery,
+                    credentials=credentials,
+                )
+
+        def test_credentials_default_universe_with_older_version_of_api_core(self):
+            credentials = mock.Mock(spec=google.auth.credentials.Credentials)
+            credentials.universe_domain = "googleapis.com"
+            discovery = read_datafile("tasks.json")
+            tasks = build_from_document(
+                discovery,
+                credentials=credentials,
+            )
+
+        def test_http_credentials_universe_with_older_version_of_api_core(self):
+            fake_universe = "foo.com"
+            http = google_auth_httplib2.AuthorizedHttp(
+                credentials=mock.Mock(universe_domain=fake_universe), http=build_http()
+            )
+            discovery = read_datafile("tasks.json")
+            with self.assertRaises(APICoreVersionError):
+                tasks = build_from_document(
+                    discovery,
+                    http=http,
+                )
+
+        def test_http_credentials_default_universe_with_older_version_of_api_core(self):
+            http = google_auth_httplib2.AuthorizedHttp(
+                credentials=mock.Mock(universe_domain="googleapis.com"),
+                http=build_http(),
+            )
+            discovery = read_datafile("tasks.json")
+            tasks = build_from_document(
+                discovery,
+                http=http,
+            )
 
 
 if __name__ == "__main__":

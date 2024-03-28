@@ -124,11 +124,20 @@ _PAGE_TOKEN_NAMES = ("pageToken", "nextPageToken")
 GOOGLE_API_USE_CLIENT_CERTIFICATE = "GOOGLE_API_USE_CLIENT_CERTIFICATE"
 GOOGLE_API_USE_MTLS_ENDPOINT = "GOOGLE_API_USE_MTLS_ENDPOINT"
 GOOGLE_CLOUD_UNIVERSE_DOMAIN = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
-
+DEFAULT_UNIVERSE = "googleapis.com"
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
 STACK_QUERY_PARAMETER_DEFAULT_VALUE = {"type": "string", "location": "query"}
+
+
+class APICoreVersionError(ValueError):
+    def __init__(self):
+        message = (
+            "google-api-core >= 2.18.0 is required to use the universe domain feature."
+        )
+        super().__init__(message)
+
 
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(["body"])
@@ -444,6 +453,13 @@ def _retrieve_discovery_doc(
     return content
 
 
+def _check_api_core_compatible_with_credentials_universe(credentials):
+    if not HAS_UNIVERSE:
+        credentials_universe = getattr(credentials, "universe_domain", None)
+        if credentials_universe and credentials_universe != DEFAULT_UNIVERSE:
+            raise APICoreVersionError
+
+
 @positional(1)
 def build_from_document(
     service,
@@ -559,6 +575,10 @@ def build_from_document(
             client_options.universe_domain, universe_domain_env
         )
         base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
+    else:
+        client_universe = getattr(client_options, "universe_domain", None)
+        if client_universe:
+            raise APICoreVersionError
 
     audience_for_self_signed_jwt = base
     if client_options.api_endpoint:
@@ -597,6 +617,9 @@ def build_from_document(
                     scopes=client_options.scopes,
                     quota_project_id=client_options.quota_project_id,
                 )
+
+            # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
+            _check_api_core_compatible_with_credentials_universe(credentials)
 
             # The credentials need to be scoped.
             # If the user provided scopes via client_options don't override them
@@ -687,6 +710,10 @@ def build_from_document(
                         f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
                     )
                 base = mtls_endpoint
+    else:
+        # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
+        http_credentials = getattr(http, "credentials", None)
+        _check_api_core_compatible_with_credentials_universe(http_credentials)
 
     if model is None:
         features = service.get("features", [])
