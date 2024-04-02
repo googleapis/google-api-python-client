@@ -280,6 +280,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudchannel_v1.html)
 
 
+## cloudcontrolspartner
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudcontrolspartner_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudcontrolspartner_v1beta.html)
+
+
 ## clouddeploy
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/clouddeploy_v1.html)
 
@@ -1080,6 +1085,10 @@
 
 ## smartdevicemanagement
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/smartdevicemanagement_v1.html)
+
+
+## solar
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/solar_v1.html)
 
 
 ## sourcerepo
