@@ -79,7 +79,7 @@ dependencies.
 
 ### Mac/Linux
 
-```
+```bash
 pip3 install virtualenv
 virtualenv <your-env>
 source <your-env>/bin/activate
@@ -88,7 +88,7 @@ source <your-env>/bin/activate
 
 ### Windows
 
-```
+```batch
 pip install virtualenv
 virtualenv <your-env>
 <your-env>\Scripts\activate
