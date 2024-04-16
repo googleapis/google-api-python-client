@@ -18,6 +18,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/acmedns_v1.html)
 
 
+## addressvalidation
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/addressvalidation_v1.html)
+
+
 ## adexchangebuyer2
 * [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/adexchangebuyer2_v2beta1.html)
 
@@ -362,6 +366,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.html)
 
 
+## config
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/config_v1.html)
+
+
 ## connectors
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/connectors_v2.html)
@@ -484,6 +492,7 @@
 
 
 ## discoveryengine
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/discoveryengine_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/discoveryengine_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/discoveryengine_v1beta.html)
 
