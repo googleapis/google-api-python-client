@@ -718,6 +718,7 @@
 
 
 ## integrations
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1alpha.html)
 
 
