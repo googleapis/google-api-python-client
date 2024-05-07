@@ -3686,7 +3686,7 @@
 "type": "string"
 },
 "parent": {
-"description": "Required. The resource name of the Location to create FeatureGroups. Format: `projects/{project}/locations/{location}'`",
+"description": "Required. The resource name of the Location to create FeatureGroups. Format: `projects/{project}/locations/{location}`",
 "location": "path",
 "pattern": "^projects/[^/]+/locations/[^/]+$",
 "required": true,
@@ -16204,7 +16204,7 @@
 }
 }
 },
-"revision": "20240424",
+"revision": "20240501",
 "rootUrl": "https://aiplatform.googleapis.com/",
 "schemas": {
 "CloudAiLargeModelsVisionEmbedVideoResponse": {
@@ -16262,7 +16262,8 @@
 "CHILD_TEXT",
 "DANGEROUS_CONTENT",
 "RECITATION_TEXT",
-"CELEBRITY_IMG"
+"CELEBRITY_IMG",
+"WATERMARK_IMG_REMOVAL"
 ],
 "enumDescriptions": [
 "",
@@ -16299,7 +16300,8 @@
 "",
 "Text category from SafetyCat v3",
 "",
-""
+"",
+"Error message when user attempts to remove watermark from editing image"
 ],
 "type": "string"
 },
@@ -16614,9 +16616,9 @@
 "The maximum number of tokens as specified in the request was reached.",
 "The token generation was stopped as the response was flagged for safety reasons. NOTE: When streaming the Candidate.content will be empty if content filters blocked the output.",
 "The token generation was stopped as the response was flagged for unauthorized citations.",
-"All other reasons that stopped the token generation.",
+"All other reasons that stopped the token generation (currently only language filter).",
 "The token generation was stopped as the response was flagged for the terms which are included from the terminology blocklist.",
-"The token generation was stopped as the response was flagged for the prohibited contents.",
+"The token generation was stopped as the response was flagged for the prohibited contents (currently only CSAM).",
 "The token generation was stopped as the response was flagged for Sensitive Personally Identifiable Information (SPII) contents."
 ],
 "type": "string"
@@ -16961,9 +16963,9 @@
 "enumDescriptions": [
 "Unspecified blocked reason.",
 "Candidates blocked due to safety.",
-"Candidates blocked due to other reason.",
+"Candidates blocked due to other reason (currently only language filter).",
 "Candidates blocked due to the terms which are included from the terminology blocklist.",
-"Candidates blocked due to prohibited content."
+"Candidates blocked due to prohibited content (currently only CSAM)."
 ],
 "type": "string"
 },
@@ -22662,6 +22664,22 @@
 "description": "Crowding is a constraint on a neighbor list produced by nearest neighbor search requiring that no more than some value k' of the k neighbors returned have the same value of crowding_attribute. It's used for improving result diversity. This field is the maximum number of matches with the same crowding tag.",
 "format": "int32",
 "type": "integer"
+},
+"rrf": {
+"$ref": "GoogleCloudAiplatformV1FindNeighborsRequestQueryRRF",
+"description": "Optional. Represents RRF algorithm that combines search results."
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1FindNeighborsRequestQueryRRF": {
+"description": "Parameters for RRF algorithm that combines search results.",
+"id": "GoogleCloudAiplatformV1FindNeighborsRequestQueryRRF",
+"properties": {
+"alpha": {
+"description": "Required. Users can provide an alpha value to give more weight to dense vs sparse results. For example, if the alpha is 0, we only return sparse and if the alpha is 1, we only return dense.",
+"format": "float",
+"type": "number"
 }
 },
 "type": "object"
@@ -22707,7 +22725,12 @@
 "description": "The datapoint of the neighbor. Note that full datapoints are returned only when \"return_full_datapoint\" is set to true. Otherwise, only the \"datapoint_id\" and \"crowding_tag\" fields are populated."
 },
 "distance": {
-"description": "The distance between the neighbor and the query vector.",
+"description": "The distance between the neighbor and the dense embedding query.",
+"format": "double",
+"type": "number"
+},
+"sparseDistance": {
+"description": "The distance between the neighbor and the query sparse_embedding.",
 "format": "double",
 "type": "number"
 }
@@ -23033,6 +23056,10 @@
 "description": "Metadata returned to client when grounding is enabled.",
 "id": "GoogleCloudAiplatformV1GroundingMetadata",
 "properties": {
+"searchEntryPoint": {
+"$ref": "GoogleCloudAiplatformV1SearchEntryPoint",
+"description": "Optional. Google search entry for the following-up web searches."
+},
 "webSearchQueries": {
 "description": "Optional. Web search queries for the following-up web search.",
 "items": {
@@ -23480,7 +23507,7 @@
 "type": "string"
 },
 "featureVector": {
-"description": "Required. Feature embedding vector. An array of numbers with the length of [NearestNeighborSearchConfig.dimensions].",
+"description": "Required. Feature embedding vector for dense index. An array of numbers with the length of [NearestNeighborSearchConfig.dimensions].",
 "items": {
 "format": "float",
 "type": "number"
@@ -23500,6 +23527,10 @@
 "$ref": "GoogleCloudAiplatformV1IndexDatapointRestriction"
 },
 "type": "array"
+},
+"sparseEmbedding": {
+"$ref": "GoogleCloudAiplatformV1IndexDatapointSparseEmbedding",
+"description": "Optional. Feature embedding vector for sparse index."
 }
 },
 "type": "object"
@@ -23584,6 +23615,29 @@
 "namespace": {
 "description": "The namespace of this restriction. e.g.: color.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1IndexDatapointSparseEmbedding": {
+"description": "Feature embedding vector for sparse index. An array of numbers whose values are located in the specified dimensions.",
+"id": "GoogleCloudAiplatformV1IndexDatapointSparseEmbedding",
+"properties": {
+"dimensions": {
+"description": "Optional. The list of indexes for the embedding values of the sparse vector.",
+"items": {
+"format": "int64",
+"type": "string"
+},
+"type": "array"
+},
+"values": {
+"description": "Optional. The list of embedding values of the sparse vector.",
+"items": {
+"format": "float",
+"type": "number"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -23700,8 +23754,14 @@
 "readOnly": true,
 "type": "integer"
 },
+"sparseVectorsCount": {
+"description": "Output only. The number of sparse vectors in the Index.",
+"format": "int64",
+"readOnly": true,
+"type": "string"
+},
 "vectorsCount": {
-"description": "Output only. The number of vectors in the Index.",
+"description": "Output only. The number of dense vectors in the Index.",
 "format": "int64",
 "readOnly": true,
 "type": "string"
@@ -24720,7 +24780,8 @@
 "NVIDIA_H100_80GB",
 "TPU_V2",
 "TPU_V3",
-"TPU_V4_POD"
+"TPU_V4_POD",
+"TPU_V5_LITEPOD"
 ],
 "enumDescriptions": [
 "Unspecified accelerator type, which means no accelerator.",
@@ -24735,7 +24796,8 @@
 "Nvidia H100 80Gb GPU.",
 "TPU v2.",
 "TPU v3.",
-"TPU v4."
+"TPU v4.",
+"TPU v5."
 ],
 "type": "string"
 },
@@ -26840,7 +26902,10 @@
 "OP_IN_DATAPOINT",
 "MULTIPLE_VALUES",
 "INVALID_NUMERIC_VALUE",
-"INVALID_ENCODING"
+"INVALID_ENCODING",
+"INVALID_SPARSE_DIMENSIONS",
+"INVALID_TOKEN_VALUE",
+"INVALID_SPARSE_EMBEDDING"
 ],
 "enumDescriptions": [
 "Default, shall not be used.",
@@ -26849,14 +26914,17 @@
 "Invalid csv format.",
 "Invalid avro format.",
 "The embedding id is not valid.",
-"The size of the embedding vectors does not match with the specified dimension.",
+"The size of the dense embedding vectors does not match with the specified dimension.",
 "The `namespace` field is missing.",
 "Generic catch-all error. Only used for validation failure where the root cause cannot be easily retrieved programmatically.",
 "There are multiple restricts with the same `namespace` value.",
 "Numeric restrict has operator specified in datapoint.",
 "Numeric restrict has multiple values specified.",
 "Numeric restrict has invalid numeric value specified.",
-"File is not in UTF_8 format."
+"File is not in UTF_8 format.",
+"Error parsing sparse dimensions field.",
+"Token restrict value is invalid.",
+"Invalid sparse embedding."
 ],
 "type": "string"
 },
@@ -27219,8 +27287,7 @@
 "description": "Optional. Immutable. The specification of a single machine for the template."
 },
 "name": {
-"description": "Output only. The resource name of the NotebookRuntimeTemplate.",
-"readOnly": true,
+"description": "The resource name of the NotebookRuntimeTemplate.",
 "type": "string"
 },
 "networkSpec": {
@@ -28260,6 +28327,10 @@
 "$ref": "GoogleCloudAiplatformV1PublisherModelCallToActionDeployGke",
 "description": "Optional. Deploy PublisherModel to Google Kubernetes Engine."
 },
+"fineTune": {
+"$ref": "GoogleCloudAiplatformV1PublisherModelCallToActionRegionalResourceReferences",
+"description": "Optional. Fine tune the PublisherModel with the third-party model tuning UI."
+},
 "openEvaluationPipeline": {
 "$ref": "GoogleCloudAiplatformV1PublisherModelCallToActionRegionalResourceReferences",
 "description": "Optional. Open evaluation pipeline of the PublisherModel."
@@ -28322,6 +28393,10 @@
 "dedicatedResources": {
 "$ref": "GoogleCloudAiplatformV1DedicatedResources",
 "description": "A description of resources that are dedicated to the DeployedModel, and that need a higher degree of manual configuration."
+},
+"deployTaskName": {
+"description": "Optional. The name of the deploy task (e.g., \"text to image generation\").",
+"type": "string"
 },
 "largeModelReference": {
 "$ref": "GoogleCloudAiplatformV1LargeModelReference",
@@ -31569,6 +31644,10 @@ false
 },
 "type": "array"
 },
+"systemInstructionGcsUri": {
+"description": "The Google Cloud Storage URI that stores the system instruction, starting with gs://.",
+"type": "string"
+},
 "temperature": {
 "description": "Temperature value used for sampling set when the dataset was saved. This value is used to tune the degree of randomness.",
 "format": "float",
@@ -33413,6 +33492,22 @@ false
 },
 "type": "object"
 },
+"GoogleCloudAiplatformV1SearchEntryPoint": {
+"description": "Google search entry point.",
+"id": "GoogleCloudAiplatformV1SearchEntryPoint",
+"properties": {
+"renderedContent": {
+"description": "Optional. Web content snippet that can be embedded in a web page or an app webview.",
+"type": "string"
+},
+"sdkBlob": {
+"description": "Optional. Base64 encoded JSON representing array of tuple.",
+"format": "byte",
+"type": "string"
+}
+},
+"type": "object"
+},
 "GoogleCloudAiplatformV1SearchFeaturesResponse": {
 "description": "Response message for FeaturestoreService.SearchFeatures.",
 "id": "GoogleCloudAiplatformV1SearchFeaturesResponse",
@@ -34390,12 +34485,12 @@ false
 "type": "string"
 },
 "epochCount": {
-"description": "Optional. Number of training epoches for this tuning job.",
+"description": "Optional. Number of complete passes the model makes over the entire training dataset during training.",
 "format": "int64",
 "type": "string"
 },
 "learningRateMultiplier": {
-"description": "Optional. Learning rate multiplier for tuning.",
+"description": "Optional. Multiplier for adjusting the default learning rate.",
 "format": "double",
 "type": "number"
 }
@@ -34547,11 +34642,11 @@ false
 "description": "Optional. Hyperparameters for SFT."
 },
 "trainingDatasetUri": {
-"description": "Required. Cloud Storage path to file containing training dataset for tuning.",
+"description": "Required. Cloud Storage path to file containing training dataset for tuning. The dataset must be formatted as a JSONL file.",
 "type": "string"
 },
 "validationDatasetUri": {
-"description": "Optional. Cloud Storage path to file containing validation dataset for tuning.",
+"description": "Optional. Cloud Storage path to file containing validation dataset for tuning. The dataset must be formatted as a JSONL file.",
 "type": "string"
 }
 },
@@ -35442,7 +35537,7 @@ false
 "id": "GoogleCloudAiplatformV1TuningJob",
 "properties": {
 "baseModel": {
-"description": "Model name for tuning, e.g., \"gemini-1.0-pro-002\".",
+"description": "The base model that is being tuned, e.g., \"gemini-1.0-pro-002\".",
 "type": "string"
 },
 "createTime": {
@@ -36874,7 +36969,14 @@ false
 "GEMINI_V2_TAIL_PATCH_OPEN_BOOKS_QA_UNANSWERABLE",
 "GEMINI_V2_TAIL_PATCH_PMC",
 "GEMINI_V2_TAIL_PATCH_VOXPOPULI",
-"GEMINI_V2_TAIL_PATCH_FLEURS"
+"GEMINI_V2_TAIL_PATCH_FLEURS",
+"GEMINI_V2_SSFS",
+"GEMINI_V2_CODE_TRANSFORM_SYNTHETIC_ERROR_FIX",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_COMMITS",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_PR",
+"GEMINI_V2_SQL_REPAIR_SFT",
+"GEMINI_V2_JSON_MODE_SYS_INSTRUCTION",
+"YT_CONTENT_INSPIRATION"
 ],
 "enumDescriptions": [
 "",
@@ -37224,7 +37326,14 @@ false
 "",
 "Gemini V2 only tail patch.",
 "",
-""
+"",
+"Gemini V2 rev10",
+"",
+"",
+"",
+"",
+"",
+"Youtube Content Inpsiration."
 ],
 "type": "string"
 },
@@ -37339,7 +37448,7 @@ false
 "id": "LanguageLabsAidaTrustRecitationProtoSegmentResult",
 "properties": {
 "attributionDataset": {
-"description": "The dataset the segment came from.",
+"description": "The dataset the segment came from. Datasets change often as model evolves. Treat this field as informational only and avoid depending on it directly.",
 "enum": [
 "DATASET_UNSPECIFIED",
 "WIKIPEDIA",
@@ -37688,7 +37797,14 @@ false
 "GEMINI_V2_TAIL_PATCH_OPEN_BOOKS_QA_UNANSWERABLE",
 "GEMINI_V2_TAIL_PATCH_PMC",
 "GEMINI_V2_TAIL_PATCH_VOXPOPULI",
-"GEMINI_V2_TAIL_PATCH_FLEURS"
+"GEMINI_V2_TAIL_PATCH_FLEURS",
+"GEMINI_V2_SSFS",
+"GEMINI_V2_CODE_TRANSFORM_SYNTHETIC_ERROR_FIX",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_COMMITS",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_PR",
+"GEMINI_V2_SQL_REPAIR_SFT",
+"GEMINI_V2_JSON_MODE_SYS_INSTRUCTION",
+"YT_CONTENT_INSPIRATION"
 ],
 "enumDescriptions": [
 "",
@@ -38038,7 +38154,14 @@ false
 "",
 "Gemini V2 only tail patch.",
 "",
-""
+"",
+"Gemini V2 rev10",
+"",
+"",
+"",
+"",
+"",
+"Youtube Content Inpsiration."
 ],
 "type": "string"
 },
@@ -38047,8 +38170,7 @@ false
 "type": "string"
 },
 "docAttribution": {
-"$ref": "LanguageLabsAidaTrustRecitationProtoDocAttribution",
-"description": "populated when recitation_action == CITE"
+"$ref": "LanguageLabsAidaTrustRecitationProtoDocAttribution"
 },
 "docOccurrences": {
 "description": "number of documents that contained this segment",
@@ -38077,6 +38199,32 @@ false
 "indicate that a Segment should be blocked from being used",
 "for tagging high-frequency code snippets",
 "The recitation was found in prompt and is exempted from overall results"
+],
+"type": "string"
+},
+"sourceCategory": {
+"description": "The category of the source dataset where the segment came from. This is more stable than Dataset.",
+"enum": [
+"SOURCE_CATEGORY_UNSPECIFIED",
+"SOURCE_CATEGORY_WIKIPEDIA",
+"SOURCE_CATEGORY_WEBDOCS",
+"SOURCE_CATEGORY_GITHUB",
+"SOURCE_CATEGORY_ARXIV",
+"SOURCE_CATEGORY_PRIVATE_BOOKS",
+"SOURCE_CATEGORY_OTHERS",
+"SOURCE_CATEGORY_PUBLIC_BOOKS",
+"SOURCE_CATEGORY_GNEWS"
+],
+"enumDescriptions": [
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+""
 ],
 "type": "string"
 },
@@ -38513,7 +38661,14 @@ false
 "GEMINI_V2_TAIL_PATCH_OPEN_BOOKS_QA_UNANSWERABLE",
 "GEMINI_V2_TAIL_PATCH_PMC",
 "GEMINI_V2_TAIL_PATCH_VOXPOPULI",
-"GEMINI_V2_TAIL_PATCH_FLEURS"
+"GEMINI_V2_TAIL_PATCH_FLEURS",
+"GEMINI_V2_SSFS",
+"GEMINI_V2_CODE_TRANSFORM_SYNTHETIC_ERROR_FIX",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_COMMITS",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_PR",
+"GEMINI_V2_SQL_REPAIR_SFT",
+"GEMINI_V2_JSON_MODE_SYS_INSTRUCTION",
+"YT_CONTENT_INSPIRATION"
 ],
 "enumDescriptions": [
 "",
@@ -38863,7 +39018,14 @@ false
 "",
 "Gemini V2 only tail patch.",
 "",
-""
+"",
+"Gemini V2 rev10",
+"",
+"",
+"",
+"",
+"",
+"Youtube Content Inspiration FT datasets."
 ],
 "type": "string"
 },
@@ -38978,7 +39140,7 @@ false
 "id": "LearningGenaiRecitationSegmentResult",
 "properties": {
 "attributionDataset": {
-"description": "The dataset the segment came from.",
+"description": "The dataset the segment came from. Datasets change often as model evolves. Treat this field as informational only and avoid depending on it directly.",
 "enum": [
 "DATASET_UNSPECIFIED",
 "WIKIPEDIA",
@@ -39327,7 +39489,14 @@ false
 "GEMINI_V2_TAIL_PATCH_OPEN_BOOKS_QA_UNANSWERABLE",
 "GEMINI_V2_TAIL_PATCH_PMC",
 "GEMINI_V2_TAIL_PATCH_VOXPOPULI",
-"GEMINI_V2_TAIL_PATCH_FLEURS"
+"GEMINI_V2_TAIL_PATCH_FLEURS",
+"GEMINI_V2_SSFS",
+"GEMINI_V2_CODE_TRANSFORM_SYNTHETIC_ERROR_FIX",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_COMMITS",
+"GEMINI_V2_CODE_TRANSFORM_GITHUB_PR",
+"GEMINI_V2_SQL_REPAIR_SFT",
+"GEMINI_V2_JSON_MODE_SYS_INSTRUCTION",
+"YT_CONTENT_INSPIRATION"
 ],
 "enumDescriptions": [
 "",
@@ -39677,7 +39846,14 @@ false
 "",
 "Gemini V2 only tail patch.",
 "",
-""
+"",
+"Gemini V2 rev10",
+"",
+"",
+"",
+"",
+"",
+"Youtube Content Inspiration FT datasets."
 ],
 "type": "string"
 },
@@ -39686,8 +39862,7 @@ false
 "type": "string"
 },
 "docAttribution": {
-"$ref": "LearningGenaiRecitationDocAttribution",
-"description": "populated when recitation_action == CITE"
+"$ref": "LearningGenaiRecitationDocAttribution"
 },
 "docOccurrences": {
 "description": "number of documents that contained this segment",
@@ -39716,6 +39891,32 @@ false
 "indicate that a Segment should be blocked from being used",
 "for tagging high-frequency code snippets",
 "The recitation was found in prompt and is exempted from overall results"
+],
+"type": "string"
+},
+"sourceCategory": {
+"description": "The category of the source dataset where the segment came from. This is more stable than Dataset.",
+"enum": [
+"SOURCE_CATEGORY_UNSPECIFIED",
+"SOURCE_CATEGORY_WIKIPEDIA",
+"SOURCE_CATEGORY_WEBDOCS",
+"SOURCE_CATEGORY_GITHUB",
+"SOURCE_CATEGORY_ARXIV",
+"SOURCE_CATEGORY_PRIVATE_BOOKS",
+"SOURCE_CATEGORY_OTHERS",
+"SOURCE_CATEGORY_PUBLIC_BOOKS",
+"SOURCE_CATEGORY_GNEWS"
+],
+"enumDescriptions": [
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+"",
+""
 ],
 "type": "string"
 },
@@ -41198,10 +41399,37 @@ false
 },
 "type": "object"
 },
+"LearningServingLlmAtlasOutputMetadata": {
+"id": "LearningServingLlmAtlasOutputMetadata",
+"properties": {
+"requestTopic": {
+"type": "string"
+},
+"source": {
+"enum": [
+"UNKNOWN",
+"FACTUALITY",
+"INFOBOT",
+"LLM"
+],
+"enumDescriptions": [
+"",
+"",
+"",
+""
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "LearningServingLlmMessageMetadata": {
-"description": "LINT.IfChange This metadata contains additional information required for debugging.",
+"description": "LINT.IfChange This metadata contains additional information required for debugging. Next ID: 28",
 "id": "LearningServingLlmMessageMetadata",
 "properties": {
+"atlasMetadata": {
+"$ref": "LearningServingLlmAtlasOutputMetadata"
+},
 "classifierSummary": {
 "$ref": "LearningGenaiRootClassifierOutputSummary",
 "description": "Summary of classifier output. We attach this to all messages regardless of whether classification rules triggered or not."
@@ -41277,7 +41505,12 @@ false
 "type": "string"
 },
 "perStreamDecodedTokenCount": {
-"description": "NOT YET IMPLEMENTED. Applies to streaming only. Number of tokens decoded / emitted by the model as part of this stream. This may be different from token_count, which contains number of tokens returned in this response after any response rewriting / truncation.",
+"description": "Number of tokens decoded by the model as part of a stream. This count may be different from `per_stream_returned_token_count` which, is counted after any response rewriting or truncation. Applies to streaming response only.",
+"format": "int32",
+"type": "integer"
+},
+"perStreamReturnedTokenCount": {
+"description": "Number of tokens returned per stream in a response candidate after any response rewriting or truncation. Applies to streaming response only. Applies to Gemini models only.",
 "format": "int32",
 "type": "integer"
 },
@@ -41293,7 +41526,7 @@ false
 "description": "Recitation Results. It will be populated as long as Recitation processing is enabled, regardless of recitation outcome."
 },
 "returnTokenCount": {
-"description": "NOT YET IMPLEMENTED. Number of tokens returned as part of this candidate.",
+"description": "NOT IMPLEMENTED TODO (b/334187574) Remove this field after Labs migrates to per_stream_returned_token_count and total_returned_token_count.",
 "format": "int32",
 "type": "integer"
 },
@@ -41309,7 +41542,12 @@ false
 "type": "boolean"
 },
 "totalDecodedTokenCount": {
-"description": "NOT YET IMPLEMENTED. Aggregated number of total tokens decoded so far. For streaming, this is sum of all the tokens decoded so far i.e. aggregated count.",
+"description": "Total tokens decoded so far per response_candidate. For streaming: Count of all the tokens decoded so far (aggregated count). For unary: Count of all the tokens decoded per response_candidate.",
+"format": "int32",
+"type": "integer"
+},
+"totalReturnedTokenCount": {
+"description": "Total number of tokens returned in a response candidate. For streaming, it is the aggregated count (i.e. total so far) Applies to Gemini models only.",
 "format": "int32",
 "type": "integer"
 },
