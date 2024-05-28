@@ -471,6 +471,10 @@
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/deploymentmanager_v2beta.html)
 
 
+## developerconnect
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/developerconnect_v1.html)
+
+
 ## dfareporting
 * [v3.5](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_5.html)
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v4.html)
