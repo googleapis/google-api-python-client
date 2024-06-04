@@ -103,6 +103,7 @@ Args:
   &quot;answerGenerationSpec&quot;: { # Answer generation specification. # Answer generation specification.
     &quot;answerLanguageCode&quot;: &quot;A String&quot;, # Language code for Answer. Use language tags defined by [BCP47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt). Note: This is an experimental feature.
     &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No answer is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating answers for adversarial queries and return fallback messages instead.
+    &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true` or unset, the behavior will be determined automatically by the service.
     &quot;ignoreNonAnswerSeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not answer-seeking. The default value is `false`. Google employs search-query classification to detect answer-seeking queries. No answer is returned if the search query is classified as a non-answer seeking query. If this field is set to `true`, we skip generating answers for non-answer seeking queries and return fallback messages instead.
     &quot;includeCitations&quot;: True or False, # Specifies whether to include citation metadata in the answer. The default value is `false`.
     &quot;modelSpec&quot;: { # Answer Generation Model specification. # Answer generation model specification.
@@ -143,6 +144,11 @@ Args:
           },
         ],
       },
+      &quot;dataStoreSpecs&quot;: [ # Specs defining dataStores to filter on in a search call and configurations for those dataStores. This is only considered for engines with multiple dataStores use case. For single dataStore within an engine, they should use the specs at the top level.
+        { # A struct to define data stores to filter on in a search call and configurations for those data stores. A maximum of 1 DataStoreSpec per data_store is allowed. Otherwise, an `INVALID_ARGUMENT` error is returned.
+          &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
+        },
+      ],
       &quot;filter&quot;: &quot;A String&quot;, # The filter syntax consists of an expression language for constructing a predicate from one or more fields of the documents being filtered. Filter expression is case-sensitive. This will be used to filter search results which may affect the Answer response. If this field is unrecognizable, an `INVALID_ARGUMENT` is returned. Filtering in Vertex AI Search is done by mapping the LHS filter key to a key property defined in the Vertex AI Search backend -- this mapping is defined by the customer in their schema. For example a media customers might have a field &#x27;name&#x27; in their schema. In this case the filter would look like this: filter --&gt; name:&#x27;ANY(&quot;king kong&quot;)&#x27; For more information about filtering including syntax and filter operators, see [Filter](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
       &quot;maxReturnResults&quot;: 42, # Number of search results to return. The default value is 10.
       &quot;orderBy&quot;: &quot;A String&quot;, # The order in which documents are returned. Documents can be ordered by a field in an Document object. Leave it unset if ordered by relevance. `order_by` expression is case-sensitive. For more information on ordering, see [Ordering](https://cloud.google.com/retail/docs/filter-and-order#order) If this field is unrecognizable, an `INVALID_ARGUMENT` is returned.
@@ -229,6 +235,9 @@ Returns:
           &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
             &quot;document&quot;: &quot;A String&quot;, # Document resource name.
             &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+            &quot;structData&quot;: { # The structured JSON metadata for the document. It is populated from the struct data from the Chunk in search result.
+              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+            },
             &quot;title&quot;: &quot;A String&quot;, # Title.
             &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
           },
@@ -242,6 +251,9 @@ Returns:
             },
           ],
           &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+          &quot;structData&quot;: { # The structured JSON metadata for the document. It is populated from the struct data from the Chunk in search result.
+            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+          },
           &quot;title&quot;: &quot;A String&quot;, # Title.
           &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
         },
@@ -344,6 +356,7 @@ Args:
       &quot;selectedPosition&quot;: 42, # End user selected CompleteQueryResponse.QuerySuggestion.suggestion position, starting from 0.
       &quot;selectedSuggestion&quot;: &quot;A String&quot;, # End user selected CompleteQueryResponse.QuerySuggestion.suggestion.
     },
+    &quot;dataStore&quot;: &quot;A String&quot;, # The DataStore resource full name, of the form `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`. Optional. Only required for user events whose data store can&#x27;t by determined by UserEvent.engine or UserEvent.documents. If data store is set in the parent of write/import/collect user event requests, this field can be omitted.
     &quot;directUserRequest&quot;: True or False, # Should set to true if the request is made directly from the end user, in which case the UserEvent.user_info.user_agent can be populated from the HTTP request. This flag should be set only if the API request is made directly from the end user such as a mobile app (and not if a gateway or a server is processing and pushing the user events). This should not be set when using the JavaScript tag in UserEventService.CollectUserEvent.
     &quot;documents&quot;: [ # List of Documents associated with this user event. This field is optional except for the following event types: * `view-item` * `add-to-cart` * `purchase` * `media-play` * `media-complete` In a `search` event, this field represents the documents returned to the end user on the current page (the end user may have not finished browsing the whole page yet). When a new page is returned to the end user, after pagination/filtering/ordering even for the same query, a new `search` event with different UserEvent.documents is desired.
       { # Detailed document information associated with a user event.
@@ -356,6 +369,7 @@ Args:
         &quot;uri&quot;: &quot;A String&quot;, # The Document URI - only allowed for website data stores.
       },
     ],
+    &quot;engine&quot;: &quot;A String&quot;, # The Engine resource name, in the form of `projects/{project}/locations/{location}/collections/{collection_id}/engines/{engine_id}`. Optional. Only required for Engine produced user events. For example, user events from blended search.
     &quot;eventTime&quot;: &quot;A String&quot;, # Only required for UserEventService.ImportUserEvents method. Timestamp of when the user event happened.
     &quot;eventType&quot;: &quot;A String&quot;, # Required. User event type. Allowed values are: Generic values: * `search`: Search for Documents. * `view-item`: Detailed page view of a Document. * `view-item-list`: View of a panel or ordered list of Documents. * `view-home-page`: View of the home page. * `view-category-page`: View of a category page, e.g. Home &gt; Men &gt; Jeans Retail-related values: * `add-to-cart`: Add an item(s) to cart, e.g. in Retail online shopping * `purchase`: Purchase an item(s) Media-related values: * `media-play`: Start/resume watching a video, playing a song, etc. * `media-complete`: Finished or stopped midway through a video, song, etc.
     &quot;filter&quot;: &quot;A String&quot;, # The filter syntax consists of an expression language for constructing a predicate from one or more fields of the documents being filtered. One example is for `search` events, the associated SearchRequest may contain a filter expression in SearchRequest.filter conforming to https://google.aip.dev/160#filtering. Similarly, for `view-item-list` events that are generated from a RecommendRequest, this field may be populated directly from RecommendRequest.filter conforming to https://google.aip.dev/160#filtering. The value must be a UTF-8 encoded string with a length limit of 1,000 characters. Otherwise, an `INVALID_ARGUMENT` error is returned.
