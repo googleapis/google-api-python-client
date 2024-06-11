@@ -58,6 +58,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/aiplatform_v1beta1.html)
 
 
+## airquality
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/airquality_v1.html)
+
+
 ## alertcenter
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/alertcenter_v1beta1.html)
 
