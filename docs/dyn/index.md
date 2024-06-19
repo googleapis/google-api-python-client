@@ -127,6 +127,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/apikeys_v2.html)
 
 
+## apim
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/apim_v1alpha.html)
+
+
 ## appengine
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/appengine_v1alpha.html)
@@ -795,6 +799,19 @@
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1beta2.html)
 
 
+## merchantapi
+* [accounts_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_accounts_v1beta.html)
+* [conversions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_conversions_v1beta.html)
+* [datasources_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_datasources_v1beta.html)
+* [inventories_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_inventories_v1beta.html)
+* [lfp_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_lfp_v1beta.html)
+* [notifications_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_notifications_v1beta.html)
+* [products_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_products_v1beta.html)
+* [promotions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1beta.html)
+* [quota_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1beta.html)
+* [reports_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reports_v1beta.html)
+
+
 ## metastore
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1alpha.html)
@@ -940,6 +957,10 @@
 ## policytroubleshooter
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/policytroubleshooter_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/policytroubleshooter_v1beta.html)
+
+
+## pollen
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/pollen_v1.html)
 
 
 ## poly
