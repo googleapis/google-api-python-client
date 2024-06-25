@@ -794,6 +794,10 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/marketingplatformadmin_v1alpha.html)
 
 
+## meet
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/meet_v2.html)
+
+
 ## memcache
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/memcache_v1beta2.html)
@@ -1127,10 +1131,6 @@
 
 ## solar
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/solar_v1.html)
-
-
-## sourcerepo
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/sourcerepo_v1.html)
 
 
 ## spanner
