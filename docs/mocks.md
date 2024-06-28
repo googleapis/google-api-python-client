@@ -6,7 +6,7 @@ The use of [Mock objects](https://en.wikipedia.org/wiki/Mock_object) is a standa
 
 ## HttpMock
 
-This class simulates the response to a single HTTP request. As arguments, the constructor for the [HttpMock](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.HttpMock-class.html) object takes a dictionary object representing the response header and the path to a file. When this resource built on this object is executed, it simply returns contents of the file.
+This class simulates the response to a single HTTP request. As arguments, the constructor for the [HttpMock](https://googleapis.github.io/google-api-python-client/docs/pydoc/googleapiclient.http.HttpMock-class.html) object takes a dictionary object representing the response header and the path to a file. When this resource built on this object is executed, it simply returns contents of the file.
 
 ### Example
 
@@ -34,7 +34,7 @@ pprint.pprint(response)
 
 ## HttpMockSequence
 
-The [HttpMockSequence](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.HttpMockSequence-class.html) class simulates the sequence of HTTP responses. Each response consists of a header (a dictionary) and a content object (which can be a reference to a file, a JSON-like data structure defined inline, or one of the keywords listed below). When the resource built from this Mock object is executed, it returns the series of responses, one by one.
+The [HttpMockSequence](https://googleapis.github.io/google-api-python-client/docs/pydoc/googleapiclient.http.HttpMockSequence-class.html) class simulates the sequence of HTTP responses. Each response consists of a header (a dictionary) and a content object (which can be a reference to a file, a JSON-like data structure defined inline, or one of the keywords listed below). When the resource built from this Mock object is executed, it returns the series of responses, one by one.
 
 ### Special Values for simulated HTTP responses
 

@@ -45,7 +45,7 @@ This section describes how to build an API-specific service object, make calls t
 
 ### Build the service object
 
-Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. When `build()` is called, a service object will attempt to be constructed with methods specific to the given API.
+Whether you are using simple or authorized API access, you use the [build()](http://googleapis.github.io/google-api-python-client/docs/pydoc/googleapiclient.discovery-module.html#build) function to create a service object. It takes an API name and API version as arguments. You can see the list of all API versions on the [Supported APIs](dyn/index.md) page. When `build()` is called, a service object will attempt to be constructed with methods specific to the given API.
 
 `httplib2`, the underlying transport library, makes all connections persistent by default. Use the service object with a context manager or call `close` to avoid leaving sockets open.
 
@@ -85,7 +85,7 @@ nested_collection = service.featured().stamps()
 
 ### Methods and requests
 
-Every collection has a list of methods defined by the API. Calling a collection's method returns an [HttpRequest](http://google.github.io/google-api-python-client/docs/epy/googleapiclient.http.HttpRequest-class.html) object. If the given API collection has a method named `list` that takes an argument called `cents`, you create a request object for that method like this:
+Every collection has a list of methods defined by the API. Calling a collection's method returns an [HttpRequest](http://google.github.io/google-api-python-client/docs/pydoc/googleapiclient.http.HttpRequest-class.html) object. If the given API collection has a method named `list` that takes an argument called `cents`, you create a request object for that method like this:
 
 ```python
 request = collection.list(cents=5)
@@ -149,5 +149,5 @@ Use the [APIs Explorer](https://developers.google.com/apis-explorer/) to browse 
 
 ## Library reference documentation
 
-[Core library documentation](http://googleapis.github.io/google-api-python-client/docs/epy/index.html)
+[Core library documentation](http://googleapis.github.io/google-api-python-client/docs/pydoc/index.html)
 and [Library reference documentation by API](dyn/index.md) are available.

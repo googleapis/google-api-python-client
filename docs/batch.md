@@ -19,7 +19,7 @@ object in a batch request.
 ## Details
 You create batch requests by calling `new_batch_http_request()` on your service
 object, which returns a
-[BatchHttpRequest](https://google.github.io/google-api-python-client/docs/epy/googleapiclient.http.BatchHttpRequest-class.html)
+[BatchHttpRequest](https://google.github.io/google-api-python-client/docs/pydoc/googleapiclient.http.BatchHttpRequest-class.html)
 object, and then calling `add()` for each request you want to execute.
 You may pass in a callback with each request that is called with the response to that request.
 The callback function arguments are:
@@ -39,7 +39,7 @@ You can also supply a single callback that gets called for each response:
   <pre class="prettyprint">See below</pre>
 
 The
-[add()](https://google.github.io/google-api-python-client/docs/epy/googleapiclient.http.BatchHttpRequest-class.html#add)
+[add()](https://google.github.io/google-api-python-client/docs/pydoc/googleapiclient.http.BatchHttpRequest-class.html#add)
 method also allows you to supply a <code>request_id</code> parameter for each request.
 These IDs are provided to the callbacks.
 If you don't supply one, the library creates one for you.
