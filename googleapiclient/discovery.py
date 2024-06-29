@@ -1170,9 +1170,11 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         elif "response" not in methodDesc:
             model = RawModel()
 
+        api_version = methodDesc.get("apiVersion", None)
+
         headers = {}
         headers, params, query, body = model.request(
-            headers, actual_path_params, actual_query_params, body_value
+            headers, actual_path_params, actual_query_params, body_value, api_version
         )
 
         expanded_url = uritemplate.expand(pathUrl, params)

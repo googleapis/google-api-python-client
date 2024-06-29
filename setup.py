@@ -42,7 +42,8 @@ install_requires = [
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-api-core >= 1.31.5, <3.0.0.dev0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
+    "google-api-core[grpc] @ git+https://github.com/googleapis/python-api-core.git@add-api-version-header",
+    #"google-api-core >= 1.31.5, <3.0.0.dev0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     "uritemplate>=3.0.1,<5",
 ]
 
