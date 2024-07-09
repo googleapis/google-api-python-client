@@ -229,16 +229,33 @@ Args:
         },
         &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
           &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+            &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+            },
             &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+            &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+            },
+            &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+            },
             &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
             &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
             },
+          },
+          &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+            &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+          },
+          &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
           },
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
             &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
               &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
               },
             },
+          },
+          &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+          },
+          &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+          },
+          &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
           },
           &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
             &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -251,6 +268,26 @@ Args:
                 },
               },
             },
+          },
+          &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+            &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+            &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+          },
+          &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+              &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              },
+            },
+          },
+          &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+            &quot;fields&quot;: [ # The names and types of the fields in this struct.
+              { # A struct field and its type.
+                &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+                &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+              },
+            ],
+          },
+          &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
           },
         },
       },
@@ -337,16 +374,33 @@ Returns:
       },
       &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
         &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+          &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+          },
           &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+          },
+          &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+          },
           &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
+        },
+        &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+          &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+        },
+        &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
             &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
             },
           },
+        },
+        &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+        },
+        &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+        },
+        &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -359,6 +413,26 @@ Returns:
               },
             },
           },
+        },
+        &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+          &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+          &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+        },
+        &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            },
+          },
+        },
+        &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;fields&quot;: [ # The names and types of the fields in this struct.
+            { # A struct field and its type.
+              &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+              &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+            },
+          ],
+        },
+        &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
         },
       },
     },
@@ -528,16 +602,33 @@ Returns:
       },
       &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
         &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+          &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+          },
           &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+          },
+          &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+          },
           &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
+        },
+        &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+          &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+        },
+        &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
             &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
             },
           },
+        },
+        &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+        },
+        &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+        },
+        &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -550,6 +641,26 @@ Returns:
               },
             },
           },
+        },
+        &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+          &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+          &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+        },
+        &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            },
+          },
+        },
+        &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;fields&quot;: [ # The names and types of the fields in this struct.
+            { # A struct field and its type.
+              &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+              &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+            },
+          ],
+        },
+        &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
         },
       },
     },
@@ -711,16 +822,33 @@ Returns:
           },
           &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
             &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+              &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+              },
               &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+              &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+              },
+              &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+              },
               &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
               &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
               },
+            },
+            &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+              &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+            },
+            &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
             },
             &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
               &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
                 &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
                 },
               },
+            },
+            &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+            },
+            &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+            },
+            &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
             },
             &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
               &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -733,6 +861,26 @@ Returns:
                   },
                 },
               },
+            },
+            &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+              &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+              &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+            },
+            &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+              &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+                &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+                },
+              },
+            },
+            &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+              &quot;fields&quot;: [ # The names and types of the fields in this struct.
+                { # A struct field and its type.
+                  &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+                  &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+                },
+              ],
+            },
+            &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
             },
           },
         },
@@ -810,16 +958,33 @@ Args:
         },
         &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
           &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+            &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+            },
             &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+            &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+            },
+            &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+            },
             &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
             &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
             },
+          },
+          &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+            &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+          },
+          &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
           },
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
             &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
               &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
               },
             },
+          },
+          &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+          },
+          &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+          },
+          &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
           },
           &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
             &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -832,6 +997,26 @@ Args:
                 },
               },
             },
+          },
+          &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+            &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+            &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+          },
+          &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+              &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              },
+            },
+          },
+          &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+            &quot;fields&quot;: [ # The names and types of the fields in this struct.
+              { # A struct field and its type.
+                &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+                &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+              },
+            ],
+          },
+          &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
           },
         },
       },
@@ -859,16 +1044,33 @@ Args:
         },
         &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
           &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+            &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+            },
             &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+            &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+            },
+            &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+            },
             &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
             &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
             },
+          },
+          &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+            &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+          },
+          &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
           },
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
             &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
               &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
               },
             },
+          },
+          &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+          },
+          &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+          },
+          &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
           },
           &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
             &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -881,6 +1083,26 @@ Args:
                 },
               },
             },
+          },
+          &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+            &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+            &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+          },
+          &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+              &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              },
+            },
+          },
+          &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+            &quot;fields&quot;: [ # The names and types of the fields in this struct.
+              { # A struct field and its type.
+                &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+                &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+              },
+            ],
+          },
+          &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
           },
         },
       },
@@ -948,16 +1170,33 @@ Returns:
       },
       &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
         &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+          &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+          },
           &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+          },
+          &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+          },
           &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
+        },
+        &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+          &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+        },
+        &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
             &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
             },
           },
+        },
+        &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+        },
+        &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+        },
+        &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -970,6 +1209,26 @@ Returns:
               },
             },
           },
+        },
+        &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+          &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+          &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+        },
+        &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            },
+          },
+        },
+        &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;fields&quot;: [ # The names and types of the fields in this struct.
+            { # A struct field and its type.
+              &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+              &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+            },
+          ],
+        },
+        &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
         },
       },
     },
@@ -1056,16 +1315,33 @@ Args:
       },
       &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. INT64(1) &gt; INT64(-1), but STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001). * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
         &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+          &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
+          },
           &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
+          },
+          &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
+          },
           &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
+        },
+        &quot;arrayType&quot;: { # An ordered list of elements of a given type. Values of type `Array` are stored in `Value.array_value`. # Array
+          &quot;elementType&quot;: # Object with schema name: Type # The type of the elements in the array. This must not be `Array`.
+        },
+        &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
             &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
             },
           },
+        },
+        &quot;dateType&quot;: { # Date Values of type `Date` are stored in `Value.date_value`. # Date
+        },
+        &quot;float32Type&quot;: { # Float32 Values of type `Float32` are stored in `Value.float_value`. # Float32
+        },
+        &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
           &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
@@ -1078,6 +1354,26 @@ Args:
               },
             },
           },
+        },
+        &quot;mapType&quot;: { # A mapping of keys to values of a given type. Values of type `Map` are stored in a `Value.array_value` where each entry is another `Value.array_value` with two elements (the key and the value, in that order). Normally encoded Map values won&#x27;t have repeated keys, however, clients are expected to handle the case in which they do. If the same key appears multiple times, the _last_ value takes precedence. # Map
+          &quot;keyType&quot;: # Object with schema name: Type # The type of a map key. Only `Bytes`, `String`, and `Int64` are allowed as key types.
+          &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
+        },
+        &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
+          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            },
+          },
+        },
+        &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;fields&quot;: [ # The names and types of the fields in this struct.
+            { # A struct field and its type.
+              &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
+              &quot;type&quot;: # Object with schema name: Type # The type of values in this field.
+            },
+          ],
+        },
+        &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
         },
       },
     },
