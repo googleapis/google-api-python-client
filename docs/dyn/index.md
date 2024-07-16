@@ -49,10 +49,6 @@
 * [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4_1.html)
 
 
-## adsenseplatform
-* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1alpha.html)
-
-
 ## advisorynotifications
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
 
@@ -412,10 +408,6 @@
 
 ## contentwarehouse
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/contentwarehouse_v1.html)
-
-
-## css
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/css_v1.html)
 
 
 ## customsearch
