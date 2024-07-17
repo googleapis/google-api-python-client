@@ -390,7 +390,12 @@ def document_collection_recursive(
 
 
 def document_api(
-    name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR, discovery_uri_template=None
+    name,
+    version,
+    uri,
+    doc_destination_dir,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
+    discovery_uri_template=None,
 ):
     """Document the given API.
 
@@ -416,8 +421,8 @@ def document_api(
         # Use `uri` argument of `document_api` or
         # create the uri from `FLAGS.discovery_uri_template`
         uri = uri or uritemplate.expand(
-                FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
-            )
+            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
+        )
 
     http = build_http()
     resp, content = http.request(uri)
