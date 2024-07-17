@@ -408,14 +408,7 @@ def document_api(
             artifacts should be saved.
     """
     http = build_http()
-    # TODO(https://github.com/googleapis/google-api-python-client/issues/2444):
-    # We shouldn't be referencing FLAGS directly from within function
-    resp, content = http.request(
-        uri
-        or uritemplate.expand(
-            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
-        )
-    )
+    resp, content = http.request(uri)
 
     if resp.status == 200:
         discovery = json.loads(content)
@@ -519,10 +512,13 @@ def generate_all_api_documents(
     if resp.status == 200:
         directory = json.loads(content)["items"]
         for api in directory:
+            uri = uritemplate.expand(
+                discovery_uri_template or FLAGS.discovery_uri_template or api["discoveryRestUrl"],
+                {"api": api["name"], "apiVersion": api["version"]}
+            )
             document_api(
                 api["name"],
                 api["version"],
-                discovery_uri_template or api["discoveryRestUrl"],
                 doc_destination_dir,
                 artifact_destination_dir,
             )
