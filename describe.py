@@ -390,7 +390,12 @@ def document_collection_recursive(
 
 
 def document_api(
-    name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR, discovery_uri_template=None
+    name,
+    version,
+    uri,
+    doc_destination_dir,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
+    discovery_uri_template=None,
 ):
     """Document the given API.
 
