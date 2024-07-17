@@ -405,9 +405,9 @@ def document_api(
         uri (str): URI of the API's discovery document
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
-        artifact_destination_dir (str): relative path where the discovery
+        artifact_destination_dir (Optional[str]): relative path where the discovery
             artifacts should be saved.
-        discovery_uri_template (str): URI template of the API's discovery document.
+        discovery_uri_template (Optional[str]): URI template of the API's discovery document.
             If this parameter is set, the `uri` parameter is ignored and the uri
             will be created from this template.
     """
@@ -515,12 +515,13 @@ def generate_all_api_documents(
     """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
     args:
-        directory_uri (str): uri of the public discovery directory.
-        doc_destination_dir (str): relative path where the reference
+        directory_uri (Optional[str]): uri of the public discovery directory.
+        doc_destination_dir (Optional[str]): relative path where the reference
             documentation should be saved.
-        artifact_destination_dir (str): relative path where the discovery
+        artifact_destination_dir (Optional[str]): relative path where the discovery
             artifacts should be saved.
-        discovery_uri_template (str): URI template of the API's discovery document.
+        discovery_uri_template (Optional[str]): URI template of the API's discovery
+            document.
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
