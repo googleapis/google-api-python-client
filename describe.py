@@ -495,7 +495,7 @@ def generate_all_api_documents(
     directory_uri=DIRECTORY_URI,
     doc_destination_dir=BASE,
     artifact_destination_dir=DISCOVERY_DOC_DIR,
-    discovery_uri_template=None,
+    discovery_uri_template=DISCOVERY_URI_TEMPLATE,
 ):
     """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
