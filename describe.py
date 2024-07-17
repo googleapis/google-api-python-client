@@ -516,7 +516,7 @@ def generate_all_api_documents(
         for api in directory:
             uri = uritemplate.expand(
                 discovery_uri_template or api["discoveryRestUrl"],
-                {"api": api["name"], "apiVersion": api["version"]}
+                {"api": api["name"], "apiVersion": api["version"]},
             )
             document_api(
                 api["name"],
