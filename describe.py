@@ -514,8 +514,6 @@ def generate_all_api_documents(
         artifact_destination_dir (str): relative path where the discovery
             artifacts should be saved.
         discovery_uri_template (str): URI template of the API's discovery document.
-            If this parameter is set, the `uri` parameter is ignored and the uri
-            will be created from this template.
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
