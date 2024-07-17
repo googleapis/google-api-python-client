@@ -413,7 +413,7 @@ def document_api(
         )
 
     if not uri:
-        uritemplate.expand(
+        uri = uritemplate.expand(
             FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
         )
 
