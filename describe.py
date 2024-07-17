@@ -411,18 +411,12 @@ def document_api(
             If this parameter is set, the `uri` parameter is ignored and the uri
             will be created from this template.
     """
-    # Use the discovery_uri_template to create the uri if provided,
-    # ignoring the `uri` argument of `document_api`
-    if discovery_uri_template:
-        uri = uritemplate.expand(
-            discovery_uri_template, {"api": name, "apiVersion": version}
-        )
-    else:
-        # Use `uri` argument of `document_api` or
-        # create the uri from `FLAGS.discovery_uri_template`
-        uri = uri or uritemplate.expand(
-            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
-        )
+    # The order for constructing `uri` is use `discovery_uri_template` if provided,
+    # then use `uri` argument if provided, then fallback to `FLAGS.discovery_uri_template`
+    uri = uritemplate.expand(
+        discovery_uri_template or uri or FLAGS.discovery_uri_template,
+        {"api": name, "apiVersion": version},
+    )
 
     http = build_http()
     resp, content = http.request(uri)
