@@ -523,7 +523,6 @@ def generate_all_api_documents(
                 discovery_uri_template or api["discoveryRestUrl"],
                 doc_destination_dir,
                 artifact_destination_dir,
-                discovery_uri_template,
             )
             api_directory[api["name"]].append(api["version"])
 
