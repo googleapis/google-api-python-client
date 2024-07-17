@@ -136,13 +136,15 @@ METHOD_LINK = """<p class="toc_element">
 
 BASE = pathlib.Path(__file__).resolve().parent / "docs" / "dyn"
 
-DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
+# Obtain the discovery index and artifacts from googleapis/discovery-artifact-manager
+DIRECTORY_URI = "https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/index.json"
+DISCOVERY_URI_TEMPLATE = "https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/{api}.{apiVersion}.json"
 
 parser = argparse.ArgumentParser(description=__doc__)
 
 parser.add_argument(
     "--discovery_uri_template",
-    default=DISCOVERY_URI,
+    default=DISCOVERY_URI_TEMPLATE,
     help="URI Template for discovery.",
 )
 
@@ -513,7 +515,7 @@ def generate_all_api_documents(
         directory = json.loads(content)["items"]
         for api in directory:
             uri = uritemplate.expand(
-                discovery_uri_template or FLAGS.discovery_uri_template or api["discoveryRestUrl"],
+                discovery_uri_template or FLAGS.discovery_uri_template,
                 {"api": api["name"], "apiVersion": api["version"]}
             )
             document_api(
