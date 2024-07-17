@@ -408,6 +408,8 @@ def document_api(
             artifacts should be saved.
     """
     http = build_http()
+    # TODO(https://github.com/googleapis/google-api-python-client/issues/2444):
+    # We shouldn't be referencing FLAGS directly from within function
     resp, content = http.request(
         uri
         or uritemplate.expand(
