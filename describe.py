@@ -519,6 +519,7 @@ def generate_all_api_documents(
             document_api(
                 api["name"],
                 api["version"],
+                uri,
                 doc_destination_dir,
                 artifact_destination_dir,
             )
