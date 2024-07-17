@@ -176,6 +176,9 @@ Args:
       { # Target used to match against for Discovery.
         &quot;bigQueryTarget&quot;: { # Target used to match against for discovery with BigQuery tables # BigQuery target for Discovery. The first target to match a table will be the one applied.
           &quot;cadence&quot;: { # What must take place for a profile to be updated and how frequently it should occur. New tables are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New tables that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+            &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+              &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+            },
             &quot;schemaModifiedCadence&quot;: { # The cadence at which to update data profiles when a schema is modified. # Governs when to update data profiles when a schema is modified.
               &quot;frequency&quot;: &quot;A String&quot;, # How frequently profiles may be updated when schemas are modified. Defaults to monthly.
               &quot;types&quot;: [ # The type of events to consider when deciding if the table&#x27;s schema has been modified and should have the profile updated. Defaults to NEW_COLUMNS.
@@ -267,6 +270,48 @@ Args:
             },
           },
         },
+        &quot;cloudStorageTarget&quot;: { # Target used to match against for discovery with Cloud Storage buckets. # Cloud Storage target for Discovery. The first target to match a table will be the one applied.
+          &quot;conditions&quot;: { # Requirements that must be true before a file store is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. In addition to matching the filter, these conditions must be true before a profile is generated.
+            &quot;cloudStorageConditions&quot;: { # Requirements that must be true before a Cloud Storage bucket or object is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. Cloud Storage conditions.
+              &quot;includedBucketAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. Defaults to [ALL_SUPPORTED_BUCKETS] if unset.
+                &quot;A String&quot;,
+              ],
+              &quot;includedObjectAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. If an object has one of the specified attributes but is inside an excluded bucket, it will not be scanned. Defaults to [ALL_SUPPORTED_OBJECTS]. A profile will be created even if no objects match the included_object_attributes.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;createdAfter&quot;: &quot;A String&quot;, # Optional. File store must have been created after this date. Used to avoid backfilling.
+            &quot;minAge&quot;: &quot;A String&quot;, # Optional. Minimum age a file store must have. If set, the value must be 1 hour or greater.
+          },
+          &quot;disabled&quot;: { # Do not profile the tables. # Optional. Disable profiling for buckets that match this filter.
+          },
+          &quot;filter&quot;: { # Determines which buckets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID and bucket name. # Required. The buckets the generation_cadence applies to. The first target with a matching filter will be the one to apply to a bucket.
+            &quot;cloudStorageResourceReference&quot;: { # Identifies a single Cloud Storage bucket. # Optional. The bucket to scan. Targets including this can only include one target (the target with this bucket). This enables profiling the contents of a single bucket, while the other options allow for easy profiling of many bucets within a project or an organization.
+              &quot;bucketName&quot;: &quot;A String&quot;, # Required. The bucket to scan.
+              &quot;projectId&quot;: &quot;A String&quot;, # Required. If within a project-level config, then this must match the config&#x27;s project id.
+            },
+            &quot;collection&quot;: { # Match file stores (e.g. buckets) using regex filters. # Optional. A specific set of buckets for this filter to apply to.
+              &quot;includeRegexes&quot;: { # A collection of regular expressions to determine what file store to match against. # Optional. A collection of regular expressions to match a file store against.
+                &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more file stores. Maximum of 100 entries. The sum of all regular expression&#x27;s length can&#x27;t exceed 10 KiB.
+                  { # A pattern to match against one or more file stores.
+                    &quot;cloudStorageRegex&quot;: { # A pattern to match against one or more file stores. At least one pattern must be specified. Regular expressions use RE2 [syntax](https://github.com/google/re2/wiki/Syntax); a guide can be found under the google/re2 repository on GitHub. # Optional. Regex for Cloud Storage.
+                      &quot;bucketNameRegex&quot;: &quot;A String&quot;, # Optional. Regex to test the bucket name against. If empty, all buckets match. Example: &quot;marketing2021&quot; or &quot;(marketing)\d{4}&quot; will both match the bucket gs://marketing2021
+                      &quot;projectIdRegex&quot;: &quot;A String&quot;, # Optional. For organizations, if unset, will match all projects.
+                    },
+                  },
+                ],
+              },
+            },
+            &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Optional. Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+            },
+          },
+          &quot;generationCadence&quot;: { # How often existing buckets should have their profiles refreshed. New buckets are scanned as quickly as possible depending on system capacity. # Optional. How often and when to update profiles. New buckets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+            &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Optional. Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+              &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+            },
+            &quot;refreshFrequency&quot;: &quot;A String&quot;, # Optional. Data changes in Cloud Storage can&#x27;t trigger reprofiling. If you set this field, profiles are refreshed at this frequency regardless of whether the underlying buckets have changed. Defaults to never.
+          },
+        },
         &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
         },
       },
@@ -347,6 +392,9 @@ Returns:
     { # Target used to match against for Discovery.
       &quot;bigQueryTarget&quot;: { # Target used to match against for discovery with BigQuery tables # BigQuery target for Discovery. The first target to match a table will be the one applied.
         &quot;cadence&quot;: { # What must take place for a profile to be updated and how frequently it should occur. New tables are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New tables that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
           &quot;schemaModifiedCadence&quot;: { # The cadence at which to update data profiles when a schema is modified. # Governs when to update data profiles when a schema is modified.
             &quot;frequency&quot;: &quot;A String&quot;, # How frequently profiles may be updated when schemas are modified. Defaults to monthly.
             &quot;types&quot;: [ # The type of events to consider when deciding if the table&#x27;s schema has been modified and should have the profile updated. Defaults to NEW_COLUMNS.
@@ -436,6 +484,48 @@ Returns:
               &quot;A String&quot;,
             ],
           },
+        },
+      },
+      &quot;cloudStorageTarget&quot;: { # Target used to match against for discovery with Cloud Storage buckets. # Cloud Storage target for Discovery. The first target to match a table will be the one applied.
+        &quot;conditions&quot;: { # Requirements that must be true before a file store is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. In addition to matching the filter, these conditions must be true before a profile is generated.
+          &quot;cloudStorageConditions&quot;: { # Requirements that must be true before a Cloud Storage bucket or object is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. Cloud Storage conditions.
+            &quot;includedBucketAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. Defaults to [ALL_SUPPORTED_BUCKETS] if unset.
+              &quot;A String&quot;,
+            ],
+            &quot;includedObjectAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. If an object has one of the specified attributes but is inside an excluded bucket, it will not be scanned. Defaults to [ALL_SUPPORTED_OBJECTS]. A profile will be created even if no objects match the included_object_attributes.
+              &quot;A String&quot;,
+            ],
+          },
+          &quot;createdAfter&quot;: &quot;A String&quot;, # Optional. File store must have been created after this date. Used to avoid backfilling.
+          &quot;minAge&quot;: &quot;A String&quot;, # Optional. Minimum age a file store must have. If set, the value must be 1 hour or greater.
+        },
+        &quot;disabled&quot;: { # Do not profile the tables. # Optional. Disable profiling for buckets that match this filter.
+        },
+        &quot;filter&quot;: { # Determines which buckets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID and bucket name. # Required. The buckets the generation_cadence applies to. The first target with a matching filter will be the one to apply to a bucket.
+          &quot;cloudStorageResourceReference&quot;: { # Identifies a single Cloud Storage bucket. # Optional. The bucket to scan. Targets including this can only include one target (the target with this bucket). This enables profiling the contents of a single bucket, while the other options allow for easy profiling of many bucets within a project or an organization.
+            &quot;bucketName&quot;: &quot;A String&quot;, # Required. The bucket to scan.
+            &quot;projectId&quot;: &quot;A String&quot;, # Required. If within a project-level config, then this must match the config&#x27;s project id.
+          },
+          &quot;collection&quot;: { # Match file stores (e.g. buckets) using regex filters. # Optional. A specific set of buckets for this filter to apply to.
+            &quot;includeRegexes&quot;: { # A collection of regular expressions to determine what file store to match against. # Optional. A collection of regular expressions to match a file store against.
+              &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more file stores. Maximum of 100 entries. The sum of all regular expression&#x27;s length can&#x27;t exceed 10 KiB.
+                { # A pattern to match against one or more file stores.
+                  &quot;cloudStorageRegex&quot;: { # A pattern to match against one or more file stores. At least one pattern must be specified. Regular expressions use RE2 [syntax](https://github.com/google/re2/wiki/Syntax); a guide can be found under the google/re2 repository on GitHub. # Optional. Regex for Cloud Storage.
+                    &quot;bucketNameRegex&quot;: &quot;A String&quot;, # Optional. Regex to test the bucket name against. If empty, all buckets match. Example: &quot;marketing2021&quot; or &quot;(marketing)\d{4}&quot; will both match the bucket gs://marketing2021
+                    &quot;projectIdRegex&quot;: &quot;A String&quot;, # Optional. For organizations, if unset, will match all projects.
+                  },
+                },
+              ],
+            },
+          },
+          &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Optional. Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+          },
+        },
+        &quot;generationCadence&quot;: { # How often existing buckets should have their profiles refreshed. New buckets are scanned as quickly as possible depending on system capacity. # Optional. How often and when to update profiles. New buckets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Optional. Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
+          &quot;refreshFrequency&quot;: &quot;A String&quot;, # Optional. Data changes in Cloud Storage can&#x27;t trigger reprofiling. If you set this field, profiles are refreshed at this frequency regardless of whether the underlying buckets have changed. Defaults to never.
         },
       },
       &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
@@ -542,6 +632,9 @@ Returns:
     { # Target used to match against for Discovery.
       &quot;bigQueryTarget&quot;: { # Target used to match against for discovery with BigQuery tables # BigQuery target for Discovery. The first target to match a table will be the one applied.
         &quot;cadence&quot;: { # What must take place for a profile to be updated and how frequently it should occur. New tables are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New tables that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
           &quot;schemaModifiedCadence&quot;: { # The cadence at which to update data profiles when a schema is modified. # Governs when to update data profiles when a schema is modified.
             &quot;frequency&quot;: &quot;A String&quot;, # How frequently profiles may be updated when schemas are modified. Defaults to monthly.
             &quot;types&quot;: [ # The type of events to consider when deciding if the table&#x27;s schema has been modified and should have the profile updated. Defaults to NEW_COLUMNS.
@@ -633,6 +726,48 @@ Returns:
           },
         },
       },
+      &quot;cloudStorageTarget&quot;: { # Target used to match against for discovery with Cloud Storage buckets. # Cloud Storage target for Discovery. The first target to match a table will be the one applied.
+        &quot;conditions&quot;: { # Requirements that must be true before a file store is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. In addition to matching the filter, these conditions must be true before a profile is generated.
+          &quot;cloudStorageConditions&quot;: { # Requirements that must be true before a Cloud Storage bucket or object is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. Cloud Storage conditions.
+            &quot;includedBucketAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. Defaults to [ALL_SUPPORTED_BUCKETS] if unset.
+              &quot;A String&quot;,
+            ],
+            &quot;includedObjectAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. If an object has one of the specified attributes but is inside an excluded bucket, it will not be scanned. Defaults to [ALL_SUPPORTED_OBJECTS]. A profile will be created even if no objects match the included_object_attributes.
+              &quot;A String&quot;,
+            ],
+          },
+          &quot;createdAfter&quot;: &quot;A String&quot;, # Optional. File store must have been created after this date. Used to avoid backfilling.
+          &quot;minAge&quot;: &quot;A String&quot;, # Optional. Minimum age a file store must have. If set, the value must be 1 hour or greater.
+        },
+        &quot;disabled&quot;: { # Do not profile the tables. # Optional. Disable profiling for buckets that match this filter.
+        },
+        &quot;filter&quot;: { # Determines which buckets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID and bucket name. # Required. The buckets the generation_cadence applies to. The first target with a matching filter will be the one to apply to a bucket.
+          &quot;cloudStorageResourceReference&quot;: { # Identifies a single Cloud Storage bucket. # Optional. The bucket to scan. Targets including this can only include one target (the target with this bucket). This enables profiling the contents of a single bucket, while the other options allow for easy profiling of many bucets within a project or an organization.
+            &quot;bucketName&quot;: &quot;A String&quot;, # Required. The bucket to scan.
+            &quot;projectId&quot;: &quot;A String&quot;, # Required. If within a project-level config, then this must match the config&#x27;s project id.
+          },
+          &quot;collection&quot;: { # Match file stores (e.g. buckets) using regex filters. # Optional. A specific set of buckets for this filter to apply to.
+            &quot;includeRegexes&quot;: { # A collection of regular expressions to determine what file store to match against. # Optional. A collection of regular expressions to match a file store against.
+              &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more file stores. Maximum of 100 entries. The sum of all regular expression&#x27;s length can&#x27;t exceed 10 KiB.
+                { # A pattern to match against one or more file stores.
+                  &quot;cloudStorageRegex&quot;: { # A pattern to match against one or more file stores. At least one pattern must be specified. Regular expressions use RE2 [syntax](https://github.com/google/re2/wiki/Syntax); a guide can be found under the google/re2 repository on GitHub. # Optional. Regex for Cloud Storage.
+                    &quot;bucketNameRegex&quot;: &quot;A String&quot;, # Optional. Regex to test the bucket name against. If empty, all buckets match. Example: &quot;marketing2021&quot; or &quot;(marketing)\d{4}&quot; will both match the bucket gs://marketing2021
+                    &quot;projectIdRegex&quot;: &quot;A String&quot;, # Optional. For organizations, if unset, will match all projects.
+                  },
+                },
+              ],
+            },
+          },
+          &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Optional. Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+          },
+        },
+        &quot;generationCadence&quot;: { # How often existing buckets should have their profiles refreshed. New buckets are scanned as quickly as possible depending on system capacity. # Optional. How often and when to update profiles. New buckets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Optional. Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
+          &quot;refreshFrequency&quot;: &quot;A String&quot;, # Optional. Data changes in Cloud Storage can&#x27;t trigger reprofiling. If you set this field, profiles are refreshed at this frequency regardless of whether the underlying buckets have changed. Defaults to never.
+        },
+      },
       &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
       },
     },
@@ -647,7 +782,7 @@ Returns:
 
 Args:
   parent: string, Required. Parent resource name. The format of this value is as follows: `projects/`PROJECT_ID`/locations/`LOCATION_ID The following example `parent` string specifies a parent project with the identifier `example-project`, and specifies the `europe-west3` location for processing data: parent=projects/example-project/locations/europe-west3 (required)
-  orderBy: string, Comma separated list of config fields to order by, followed by `asc` or `desc` postfix. This list is case insensitive. The default sorting order is ascending. Redundant space characters are insignificant. Example: `name asc,update_time, create_time desc` Supported fields are: - `last_run_time`: corresponds to the last time the DiscoveryConfig ran. - `name`: corresponds to the DiscoveryConfig&#x27;s name. - `status`: corresponds to DiscoveryConfig&#x27;s status.
+  orderBy: string, Comma-separated list of config fields to order by, followed by `asc` or `desc` postfix. This list is case insensitive. The default sorting order is ascending. Redundant space characters are insignificant. Example: `name asc,update_time, create_time desc` Supported fields are: - `last_run_time`: corresponds to the last time the DiscoveryConfig ran. - `name`: corresponds to the DiscoveryConfig&#x27;s name. - `status`: corresponds to DiscoveryConfig&#x27;s status.
   pageSize: integer, Size of the page. This value can be limited by a server.
   pageToken: string, Page token to continue retrieval. Comes from the previous call to ListDiscoveryConfigs. `order_by` field must not change for subsequent calls.
   x__xgafv: string, V1 error format.
@@ -724,6 +859,9 @@ Returns:
         { # Target used to match against for Discovery.
           &quot;bigQueryTarget&quot;: { # Target used to match against for discovery with BigQuery tables # BigQuery target for Discovery. The first target to match a table will be the one applied.
             &quot;cadence&quot;: { # What must take place for a profile to be updated and how frequently it should occur. New tables are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New tables that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+              &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+                &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+              },
               &quot;schemaModifiedCadence&quot;: { # The cadence at which to update data profiles when a schema is modified. # Governs when to update data profiles when a schema is modified.
                 &quot;frequency&quot;: &quot;A String&quot;, # How frequently profiles may be updated when schemas are modified. Defaults to monthly.
                 &quot;types&quot;: [ # The type of events to consider when deciding if the table&#x27;s schema has been modified and should have the profile updated. Defaults to NEW_COLUMNS.
@@ -813,6 +951,48 @@ Returns:
                   &quot;A String&quot;,
                 ],
               },
+            },
+          },
+          &quot;cloudStorageTarget&quot;: { # Target used to match against for discovery with Cloud Storage buckets. # Cloud Storage target for Discovery. The first target to match a table will be the one applied.
+            &quot;conditions&quot;: { # Requirements that must be true before a file store is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. In addition to matching the filter, these conditions must be true before a profile is generated.
+              &quot;cloudStorageConditions&quot;: { # Requirements that must be true before a Cloud Storage bucket or object is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. Cloud Storage conditions.
+                &quot;includedBucketAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. Defaults to [ALL_SUPPORTED_BUCKETS] if unset.
+                  &quot;A String&quot;,
+                ],
+                &quot;includedObjectAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. If an object has one of the specified attributes but is inside an excluded bucket, it will not be scanned. Defaults to [ALL_SUPPORTED_OBJECTS]. A profile will be created even if no objects match the included_object_attributes.
+                  &quot;A String&quot;,
+                ],
+              },
+              &quot;createdAfter&quot;: &quot;A String&quot;, # Optional. File store must have been created after this date. Used to avoid backfilling.
+              &quot;minAge&quot;: &quot;A String&quot;, # Optional. Minimum age a file store must have. If set, the value must be 1 hour or greater.
+            },
+            &quot;disabled&quot;: { # Do not profile the tables. # Optional. Disable profiling for buckets that match this filter.
+            },
+            &quot;filter&quot;: { # Determines which buckets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID and bucket name. # Required. The buckets the generation_cadence applies to. The first target with a matching filter will be the one to apply to a bucket.
+              &quot;cloudStorageResourceReference&quot;: { # Identifies a single Cloud Storage bucket. # Optional. The bucket to scan. Targets including this can only include one target (the target with this bucket). This enables profiling the contents of a single bucket, while the other options allow for easy profiling of many bucets within a project or an organization.
+                &quot;bucketName&quot;: &quot;A String&quot;, # Required. The bucket to scan.
+                &quot;projectId&quot;: &quot;A String&quot;, # Required. If within a project-level config, then this must match the config&#x27;s project id.
+              },
+              &quot;collection&quot;: { # Match file stores (e.g. buckets) using regex filters. # Optional. A specific set of buckets for this filter to apply to.
+                &quot;includeRegexes&quot;: { # A collection of regular expressions to determine what file store to match against. # Optional. A collection of regular expressions to match a file store against.
+                  &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more file stores. Maximum of 100 entries. The sum of all regular expression&#x27;s length can&#x27;t exceed 10 KiB.
+                    { # A pattern to match against one or more file stores.
+                      &quot;cloudStorageRegex&quot;: { # A pattern to match against one or more file stores. At least one pattern must be specified. Regular expressions use RE2 [syntax](https://github.com/google/re2/wiki/Syntax); a guide can be found under the google/re2 repository on GitHub. # Optional. Regex for Cloud Storage.
+                        &quot;bucketNameRegex&quot;: &quot;A String&quot;, # Optional. Regex to test the bucket name against. If empty, all buckets match. Example: &quot;marketing2021&quot; or &quot;(marketing)\d{4}&quot; will both match the bucket gs://marketing2021
+                        &quot;projectIdRegex&quot;: &quot;A String&quot;, # Optional. For organizations, if unset, will match all projects.
+                      },
+                    },
+                  ],
+                },
+              },
+              &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Optional. Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+              },
+            },
+            &quot;generationCadence&quot;: { # How often existing buckets should have their profiles refreshed. New buckets are scanned as quickly as possible depending on system capacity. # Optional. How often and when to update profiles. New buckets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+              &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Optional. Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+                &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+              },
+              &quot;refreshFrequency&quot;: &quot;A String&quot;, # Optional. Data changes in Cloud Storage can&#x27;t trigger reprofiling. If you set this field, profiles are refreshed at this frequency regardless of whether the underlying buckets have changed. Defaults to never.
             },
           },
           &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
@@ -914,6 +1094,9 @@ Args:
       { # Target used to match against for Discovery.
         &quot;bigQueryTarget&quot;: { # Target used to match against for discovery with BigQuery tables # BigQuery target for Discovery. The first target to match a table will be the one applied.
           &quot;cadence&quot;: { # What must take place for a profile to be updated and how frequently it should occur. New tables are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New tables that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+            &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+              &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+            },
             &quot;schemaModifiedCadence&quot;: { # The cadence at which to update data profiles when a schema is modified. # Governs when to update data profiles when a schema is modified.
               &quot;frequency&quot;: &quot;A String&quot;, # How frequently profiles may be updated when schemas are modified. Defaults to monthly.
               &quot;types&quot;: [ # The type of events to consider when deciding if the table&#x27;s schema has been modified and should have the profile updated. Defaults to NEW_COLUMNS.
@@ -1005,6 +1188,48 @@ Args:
             },
           },
         },
+        &quot;cloudStorageTarget&quot;: { # Target used to match against for discovery with Cloud Storage buckets. # Cloud Storage target for Discovery. The first target to match a table will be the one applied.
+          &quot;conditions&quot;: { # Requirements that must be true before a file store is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. In addition to matching the filter, these conditions must be true before a profile is generated.
+            &quot;cloudStorageConditions&quot;: { # Requirements that must be true before a Cloud Storage bucket or object is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. Cloud Storage conditions.
+              &quot;includedBucketAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. Defaults to [ALL_SUPPORTED_BUCKETS] if unset.
+                &quot;A String&quot;,
+              ],
+              &quot;includedObjectAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. If an object has one of the specified attributes but is inside an excluded bucket, it will not be scanned. Defaults to [ALL_SUPPORTED_OBJECTS]. A profile will be created even if no objects match the included_object_attributes.
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;createdAfter&quot;: &quot;A String&quot;, # Optional. File store must have been created after this date. Used to avoid backfilling.
+            &quot;minAge&quot;: &quot;A String&quot;, # Optional. Minimum age a file store must have. If set, the value must be 1 hour or greater.
+          },
+          &quot;disabled&quot;: { # Do not profile the tables. # Optional. Disable profiling for buckets that match this filter.
+          },
+          &quot;filter&quot;: { # Determines which buckets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID and bucket name. # Required. The buckets the generation_cadence applies to. The first target with a matching filter will be the one to apply to a bucket.
+            &quot;cloudStorageResourceReference&quot;: { # Identifies a single Cloud Storage bucket. # Optional. The bucket to scan. Targets including this can only include one target (the target with this bucket). This enables profiling the contents of a single bucket, while the other options allow for easy profiling of many bucets within a project or an organization.
+              &quot;bucketName&quot;: &quot;A String&quot;, # Required. The bucket to scan.
+              &quot;projectId&quot;: &quot;A String&quot;, # Required. If within a project-level config, then this must match the config&#x27;s project id.
+            },
+            &quot;collection&quot;: { # Match file stores (e.g. buckets) using regex filters. # Optional. A specific set of buckets for this filter to apply to.
+              &quot;includeRegexes&quot;: { # A collection of regular expressions to determine what file store to match against. # Optional. A collection of regular expressions to match a file store against.
+                &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more file stores. Maximum of 100 entries. The sum of all regular expression&#x27;s length can&#x27;t exceed 10 KiB.
+                  { # A pattern to match against one or more file stores.
+                    &quot;cloudStorageRegex&quot;: { # A pattern to match against one or more file stores. At least one pattern must be specified. Regular expressions use RE2 [syntax](https://github.com/google/re2/wiki/Syntax); a guide can be found under the google/re2 repository on GitHub. # Optional. Regex for Cloud Storage.
+                      &quot;bucketNameRegex&quot;: &quot;A String&quot;, # Optional. Regex to test the bucket name against. If empty, all buckets match. Example: &quot;marketing2021&quot; or &quot;(marketing)\d{4}&quot; will both match the bucket gs://marketing2021
+                      &quot;projectIdRegex&quot;: &quot;A String&quot;, # Optional. For organizations, if unset, will match all projects.
+                    },
+                  },
+                ],
+              },
+            },
+            &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Optional. Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+            },
+          },
+          &quot;generationCadence&quot;: { # How often existing buckets should have their profiles refreshed. New buckets are scanned as quickly as possible depending on system capacity. # Optional. How often and when to update profiles. New buckets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+            &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Optional. Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+              &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+            },
+            &quot;refreshFrequency&quot;: &quot;A String&quot;, # Optional. Data changes in Cloud Storage can&#x27;t trigger reprofiling. If you set this field, profiles are refreshed at this frequency regardless of whether the underlying buckets have changed. Defaults to never.
+          },
+        },
         &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
         },
       },
@@ -1086,6 +1311,9 @@ Returns:
     { # Target used to match against for Discovery.
       &quot;bigQueryTarget&quot;: { # Target used to match against for discovery with BigQuery tables # BigQuery target for Discovery. The first target to match a table will be the one applied.
         &quot;cadence&quot;: { # What must take place for a profile to be updated and how frequently it should occur. New tables are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New tables that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
           &quot;schemaModifiedCadence&quot;: { # The cadence at which to update data profiles when a schema is modified. # Governs when to update data profiles when a schema is modified.
             &quot;frequency&quot;: &quot;A String&quot;, # How frequently profiles may be updated when schemas are modified. Defaults to monthly.
             &quot;types&quot;: [ # The type of events to consider when deciding if the table&#x27;s schema has been modified and should have the profile updated. Defaults to NEW_COLUMNS.
@@ -1175,6 +1403,48 @@ Returns:
               &quot;A String&quot;,
             ],
           },
+        },
+      },
+      &quot;cloudStorageTarget&quot;: { # Target used to match against for discovery with Cloud Storage buckets. # Cloud Storage target for Discovery. The first target to match a table will be the one applied.
+        &quot;conditions&quot;: { # Requirements that must be true before a file store is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. In addition to matching the filter, these conditions must be true before a profile is generated.
+          &quot;cloudStorageConditions&quot;: { # Requirements that must be true before a Cloud Storage bucket or object is scanned in discovery for the first time. There is an AND relationship between the top-level attributes. # Optional. Cloud Storage conditions.
+            &quot;includedBucketAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. Defaults to [ALL_SUPPORTED_BUCKETS] if unset.
+              &quot;A String&quot;,
+            ],
+            &quot;includedObjectAttributes&quot;: [ # Required. Only objects with the specified attributes will be scanned. If an object has one of the specified attributes but is inside an excluded bucket, it will not be scanned. Defaults to [ALL_SUPPORTED_OBJECTS]. A profile will be created even if no objects match the included_object_attributes.
+              &quot;A String&quot;,
+            ],
+          },
+          &quot;createdAfter&quot;: &quot;A String&quot;, # Optional. File store must have been created after this date. Used to avoid backfilling.
+          &quot;minAge&quot;: &quot;A String&quot;, # Optional. Minimum age a file store must have. If set, the value must be 1 hour or greater.
+        },
+        &quot;disabled&quot;: { # Do not profile the tables. # Optional. Disable profiling for buckets that match this filter.
+        },
+        &quot;filter&quot;: { # Determines which buckets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID and bucket name. # Required. The buckets the generation_cadence applies to. The first target with a matching filter will be the one to apply to a bucket.
+          &quot;cloudStorageResourceReference&quot;: { # Identifies a single Cloud Storage bucket. # Optional. The bucket to scan. Targets including this can only include one target (the target with this bucket). This enables profiling the contents of a single bucket, while the other options allow for easy profiling of many bucets within a project or an organization.
+            &quot;bucketName&quot;: &quot;A String&quot;, # Required. The bucket to scan.
+            &quot;projectId&quot;: &quot;A String&quot;, # Required. If within a project-level config, then this must match the config&#x27;s project id.
+          },
+          &quot;collection&quot;: { # Match file stores (e.g. buckets) using regex filters. # Optional. A specific set of buckets for this filter to apply to.
+            &quot;includeRegexes&quot;: { # A collection of regular expressions to determine what file store to match against. # Optional. A collection of regular expressions to match a file store against.
+              &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more file stores. Maximum of 100 entries. The sum of all regular expression&#x27;s length can&#x27;t exceed 10 KiB.
+                { # A pattern to match against one or more file stores.
+                  &quot;cloudStorageRegex&quot;: { # A pattern to match against one or more file stores. At least one pattern must be specified. Regular expressions use RE2 [syntax](https://github.com/google/re2/wiki/Syntax); a guide can be found under the google/re2 repository on GitHub. # Optional. Regex for Cloud Storage.
+                    &quot;bucketNameRegex&quot;: &quot;A String&quot;, # Optional. Regex to test the bucket name against. If empty, all buckets match. Example: &quot;marketing2021&quot; or &quot;(marketing)\d{4}&quot; will both match the bucket gs://marketing2021
+                    &quot;projectIdRegex&quot;: &quot;A String&quot;, # Optional. For organizations, if unset, will match all projects.
+                  },
+                },
+              ],
+            },
+          },
+          &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Optional. Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+          },
+        },
+        &quot;generationCadence&quot;: { # How often existing buckets should have their profiles refreshed. New buckets are scanned as quickly as possible depending on system capacity. # Optional. How often and when to update profiles. New buckets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Optional. Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to update.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
+          &quot;refreshFrequency&quot;: &quot;A String&quot;, # Optional. Data changes in Cloud Storage can&#x27;t trigger reprofiling. If you set this field, profiles are refreshed at this frequency regardless of whether the underlying buckets have changed. Defaults to never.
         },
       },
       &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
