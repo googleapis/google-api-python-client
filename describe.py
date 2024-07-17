@@ -395,7 +395,6 @@ def document_api(
     uri,
     doc_destination_dir,
     artifact_destination_dir=DISCOVERY_DOC_DIR,
-    discovery_uri_template=None,
 ):
     """Document the given API.
 
@@ -407,19 +406,14 @@ def document_api(
             documentation should be saved.
         artifact_destination_dir (Optional[str]): relative path where the discovery
             artifacts should be saved.
-        discovery_uri_template (Optional[str]): URI template of the API's discovery document.
-            If this parameter is set, the `uri` parameter is ignored and the uri
-            will be created from this template.
     """
-    # The order for constructing `uri` is use `discovery_uri_template` if provided,
-    # then use `uri` argument if provided, then fallback to `FLAGS.discovery_uri_template`
-    uri = uritemplate.expand(
-        discovery_uri_template or uri or FLAGS.discovery_uri_template,
-        {"api": name, "apiVersion": version},
-    )
-
     http = build_http()
-    resp, content = http.request(uri)
+    resp, content = http.request(
+        uri
+        or uritemplate.expand(
+            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
+        )
+    )
 
     if resp.status == 200:
         discovery = json.loads(content)
@@ -526,7 +520,7 @@ def generate_all_api_documents(
             document_api(
                 api["name"],
                 api["version"],
-                api["discoveryRestUrl"],
+                discovery_uri_template or api["discoveryRestUrl"],
                 doc_destination_dir,
                 artifact_destination_dir,
                 discovery_uri_template,
