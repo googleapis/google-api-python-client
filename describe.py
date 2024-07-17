@@ -515,7 +515,7 @@ def generate_all_api_documents(
         directory = json.loads(content)["items"]
         for api in directory:
             uri = uritemplate.expand(
-                discovery_uri_template or FLAGS.discovery_uri_template,
+                discovery_uri_template,
                 {"api": api["name"], "apiVersion": api["version"]}
             )
             document_api(
@@ -563,4 +563,5 @@ if __name__ == "__main__":
         generate_all_api_documents(
             directory_uri=FLAGS.directory_uri,
             doc_destination_dir=FLAGS.dest,
+            discovery_uri_template=FLAGS.discovery_uri_template,
         )
