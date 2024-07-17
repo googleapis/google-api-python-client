@@ -136,13 +136,15 @@ METHOD_LINK = """<p class="toc_element">
 
 BASE = pathlib.Path(__file__).resolve().parent / "docs" / "dyn"
 
-DIRECTORY_URI = "https://www.googleapis.com/discovery/v1/apis"
+# Obtain the discovery index and artifacts from googleapis/discovery-artifact-manager
+DIRECTORY_URI = "https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/index.json"
+DISCOVERY_URI_TEMPLATE = "https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/{api}.{apiVersion}.json"
 
 parser = argparse.ArgumentParser(description=__doc__)
 
 parser.add_argument(
     "--discovery_uri_template",
-    default=DISCOVERY_URI,
+    default=DISCOVERY_URI_TEMPLATE,
     help="URI Template for discovery.",
 )
 
@@ -390,7 +392,11 @@ def document_collection_recursive(
 
 
 def document_api(
-    name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR
+    name,
+    version,
+    uri,
+    doc_destination_dir,
+    artifact_destination_dir=DISCOVERY_DOC_DIR,
 ):
     """Document the given API.
 
@@ -400,16 +406,11 @@ def document_api(
         uri (str): URI of the API's discovery document
         doc_destination_dir (str): relative path where the reference
             documentation should be saved.
-        artifact_destination_dir (str): relative path where the discovery
+        artifact_destination_dir (Optional[str]): relative path where the discovery
             artifacts should be saved.
     """
     http = build_http()
-    resp, content = http.request(
-        uri
-        or uritemplate.expand(
-            FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
-        )
-    )
+    resp, content = http.request(uri)
 
     if resp.status == 200:
         discovery = json.loads(content)
@@ -494,15 +495,18 @@ def generate_all_api_documents(
     directory_uri=DIRECTORY_URI,
     doc_destination_dir=BASE,
     artifact_destination_dir=DISCOVERY_DOC_DIR,
+    discovery_uri_template=DISCOVERY_URI_TEMPLATE,
 ):
     """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
     args:
-        directory_uri (str): uri of the public discovery directory.
-        doc_destination_dir (str): relative path where the reference
+        directory_uri (Optional[str]): uri of the public discovery directory.
+        doc_destination_dir (Optional[str]): relative path where the reference
             documentation should be saved.
-        artifact_destination_dir (str): relative path where the discovery
+        artifact_destination_dir (Optional[str]): relative path where the discovery
             artifacts should be saved.
+        discovery_uri_template (Optional[str]): URI template of the API's discovery
+            document.
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
@@ -510,10 +514,14 @@ def generate_all_api_documents(
     if resp.status == 200:
         directory = json.loads(content)["items"]
         for api in directory:
+            uri = uritemplate.expand(
+                discovery_uri_template or api["discoveryRestUrl"],
+                {"api": api["name"], "apiVersion": api["version"]},
+            )
             document_api(
                 api["name"],
                 api["version"],
-                api["discoveryRestUrl"],
+                uri,
                 doc_destination_dir,
                 artifact_destination_dir,
             )
@@ -555,4 +563,5 @@ if __name__ == "__main__":
         generate_all_api_documents(
             directory_uri=FLAGS.directory_uri,
             doc_destination_dir=FLAGS.dest,
+            discovery_uri_template=FLAGS.discovery_uri_template,
         )
