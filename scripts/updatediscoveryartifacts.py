@@ -23,6 +23,9 @@ import changesummary
 import describe
 
 SCRIPTS_DIR = pathlib.Path(__file__).parent.resolve()
+# Obtain the discovery index and artifacts from googleapis/discovery-artifact-manager
+DIRECTORY_URI = "https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/index.json"
+DISCOVERY_URI_TEMPLATE = "https://raw.githubusercontent.com/googleapis/discovery-artifact-manager/master/discoveries/{api}.{apiVersion}.json"
 DISCOVERY_DOC_DIR = (
     SCRIPTS_DIR / ".." / "googleapiclient" / "discovery_cache" / "documents"
 )
@@ -46,8 +49,10 @@ with tempfile.TemporaryDirectory() as current_discovery_doc_dir:
 
     # Download discovery artifacts and generate documentation
     describe.generate_all_api_documents(
+        directory_uri=DIRECTORY_URI,
         doc_destination_dir=REFERENCE_DOC_DIR,
         artifact_destination_dir=DISCOVERY_DOC_DIR,
+        discovery_uri_template=DISCOVERY_URI_TEMPLATE,
     )
 
     # Get a list of files changed using `git diff`

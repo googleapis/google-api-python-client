@@ -390,7 +390,7 @@ def document_collection_recursive(
 
 
 def document_api(
-    name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR
+    name, version, uri, doc_destination_dir, artifact_destination_dir=DISCOVERY_DOC_DIR, discovery_uri_template=None
 ):
     """Document the given API.
 
@@ -402,14 +402,23 @@ def document_api(
             documentation should be saved.
         artifact_destination_dir (str): relative path where the discovery
             artifacts should be saved.
+        discovery_uri_template (str): URI template of the API's discovery document.
+            If this parameter is set, the `uri` parameter is ignored and the uri
+            will be created from this template.
     """
-    http = build_http()
-    resp, content = http.request(
-        uri
-        or uritemplate.expand(
+    # Use the discovery_uri_template to create the uri if provided
+    if discovery_uri_template:
+        uri = uritemplate.expand(
+            discovery_uri_template, {"api": name, "apiVersion": version}
+        )
+
+    if not uri:
+        uritemplate.expand(
             FLAGS.discovery_uri_template, {"api": name, "apiVersion": version}
         )
-    )
+
+    http = build_http()
+    resp, content = http.request(uri)
 
     if resp.status == 200:
         discovery = json.loads(content)
@@ -494,6 +503,7 @@ def generate_all_api_documents(
     directory_uri=DIRECTORY_URI,
     doc_destination_dir=BASE,
     artifact_destination_dir=DISCOVERY_DOC_DIR,
+    discovery_uri_template=None,
 ):
     """Retrieve discovery artifacts and fetch reference documentations
     for all apis listed in the public discovery directory.
@@ -503,6 +513,9 @@ def generate_all_api_documents(
             documentation should be saved.
         artifact_destination_dir (str): relative path where the discovery
             artifacts should be saved.
+        discovery_uri_template (str): URI template of the API's discovery document.
+            If this parameter is set, the `uri` parameter is ignored and the uri
+            will be created from this template.
     """
     api_directory = collections.defaultdict(list)
     http = build_http()
@@ -516,6 +529,7 @@ def generate_all_api_documents(
                 api["discoveryRestUrl"],
                 doc_destination_dir,
                 artifact_destination_dir,
+                discovery_uri_template,
             )
             api_directory[api["name"]].append(api["version"])
 
