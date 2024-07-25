@@ -50,6 +50,7 @@
 
 
 ## adsenseplatform
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1alpha.html)
 
 
@@ -163,6 +164,7 @@
 
 ## authorizedbuyersmarketplace
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1alpha.html)
 
 
 ## backupdr
@@ -545,10 +547,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1.html)
 * [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1alpha2.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1beta1.html)
-
-
-## domainsrdap
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/domainsrdap_v1.html)
 
 
 ## doubleclickbidmanager
