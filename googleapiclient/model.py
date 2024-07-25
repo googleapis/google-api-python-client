@@ -31,8 +31,10 @@ import warnings
 
 from googleapiclient import version as googleapiclient_version
 from googleapiclient.errors import HttpError
+
 try:
     from google.api_core.version_header import API_VERSION_METADATA_KEY
+
     HAS_API_VERSION = True
 except ImportError:
     HAS_API_VERSION = False
@@ -167,11 +169,11 @@ class BaseModel(Model):
         if api_version and HAS_API_VERSION:
             headers[API_VERSION_METADATA_KEY] = api_version
         elif api_version:
-                warnings.warn(
-                    "The `api_version` argument is ignored as a newer version of "
-                    "`google-api-core` is required to use this feature."
-                    "Please upgrade `google-api-core` to 2.19.0 or newer."
-                )
+            warnings.warn(
+                "The `api_version` argument is ignored as a newer version of "
+                "`google-api-core` is required to use this feature."
+                "Please upgrade `google-api-core` to 2.19.0 or newer."
+            )
 
         if body_value is not None:
             headers["content-type"] = self.content_type

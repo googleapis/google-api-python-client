@@ -37,6 +37,7 @@ from googleapiclient.model import JsonModel
 
 try:
     from google.api_core.version_header import API_VERSION_METADATA_KEY
+
     HAS_API_VERSION = True
 except ImportError:
     HAS_API_VERSION = False
@@ -178,7 +179,10 @@ class Model(unittest.TestCase):
             + platform.python_version(),
         )
 
-    @unittest.skipIf(not HAS_API_VERSION, "Skip this test when an older version of google-api-core is used")
+    @unittest.skipIf(
+        not HAS_API_VERSION,
+        "Skip this test when an older version of google-api-core is used",
+    )
     def test_x_goog_api_version(self):
         model = JsonModel(data_wrapper=False)
 
