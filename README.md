@@ -79,7 +79,7 @@ dependencies.
 
 ### Mac/Linux
 
-```
+```bash
 pip3 install virtualenv
 virtualenv <your-env>
 source <your-env>/bin/activate
@@ -88,7 +88,7 @@ source <your-env>/bin/activate
 
 ### Windows
 
-```
+```batch
 pip install virtualenv
 virtualenv <your-env>
 <your-env>\Scripts\activate
@@ -97,7 +97,7 @@ virtualenv <your-env>
 
 ## Supported Python Versions
 
-Python 3.7, 3.8, 3.9, 3.10 and 3.11 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
+Python 3.7, 3.8, 3.9, 3.10, 3.11 and 3.12 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
 
 ## Unsupported Python Versions
 
@@ -110,7 +110,7 @@ The following libraries will be installed when you install the client library:
 * [uritemplate](https://github.com/sigmavirus24/uritemplate)
 
 For development you will also need the following libraries:
-* [WebTest](http://webtest.pythonpaste.org/en/latest/index.html)
+* [WebTest](https://pypi.org/project/WebTest/)
 * [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
 
 ## Contributing

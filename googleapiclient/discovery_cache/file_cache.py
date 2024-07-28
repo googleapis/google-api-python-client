@@ -46,7 +46,7 @@ from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
 LOGGER = logging.getLogger(__name__)
 
 FILENAME = "google-api-python-client-discovery-doc.cache"
-EPOCH = datetime.datetime.utcfromtimestamp(0)
+EPOCH = datetime.datetime(1970, 1, 1)
 
 
 def _to_timestamp(date):

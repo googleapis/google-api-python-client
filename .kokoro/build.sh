@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2018 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,13 +32,6 @@ export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/service-account.json
 
 # Setup project id.
 export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
-
-# Remove old nox
-python3 -m pip uninstall --yes --quiet nox-automation
-
-# Install nox
-python3 -m pip install --upgrade --quiet nox
-python3 -m nox --version
 
 # If this is a continuous build, send the test log to the FlakyBot.
 # See https://github.com/googleapis/repo-automation-bots/tree/main/packages/flakybot.

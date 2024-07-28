@@ -33,16 +33,16 @@ from setuptools import setup
 packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
-    "httplib2>=0.15.0,<1dev",
+    "httplib2>=0.19.0,<1.dev0",
     # NOTE: Maintainers, please do not require google-auth>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-auth>=1.19.0,<3.0.0dev",
-    "google-auth-httplib2>=0.1.0",
+    "google-auth>=1.32.0,<3.0.0.dev0,!=2.24.0,!=2.25.0",
+    "google-auth-httplib2>=0.2.0, <1.0.0",
     # NOTE: Maintainers, please do not require google-api-core>=2.x.x
     # Until this issue is closed
     # https://github.com/googleapis/google-cloud-python/issues/10566
-    "google-api-core >= 1.31.5, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
+    "google-api-core >= 1.31.5, <3.0.0.dev0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     "uritemplate>=3.0.1,<5",
 ]
 
@@ -81,6 +81,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",

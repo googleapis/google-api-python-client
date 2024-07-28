@@ -97,7 +97,7 @@ Args:
 
 { # Request to report agent&#x27;s state. The Request itself implies the agent is healthy.
   &quot;agentInfo&quot;: { # VM Agent Info. # Agent info.
-    &quot;jobId&quot;: &quot;A String&quot;, # The assigned Job ID
+    &quot;jobId&quot;: &quot;A String&quot;, # Optional. The assigned Job ID
     &quot;reportTime&quot;: &quot;A String&quot;, # When the AgentInfo is generated.
     &quot;state&quot;: &quot;A String&quot;, # Agent state.
     &quot;taskGroupId&quot;: &quot;A String&quot;, # The assigned task group ID.
@@ -105,15 +105,16 @@ Args:
       { # Task Info
         &quot;runnable&quot;: &quot;A String&quot;, # The highest index of a runnable started by the agent for this task. The runnables are indexed from 1. Value 0 is undefined.
         &quot;taskId&quot;: &quot;A String&quot;, # ID of the Task
-        &quot;taskStatus&quot;: { # Status of a task # The status of the Task. If we need agent specific fields we should fork the public TaskStatus into an agent specific one. Or add them below.
-          &quot;state&quot;: &quot;A String&quot;, # Task state
+        &quot;taskStatus&quot;: { # Status of a task. # The status of the Task. If we need agent specific fields we should fork the public TaskStatus into an agent specific one. Or add them below.
+          &quot;state&quot;: &quot;A String&quot;, # Task state.
           &quot;statusEvents&quot;: [ # Detailed info about why the state is reached.
-            { # Status event
+            { # Status event.
               &quot;description&quot;: &quot;A String&quot;, # Description of the event.
               &quot;eventTime&quot;: &quot;A String&quot;, # The time this event occurred.
-              &quot;taskExecution&quot;: { # This Task Execution field includes detail information for task execution procedures, based on StatusEvent types. # Task Execution
-                &quot;exitCode&quot;: 42, # When task is completed as the status of FAILED or SUCCEEDED, exit code is for one task execution result, default is 0 as success.
+              &quot;taskExecution&quot;: { # This Task Execution field includes detail information for task execution procedures, based on StatusEvent types. # Task Execution. This field is only defined for task-level status events where the task fails.
+                &quot;exitCode&quot;: 42, # The exit code of a finished task. If the task succeeded, the exit code will be 0. If the task failed but not due to the following reasons, the exit code will be 50000. Otherwise, it can be from different sources: * Batch known failures: https://cloud.google.com/batch/docs/troubleshooting#reserved-exit-codes. * Batch runnable execution failures; you can rely on Batch logs to further diagnose: https://cloud.google.com/batch/docs/analyze-job-using-logs. If there are multiple runnables failures, Batch only exposes the first error.
               },
+              &quot;taskState&quot;: &quot;A String&quot;, # Task State. This field is only defined for task-level status events.
               &quot;type&quot;: &quot;A String&quot;, # Type of the event.
             },
           ],
@@ -133,6 +134,7 @@ Args:
     &quot;instance&quot;: &quot;A String&quot;, # GCP instance name (go/instance-name).
     &quot;instanceId&quot;: &quot;A String&quot;, # GCP instance ID (go/instance-id).
     &quot;instancePreemptionNoticeReceived&quot;: True or False, # If the GCP instance has received preemption notice.
+    &quot;machineType&quot;: &quot;A String&quot;, # Optional. machine type of the VM
     &quot;osRelease&quot;: { # parsed contents of /etc/os-release
       &quot;a_key&quot;: &quot;A String&quot;,
     },
@@ -154,13 +156,67 @@ Returns:
   &quot;minReportInterval&quot;: &quot;A String&quot;, # Minimum report interval override
   &quot;tasks&quot;: [ # Tasks assigned to the agent
     { # TODO(b/182501497) The message needs to be redefined when the Agent API server updates data in storage per the backend design.
+      &quot;agentTaskSpec&quot;: { # AgentTaskSpec is the user&#x27;s TaskSpec representation between Agent and CLH communication. # AgentTaskSpec is the taskSpec representation between Agent and CLH communication. This field will replace the TaskSpec field above in future to have a better separation between user-facaing API and internal API.
+        &quot;environment&quot;: { # AgentEnvironment is the Environment representation between Agent and CLH communication. The environment is used in both task level and agent level. # Environment variables to set before running the Task.
+          &quot;encryptedVariables&quot;: { # AgentKMSEnvMap contains the encrypted key/value pair to be used in the environment on the Agent side. # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
+            &quot;cipherText&quot;: &quot;A String&quot;, # The value of the cipherText response from the `encrypt` method.
+            &quot;keyName&quot;: &quot;A String&quot;, # The name of the KMS key that will be used to decrypt the cipher text.
+          },
+          &quot;secretVariables&quot;: { # A map of environment variable names to Secret Manager secret names. The VM will access the named secrets to set the value of each environment variable.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+          &quot;variables&quot;: { # A map of environment variable names to values.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+        },
+        &quot;maxRunDuration&quot;: &quot;A String&quot;, # Maximum duration the task should run before being automatically retried (if enabled) or automatically failed. Format the value of this field as a time limit in seconds followed by `s`—for example, `3600s` for 1 hour. The field accepts any value between 0 and the maximum listed for the `Duration` field type at https://protobuf.dev/reference/protobuf/google.protobuf/#duration; however, the actual maximum run time for a job will be limited to the maximum run time for a job listed at https://cloud.google.com/batch/quotas#max-job-duration.
+        &quot;runnables&quot;: [ # AgentTaskRunnable is runanbles that will be executed on the agent.
+          { # AgentTaskRunnable is the Runnable representation between Agent and CLH communication.
+            &quot;alwaysRun&quot;: True or False, # By default, after a Runnable fails, no further Runnable are executed. This flag indicates that this Runnable must be run even if the Task has already failed. This is useful for Runnables that copy output files off of the VM or for debugging. The always_run flag does not override the Task&#x27;s overall max_run_duration. If the max_run_duration has expired then no further Runnables will execute, not even always_run Runnables.
+            &quot;background&quot;: True or False, # This flag allows a Runnable to continue running in the background while the Task executes subsequent Runnables. This is useful to provide services to other Runnables (or to provide debugging support tools like SSH servers).
+            &quot;container&quot;: { # Container runnable representation on the agent side. # Container runnable.
+              &quot;commands&quot;: [ # Overrides the `CMD` specified in the container. If there is an ENTRYPOINT (either in the container image or with the entrypoint field below) then commands are appended as arguments to the ENTRYPOINT.
+                &quot;A String&quot;,
+              ],
+              &quot;entrypoint&quot;: &quot;A String&quot;, # Overrides the `ENTRYPOINT` specified in the container.
+              &quot;imageUri&quot;: &quot;A String&quot;, # The URI to pull the container image from.
+              &quot;options&quot;: &quot;A String&quot;, # Arbitrary additional options to include in the &quot;docker run&quot; command when running this container, e.g. &quot;--network host&quot;.
+              &quot;volumes&quot;: [ # Volumes to mount (bind mount) from the host machine files or directories into the container, formatted to match docker run&#x27;s --volume option, e.g. /foo:/bar, or /foo:/bar:ro
+                &quot;A String&quot;,
+              ],
+            },
+            &quot;environment&quot;: { # AgentEnvironment is the Environment representation between Agent and CLH communication. The environment is used in both task level and agent level. # Environment variables for this Runnable (overrides variables set for the whole Task or TaskGroup).
+              &quot;encryptedVariables&quot;: { # AgentKMSEnvMap contains the encrypted key/value pair to be used in the environment on the Agent side. # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
+                &quot;cipherText&quot;: &quot;A String&quot;, # The value of the cipherText response from the `encrypt` method.
+                &quot;keyName&quot;: &quot;A String&quot;, # The name of the KMS key that will be used to decrypt the cipher text.
+              },
+              &quot;secretVariables&quot;: { # A map of environment variable names to Secret Manager secret names. The VM will access the named secrets to set the value of each environment variable.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+              &quot;variables&quot;: { # A map of environment variable names to values.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+            },
+            &quot;ignoreExitStatus&quot;: True or False, # Normally, a non-zero exit status causes the Task to fail. This flag allows execution of other Runnables to continue instead.
+            &quot;script&quot;: { # Script runnable representation on the agent side. # Script runnable.
+              &quot;path&quot;: &quot;A String&quot;, # Script file path on the host VM. To specify an interpreter, please add a `#!`(also known as [shebang line](https://en.wikipedia.org/wiki/Shebang_(Unix))) as the first line of the file.(For example, to execute the script using bash, `#!/bin/bash` should be the first line of the file. To execute the script using`Python3`, `#!/usr/bin/env python3` should be the first line of the file.) Otherwise, the file will by default be executed by `/bin/sh`.
+              &quot;text&quot;: &quot;A String&quot;, # Shell script text. To specify an interpreter, please add a `#!\n` at the beginning of the text.(For example, to execute the script using bash, `#!/bin/bash\n` should be added. To execute the script using`Python3`, `#!/usr/bin/env python3\n` should be added.) Otherwise, the script will by default be executed by `/bin/sh`.
+            },
+            &quot;timeout&quot;: &quot;A String&quot;, # Timeout for this Runnable.
+          },
+        ],
+        &quot;userAccount&quot;: { # AgentTaskUserAccount contains the information of a POSIX account on the guest os which is used to execute the runnables. # User account on the VM to run the runnables in the agentTaskSpec. If not set, the runnable will be run under root user.
+          &quot;gid&quot;: &quot;A String&quot;, # gid id an unique identifier of the POSIX account group corresponding to the user account.
+          &quot;uid&quot;: &quot;A String&quot;, # uid is an unique identifier of the POSIX account corresponding to the user account.
+        },
+      },
       &quot;intendedState&quot;: &quot;A String&quot;, # The intended state of the task.
       &quot;reachedBarrier&quot;: &quot;A String&quot;, # The highest barrier reached by all tasks in the task&#x27;s TaskGroup.
-      &quot;spec&quot;: { # Spec of a task # Task Spec.
-        &quot;computeResource&quot;: { # Compute resource requirements # ComputeResource requirements.
+      &quot;spec&quot;: { # Spec of a task # Task Spec. This field will be replaced by agent_task_spec below in future.
+        &quot;computeResource&quot;: { # Compute resource requirements. ComputeResource defines the amount of resources required for each task. Make sure your tasks have enough resources to successfully run. If you also define the types of resources for a job to use with the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure both fields are compatible with each other. # ComputeResource requirements.
           &quot;bootDiskMib&quot;: &quot;A String&quot;, # Extra boot disk size in MiB for each task.
-          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count.
-          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB.
+          &quot;cpuMilli&quot;: &quot;A String&quot;, # The milliCPU count. `cpuMilli` defines the amount of CPU resources per task in milliCPU units. For example, `1000` corresponds to 1 vCPU per task. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the CPU resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 2 vCPUs each, you are recommended to set `cpuMilli` no more than `2000`, or you are recommended to run two tasks on the same VM if you set `cpuMilli` to `1000` or less.
+          &quot;memoryMib&quot;: &quot;A String&quot;, # Memory in MiB. `memoryMib` defines the amount of memory per task in MiB units. If undefined, the default value is `2000`. If you also define the VM&#x27;s machine type using the `machineType` in [InstancePolicy](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicy) field or inside the `instanceTemplate` in the [InstancePolicyOrTemplate](https://cloud.google.com/batch/docs/reference/rest/v1/projects.locations.jobs#instancepolicyortemplate) field, make sure the memory resources for both fields are compatible with each other and with how many tasks you want to allow to run on the same VM at the same time. For example, if you specify the `n2-standard-2` machine type, which has 8 GiB each, you are recommended to set `memoryMib` to no more than `8192`, or you are recommended to run two tasks on the same VM if you set `memoryMib` to `4096` or less.
         },
         &quot;environment&quot;: { # An Environment describes a collection of environment variables to set when executing Tasks. # Environment variables to set before running the Task.
           &quot;encryptedVariables&quot;: { # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
@@ -177,9 +233,9 @@ Returns:
         &quot;environments&quot;: { # Deprecated: please use environment(non-plural) instead.
           &quot;a_key&quot;: &quot;A String&quot;,
         },
-        &quot;lifecyclePolicies&quot;: [ # Lifecycle management schema when any task in a task group is failed. The valid size of lifecycle policies are [0, 10]. For each lifecycle policy, when the condition is met, the action in that policy will execute. If there are multiple policies that the task execution result matches, we use the action from the first matched policy. If task execution result does not meet with any of the defined lifecycle policy, we consider it as the default policy. Default policy means if the exit code is 0, exit task. If task ends with non-zero exit code, retry the task with max_retry_count.
+        &quot;lifecyclePolicies&quot;: [ # Lifecycle management schema when any task in a task group is failed. Currently we only support one lifecycle policy. When the lifecycle policy condition is met, the action in the policy will execute. If task execution result does not meet with the defined lifecycle policy, we consider it as the default policy. Default policy means if the exit code is 0, exit task. If task ends with non-zero exit code, retry the task with max_retry_count.
           { # LifecyclePolicy describes how to deal with task failures based on different conditions.
-            &quot;action&quot;: &quot;A String&quot;, # Action to execute when ActionCondition is true.
+            &quot;action&quot;: &quot;A String&quot;, # Action to execute when ActionCondition is true. When RETRY_TASK is specified, we will retry failed tasks if we notice any exit code match and fail tasks if no match is found. Likewise, when FAIL_TASK is specified, we will fail tasks if we notice any exit code match and retry tasks if no match is found.
             &quot;actionCondition&quot;: { # Conditions for actions to deal with task failures. # Conditions that decide why a task failure is dealt with a specific action.
               &quot;exitCodes&quot;: [ # Exit codes of a task execution. If there are more than 1 exit codes, when task executes with any of the exit code in the list, the condition is met and the action will be executed.
                 42,
@@ -188,7 +244,7 @@ Returns:
           },
         ],
         &quot;maxRetryCount&quot;: 42, # Maximum number of retries on failures. The default, 0, which means never retry. The valid value range is [0, 10].
-        &quot;maxRunDuration&quot;: &quot;A String&quot;, # Maximum duration the task should run. The task will be killed and marked as FAILED if over this limit.
+        &quot;maxRunDuration&quot;: &quot;A String&quot;, # Maximum duration the task should run before being automatically retried (if enabled) or automatically failed. Format the value of this field as a time limit in seconds followed by `s`—for example, `3600s` for 1 hour. The field accepts any value between 0 and the maximum listed for the `Duration` field type at https://protobuf.dev/reference/protobuf/google.protobuf/#duration; however, the actual maximum run time for a job will be limited to the maximum run time for a job listed at https://cloud.google.com/batch/quotas#max-job-duration.
         &quot;runnables&quot;: [ # The sequence of scripts or containers to run for this Task. Each Task using this TaskSpec executes its list of runnables in order. The Task succeeds if all of its runnables either exit with a zero status or any that exit with a non-zero status have the ignore_exit_status flag. Background runnables are killed automatically (if they have not already exited) a short time after all foreground runnables have completed. Even though this is likely to result in a non-zero exit status for the background runnable, these automatic kills are not treated as Task failures.
           { # Runnable describes instructions for executing a specific script or container as part of a Task.
             &quot;alwaysRun&quot;: True or False, # By default, after a Runnable fails, no further Runnable are executed. This flag indicates that this Runnable must be run even if the Task has already failed. This is useful for Runnables that copy output files off of the VM or for debugging. The always_run flag does not override the Task&#x27;s overall max_run_duration. If the max_run_duration has expired then no further Runnables will execute, not even always_run Runnables.
@@ -197,19 +253,21 @@ Returns:
               &quot;name&quot;: &quot;A String&quot;, # Barriers are identified by their index in runnable list. Names are not required, but if present should be an identifier.
             },
             &quot;container&quot;: { # Container runnable. # Container runnable.
-              &quot;blockExternalNetwork&quot;: True or False, # If set to true, external network access to and from container will be blocked. The container will use the default internal network &#x27;goog-internal&#x27;.
+              &quot;blockExternalNetwork&quot;: True or False, # If set to true, external network access to and from container will be blocked, containers that are with block_external_network as true can still communicate with each other, network cannot be specified in the `container.options` field.
               &quot;commands&quot;: [ # Overrides the `CMD` specified in the container. If there is an ENTRYPOINT (either in the container image or with the entrypoint field below) then commands are appended as arguments to the ENTRYPOINT.
                 &quot;A String&quot;,
               ],
+              &quot;enableImageStreaming&quot;: True or False, # Optional. If set to true, this container runnable uses Image streaming. Use Image streaming to allow the runnable to initialize without waiting for the entire container image to download, which can significantly reduce startup time for large container images. When `enableImageStreaming` is set to true, the container runtime is [containerd](https://containerd.io/) instead of Docker. Additionally, this container runnable only supports the following `container` subfields: `imageUri`, `commands[]`, `entrypoint`, and `volumes[]`; any other `container` subfields are ignored. For more information about the requirements and limitations for using Image streaming with Batch, see the [`image-streaming` sample on GitHub](https://github.com/GoogleCloudPlatform/batch-samples/tree/main/api-samples/image-streaming).
               &quot;entrypoint&quot;: &quot;A String&quot;, # Overrides the `ENTRYPOINT` specified in the container.
               &quot;imageUri&quot;: &quot;A String&quot;, # The URI to pull the container image from.
               &quot;options&quot;: &quot;A String&quot;, # Arbitrary additional options to include in the &quot;docker run&quot; command when running this container, e.g. &quot;--network host&quot;.
-              &quot;password&quot;: &quot;A String&quot;, # Optional password for logging in to a docker registry. If password matches `projects/*/secrets/*/versions/*` then Batch will read the password from the Secret Manager;
-              &quot;username&quot;: &quot;A String&quot;, # Optional username for logging in to a docker registry. If username matches `projects/*/secrets/*/versions/*` then Batch will read the username from the Secret Manager.
-              &quot;volumes&quot;: [ # Volumes to mount (bind mount) from the host machine files or directories into the container, formatted to match docker run&#x27;s --volume option, e.g. /foo:/bar, or /foo:/bar:ro
+              &quot;password&quot;: &quot;A String&quot;, # Required if the container image is from a private Docker registry. The password to login to the Docker registry that contains the image. For security, it is strongly recommended to specify an encrypted password by using a Secret Manager secret: `projects/*/secrets/*/versions/*`. Warning: If you specify the password using plain text, you risk the password being exposed to any users who can view the job or its logs. To avoid this risk, specify a secret that contains the password instead. Learn more about [Secret Manager](https://cloud.google.com/secret-manager/docs/) and [using Secret Manager with Batch](https://cloud.google.com/batch/docs/create-run-job-secret-manager).
+              &quot;username&quot;: &quot;A String&quot;, # Required if the container image is from a private Docker registry. The username to login to the Docker registry that contains the image. You can either specify the username directly by using plain text or specify an encrypted username by using a Secret Manager secret: `projects/*/secrets/*/versions/*`. However, using a secret is recommended for enhanced security. Caution: If you specify the username using plain text, you risk the username being exposed to any users who can view the job or its logs. To avoid this risk, specify a secret that contains the username instead. Learn more about [Secret Manager](https://cloud.google.com/secret-manager/docs/) and [using Secret Manager with Batch](https://cloud.google.com/batch/docs/create-run-job-secret-manager).
+              &quot;volumes&quot;: [ # Volumes to mount (bind mount) from the host machine files or directories into the container, formatted to match docker run&#x27;s --volume option, e.g. /foo:/bar, or /foo:/bar:ro If the `TaskSpec.Volumes` field is specified but this field is not, Batch will mount each volume from the host machine to the container with the same mount path by default. In this case, the default mount option for containers will be read-only (ro) for existing persistent disks and read-write (rw) for other volume types, regardless of the original mount options specified in `TaskSpec.Volumes`. If you need different mount settings, you can explicitly configure them in this field.
                 &quot;A String&quot;,
               ],
             },
+            &quot;displayName&quot;: &quot;A String&quot;, # Optional. DisplayName is an optional field that can be provided by the caller. If provided, it will be used in logs and other outputs to identify the script, making it easier for users to understand the logs. If not provided the index of the runnable will be used for outputs.
             &quot;environment&quot;: { # An Environment describes a collection of environment variables to set when executing Tasks. # Environment variables for this Runnable (overrides variables set for the whole Task or TaskGroup).
               &quot;encryptedVariables&quot;: { # An encrypted JSON dictionary where the key/value pairs correspond to environment variable names and their values.
                 &quot;cipherText&quot;: &quot;A String&quot;, # The value of the cipherText response from the `encrypt` method.
@@ -223,9 +281,12 @@ Returns:
               },
             },
             &quot;ignoreExitStatus&quot;: True or False, # Normally, a non-zero exit status causes the Task to fail. This flag allows execution of other Runnables to continue instead.
+            &quot;labels&quot;: { # Labels for this Runnable.
+              &quot;a_key&quot;: &quot;A String&quot;,
+            },
             &quot;script&quot;: { # Script runnable. # Script runnable.
-              &quot;path&quot;: &quot;A String&quot;, # Script file path on the host VM.
-              &quot;text&quot;: &quot;A String&quot;, # Shell script text.
+              &quot;path&quot;: &quot;A String&quot;, # Script file path on the host VM. To specify an interpreter, please add a `#!`(also known as [shebang line](https://en.wikipedia.org/wiki/Shebang_(Unix))) as the first line of the file.(For example, to execute the script using bash, `#!/bin/bash` should be the first line of the file. To execute the script using`Python3`, `#!/usr/bin/env python3` should be the first line of the file.) Otherwise, the file will by default be executed by `/bin/sh`.
+              &quot;text&quot;: &quot;A String&quot;, # Shell script text. To specify an interpreter, please add a `#!\n` at the beginning of the text.(For example, to execute the script using bash, `#!/bin/bash\n` should be added. To execute the script using`Python3`, `#!/usr/bin/env python3\n` should be added.) Otherwise, the script will by default be executed by `/bin/sh`.
             },
             &quot;timeout&quot;: &quot;A String&quot;, # Timeout for this Runnable.
           },
@@ -236,7 +297,7 @@ Returns:
             &quot;gcs&quot;: { # Represents a Google Cloud Storage volume. # A Google Cloud Storage (GCS) volume.
               &quot;remotePath&quot;: &quot;A String&quot;, # Remote path, either a bucket name or a subdirectory of a bucket, e.g.: bucket_name, bucket_name/subdirectory/
             },
-            &quot;mountOptions&quot;: [ # For Google Cloud Storage (GCS), mount options are the options supported by the gcsfuse tool (https://github.com/GoogleCloudPlatform/gcsfuse). For existing persistent disks, mount options provided by the mount command (https://man7.org/linux/man-pages/man8/mount.8.html) except writing are supported. This is due to restrictions of multi-writer mode (https://cloud.google.com/compute/docs/disks/sharing-disks-between-vms). For other attached disks and Network File System (NFS), mount options are these supported by the mount command (https://man7.org/linux/man-pages/man8/mount.8.html).
+            &quot;mountOptions&quot;: [ # Mount options vary based on the type of storage volume: * For a Cloud Storage bucket, all the mount options provided by the [`gcsfuse` tool](https://cloud.google.com/storage/docs/gcsfuse-cli) are supported. * For an existing persistent disk, all mount options provided by the [`mount` command](https://man7.org/linux/man-pages/man8/mount.8.html) except writing are supported. This is due to restrictions of [multi-writer mode](https://cloud.google.com/compute/docs/disks/sharing-disks-between-vms). * For any other disk or a Network File System (NFS), all the mount options provided by the `mount` command are supported.
               &quot;A String&quot;,
             ],
             &quot;mountPath&quot;: &quot;A String&quot;, # The mount path for the volume, e.g. /mnt/disks/share.
@@ -247,22 +308,25 @@ Returns:
           },
         ],
       },
-      &quot;status&quot;: { # Status of a task # Task status.
-        &quot;state&quot;: &quot;A String&quot;, # Task state
+      &quot;status&quot;: { # Status of a task. # Task status.
+        &quot;state&quot;: &quot;A String&quot;, # Task state.
         &quot;statusEvents&quot;: [ # Detailed info about why the state is reached.
-          { # Status event
+          { # Status event.
             &quot;description&quot;: &quot;A String&quot;, # Description of the event.
             &quot;eventTime&quot;: &quot;A String&quot;, # The time this event occurred.
-            &quot;taskExecution&quot;: { # This Task Execution field includes detail information for task execution procedures, based on StatusEvent types. # Task Execution
-              &quot;exitCode&quot;: 42, # When task is completed as the status of FAILED or SUCCEEDED, exit code is for one task execution result, default is 0 as success.
+            &quot;taskExecution&quot;: { # This Task Execution field includes detail information for task execution procedures, based on StatusEvent types. # Task Execution. This field is only defined for task-level status events where the task fails.
+              &quot;exitCode&quot;: 42, # The exit code of a finished task. If the task succeeded, the exit code will be 0. If the task failed but not due to the following reasons, the exit code will be 50000. Otherwise, it can be from different sources: * Batch known failures: https://cloud.google.com/batch/docs/troubleshooting#reserved-exit-codes. * Batch runnable execution failures; you can rely on Batch logs to further diagnose: https://cloud.google.com/batch/docs/analyze-job-using-logs. If there are multiple runnables failures, Batch only exposes the first error.
             },
+            &quot;taskState&quot;: &quot;A String&quot;, # Task State. This field is only defined for task-level status events.
             &quot;type&quot;: &quot;A String&quot;, # Type of the event.
           },
         ],
       },
       &quot;task&quot;: &quot;A String&quot;, # Task name.
+      &quot;taskSource&quot;: &quot;A String&quot;, # TaskSource represents the source of the task.
     },
   ],
+  &quot;useBatchMonitoredResource&quot;: True or False, # If true, the cloud logging for batch agent will use batch.googleapis.com/Job as monitored resource for Batch job related logging.
 }</pre>
 </div>
 

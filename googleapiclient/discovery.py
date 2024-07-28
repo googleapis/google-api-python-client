@@ -53,6 +53,13 @@ try:
 except ImportError:  # pragma: NO COVER
     google_auth_httplib2 = None
 
+try:
+    from google.api_core import universe
+
+    HAS_UNIVERSE = True
+except ImportError:
+    HAS_UNIVERSE = False
+
 # Local imports
 from googleapiclient import _auth, mimeparse
 from googleapiclient._helpers import _add_query_parameter, positional
@@ -116,11 +123,21 @@ _PAGE_TOKEN_NAMES = ("pageToken", "nextPageToken")
 # Parameters controlling mTLS behavior. See https://google.aip.dev/auth/4114.
 GOOGLE_API_USE_CLIENT_CERTIFICATE = "GOOGLE_API_USE_CLIENT_CERTIFICATE"
 GOOGLE_API_USE_MTLS_ENDPOINT = "GOOGLE_API_USE_MTLS_ENDPOINT"
-
+GOOGLE_CLOUD_UNIVERSE_DOMAIN = "GOOGLE_CLOUD_UNIVERSE_DOMAIN"
+DEFAULT_UNIVERSE = "googleapis.com"
 # Parameters accepted by the stack, but not visible via discovery.
 # TODO(dhermes): Remove 'userip' in 'v2'.
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
 STACK_QUERY_PARAMETER_DEFAULT_VALUE = {"type": "string", "location": "query"}
+
+
+class APICoreVersionError(ValueError):
+    def __init__(self):
+        message = (
+            "google-api-core >= 2.18.0 is required to use the universe domain feature."
+        )
+        super().__init__(message)
+
 
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(["body"])
@@ -436,6 +453,13 @@ def _retrieve_discovery_doc(
     return content
 
 
+def _check_api_core_compatible_with_credentials_universe(credentials):
+    if not HAS_UNIVERSE:
+        credentials_universe = getattr(credentials, "universe_domain", None)
+        if credentials_universe and credentials_universe != DEFAULT_UNIVERSE:
+            raise APICoreVersionError
+
+
 @positional(1)
 def build_from_document(
     service,
@@ -544,6 +568,18 @@ def build_from_document(
 
     # If an API Endpoint is provided on client options, use that as the base URL
     base = urllib.parse.urljoin(service["rootUrl"], service["servicePath"])
+    universe_domain = None
+    if HAS_UNIVERSE:
+        universe_domain_env = os.getenv(GOOGLE_CLOUD_UNIVERSE_DOMAIN, None)
+        universe_domain = universe.determine_domain(
+            client_options.universe_domain, universe_domain_env
+        )
+        base = base.replace(universe.DEFAULT_UNIVERSE, universe_domain)
+    else:
+        client_universe = getattr(client_options, "universe_domain", None)
+        if client_universe:
+            raise APICoreVersionError
+
     audience_for_self_signed_jwt = base
     if client_options.api_endpoint:
         base = client_options.api_endpoint
@@ -581,6 +617,9 @@ def build_from_document(
                     scopes=client_options.scopes,
                     quota_project_id=client_options.quota_project_id,
                 )
+
+            # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
+            _check_api_core_compatible_with_credentials_universe(credentials)
 
             # The credentials need to be scoped.
             # If the user provided scopes via client_options don't override them
@@ -666,7 +705,15 @@ def build_from_document(
             if use_mtls_endpoint == "always" or (
                 use_mtls_endpoint == "auto" and client_cert_to_use
             ):
+                if HAS_UNIVERSE and universe_domain != universe.DEFAULT_UNIVERSE:
+                    raise MutualTLSChannelError(
+                        f"mTLS is not supported in any universe other than {universe.DEFAULT_UNIVERSE}."
+                    )
                 base = mtls_endpoint
+    else:
+        # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
+        http_credentials = getattr(http, "credentials", None)
+        _check_api_core_compatible_with_credentials_universe(http_credentials)
 
     if model is None:
         features = service.get("features", [])
@@ -681,6 +728,7 @@ def build_from_document(
         resourceDesc=service,
         rootDesc=service,
         schema=schema,
+        universe_domain=universe_domain,
     )
 
 
@@ -1043,6 +1091,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
     def method(self, **kwargs):
         # Don't bother with doc string, it will be over-written by createMethod.
 
+        # Validate credentials for the configured universe.
+        self._validate_credentials()
+
         for name in kwargs:
             if name not in parameters.argmap:
                 raise TypeError("Got an unexpected keyword argument {}".format(name))
@@ -1119,9 +1170,11 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         elif "response" not in methodDesc:
             model = RawModel()
 
+        api_version = methodDesc.get("apiVersion", None)
+
         headers = {}
         headers, params, query, body = model.request(
-            headers, actual_path_params, actual_query_params, body_value
+            headers, actual_path_params, actual_query_params, body_value, api_version
         )
 
         expanded_url = uritemplate.expand(pathUrl, params)
@@ -1352,6 +1405,7 @@ class Resource(object):
         resourceDesc,
         rootDesc,
         schema,
+        universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else "",
     ):
         """Build a Resource from the API description.
 
@@ -1369,6 +1423,8 @@ class Resource(object):
               is considered a resource.
           rootDesc: object, the entire deserialized discovery document.
           schema: object, mapping of schema names to schema descriptions.
+          universe_domain: string, the universe for the API. The default universe
+          is "googleapis.com".
         """
         self._dynamic_attrs = []
 
@@ -1380,6 +1436,8 @@ class Resource(object):
         self._resourceDesc = resourceDesc
         self._rootDesc = rootDesc
         self._schema = schema
+        self._universe_domain = universe_domain
+        self._credentials_validated = False
 
         self._set_service_methods()
 
@@ -1502,6 +1560,7 @@ class Resource(object):
                         resourceDesc=methodDesc,
                         rootDesc=rootDesc,
                         schema=schema,
+                        universe_domain=self._universe_domain,
                     )
 
                 setattr(methodResource, "__doc__", "A collection resource.")
@@ -1545,6 +1604,27 @@ class Resource(object):
             self._set_dynamic_attr(
                 fixedMethodName, method.__get__(self, self.__class__)
             )
+
+    def _validate_credentials(self):
+        """Validates client's and credentials' universe domains are consistent.
+
+        Returns:
+            bool: True iff the configured universe domain is valid.
+
+        Raises:
+            UniverseMismatchError: If the configured universe domain is not valid.
+        """
+        credentials = getattr(self._http, "credentials", None)
+
+        self._credentials_validated = (
+            (
+                self._credentials_validated
+                or universe.compare_domains(self._universe_domain, credentials)
+            )
+            if HAS_UNIVERSE
+            else True
+        )
+        return self._credentials_validated
 
 
 def _findPageTokenName(fields):
