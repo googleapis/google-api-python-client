@@ -50,6 +50,7 @@ from googleapiclient.http import (
     MediaFileUpload,
     MediaInMemoryUpload,
     MediaIoBaseDownload,
+    MediaGenBaseDownload,
     MediaIoBaseUpload,
     MediaUpload,
     _StreamSlice,
@@ -456,6 +457,292 @@ class TestMediaIoBaseUpload(unittest.TestCase):
         # Check that "Content-Range" header is not set in the PUT request
         self.assertTrue("Content-Range" not in http.request_sequence[-1][-1])
         self.assertEqual("0", http.request_sequence[-1][-1]["Content-Length"])
+
+
+class TestMediaGenBaseDownload(unittest.TestCase):
+    def setUp(self):
+        http = HttpMock(datafile("zoo.json"), {"status": "200"})
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
+        self.request = zoo.animals().get_media(name="Lion")
+
+    def test_media_gen_base_download(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence(
+            [
+                ({"status": "200", "content-range": "0-2/5"}, b"123"),
+                ({"status": "200", "content-range": "3-4/5"}, b"45"),
+            ]
+        )
+        self.assertEqual(True, self.request.http.follow_redirects)
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        self.assertEqual(3, download._chunksize)
+        self.assertEqual(0, download._progress)
+        self.assertEqual(None, download._total_size)
+        self.assertEqual(False, download._done)
+        self.assertEqual(self.request.uri, download._uri)
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+            self.assertEqual(fd.getvalue(), b"123")
+            self.assertEqual(False, done)
+            self.assertEqual(3, download._progress)
+            self.assertEqual(5, download._total_size)
+            self.assertEqual(3, status.resumable_progress)
+            break
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+            self.assertEqual(fd.getvalue(), b"12345")
+            self.assertEqual(True, done)
+            self.assertEqual(5, download._progress)
+            self.assertEqual(5, download._total_size)
+            break
+
+    def test_media_gen_base_download_range_request_header(self):
+        fd = io.BytesIO()
+
+        self.request.http = HttpMockSequence(
+            [
+                (
+                    {"status": "200", "content-range": "0-2/5"},
+                    "echo_request_headers_as_json",
+                ),
+            ]
+        )
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+            result = json.loads(fd.getvalue().decode("utf-8"))
+            self.assertEqual(result.get("range"), "bytes=0-2")
+            break
+
+
+    def test_media_gen_base_download_custom_request_headers(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence(
+            [
+                (
+                    {"status": "200", "content-range": "0-2/5"},
+                    "echo_request_headers_as_json",
+                ),
+                (
+                    {"status": "200", "content-range": "3-4/5"},
+                    "echo_request_headers_as_json",
+                ),
+            ]
+        )
+        self.assertEqual(True, self.request.http.follow_redirects)
+
+        self.request.headers["Cache-Control"] = "no-store"
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        self.assertEqual(download._headers.get("Cache-Control"), "no-store")
+
+        # assert that that the header we added to the original request is
+        # sent up to the server on each call to next_chunk
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+            result = json.loads(fd.getvalue().decode("utf-8"))
+            self.assertEqual(result.get("Cache-Control"), "no-store")
+            break
+
+        fd = io.BytesIO()
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+            result = json.loads(fd.getvalue().decode("utf-8"))
+            self.assertEqual(result.get("Cache-Control"), "no-store")
+            break
+
+    def test_media_gen_base_download_handle_redirects(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence(
+            [
+                (
+                    {
+                        "status": "200",
+                        "content-location": "https://secure.example.net/lion",
+                    },
+                    b"",
+                ),
+                ({"status": "200", "content-range": "0-2/5"}, b"abc"),
+            ]
+        )
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        for content, status, done in download.next_chunk():
+            break
+
+        self.assertEqual("https://secure.example.net/lion", download._uri)
+
+    def test_media_gen_base_download_handle_4xx(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence([({"status": "400"}, "")])
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        try:
+            for content, status, done in download.next_chunk():
+                self.fail("Should raise an exception")
+        except HttpError:
+            pass
+
+        # Even after raising an exception we can pick up where we left off.
+        self.request.http = HttpMockSequence(
+            [({"status": "200", "content-range": "0-2/5"}, b"123")]
+        )
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+            break
+
+        self.assertEqual(fd.getvalue(), b"123")
+
+
+    def test_media_gen_base_download_retries_connection_errors(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockWithErrors(
+            5, {"status": "200", "content-range": "0-2/3"}, b"123"
+        )
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+        download._sleep = lambda _x: 0  # do nothing
+        download._rand = lambda: 10
+
+        for content, status, done in download.next_chunk(num_retries=5):
+            fd.write(content)
+
+        self.assertEqual(fd.getvalue(), b"123")
+        self.assertEqual(True, done)
+
+
+    def test_media_gen_base_download_retries_5xx(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence(
+            [
+                ({"status": "500"}, ""),
+                ({"status": "500"}, ""),
+                ({"status": "500"}, ""),
+                ({"status": "200", "content-range": "0-2/5"}, b"123"),
+                ({"status": "503"}, ""),
+                ({"status": "503"}, ""),
+                ({"status": "503"}, ""),
+                ({"status": "200", "content-range": "3-4/5"}, b"45"),
+            ]
+        )
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        self.assertEqual(3, download._chunksize)
+        self.assertEqual(0, download._progress)
+        self.assertEqual(None, download._total_size)
+        self.assertEqual(False, download._done)
+        self.assertEqual(self.request.uri, download._uri)
+
+        # Set time.sleep and random.random stubs.
+        sleeptimes = []
+        download._sleep = lambda x: sleeptimes.append(x)
+        download._rand = lambda: 10
+
+        for content, status, done in download.next_chunk(num_retries=3):
+            fd.write(content)
+            break
+
+        # Check for exponential backoff using the rand function above.
+        self.assertEqual([20, 40, 80], sleeptimes)
+
+        self.assertEqual(fd.getvalue(), b"123")
+        self.assertEqual(False, done)
+        self.assertEqual(3, download._progress)
+        self.assertEqual(5, download._total_size)
+        self.assertEqual(3, status.resumable_progress)
+
+        # Reset time.sleep stub.
+        del sleeptimes[0 : len(sleeptimes)]
+        
+        for content, status, done in download.next_chunk(num_retries=3):
+            fd.write(content)
+            break
+
+        # Check for exponential backoff using the rand function above.
+        self.assertEqual([20, 40, 80], sleeptimes)
+
+        self.assertEqual(fd.getvalue(), b"12345")
+        self.assertEqual(True, done)
+        self.assertEqual(5, download._progress)
+        self.assertEqual(5, download._total_size)
+
+    def test_media_gen_base_download_empty_file(self):
+        fd = io.BytesIO()
+
+        self.request.http = HttpMockSequence(
+            [({"status": "200", "content-range": "0-0/0"}, b"")]
+        )
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        self.assertEqual(0, download._progress)
+        self.assertEqual(None, download._total_size)
+        self.assertEqual(False, download._done)
+        self.assertEqual(self.request.uri, download._uri)
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+
+        self.assertEqual(fd.getvalue(), b"")
+        self.assertEqual(True, done)
+        self.assertEqual(0, download._progress)
+        self.assertEqual(0, download._total_size)
+        self.assertEqual(0, status.progress())
+
+
+    def test_media_gen_base_download_empty_file_416_response(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence(
+            [({"status": "416", "content-range": "0-0/0"}, b"")]
+        )
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        self.assertEqual(0, download._progress)
+        self.assertEqual(None, download._total_size)
+        self.assertEqual(False, download._done)
+        self.assertEqual(self.request.uri, download._uri)
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+        
+        self.assertEqual(fd.getvalue(), b"")
+        self.assertEqual(True, done)
+        self.assertEqual(0, download._progress)
+        self.assertEqual(0, download._total_size)
+        self.assertEqual(0, status.progress())
+
+
+    def test_media_gen_base_download_unknown_media_size(self):
+        fd = io.BytesIO()
+        self.request.http = HttpMockSequence([({"status": "200"}, b"123")])
+
+        download = MediaGenBaseDownload(request=self.request, chunksize=3)
+
+        self.assertEqual(0, download._progress)
+        self.assertEqual(None, download._total_size)
+        self.assertEqual(False, download._done)
+        self.assertEqual(self.request.uri, download._uri)
+
+        for content, status, done in download.next_chunk():
+            fd.write(content)
+
+        self.assertEqual(fd.getvalue(), b"123")
+        self.assertEqual(True, done)
+        self.assertEqual(3, download._progress)
+        self.assertEqual(None, download._total_size)
+        self.assertEqual(0, status.progress())
 
 
 class TestMediaIoBaseDownload(unittest.TestCase):
