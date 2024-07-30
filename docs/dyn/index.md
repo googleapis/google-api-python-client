@@ -49,6 +49,11 @@
 * [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4_1.html)
 
 
+## adsenseplatform
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1alpha.html)
+
+
 ## advisorynotifications
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
 
@@ -159,6 +164,7 @@
 
 ## authorizedbuyersmarketplace
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1alpha.html)
 
 
 ## backupdr
@@ -410,6 +416,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/contentwarehouse_v1.html)
 
 
+## css
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/css_v1.html)
+
+
 ## customsearch
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/customsearch_v1.html)
 
@@ -537,10 +547,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1.html)
 * [v1alpha2](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1alpha2.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/domains_v1beta1.html)
-
-
-## domainsrdap
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/domainsrdap_v1.html)
 
 
 ## doubleclickbidmanager
@@ -1006,7 +1012,6 @@
 
 ## realtimebidding
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/realtimebidding_v1.html)
-* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/realtimebidding_v1alpha.html)
 
 
 ## recaptchaenterprise

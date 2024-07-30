@@ -27,9 +27,17 @@ import json
 import logging
 import platform
 import urllib
+import warnings
 
 from googleapiclient import version as googleapiclient_version
 from googleapiclient.errors import HttpError
+
+try:
+    from google.api_core.version_header import API_VERSION_METADATA_KEY
+
+    HAS_API_VERSION = True
+except ImportError:
+    HAS_API_VERSION = False
 
 _LIBRARY_VERSION = googleapiclient_version.__version__
 _PY_VERSION = platform.python_version()
@@ -121,7 +129,7 @@ class BaseModel(Model):
             LOGGER.info("query: %s", query)
             LOGGER.info("--request-end--")
 
-    def request(self, headers, path_params, query_params, body_value):
+    def request(self, headers, path_params, query_params, body_value, api_version=None):
         """Updates outgoing requests with a serialized body.
 
         Args:
@@ -129,7 +137,10 @@ class BaseModel(Model):
           path_params: dict, parameters that appear in the request path
           query_params: dict, parameters that appear in the query
           body_value: object, the request body as a Python object, which must be
-                      serializable by json.
+              serializable by json.
+          api_version: str, The precise API version represented by this request,
+              which will result in an API Version header being sent along with the
+              HTTP request.
         Returns:
           A tuple of (headers, path_params, query, body)
 
@@ -154,6 +165,15 @@ class BaseModel(Model):
             _LIBRARY_VERSION,
             _PY_VERSION,
         )
+
+        if api_version and HAS_API_VERSION:
+            headers[API_VERSION_METADATA_KEY] = api_version
+        elif api_version:
+            warnings.warn(
+                "The `api_version` argument is ignored as a newer version of "
+                "`google-api-core` is required to use this feature."
+                "Please upgrade `google-api-core` to 2.19.0 or newer."
+            )
 
         if body_value is not None:
             headers["content-type"] = self.content_type
