@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.139.0](https://github.com/googleapis/google-api-python-client/compare/v2.138.0...v2.139.0) (2024-07-30)
+
+
+### Features
+
+* **appengine:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/17887bc99c42a827a837c887d47f76d75748de0d ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **bigquery:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ad010606ac5dd1b0468b25a4a66898de4e857d3b ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **bigtableadmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/544d82ff49b5995208a1739d5274bfe123c59444 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **cloudbuild:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ad5f56d082ea3251d6da647566435d166fd6b6e7 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **contactcenterinsights:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1a732f0eb101f373e7a2ae6c91156e05fb7d65ce ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **contentwarehouse:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/48e2b3bd0ed4dd26633d4a1c81e1f63e046514d3 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **datamigration:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/46af1b605a6a84847f00dd25708777f51676c3c8 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **dataplex:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/78f49d8b1b7929fb76834d50d6e9285dbfc05f00 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **dialogflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/7c8c3eb783538965b78d588b95e440aeb060842e ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **discovery:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c6a49d6d465ebb567889ad7d5e7bbaa0d59076fd ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **dlp:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/0187753309059d672007baafdbe6033370cd8598 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **dns:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/7edc7a13a310904a3912aff8b30b1e491bfa76de ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **file:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/24b685a269a6ebf5bb4d35b3fa4f92c6018eb71a ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **firebaseappdistribution:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/29dbaafedd1cc3fe417f700e4cc883f49e6c75e4 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **firebaseml:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/bb97577f13ea9ad9fed314741b8971d989238cec ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **merchantapi:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/f70a393a94baccb4bb2cf534a84013371683ebdd ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **monitoring:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/20233307f9bd544588117cd3e044f309192cbc8b ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **networkmanagement:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1ed9d8d4a96aded469f9e50ce303b17df52652fb ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **networksecurity:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/9a8591a851f4655711d87ebfaa3f9a52776059ed ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **playintegrity:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b1c1442954e110a4394581977d6f26b6604b3777 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **recaptchaenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/0e18da83fa98124bcc19f1692bacc9673d24f538 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **walletobjects:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/1c16a89a726c1ea26b78672c2b61aab0379209fd ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+* **workloadmanager:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/20736dd7325eed4ff35c2ea69f6d21eacbe4ab86 ([330a354](https://github.com/googleapis/google-api-python-client/commit/330a3541b9850e6df370ea15b24ca1e8e901d5d5))
+
 ## [2.138.0](https://github.com/googleapis/google-api-python-client/compare/v2.137.0...v2.138.0) (2024-07-25)
 
 
