@@ -586,6 +586,8 @@ def build_from_document(
 
     schema = Schemas(service)
 
+    is_mtls = False
+
     # If the http client is not specified, then we must construct an http client
     # to make requests. If the service has scopes, then we also need to setup
     # authentication.
@@ -646,49 +648,49 @@ def build_from_document(
         # authentication.
         else:
             http = build_http()
+
+        # Obtain client cert and create mTLS http channel if cert exists.
+        client_cert_to_use = None
+        use_client_cert = os.getenv(GOOGLE_API_USE_CLIENT_CERTIFICATE, "false")
+        if not use_client_cert in ("true", "false"):
+            raise MutualTLSChannelError(
+                "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
+            )
+        if client_options and client_options.client_cert_source:
+            raise MutualTLSChannelError(
+                "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
+            )
+        if use_client_cert == "true":
+            if (
+                client_options
+                and hasattr(client_options, "client_encrypted_cert_source")
+                and client_options.client_encrypted_cert_source
+            ):
+                client_cert_to_use = client_options.client_encrypted_cert_source
+            elif (
+                adc_cert_path and adc_key_path and mtls.has_default_client_cert_source()
+            ):
+                client_cert_to_use = mtls.default_client_encrypted_cert_source(
+                    adc_cert_path, adc_key_path
+                )
+        if client_cert_to_use:
+            cert_path, key_path, passphrase = client_cert_to_use()
+
+            # The http object we built could be google_auth_httplib2.AuthorizedHttp
+            # or httplib2.Http. In the first case we need to extract the wrapped
+            # httplib2.Http object from google_auth_httplib2.AuthorizedHttp.
+            http_channel = (
+                http.http
+                if google_auth_httplib2
+                and isinstance(http, google_auth_httplib2.AuthorizedHttp)
+                else http
+            )
+            http_channel.add_certificate(key_path, cert_path, "", passphrase)
+
     else:
         # Check google-api-core >= 2.18.0 if credentials' universe != "googleapis.com".
         http_credentials = getattr(http, "credentials", None)
         _check_api_core_compatible_with_credentials_universe(http_credentials)
-
-    # Obtain client cert and create mTLS http channel if cert exists.
-    is_mtls = False
-    client_cert_to_use = None
-    use_client_cert = os.getenv(GOOGLE_API_USE_CLIENT_CERTIFICATE, "false")
-    if not use_client_cert in ("true", "false"):
-        raise MutualTLSChannelError(
-            "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
-        )
-    if client_options and client_options.client_cert_source:
-        raise MutualTLSChannelError(
-            "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
-        )
-    if use_client_cert == "true":
-        if (
-            client_options
-            and hasattr(client_options, "client_encrypted_cert_source")
-            and client_options.client_encrypted_cert_source
-        ):
-            client_cert_to_use = client_options.client_encrypted_cert_source
-        elif (
-            adc_cert_path and adc_key_path and mtls.has_default_client_cert_source()
-        ):
-            client_cert_to_use = mtls.default_client_encrypted_cert_source(
-                adc_cert_path, adc_key_path
-            )
-    if client_cert_to_use:
-        cert_path, key_path, passphrase = client_cert_to_use()
-
-        # The http object we built could be google_auth_httplib2.AuthorizedHttp
-        # or httplib2.Http. In the first case we need to extract the wrapped
-        # httplib2.Http object from google_auth_httplib2.AuthorizedHttp.
-        http_channel = (
-            http.http
-            if google_auth_httplib2
-            and isinstance(http, google_auth_httplib2.AuthorizedHttp)
-            else http
-        )
-        http_channel.add_certificate(key_path, cert_path, "", passphrase)
 
     # If user doesn't provide api endpoint via client options, decide which
     # api endpoint to use.
@@ -701,14 +703,14 @@ def build_from_document(
         use_mtls_endpoint = os.getenv(GOOGLE_API_USE_MTLS_ENDPOINT, "auto")
 
         if not use_mtls_endpoint in ("never", "auto", "always"):
-             raise MutualTLSChannelError(
+            raise MutualTLSChannelError(
                 "Unsupported GOOGLE_API_USE_MTLS_ENDPOINT value. Accepted values: never, auto, always"
             )
 
         # Switch to mTLS endpoint, if environment variable is "always", or
         # environment varibable is "auto" and client cert exists.
         if use_mtls_endpoint == "always" or (
-             use_mtls_endpoint == "auto" and client_cert_to_use
+            use_mtls_endpoint == "auto" and client_cert_to_use
         ):
             if HAS_UNIVERSE and universe_domain != universe.DEFAULT_UNIVERSE:
                 raise MutualTLSChannelError(
@@ -731,7 +733,7 @@ def build_from_document(
         rootDesc=service,
         schema=schema,
         universe_domain=universe_domain,
-        is_mtls=is_mtls,
+        is_mtls=is_mtls
     )
 
 
