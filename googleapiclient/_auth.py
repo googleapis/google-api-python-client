@@ -16,18 +16,17 @@
 
 import httplib2
 
+import aiohttp #Team_CKL ADDED CODE
+import asyncio #Team_CKL ADDED CODE
+
 try:
     import google.auth
     import google.auth.credentials
+    from google.auth.transport.requests import Request as GoogleAuthRequest #Team_CKL ADDED CODE
 
     HAS_GOOGLE_AUTH = True
 except ImportError:  # pragma: NO COVER
     HAS_GOOGLE_AUTH = False
-
-try:
-    import google_auth_httplib2
-except ImportError:  # pragma: NO COVER
-    google_auth_httplib2 = None
 
 try:
     import oauth2client
@@ -38,7 +37,7 @@ except ImportError:  # pragma: NO COVER
     HAS_OAUTH2CLIENT = False
 
 
-def credentials_from_file(filename, scopes=None, quota_project_id=None):
+async def credentials_from_file(filename, scopes=None, quota_project_id=None): #Team_CKL MODIFIED
     """Returns credentials loaded from a file."""
     if HAS_GOOGLE_AUTH:
         credentials, _ = google.auth.load_credentials_from_file(
@@ -51,7 +50,7 @@ def credentials_from_file(filename, scopes=None, quota_project_id=None):
         )
 
 
-def default_credentials(scopes=None, quota_project_id=None):
+async def default_credentials(scopes=None, quota_project_id=None): #Team_CKL MODIFIED
     """Returns Application Default Credentials."""
     if HAS_GOOGLE_AUTH:
         credentials, _ = google.auth.default(
@@ -72,7 +71,7 @@ def default_credentials(scopes=None, quota_project_id=None):
         )
 
 
-def with_scopes(credentials, scopes):
+async def with_scopes(credentials, scopes): #Team_CKL MODIFIED
     """Scopes the credentials if necessary.
 
     Args:
@@ -97,7 +96,7 @@ def with_scopes(credentials, scopes):
             return credentials
 
 
-def authorized_http(credentials):
+async def authorized_http(credentials): #Team_CKL MODIFIED
     """Returns an http client that is authorized with the given credentials.
 
     Args:
@@ -106,45 +105,60 @@ def authorized_http(credentials):
             oauth2client.client.Credentials]): The credentials to use.
 
     Returns:
-        Union[httplib2.Http, google_auth_httplib2.AuthorizedHttp]: An
-            authorized http client.
+        aiohttp.ClientSession: An authorized aiohttp client session.
     """
-    from googleapiclient.http import build_http
-
     if HAS_GOOGLE_AUTH and isinstance(credentials, google.auth.credentials.Credentials):
-        if google_auth_httplib2 is None:
-            raise ValueError(
-                "Credentials from google.auth specified, but "
-                "google-api-python-client is unable to use these credentials "
-                "unless google-auth-httplib2 is installed. Please install "
-                "google-auth-httplib2."
-            )
-        return google_auth_httplib2.AuthorizedHttp(credentials, http=build_http())
+        return aiohttp.ClientSession(auth=GoogleAuthRequest(credentials))
     else:
-        return credentials.authorize(build_http())
+        headers = await apply_credentials(credentials, {})
+        return aiohttp.ClientSession(headers=headers)
 
 
-def refresh_credentials(credentials):
-    # Refresh must use a new http instance, as the one associated with the
-    # credentials could be a AuthorizedHttp or an oauth2client-decorated
-    # Http instance which would cause a weird recursive loop of refreshing
-    # and likely tear a hole in spacetime.
-    refresh_http = httplib2.Http()
+async def refresh_credentials(credentials):  #Team_CKL MODIFIED
+    """Refreshes the credentials.
+
+    Args:
+        credentials (Union[
+            google.auth.credentials.Credentials,
+            oauth2client.client.Credentials]): The credentials to refresh.
+    """
     if HAS_GOOGLE_AUTH and isinstance(credentials, google.auth.credentials.Credentials):
-        request = google_auth_httplib2.Request(refresh_http)
-        return credentials.refresh(request)
+        request = GoogleAuthRequest()
+        await credentials.refresh(request)
     else:
-        return credentials.refresh(refresh_http)
+        refresh_http = aiohttp.ClientSession()
+        await credentials.refresh(refresh_http)
+        await refresh_http.close()
 
 
-def apply_credentials(credentials, headers):
-    # oauth2client and google-auth have the same interface for this.
-    if not is_valid(credentials):
-        refresh_credentials(credentials)
+async def apply_credentials(credentials, headers): #Team_CKL MODIFIED
+    """Applies the credentials to the request headers.
+
+    Args:
+        credentials (Union[
+            google.auth.credentials.Credentials,
+            oauth2client.client.Credentials]): The credentials to apply.
+        headers (dict): The request headers.
+
+    Returns:
+        dict: The updated headers with credentials applied.
+    """
+    if not await is_valid(credentials):
+        await refresh_credentials(credentials)
     return credentials.apply(headers)
 
 
-def is_valid(credentials):
+async def is_valid(credentials):  #Team_CKL MODIFIED
+    """Checks if the credentials are valid.
+
+    Args:
+        credentials (Union[
+            google.auth.credentials.Credentials,
+            oauth2client.client.Credentials]): The credentials to check.
+
+    Returns:
+        bool: True if the credentials are valid, False otherwise.
+    """
     if HAS_GOOGLE_AUTH and isinstance(credentials, google.auth.credentials.Credentials):
         return credentials.valid
     else:
@@ -154,14 +168,19 @@ def is_valid(credentials):
         )
 
 
-def get_credentials_from_http(http):
+async def get_credentials_from_http(http):  #Team_CKL MODIFIED
+    """Gets the credentials from the http client session.
+
+    Args:
+        http (aiohttp.ClientSession): The http client session.
+
+    Returns:
+        google.auth.credentials.Credentials: The credentials.
+    """
     if http is None:
         return None
-    elif hasattr(http.request, "credentials"):
-        return http.request.credentials
-    elif hasattr(http, "credentials") and not isinstance(
-        http.credentials, httplib2.Credentials
-    ):
+    elif hasattr(http, "credentials"):
         return http.credentials
     else:
         return None
+    

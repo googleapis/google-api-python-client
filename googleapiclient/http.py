@@ -35,6 +35,13 @@ import time
 import urllib
 import uuid
 
+import aiohttp #Team_CKL CODE ADDED
+import asyncio #Team_CKL CODE ADDED
+from google.oauth2 import service_account #Team_CKL CODE ADDED
+from google.auth.transport.requests import Request #Team_CKL CODE ADDED
+from googleapiclient.errors import HttpError, ResumableUploadError #Team_CKL CODE ADDED
+from googleapiclient.http import MediaUploadProgress #Team_CKL CODE ADDED
+
 import httplib2
 
 # TODO(issue 221): Remove this conditional import jibbajabba.
@@ -1161,6 +1168,381 @@ class HttpRequest(object):
     def null_postproc(resp, contents):
         return resp, contents
 
+class AsyncHttpRequest(object): #Team_CKL ADDED CODE 
+    """Encapsulates a single HTTP request with async capabilities."""
+
+    def __init__(
+        self,
+        http,
+        postproc,
+        uri,
+        method="GET",
+        body=None,
+        headers=None,
+        methodId=None,
+        resumable=None,
+    ):
+        """Constructor for an AsyncHttpRequest.
+
+        Args:
+          http: aiohttp.ClientSession, the transport object to use to make a request
+          postproc: callable, called on the HTTP response and content to transform
+                    it into a data object before returning, or raising an exception
+                    on an error.
+          uri: string, the absolute URI to send the request to
+          method: string, the HTTP method to use
+          body: string, the request body of the HTTP request,
+          headers: dict, the HTTP request headers
+          methodId: string, a unique identifier for the API method being called.
+          resumable: MediaUpload, None if this is not a resumbale request.
+        """
+        self.uri = uri
+        self.method = method
+        self.body = body
+        self.headers = headers or {}
+        self.methodId = methodId
+        self.http = http
+        self.postproc = postproc
+        self.resumable = resumable
+        self.response_callbacks = []
+        self._in_error_state = False
+
+        # The size of the non-media part of the request.
+        self.body_size = len(self.body or "")
+
+        # The resumable URI to send chunks to.
+        self.resumable_uri = None
+
+        # The bytes that have been uploaded.
+        self.resumable_progress = 0
+
+        # Stubs for testing.
+        self._rand = random.random
+        self._sleep = time.sleep
+
+    async def execute(self, http=None, num_retries=0):
+        """Execute the request asynchronously.
+
+        Args:
+          http: aiohttp.ClientSession, a http object to be used in place of the
+                one the AsyncHttpRequest request object was constructed with.
+          num_retries: Integer, number of times to retry with randomized
+                exponential backoff. If all retries fail, the raised HttpError
+                represents the last request. If zero (default), we attempt the
+                request only once.
+
+        Returns:
+          A deserialized object model of the response body as determined
+          by the postproc.
+
+        Raises:
+          googleapiclient.errors.HttpError if the response was not a 2xx.
+          aiohttp.ClientError if a transport error has occurred.
+        """
+        if http is None:
+            http = self.http
+
+        if self.resumable:
+            body = None
+            while body is None:
+                _, body = await self.next_chunk(http=http, num_retries=num_retries)
+            return body
+
+        # Non-resumable case.
+
+        if "content-length" not in self.headers:
+            self.headers["content-length"] = str(self.body_size)
+        # If the request URI is too long then turn it into a POST request.
+        # Assume that a GET request never contains a request body.
+        if len(self.uri) > MAX_URI_LENGTH and self.method == "GET":
+            self.method = "POST"
+            self.headers["x-http-method-override"] = "GET"
+            self.headers["content-type"] = "application/x-www-form-urlencoded"
+            parsed = urllib.parse.urlparse(self.uri)
+            self.uri = urllib.parse.urlunparse(
+                (parsed.scheme, parsed.netloc, parsed.path, parsed.params, None, None)
+            )
+            self.body = parsed.query
+            self.headers["content-length"] = str(len(self.body))
+
+        # Handle retries for server-side errors.
+        resp, content = await self._retry_request(
+            http,
+            num_retries,
+            "request",
+            self._sleep,
+            self._rand,
+            str(self.uri),
+            method=str(self.method),
+            body=self.body,
+            headers=self.headers,
+        )
+
+        for callback in self.response_callbacks:
+            callback(resp)
+        if resp.status >= 300:
+            raise HttpError(resp, content, uri=self.uri)
+        return self.postproc(resp, content)
+
+    async def add_response_callback(self, cb):
+        """add_response_headers_callback
+
+        Args:
+          cb: Callback to be called on receiving the response headers, of signature:
+
+          def cb(resp):
+            # Where resp is an instance of aiohttp.ClientResponse
+        """
+        self.response_callbacks.append(cb)
+
+    async def next_chunk(self, http=None, num_retries=0):
+        """Execute the next step of a resumable upload asynchronously.
+
+        Can only be used if the method being executed supports media uploads and
+        the MediaUpload object passed in was flagged as using resumable upload.
+        
+        Example:
+
+          media = MediaFileUpload('cow.png', mimetype='image/png',
+                                  chunksize=1000, resumable=True)
+          request = farm.animals().insert(
+              id='cow',
+              name='cow.png',
+              media_body=media)
+
+          response = None
+          while response is None:
+            status, response = request.next_chunk()
+            if status:
+              print "Upload %d%% complete." % int(status.progress() * 100)
+        Args:
+          session: aiohttp.ClientSession, a http object to be used in place of the
+                one the AsyncHttpRequest request object was constructed with.
+          num_retries: Integer, number of times to retry with randomized
+                exponential backoff. If all retries fail, the raised HttpError
+                represents the last request. If zero (default), we attempt the
+                request only once.
+
+        Returns:
+          (status, body): (ResumableMediaStatus, object)
+             The body will be None until the resumable media is fully uploaded.
+
+        Raises:
+          googleapiclient.errors.HttpError if the response was not a 2xx.
+          aiohttp.ClientError if a transport error has occurred.
+        """
+        if http is None:
+            http = self.http
+
+        if self.resumable.size() is None:
+            size = "*"
+        else:
+            size = str(self.resumable.size())
+
+        if self.resumable_uri is None:
+            start_headers = copy.copy(self.headers)
+            start_headers["X-Upload-Content-Type"] = self.resumable.mimetype()
+            if size != "*":
+                start_headers["X-Upload-Content-Length"] = size
+            start_headers["content-length"] = str(self.body_size)
+
+            resp, content = await self._retry_request(
+                http,
+                num_retries,
+                "resumable URI request",
+                self._sleep,
+                self._rand,
+                self.uri,
+                method=self.method,
+                body=self.body,
+                headers=start_headers,
+            )
+
+            if resp.status == 200 and "location" in resp.headers:
+                self.resumable_uri = resp.headers["location"]
+            else:
+                raise ResumableUploadError(resp, content)
+        elif self._in_error_state:
+            # If we are in an error state then query the server for current state of
+            # the upload by sending an empty PUT and reading the 'range' header in
+            # the response.
+            headers = {"Content-Range": "bytes */%s" % size, "content-length": "0"}
+            async with http.put(self.resumable_uri, headers=headers) as resp:
+                content = await resp.text()
+                status, body = self._process_response(resp, content)
+                if body:
+                    # The upload was complete.
+                    return (status, body)
+
+        if self.resumable.has_stream():
+            data = self.resumable.stream()
+            if self.resumable.chunksize() == -1:
+                data.seek(self.resumable_progress)
+                chunk_end = self.resumable.size() - self.resumable_progress - 1
+            else:
+                # Doing chunking with a stream, so wrap a slice of the stream.
+                data = _StreamSlice(
+                    data, self.resumable_progress, self.resumable.chunksize()
+                )
+                chunk_end = min(
+                    self.resumable_progress + self.resumable.chunksize() - 1,
+                    self.resumable.size() - 1,
+                )
+        else:
+            data = self.resumable.getbytes(
+                self.resumable_progress, self.resumable.chunksize()
+            )
+
+            # A short read implies that we are at EOF, so finish the upload.
+            if len(data) < self.resumable.chunksize():
+                size = str(self.resumable_progress + len(data))
+
+            chunk_end = self.resumable_progress + len(data) - 1
+
+        headers = {
+            # Must set the content-length header here because aiohttp can't
+            # calculate the size when working with _StreamSlice.
+            "Content-Length": str(chunk_end - self.resumable_progress + 1),
+        }
+
+        # An empty file results in chunk_end = -1 and size = 0
+        # sending "bytes 0--1/0" results in an invalid request
+        # Only add header "Content-Range" if chunk_end != -1
+        if chunk_end != -1:
+            headers["Content-Range"] = "bytes %d-%d/%s" % (
+                self.resumable_progress,
+                chunk_end,
+                size,
+            )
+
+        for retry_num in range(num_retries + 1):
+            if retry_num > 0:
+                await asyncio.sleep(random.random() * 2**retry_num)
+                print(
+                    "Retry #%d for media upload: %s %s, following status: %d"
+                    % (retry_num, self.method, self.uri, resp.status)
+                )
+
+            try:
+                async with http.put(self.resumable_uri, method="PUT", body=data, headers=headers) as resp:
+                    content = await resp.text()
+                    break
+            except:
+                self._in_error_state = True
+                raise
+            if not self._should_retry_response(resp.status, content):
+                break
+
+        return self._process_response(resp, content)
+
+    def _process_response(self, resp, content):
+        """Process the response from a single chunk upload.
+
+        Args:
+          resp: aiohttp.ClientResponse, the response object.
+          content: string, the content of the response.
+
+        Returns:
+          (status, body): (ResumableMediaStatus, object)
+             The body will be None until the resumable media is fully uploaded.
+
+        Raises:
+          googleapiclient.errors.HttpError if the response was not a 2xx or a 308.
+        """
+        if resp.status in [200, 201]:
+            self._in_error_state = False
+            return None, self.postproc(resp, content)
+        elif resp.status == 308:
+            self._in_error_state = False
+            # A "308 Resume Incomplete" indicates we are not done.
+            try:
+                self.resumable_progress = int(resp["range"].split("-")[1]) + 1
+            except KeyError:
+                # If resp doesn't contain range header, resumable progress is 0
+                self.resumable_progress = 0
+            if "location" in resp:
+                self.resumable_uri = resp.headers["location"]
+        else:
+            self._in_error_state = True
+            raise HttpError(resp, content, uri=self.uri)
+
+        return (
+            MediaUploadProgress(self.resumable_progress, self.resumable.size()),
+            None,
+        ) 
+
+    async def _retry_request_(self, http, num_retries, request_type, url, method="GET", body=None, headers=None): 
+        """Retry request with exponential backoff.
+
+        Args:
+            http: aiohttp.ClientSession, the session to use to make the request. 
+            num_retries: Integer, number of times to retry with randomized
+                exponential backoff.
+            request_type: String, type of the request for logging purposes.
+            url: String, the URL to send the request to.
+            method: String, the HTTP method to use.
+            body: String, the request body.
+            headers: Dict, the request headers.
+
+        Returns:
+            Tuple of (resp, content): response object and response content. 
+
+        Rasies: 
+            googleapiclient.errors.HttpError if the response was not a 2xx.
+            aiohttp.ClientError if a transport error has occurred.
+        """
+
+        for retry_num in range(num_retries + 1):
+            if retry_num > 0:
+                await asyncio.sleep(random.random() * 2**retry_num)
+                print(
+                    "Retry #%d for %s: %s %s"
+                    % (retry_num, request_type, method, url)
+                )
+            try: 
+                async with http.request(method, url, data=body, headers=headers) as resp:
+                    content = await resp.text()
+                    if resp.status < 300:
+                        return resp, content
+            except aiohttp.ClientError as e:
+                if retry_num == num_retries:
+                    raise e
+
+
+        
+
+    def to_json(self):
+        """Returns a JSON representation of the HttpRequest."""
+        d = copy.copy(self.__dict__)
+        if d["resumable"] is not None:
+            d["resumable"] = self.resumable.to_json()
+        del d["http"]
+        del d["postproc"]
+        del d["_sleep"]
+        del d["_rand"]
+
+        return json.dumps(d)
+
+    @staticmethod
+    def from_json(s, http, postproc):
+        """Returns an HttpRequest populated with info from a JSON object."""
+        d = json.loads(s)
+        if d["resumable"] is not None:
+            d["resumable"] = MediaUpload.new_from_json(d["resumable"])
+        return AsyncHttpRequest(
+            http,
+            postproc,
+            uri=d["uri"],
+            method=d["method"],
+            body=d["body"],
+            headers=d["headers"],
+            methodId=d["methodId"],
+            resumable=d["resumable"],
+        )
+
+    @staticmethod
+    def null_postproc(resp, contents):
+        return resp, contents
 
 class BatchHttpRequest(object):
     """Batches multiple HttpRequest objects into a single HTTP request.
