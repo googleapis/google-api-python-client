@@ -198,7 +198,7 @@ def build(
     discoveryServiceUrl=None,
     developerKey=None,
     model=None,
-    requestBuilder=HttpRequest,
+    requestBuilder=AsyncHttpRequest, #Team_CKL code modified to async
     credentials=None,
     cache_discovery=True,
     cache=None,
@@ -469,7 +469,7 @@ def build_from_document(
     http=None,
     developerKey=None,
     model=None,
-    requestBuilder=HttpRequest,
+    requestBuilder=AsyncHttpRequest, #Team_CKL code modified to async
     credentials=None,
     client_options=None,
     adc_cert_path=None,
