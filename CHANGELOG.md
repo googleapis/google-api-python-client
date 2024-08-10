@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.140.0](https://github.com/googleapis/google-api-python-client/compare/v2.139.0...v2.140.0) (2024-08-06)
+
+
+### Features
+
+* **aiplatform:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e27f99e096a4103d6af996a9256e716be555d508 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **analyticsadmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/d6bbc3c4b06b2280c57c44e9f47eb172422b326d ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **cloudchannel:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/6c0fdebd1c083c139de7811adf846668930d00eb ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **cloudfunctions:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/494bd14ef05ed39074780d6127c390c73d5cf9be ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **compute:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/792c2675e5777eb2a2cb2fa3bd3b288ca08aa160 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **containeranalysis:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c6435da454e92e359d40e4016139955ed93df40c ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **dialogflow:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e8920a15d2af3bcb1b32a4945ce3319da6979b21 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **discoveryengine:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/63bef2d65e6fddd72ff9867f5d95daa309513c99 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **firebaseml:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/43da6973f96ca80604d5da3c37b10e660660c367 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **healthcare:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e54fb1d30f394ef8aacd88ae030bd7c8793da37f ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **merchantapi:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/4758ea61103fea73407070d2686b56a2b0fd901f ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **networkservices:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/cc6fe630cdd7326a9e1ec93085ee1ab5a6a35a4b ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **recaptchaenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/3251e871470a66f7306dc819fc597e6410cd42b4 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+* **sqladmin:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/de5da7ae3f09510781692aa95380add24a7129d8 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+
+
+### Bug Fixes
+
+* **cloudkms:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/4a4dd262366fea4ad308fb2db3cf4d131b6add31 ([b498421](https://github.com/googleapis/google-api-python-client/commit/b498421c06a3306cb37f977cc5cf7263fe4189b8))
+
 ## [2.139.0](https://github.com/googleapis/google-api-python-client/compare/v2.138.0...v2.139.0) (2024-07-30)
 
 
