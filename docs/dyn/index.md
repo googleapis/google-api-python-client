@@ -14,10 +14,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/accesscontextmanager_v1.html)
 
 
-## acmedns
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/acmedns_v1.html)
-
-
 ## addressvalidation
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/addressvalidation_v1.html)
 
@@ -672,7 +668,9 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1beta.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v1beta1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v2.html)
 * [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v2alpha.html)
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/gkehub_v2beta.html)
 
 
 ## gkeonprem
