@@ -1266,7 +1266,7 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
             self.headers["content-length"] = str(len(self.body))
 
         # Handle retries for server-side errors.
-        resp, content = await self._retry_request(
+        resp, content = await self._retry_request_(
             http,
             num_retries,
             "request",
@@ -1346,7 +1346,7 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
                 start_headers["X-Upload-Content-Length"] = size
             start_headers["content-length"] = str(self.body_size)
 
-            resp, content = await self._retry_request(
+            resp, content = await self._retry_request_(
                 http,
                 num_retries,
                 "resumable URI request",
@@ -1358,8 +1358,8 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
                 headers=start_headers,
             )
 
-            if resp.status == 200 and "location" in resp.headers:
-                self.resumable_uri = resp.headers["location"]
+            if resp.status == 200 and "location" in resp.headers:  #Potential Tech Issue problem
+                self.resumable_uri = resp.headers["location"] #Potential Tech Issue problem
             else:
                 raise ResumableUploadError(resp, content)
         elif self._in_error_state:
@@ -1367,7 +1367,7 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
             # the upload by sending an empty PUT and reading the 'range' header in
             # the response.
             headers = {"Content-Range": "bytes */%s" % size, "content-length": "0"}
-            async with http.put(self.resumable_uri, headers=headers) as resp:
+            async with http.put(self.resumable_uri, headers=headers) as resp:  #Potential Tech Issue problem
                 content = await resp.text()
                 status, body = self._process_response(resp, content)
                 if body:
@@ -1424,16 +1424,19 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
                 )
 
             try:
-                async with http.put(self.resumable_uri, method="PUT", body=data, headers=headers) as resp:
+                async with http.put(self.resumable_uri, method="PUT", body=data, headers=headers) as resp:  #Potential Tech Issue problem
                     content = await resp.text()
-                    break
+                    if not self._should_retry_response(resp.status, content):
+                        break
             except:
                 self._in_error_state = True
                 raise
-            if not self._should_retry_response(resp.status, content):
-                break
+            
 
-        return self._process_response(resp, content)
+        if 'resp' in locals() and 'content' in locals():
+            return self._process_response(resp, content)
+        else:
+            raise RuntimeError("Failed to upload after multiple retries")
 
     def _process_response(self, resp, content):
         """Process the response from a single chunk upload.
@@ -1461,7 +1464,7 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
                 # If resp doesn't contain range header, resumable progress is 0
                 self.resumable_progress = 0
             if "location" in resp:
-                self.resumable_uri = resp.headers["location"]
+                self.resumable_uri = resp.headers["location"]  #Potential Tech Issue problem
         else:
             self._in_error_state = True
             raise HttpError(resp, content, uri=self.uri)
@@ -1471,7 +1474,7 @@ class AsyncHttpRequest(object): #Team_CKL ADDED CODE
             None,
         ) 
 
-    async def _retry_request_(self, http, num_retries, request_type, url, method="GET", body=None, headers=None): 
+    async def _retry_request_(self, http, num_retries, request_type, url, method="GET", body=None, headers=None):  #Potential Tech Issue problem
         """Retry request with exponential backoff.
 
         Args:
