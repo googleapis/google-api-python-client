@@ -79,9 +79,9 @@ h1, h2, h3 {
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(bucket, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, userProject=None)</a></code></p>
-<p class="firstline">Permanently deletes an empty bucket.</p>
+<p class="firstline">Deletes an empty bucket. Deletions are permanent unless soft delete is enabled on the bucket.</p>
 <p class="toc_element">
-  <code><a href="#get">get(bucket, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, projection=None, userProject=None)</a></code></p>
+  <code><a href="#get">get(bucket, generation=None, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, projection=None, softDeleted=None, userProject=None)</a></code></p>
 <p class="firstline">Returns metadata for the specified bucket.</p>
 <p class="toc_element">
   <code><a href="#getIamPolicy">getIamPolicy(bucket, optionsRequestedPolicyVersion=None, userProject=None)</a></code></p>
@@ -93,7 +93,7 @@ h1, h2, h3 {
   <code><a href="#insert">insert(project, body=None, enableObjectRetention=None, predefinedAcl=None, predefinedDefaultObjectAcl=None, projection=None, userProject=None)</a></code></p>
 <p class="firstline">Creates a new bucket.</p>
 <p class="toc_element">
-  <code><a href="#list">list(project, maxResults=None, pageToken=None, prefix=None, projection=None, userProject=None)</a></code></p>
+  <code><a href="#list">list(project, maxResults=None, pageToken=None, prefix=None, projection=None, softDeleted=None, userProject=None)</a></code></p>
 <p class="firstline">Retrieves a list of buckets for a given project.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next()</a></code></p>
@@ -104,6 +104,9 @@ h1, h2, h3 {
 <p class="toc_element">
   <code><a href="#patch">patch(bucket, body=None, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, predefinedAcl=None, predefinedDefaultObjectAcl=None, projection=None, userProject=None)</a></code></p>
 <p class="firstline">Patches a bucket. Changes to the bucket will be readable immediately after writing, but configuration changes may take time to propagate.</p>
+<p class="toc_element">
+  <code><a href="#restore">restore(bucket, generation, userProject=None)</a></code></p>
+<p class="firstline">Restores a soft-deleted bucket.</p>
 <p class="toc_element">
   <code><a href="#setIamPolicy">setIamPolicy(bucket, body=None, userProject=None)</a></code></p>
 <p class="firstline">Updates an IAM policy for the specified bucket.</p>
@@ -121,7 +124,7 @@ h1, h2, h3 {
 
 <div class="method">
     <code class="details" id="delete">delete(bucket, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, userProject=None)</code>
-  <pre>Permanently deletes an empty bucket.
+  <pre>Deletes an empty bucket. Deletions are permanent unless soft delete is enabled on the bucket.
 
 Args:
   bucket: string, Name of a bucket. (required)
@@ -132,17 +135,19 @@ Args:
 </div>
 
 <div class="method">
-    <code class="details" id="get">get(bucket, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, projection=None, userProject=None)</code>
+    <code class="details" id="get">get(bucket, generation=None, ifMetagenerationMatch=None, ifMetagenerationNotMatch=None, projection=None, softDeleted=None, userProject=None)</code>
   <pre>Returns metadata for the specified bucket.
 
 Args:
   bucket: string, Name of a bucket. (required)
+  generation: string, If present, specifies the generation of the bucket. This is required if softDeleted is true.
   ifMetagenerationMatch: string, Makes the return of the bucket metadata conditional on whether the bucket&#x27;s current metageneration matches the given value.
   ifMetagenerationNotMatch: string, Makes the return of the bucket metadata conditional on whether the bucket&#x27;s current metageneration does not match the given value.
   projection: string, Set of properties to return. Defaults to noAcl.
     Allowed values
       full - Include all properties.
       noAcl - Omit owner, acl and defaultObjectAcl properties.
+  softDeleted: boolean, If true, return the soft-deleted version of this bucket. The default is false. For more information, see [Soft Delete](https://cloud.google.com/storage/docs/soft-delete).
   userProject: string, The project to be billed for this request. Required for Requester Pays buckets.
 
 Returns:
@@ -242,6 +247,8 @@ Returns:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -277,7 +284,7 @@ Returns:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -307,7 +314,7 @@ Returns:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -329,19 +336,21 @@ Returns:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
@@ -531,6 +540,8 @@ Args:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -566,7 +577,7 @@ Args:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -596,7 +607,7 @@ Args:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -618,19 +629,21 @@ Args:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
@@ -755,6 +768,8 @@ Returns:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -790,7 +805,7 @@ Returns:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -820,7 +835,7 @@ Returns:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -842,19 +857,21 @@ Returns:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
@@ -862,7 +879,7 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(project, maxResults=None, pageToken=None, prefix=None, projection=None, userProject=None)</code>
+    <code class="details" id="list">list(project, maxResults=None, pageToken=None, prefix=None, projection=None, softDeleted=None, userProject=None)</code>
   <pre>Retrieves a list of buckets for a given project.
 
 Args:
@@ -874,6 +891,7 @@ Args:
     Allowed values
       full - Include all properties.
       noAcl - Omit owner, acl and defaultObjectAcl properties.
+  softDeleted: boolean, If true, only soft-deleted bucket versions will be returned. The default is false. For more information, see [Soft Delete](https://cloud.google.com/storage/docs/soft-delete).
   userProject: string, The project to be billed for this request.
 
 Returns:
@@ -975,6 +993,8 @@ Returns:
         &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
       },
       &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+      &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+      &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
       &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
         &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
       },
@@ -1010,7 +1030,7 @@ Returns:
       &quot;labels&quot;: { # User-provided labels, in key/value pairs.
         &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
       },
-      &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+      &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
         &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
           {
             &quot;action&quot;: { # The action to take.
@@ -1040,7 +1060,7 @@ Returns:
           },
         ],
       },
-      &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+      &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
       &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
       &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
         &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -1062,19 +1082,21 @@ Returns:
         &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
       },
       &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+      &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
       &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
       &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
       &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
         &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
         &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
       },
-      &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+      &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+      &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
       &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
       &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
       &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
         &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
       },
-      &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+      &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
         &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
         &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
       },
@@ -1205,6 +1227,8 @@ Returns:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -1240,7 +1264,7 @@ Returns:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -1270,7 +1294,7 @@ Returns:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -1292,19 +1316,21 @@ Returns:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
@@ -1414,6 +1440,8 @@ Args:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -1449,7 +1477,7 @@ Args:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -1479,7 +1507,7 @@ Args:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -1501,19 +1529,21 @@ Args:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
@@ -1639,6 +1669,8 @@ Returns:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -1674,7 +1706,7 @@ Returns:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -1704,7 +1736,7 @@ Returns:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -1726,23 +1758,36 @@ Returns:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
 }</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="restore">restore(bucket, generation, userProject=None)</code>
+  <pre>Restores a soft-deleted bucket.
+
+Args:
+  bucket: string, Name of a bucket. (required)
+  generation: string, Generation of a bucket. (required)
+  userProject: string, The project to be billed for this request. Required for Requester Pays buckets.
+</pre>
 </div>
 
 <div class="method">
@@ -1983,6 +2028,8 @@ Args:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -2018,7 +2065,7 @@ Args:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -2048,7 +2095,7 @@ Args:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -2070,19 +2117,21 @@ Args:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },
@@ -2208,6 +2257,8 @@ Returns:
     &quot;defaultKmsKeyName&quot;: &quot;A String&quot;, # A Cloud KMS key that will be used to encrypt objects inserted into this bucket, if no encryption method is specified.
   },
   &quot;etag&quot;: &quot;A String&quot;, # HTTP 1.1 Entity tag for the bucket.
+  &quot;generation&quot;: &quot;A String&quot;, # The generation of this bucket.
+  &quot;hardDeleteTime&quot;: &quot;A String&quot;, # The hard delete time of the bucket in RFC 3339 format.
   &quot;hierarchicalNamespace&quot;: { # The bucket&#x27;s hierarchical namespace configuration.
     &quot;enabled&quot;: True or False, # When set to true, hierarchical namespace is enabled for this bucket.
   },
@@ -2243,7 +2294,7 @@ Returns:
   &quot;labels&quot;: { # User-provided labels, in key/value pairs.
     &quot;a_key&quot;: &quot;A String&quot;, # An individual label entry.
   },
-  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See lifecycle management for more information.
+  &quot;lifecycle&quot;: { # The bucket&#x27;s lifecycle configuration. See [Lifecycle Management](https://cloud.google.com/storage/docs/lifecycle) for more information.
     &quot;rule&quot;: [ # A lifecycle management rule, which is made of an action to take and the condition(s) under which the action will be taken.
       {
         &quot;action&quot;: { # The action to take.
@@ -2273,7 +2324,7 @@ Returns:
       },
     ],
   },
-  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the developer&#x27;s guide for the authoritative list.
+  &quot;location&quot;: &quot;A String&quot;, # The location of the bucket. Object data for objects in the bucket resides in physical storage within this region. Defaults to US. See the [Developer&#x27;s Guide](https://cloud.google.com/storage/docs/locations) for the authoritative list.
   &quot;locationType&quot;: &quot;A String&quot;, # The type of the bucket location.
   &quot;logging&quot;: { # The bucket&#x27;s logging configuration, which defines the destination bucket and optional name prefix for the current bucket&#x27;s logs.
     &quot;logBucket&quot;: &quot;A String&quot;, # The destination bucket where the current bucket&#x27;s logs should be placed.
@@ -2295,19 +2346,21 @@ Returns:
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # The duration in seconds that objects need to be retained. Retention duration must be greater than zero and less than 100 years. Note that enforcement of retention periods less than a day is not guaranteed. Such periods should only be used for testing purposes.
   },
   &quot;rpo&quot;: &quot;A String&quot;, # The Recovery Point Objective (RPO) of this bucket. Set to ASYNC_TURBO to turn on Turbo Replication on a bucket.
+  &quot;satisfiesPZI&quot;: True or False, # Reserved for future use.
   &quot;satisfiesPZS&quot;: True or False, # Reserved for future use.
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this bucket.
   &quot;softDeletePolicy&quot;: { # The bucket&#x27;s soft delete policy, which defines the period of time that soft-deleted objects will be retained, and cannot be permanently deleted.
     &quot;effectiveTime&quot;: &quot;A String&quot;, # Server-determined value that indicates the time from which the policy, or one with a greater retention, was effective. This value is in RFC 3339 format.
     &quot;retentionDurationSeconds&quot;: &quot;A String&quot;, # The duration in seconds that soft-deleted objects in the bucket will be retained and cannot be permanently deleted.
   },
-  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see storage classes.
+  &quot;softDeleteTime&quot;: &quot;A String&quot;, # The soft delete time of the bucket in RFC 3339 format.
+  &quot;storageClass&quot;: &quot;A String&quot;, # The bucket&#x27;s default storage class, used whenever no storageClass is specified for a newly-created object. This defines how objects in the bucket are stored and determines the SLA and the cost of storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE, COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is not specified when the bucket is created, it will default to STANDARD. For more information, see [Storage Classes](https://cloud.google.com/storage/docs/storage-classes).
   &quot;timeCreated&quot;: &quot;A String&quot;, # The creation time of the bucket in RFC 3339 format.
   &quot;updated&quot;: &quot;A String&quot;, # The modification time of the bucket in RFC 3339 format.
   &quot;versioning&quot;: { # The bucket&#x27;s versioning configuration.
     &quot;enabled&quot;: True or False, # While set to true, versioning is fully enabled for this bucket.
   },
-  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the Static Website Examples for more information.
+  &quot;website&quot;: { # The bucket&#x27;s website configuration, controlling how the service behaves when accessing bucket contents as a web site. See the [Static Website Examples](https://cloud.google.com/storage/docs/static-website) for more information.
     &quot;mainPageSuffix&quot;: &quot;A String&quot;, # If the requested object path is missing, the service will ensure the path has a trailing &#x27;/&#x27;, append this suffix, and attempt to retrieve the resulting object. This allows the creation of index.html objects to represent directory pages.
     &quot;notFoundPage&quot;: &quot;A String&quot;, # If the requested object path is missing, and any mainPageSuffix object is missing, if applicable, the service will return the named object from this bucket as the content for a 404 Not Found result.
   },

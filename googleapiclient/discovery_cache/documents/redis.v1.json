@@ -371,6 +371,34 @@
 "scopes": [
 "https://www.googleapis.com/auth/cloud-platform"
 ]
+},
+"rescheduleClusterMaintenance": {
+"description": "Reschedules upcoming maintenance event.",
+"flatPath": "v1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}:rescheduleClusterMaintenance",
+"httpMethod": "POST",
+"id": "redis.projects.locations.clusters.rescheduleClusterMaintenance",
+"parameterOrder": [
+"name"
+],
+"parameters": {
+"name": {
+"description": "Required. Redis Cluster instance resource name using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}` where `location_id` refers to a GCP region.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/clusters/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1/{+name}:rescheduleClusterMaintenance",
+"request": {
+"$ref": "RescheduleClusterMaintenanceRequest"
+},
+"response": {
+"$ref": "Operation"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
 }
 }
 },
@@ -821,7 +849,7 @@
 }
 }
 },
-"revision": "20240711",
+"revision": "20240822",
 "rootUrl": "https://redis.googleapis.com/",
 "schemas": {
 "AOFConfig": {
@@ -840,7 +868,7 @@
 "Not set. Default: EVERYSEC",
 "Never fsync. Normally Linux will flush data every 30 seconds with this configuration, but it's up to the kernel's exact tuning.",
 "fsync every second. Fast enough, and you may lose 1 second of data if there is a disaster",
-"fsync every time new commands are appended to the AOF. It has the best data loss protection at the cost of performance"
+"fsync every time new write commands are appended to the AOF. It has the best data loss protection at the cost of performance"
 ],
 "type": "string"
 }
@@ -851,6 +879,10 @@
 "description": "Configuration for availability of database instance",
 "id": "AvailabilityConfiguration",
 "properties": {
+"automaticFailoverRoutingConfigured": {
+"description": "Checks for existence of (multi-cluster) routing configuration that allows automatic failover to a different zone/region in case of an outage. Applicable to Bigtable resources.",
+"type": "boolean"
+},
 "availabilityType": {
 "description": "Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available).",
 "enum": [
@@ -987,6 +1019,10 @@
 "readOnly": true,
 "type": "string"
 },
+"crossClusterReplicationConfig": {
+"$ref": "CrossClusterReplicationConfig",
+"description": "Optional. Cross cluster replication config."
+},
 "deletionProtectionEnabled": {
 "description": "Optional. The delete operation will fail when the value is set to true.",
 "type": "boolean"
@@ -998,6 +1034,15 @@
 },
 "readOnly": true,
 "type": "array"
+},
+"maintenancePolicy": {
+"$ref": "ClusterMaintenancePolicy",
+"description": "Optional. ClusterMaintenancePolicy determines when to allow or deny updates."
+},
+"maintenanceSchedule": {
+"$ref": "ClusterMaintenanceSchedule",
+"description": "Output only. ClusterMaintenanceSchedule Output only Published maintenance schedule.",
+"readOnly": true
 },
 "name": {
 "description": "Required. Identifier. Unique name of the resource in this scope including project and location using the form: `projects/{project_id}/locations/{location_id}/clusters/{cluster_id}`",
@@ -1059,7 +1104,7 @@
 "type": "integer"
 },
 "shardCount": {
-"description": "Required. Number of shards for the Redis cluster.",
+"description": "Optional. Number of shards for the Redis cluster.",
 "format": "int32",
 "type": "integer"
 },
@@ -1119,6 +1164,57 @@
 },
 "type": "object"
 },
+"ClusterMaintenancePolicy": {
+"description": "Maintenance policy per cluster.",
+"id": "ClusterMaintenancePolicy",
+"properties": {
+"createTime": {
+"description": "Output only. The time when the policy was created i.e. Maintenance Window or Deny Period was assigned.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"updateTime": {
+"description": "Output only. The time when the policy was updated i.e. Maintenance Window or Deny Period was updated.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"weeklyMaintenanceWindow": {
+"description": "Optional. Maintenance window that is applied to resources covered by this policy. Minimum 1. For the current version, the maximum number of weekly_maintenance_window is expected to be one.",
+"items": {
+"$ref": "ClusterWeeklyMaintenanceWindow"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"ClusterMaintenanceSchedule": {
+"description": "Upcoming maitenance schedule.",
+"id": "ClusterMaintenanceSchedule",
+"properties": {
+"endTime": {
+"description": "Output only. The end time of any upcoming scheduled maintenance for this instance.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"scheduleDeadlineTime": {
+"description": "Output only. The deadline that the maintenance schedule start time can not go beyond, including reschedule.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"startTime": {
+"description": "Output only. The start time of any upcoming scheduled maintenance for this instance.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
 "ClusterPersistenceConfig": {
 "description": "Configuration of the persistence functionality.",
 "id": "ClusterPersistenceConfig",
@@ -1150,6 +1246,46 @@
 },
 "type": "object"
 },
+"ClusterWeeklyMaintenanceWindow": {
+"description": "Time window specified for weekly operations.",
+"id": "ClusterWeeklyMaintenanceWindow",
+"properties": {
+"day": {
+"description": "Allows to define schedule that runs specified day of the week.",
+"enum": [
+"DAY_OF_WEEK_UNSPECIFIED",
+"MONDAY",
+"TUESDAY",
+"WEDNESDAY",
+"THURSDAY",
+"FRIDAY",
+"SATURDAY",
+"SUNDAY"
+],
+"enumDescriptions": [
+"The day of the week is unspecified.",
+"Monday",
+"Tuesday",
+"Wednesday",
+"Thursday",
+"Friday",
+"Saturday",
+"Sunday"
+],
+"type": "string"
+},
+"duration": {
+"description": "Duration of the time window.",
+"format": "google-duration",
+"type": "string"
+},
+"startTime": {
+"$ref": "TimeOfDay",
+"description": "Start time of the window in UTC."
+}
+},
+"type": "object"
+},
 "Compliance": {
 "description": "Contains compliance information about a security standard indicating unmet recommendations.",
 "id": "Compliance",
@@ -1165,40 +1301,61 @@
 },
 "type": "object"
 },
-"CustomMetadataData": {
-"description": "Any custom metadata associated with the resource. i.e. A spanner instance can have multiple databases with its own unique metadata. Information for these individual databases can be captured in custom metadata data",
-"id": "CustomMetadataData",
+"CrossClusterReplicationConfig": {
+"description": "Cross cluster replication config.",
+"id": "CrossClusterReplicationConfig",
 "properties": {
-"databaseMetadata": {
+"clusterRole": {
+"description": "The role of the cluster in cross cluster replication.",
+"enum": [
+"CLUSTER_ROLE_UNSPECIFIED",
+"NONE",
+"PRIMARY",
+"SECONDARY"
+],
+"enumDescriptions": [
+"Cluster role is not set. The behavior is equivalent to NONE.",
+"This cluster does not participate in cross cluster replication. It is an independent cluster and does not replicate to or from any other clusters.",
+"A cluster that allows both reads and writes. Any data written to this cluster is also replicated to the attached secondary clusters.",
+"A cluster that allows only reads and replicates data from a primary cluster."
+],
+"type": "string"
+},
+"membership": {
+"$ref": "Membership",
+"description": "Output only. An output only view of all the member clusters participating in the cross cluster replication. This view will be provided by every member cluster irrespective of its cluster role(primary or secondary). A primary cluster can provide information about all the secondary clusters replicating from it. However, a secondary cluster only knows about the primary cluster from which it is replicating. However, for scenarios, where the primary cluster is unavailable(e.g. regional outage), a GetCluster request can be sent to any other member cluster and this field will list all the member clusters participating in cross cluster replication.",
+"readOnly": true
+},
+"primaryCluster": {
+"$ref": "RemoteCluster",
+"description": "Details of the primary cluster that is used as the replication source for this secondary cluster. This field is only set for a secondary cluster."
+},
+"secondaryClusters": {
+"description": "List of secondary clusters that are replicating from this primary cluster. This field is only set for a primary cluster.",
 "items": {
-"$ref": "DatabaseMetadata"
+"$ref": "RemoteCluster"
 },
 "type": "array"
+},
+"updateTime": {
+"description": "Output only. The last time cross cluster replication config was updated.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
 }
 },
 "type": "object"
 },
-"DatabaseMetadata": {
-"description": "Metadata for individual databases created in an instance. i.e. spanner instance can have multiple databases with unique configuration settings.",
-"id": "DatabaseMetadata",
+"CustomMetadataData": {
+"description": "Any custom metadata associated with the resource. e.g. A spanner instance can have multiple databases with its own unique metadata. Information for these individual databases can be captured in custom metadata data",
+"id": "CustomMetadataData",
 "properties": {
-"backupConfiguration": {
-"$ref": "BackupConfiguration",
-"description": "Backup configuration for this database"
+"internalResourceMetadata": {
+"description": "Metadata for individual internal resources in an instance. e.g. spanner instance can have multiple databases with unique configuration.",
+"items": {
+"$ref": "InternalResourceMetadata"
 },
-"backupRun": {
-"$ref": "BackupRun",
-"description": "Information about the last backup attempt for this database"
-},
-"product": {
-"$ref": "Product"
-},
-"resourceId": {
-"$ref": "DatabaseResourceId"
-},
-"resourceName": {
-"description": "Required. Database name. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
-"type": "string"
+"type": "array"
 }
 },
 "type": "object"
@@ -1338,6 +1495,24 @@
 },
 "signalId": {
 "description": "Required. Unique identifier for the signal. This is an unique id which would be mainatined by partner to identify a signal.",
+"type": "string"
+},
+"signalSeverity": {
+"description": "The severity of the signal, such as if it's a HIGH or LOW severity.",
+"enum": [
+"SIGNAL_SEVERITY_UNSPECIFIED",
+"CRITICAL",
+"HIGH",
+"MEDIUM",
+"LOW"
+],
+"enumDescriptions": [
+"This value is used for findings when a source doesn't write a severity value.",
+"A critical vulnerability is easily discoverable by an external actor, exploitable.",
+"A high risk vulnerability can be easily discovered and exploited in combination with other vulnerabilities.",
+"A medium risk vulnerability could be used by an actor to gain access to resources or privileges that enable them to eventually gain access and the ability to execute arbitrary code or exfiltrate data.",
+"A low risk vulnerability hampers a security organization's ability to detect vulnerabilities or active threats in their deployment."
+],
 "type": "string"
 },
 "signalType": {
@@ -1636,7 +1811,7 @@ false
 "type": "string"
 },
 "resourceType": {
-"description": "Required. The type of resource this ID is identifying. Ex redis.googleapis.com/Instance, redis.googleapis.com/Cluster, alloydb.googleapis.com/Cluster, alloydb.googleapis.com/Instance, spanner.googleapis.com/Instance REQUIRED Please refer go/condor-common-datamodel",
+"description": "Required. The type of resource this ID is identifying. Ex redis.googleapis.com/Instance, redis.googleapis.com/Cluster, alloydb.googleapis.com/Cluster, alloydb.googleapis.com/Instance, spanner.googleapis.com/Instance, spanner.googleapis.com/Database, firestore.googleapis.com/Database, sqladmin.googleapis.com/Instance, bigtableadmin.googleapis.com/Cluster, bigtableadmin.googleapis.com/Instance REQUIRED Please refer go/condor-common-datamodel",
 "type": "string"
 },
 "uniqueId": {
@@ -2570,6 +2745,31 @@ false
 },
 "type": "object"
 },
+"InternalResourceMetadata": {
+"description": "Metadata for individual internal resources in an instance. e.g. spanner instance can have multiple databases with unique configuration settings. Similarly bigtable can have multiple clusters within same bigtable instance.",
+"id": "InternalResourceMetadata",
+"properties": {
+"backupConfiguration": {
+"$ref": "BackupConfiguration",
+"description": "Backup configuration for this database"
+},
+"backupRun": {
+"$ref": "BackupRun",
+"description": "Information about the last backup attempt for this database"
+},
+"product": {
+"$ref": "Product"
+},
+"resourceId": {
+"$ref": "DatabaseResourceId"
+},
+"resourceName": {
+"description": "Required. internal resource name for spanner this will be database name e.g.\"spanner.googleapis.com/projects/123/abc/instances/inst1/databases/db1\"",
+"type": "string"
+}
+},
+"type": "object"
+},
 "ListClustersResponse": {
 "description": "Response for ListClusters.",
 "id": "ListClustersResponse",
@@ -2775,6 +2975,26 @@ false
 "items": {
 "$ref": "CertChain"
 },
+"type": "array"
+}
+},
+"type": "object"
+},
+"Membership": {
+"description": "An output only view of all the member clusters participating in the cross cluster replication.",
+"id": "Membership",
+"properties": {
+"primaryCluster": {
+"$ref": "RemoteCluster",
+"description": "Output only. The primary cluster that acts as the source of replication for the secondary clusters.",
+"readOnly": true
+},
+"secondaryClusters": {
+"description": "Output only. The list of secondary clusters replicating from the primary cluster.",
+"items": {
+"$ref": "RemoteCluster"
+},
+"readOnly": true,
 "type": "array"
 }
 },
@@ -3050,7 +3270,9 @@ false
 "ENGINE_CLOUD_SPANNER_WITH_GOOGLESQL_DIALECT",
 "ENGINE_MEMORYSTORE_FOR_REDIS",
 "ENGINE_MEMORYSTORE_FOR_REDIS_CLUSTER",
-"ENGINE_OTHER"
+"ENGINE_OTHER",
+"ENGINE_FIRESTORE_WITH_NATIVE_MODE",
+"ENGINE_FIRESTORE_WITH_DATASTORE_MODE"
 ],
 "enumDeprecated": [
 false,
@@ -3062,6 +3284,8 @@ false,
 true,
 false,
 true,
+false,
+false,
 false,
 false,
 false,
@@ -3082,7 +3306,9 @@ false
 "Cloud Spanner with Google SQL dialect.",
 "Memorystore with Redis dialect.",
 "Memorystore with Redis cluster dialect.",
-"Other refers to rest of other database engine. This is to be when engine is known, but it is not present in this enum."
+"Other refers to rest of other database engine. This is to be when engine is known, but it is not present in this enum.",
+"Firestore with native mode.",
+"Firestore with datastore mode."
 ],
 "type": "string"
 },
@@ -3099,7 +3325,8 @@ false
 "ON_PREM",
 "PRODUCT_TYPE_MEMORYSTORE",
 "PRODUCT_TYPE_BIGTABLE",
-"PRODUCT_TYPE_OTHER"
+"PRODUCT_TYPE_OTHER",
+"PRODUCT_TYPE_FIRESTORE"
 ],
 "enumDeprecated": [
 false,
@@ -3110,6 +3337,7 @@ true,
 false,
 false,
 true,
+false,
 false,
 false,
 false
@@ -3125,7 +3353,8 @@ false
 "On premises database product.",
 "Memorystore product area in GCP",
 "Bigtable product area in GCP",
-"Other refers to rest of other product type. This is to be when product type is known, but it is not present in this enum."
+"Other refers to rest of other product type. This is to be when product type is known, but it is not present in this enum.",
+"Firestore product area in GCP."
 ],
 "type": "string"
 },
@@ -3233,6 +3462,48 @@ false
 "The resource has to be deleted. When using this bit, the CLH should fail the operation. DEPRECATED. Instead use DELETE_RESOURCE OperationSignal in SideChannel.",
 "This resource could not be repaired but the repair should be tried again at a later time. This can happen if there is a dependency that needs to be resolved first- e.g. if a parent resource must be repaired before a child resource."
 ],
+"type": "string"
+}
+},
+"type": "object"
+},
+"RemoteCluster": {
+"description": "Details of the remote cluster associated with this cluster in a cross cluster replication setup.",
+"id": "RemoteCluster",
+"properties": {
+"cluster": {
+"description": "The full resource path of the remote cluster in the format: projects//locations//clusters/",
+"type": "string"
+},
+"uid": {
+"description": "Output only. The unique identifier of the remote cluster.",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"RescheduleClusterMaintenanceRequest": {
+"description": "Request for rescheduling a cluster maintenance.",
+"id": "RescheduleClusterMaintenanceRequest",
+"properties": {
+"rescheduleType": {
+"description": "Required. If reschedule type is SPECIFIC_TIME, must set up schedule_time as well.",
+"enum": [
+"RESCHEDULE_TYPE_UNSPECIFIED",
+"IMMEDIATE",
+"SPECIFIC_TIME"
+],
+"enumDescriptions": [
+"Not set.",
+"If the user wants to schedule the maintenance to happen now.",
+"If the user wants to reschedule the maintenance to a specific time."
+],
+"type": "string"
+},
+"scheduleTime": {
+"description": "Optional. Timestamp when the maintenance shall be rescheduled to if reschedule_type=SPECIFIC_TIME, in RFC 3339 format, for example `2012-11-15T16:19:00.094Z`.",
+"format": "google-datetime",
 "type": "string"
 }
 },
