@@ -107,7 +107,7 @@ h1, h2, h3 {
 <p class="firstline">Updates the settings of a specific instance.</p>
 <p class="toc_element">
   <code><a href="#promoteReplica">promoteReplica(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Promote an standby instance (replica).</p>
+<p class="firstline">Promote the standby instance (replica).</p>
 <p class="toc_element">
   <code><a href="#restore">restore(name, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Restores an existing instance's file share from a backup. The capacity of the instance needs to be equal to or larger than the capacity of the backup (and also equal to or larger than the minimum capacity of the tier).</p>
@@ -132,11 +132,14 @@ Args:
 { # A Filestore instance.
   &quot;capacityGb&quot;: &quot;A String&quot;, # The storage capacity of the instance in gigabytes (GB = 1024^3 bytes). This capacity can be increased up to `max_capacity_gb` GB in multipliers of `capacity_step_size_gb` GB.
   &quot;capacityStepSizeGb&quot;: &quot;A String&quot;, # Output only. The increase/decrease capacity step size.
+  &quot;configurablePerformanceEnabled&quot;: True or False, # Output only. Indicates whether this instance&#x27;s performance is configurable. If enabled, adjust it using the &#x27;performance_config&#x27; field.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created.
+  &quot;deletionProtectionEnabled&quot;: True or False, # Optional. Indicates whether the instance is protected against deletion.
+  &quot;deletionProtectionReason&quot;: &quot;A String&quot;, # Optional. The reason for enabling deletion protection.
   &quot;description&quot;: &quot;A String&quot;, # The description of the instance (2048 characters or less).
   &quot;directoryServices&quot;: { # Directory Services configuration for Kerberos-based authentication. # Optional. Directory Services configuration for Kerberos-based authentication. Should only be set if protocol is &quot;NFS_V4_1&quot;.
-    &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Active Directory. # Configuration for Managed Service for Microsoft Active Directory.
-      &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix to the mount remote target. Example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
+    &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Service for Microsoft Active Directory (Managed Microsoft AD). # Configuration for Managed Service for Microsoft Active Directory.
+      &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix in the command to mount the remote target. For example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
       &quot;domain&quot;: &quot;A String&quot;, # Required. The domain resource name, in the format `projects/{project_id}/locations/global/domains/{domain}`.
     },
   },
@@ -183,9 +186,23 @@ Args:
       &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional, reserved_ip_range can have one of the following two types of values. * CIDR range value when using DIRECT_PEERING connect mode. * [Allocated IP address range](https://cloud.google.com/compute/docs/ip-addresses/reserve-static-internal-ip-address) when using PRIVATE_SERVICE_ACCESS connect mode. When the name of an allocated IP address range is specified, it must be one of the ranges associated with the private service access connection. When specified as a direct CIDR value, it must be a /29 CIDR block for Basic tier, a /24 CIDR block for High Scale tier, or a /26 CIDR block for Enterprise tier in one of the [internal IP address ranges](https://www.arin.net/reference/research/statistics/address_filters/) that identifies the range of IP addresses reserved for this instance. For example, 10.0.0.0/29, 192.168.0.0/24, or 192.168.0.0/26, respectively. The range you specify can&#x27;t overlap with either existing subnets or assigned IP address ranges for other Filestore instances in the selected VPC network.
     },
   ],
+  &quot;performanceConfig&quot;: { # Used for setting the performance configuration. If the user doesn&#x27;t specify PerformanceConfig, automatically provision the default performance settings as described in https://cloud.google.com/filestore/docs/performance. Larger instances will be linearly set to more IOPS. If the instance&#x27;s capacity is increased or decreased, its performance will be automatically adjusted upwards or downwards accordingly (respectively). # Optional. Used to configure performance.
+    &quot;fixedIops&quot;: { # Fixed IOPS (input/output operations per second) parameters. # Choose a fixed provisioned IOPS value for the instance, which will remain constant regardless of instance capacity. Value must be a multiple of 1000. If the chosen value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+      &quot;maxReadIops&quot;: &quot;A String&quot;, # Required. Maximum raw read IOPS.
+    },
+    &quot;iopsPerTb&quot;: { # IOPS per TB. Filestore defines TB as 1024^4 bytes (TiB). # Provision IOPS dynamically based on the capacity of the instance. Provisioned read IOPS will be calculated by multiplying the capacity of the instance in TiB by the `iops_per_tb` value. For example, for a 2 TiB instance with an `iops_per_tb` value of 17000 the provisioned read IOPS will be 34000. If the calculated value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+      &quot;maxReadIopsPerTb&quot;: &quot;A String&quot;, # Required. Maximum read IOPS per TiB.
+    },
+  },
+  &quot;performanceLimits&quot;: { # The enforced performance limits, calculated from the instance&#x27;s performance configuration. # Output only. Used for getting performance limits.
+    &quot;maxReadIops&quot;: &quot;A String&quot;, # Output only. The max read IOPS.
+    &quot;maxReadThroughputBps&quot;: &quot;A String&quot;, # Output only. The max read throughput in bytes per second.
+    &quot;maxWriteIops&quot;: &quot;A String&quot;, # Output only. The max write IOPS.
+    &quot;maxWriteThroughputBps&quot;: &quot;A String&quot;, # Output only. The max write throughput in bytes per second.
+  },
   &quot;protocol&quot;: &quot;A String&quot;, # Immutable. The protocol indicates the access protocol for all shares in the instance. This field is immutable and it cannot be changed after the instance has been created. Default value: `NFS_V3`.
-  &quot;replication&quot;: { # Replication specifications. # Optional. Replicaition configuration.
-    &quot;replicas&quot;: [ # Replicas configuration on the instance. For now, only a single replica config is supported.
+  &quot;replication&quot;: { # Replication specifications. # Optional. Replication configuration.
+    &quot;replicas&quot;: [ # Replication configuration for the replica instance associated with this instance. Only a single replica is supported.
       { # Replica configuration for the instance.
         &quot;lastActiveSyncTime&quot;: &quot;A String&quot;, # Output only. The timestamp of the latest replication snapshot taken on the active instance and is already replicated safely.
         &quot;peerInstance&quot;: &quot;A String&quot;, # The peer instance.
@@ -204,7 +221,7 @@ Args:
   &quot;suspensionReasons&quot;: [ # Output only. Field indicates all the reasons the instance is in &quot;SUSPENDED&quot; state.
     &quot;A String&quot;,
   ],
-  &quot;tags&quot;: { # Optional. Input only. Immutable. Tag keys/values directly bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
+  &quot;tags&quot;: { # Optional. Input only. Immutable. Tag key-value pairs are bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;tier&quot;: &quot;A String&quot;, # The service tier of the instance.
@@ -293,11 +310,14 @@ Returns:
     { # A Filestore instance.
   &quot;capacityGb&quot;: &quot;A String&quot;, # The storage capacity of the instance in gigabytes (GB = 1024^3 bytes). This capacity can be increased up to `max_capacity_gb` GB in multipliers of `capacity_step_size_gb` GB.
   &quot;capacityStepSizeGb&quot;: &quot;A String&quot;, # Output only. The increase/decrease capacity step size.
+  &quot;configurablePerformanceEnabled&quot;: True or False, # Output only. Indicates whether this instance&#x27;s performance is configurable. If enabled, adjust it using the &#x27;performance_config&#x27; field.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created.
+  &quot;deletionProtectionEnabled&quot;: True or False, # Optional. Indicates whether the instance is protected against deletion.
+  &quot;deletionProtectionReason&quot;: &quot;A String&quot;, # Optional. The reason for enabling deletion protection.
   &quot;description&quot;: &quot;A String&quot;, # The description of the instance (2048 characters or less).
   &quot;directoryServices&quot;: { # Directory Services configuration for Kerberos-based authentication. # Optional. Directory Services configuration for Kerberos-based authentication. Should only be set if protocol is &quot;NFS_V4_1&quot;.
-    &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Active Directory. # Configuration for Managed Service for Microsoft Active Directory.
-      &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix to the mount remote target. Example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
+    &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Service for Microsoft Active Directory (Managed Microsoft AD). # Configuration for Managed Service for Microsoft Active Directory.
+      &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix in the command to mount the remote target. For example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
       &quot;domain&quot;: &quot;A String&quot;, # Required. The domain resource name, in the format `projects/{project_id}/locations/global/domains/{domain}`.
     },
   },
@@ -344,9 +364,23 @@ Returns:
       &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional, reserved_ip_range can have one of the following two types of values. * CIDR range value when using DIRECT_PEERING connect mode. * [Allocated IP address range](https://cloud.google.com/compute/docs/ip-addresses/reserve-static-internal-ip-address) when using PRIVATE_SERVICE_ACCESS connect mode. When the name of an allocated IP address range is specified, it must be one of the ranges associated with the private service access connection. When specified as a direct CIDR value, it must be a /29 CIDR block for Basic tier, a /24 CIDR block for High Scale tier, or a /26 CIDR block for Enterprise tier in one of the [internal IP address ranges](https://www.arin.net/reference/research/statistics/address_filters/) that identifies the range of IP addresses reserved for this instance. For example, 10.0.0.0/29, 192.168.0.0/24, or 192.168.0.0/26, respectively. The range you specify can&#x27;t overlap with either existing subnets or assigned IP address ranges for other Filestore instances in the selected VPC network.
     },
   ],
+  &quot;performanceConfig&quot;: { # Used for setting the performance configuration. If the user doesn&#x27;t specify PerformanceConfig, automatically provision the default performance settings as described in https://cloud.google.com/filestore/docs/performance. Larger instances will be linearly set to more IOPS. If the instance&#x27;s capacity is increased or decreased, its performance will be automatically adjusted upwards or downwards accordingly (respectively). # Optional. Used to configure performance.
+    &quot;fixedIops&quot;: { # Fixed IOPS (input/output operations per second) parameters. # Choose a fixed provisioned IOPS value for the instance, which will remain constant regardless of instance capacity. Value must be a multiple of 1000. If the chosen value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+      &quot;maxReadIops&quot;: &quot;A String&quot;, # Required. Maximum raw read IOPS.
+    },
+    &quot;iopsPerTb&quot;: { # IOPS per TB. Filestore defines TB as 1024^4 bytes (TiB). # Provision IOPS dynamically based on the capacity of the instance. Provisioned read IOPS will be calculated by multiplying the capacity of the instance in TiB by the `iops_per_tb` value. For example, for a 2 TiB instance with an `iops_per_tb` value of 17000 the provisioned read IOPS will be 34000. If the calculated value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+      &quot;maxReadIopsPerTb&quot;: &quot;A String&quot;, # Required. Maximum read IOPS per TiB.
+    },
+  },
+  &quot;performanceLimits&quot;: { # The enforced performance limits, calculated from the instance&#x27;s performance configuration. # Output only. Used for getting performance limits.
+    &quot;maxReadIops&quot;: &quot;A String&quot;, # Output only. The max read IOPS.
+    &quot;maxReadThroughputBps&quot;: &quot;A String&quot;, # Output only. The max read throughput in bytes per second.
+    &quot;maxWriteIops&quot;: &quot;A String&quot;, # Output only. The max write IOPS.
+    &quot;maxWriteThroughputBps&quot;: &quot;A String&quot;, # Output only. The max write throughput in bytes per second.
+  },
   &quot;protocol&quot;: &quot;A String&quot;, # Immutable. The protocol indicates the access protocol for all shares in the instance. This field is immutable and it cannot be changed after the instance has been created. Default value: `NFS_V3`.
-  &quot;replication&quot;: { # Replication specifications. # Optional. Replicaition configuration.
-    &quot;replicas&quot;: [ # Replicas configuration on the instance. For now, only a single replica config is supported.
+  &quot;replication&quot;: { # Replication specifications. # Optional. Replication configuration.
+    &quot;replicas&quot;: [ # Replication configuration for the replica instance associated with this instance. Only a single replica is supported.
       { # Replica configuration for the instance.
         &quot;lastActiveSyncTime&quot;: &quot;A String&quot;, # Output only. The timestamp of the latest replication snapshot taken on the active instance and is already replicated safely.
         &quot;peerInstance&quot;: &quot;A String&quot;, # The peer instance.
@@ -365,7 +399,7 @@ Returns:
   &quot;suspensionReasons&quot;: [ # Output only. Field indicates all the reasons the instance is in &quot;SUSPENDED&quot; state.
     &quot;A String&quot;,
   ],
-  &quot;tags&quot;: { # Optional. Input only. Immutable. Tag keys/values directly bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
+  &quot;tags&quot;: { # Optional. Input only. Immutable. Tag key-value pairs are bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;tier&quot;: &quot;A String&quot;, # The service tier of the instance.
@@ -395,11 +429,14 @@ Returns:
     { # A Filestore instance.
       &quot;capacityGb&quot;: &quot;A String&quot;, # The storage capacity of the instance in gigabytes (GB = 1024^3 bytes). This capacity can be increased up to `max_capacity_gb` GB in multipliers of `capacity_step_size_gb` GB.
       &quot;capacityStepSizeGb&quot;: &quot;A String&quot;, # Output only. The increase/decrease capacity step size.
+      &quot;configurablePerformanceEnabled&quot;: True or False, # Output only. Indicates whether this instance&#x27;s performance is configurable. If enabled, adjust it using the &#x27;performance_config&#x27; field.
       &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created.
+      &quot;deletionProtectionEnabled&quot;: True or False, # Optional. Indicates whether the instance is protected against deletion.
+      &quot;deletionProtectionReason&quot;: &quot;A String&quot;, # Optional. The reason for enabling deletion protection.
       &quot;description&quot;: &quot;A String&quot;, # The description of the instance (2048 characters or less).
       &quot;directoryServices&quot;: { # Directory Services configuration for Kerberos-based authentication. # Optional. Directory Services configuration for Kerberos-based authentication. Should only be set if protocol is &quot;NFS_V4_1&quot;.
-        &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Active Directory. # Configuration for Managed Service for Microsoft Active Directory.
-          &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix to the mount remote target. Example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
+        &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Service for Microsoft Active Directory (Managed Microsoft AD). # Configuration for Managed Service for Microsoft Active Directory.
+          &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix in the command to mount the remote target. For example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
           &quot;domain&quot;: &quot;A String&quot;, # Required. The domain resource name, in the format `projects/{project_id}/locations/global/domains/{domain}`.
         },
       },
@@ -446,9 +483,23 @@ Returns:
           &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional, reserved_ip_range can have one of the following two types of values. * CIDR range value when using DIRECT_PEERING connect mode. * [Allocated IP address range](https://cloud.google.com/compute/docs/ip-addresses/reserve-static-internal-ip-address) when using PRIVATE_SERVICE_ACCESS connect mode. When the name of an allocated IP address range is specified, it must be one of the ranges associated with the private service access connection. When specified as a direct CIDR value, it must be a /29 CIDR block for Basic tier, a /24 CIDR block for High Scale tier, or a /26 CIDR block for Enterprise tier in one of the [internal IP address ranges](https://www.arin.net/reference/research/statistics/address_filters/) that identifies the range of IP addresses reserved for this instance. For example, 10.0.0.0/29, 192.168.0.0/24, or 192.168.0.0/26, respectively. The range you specify can&#x27;t overlap with either existing subnets or assigned IP address ranges for other Filestore instances in the selected VPC network.
         },
       ],
+      &quot;performanceConfig&quot;: { # Used for setting the performance configuration. If the user doesn&#x27;t specify PerformanceConfig, automatically provision the default performance settings as described in https://cloud.google.com/filestore/docs/performance. Larger instances will be linearly set to more IOPS. If the instance&#x27;s capacity is increased or decreased, its performance will be automatically adjusted upwards or downwards accordingly (respectively). # Optional. Used to configure performance.
+        &quot;fixedIops&quot;: { # Fixed IOPS (input/output operations per second) parameters. # Choose a fixed provisioned IOPS value for the instance, which will remain constant regardless of instance capacity. Value must be a multiple of 1000. If the chosen value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+          &quot;maxReadIops&quot;: &quot;A String&quot;, # Required. Maximum raw read IOPS.
+        },
+        &quot;iopsPerTb&quot;: { # IOPS per TB. Filestore defines TB as 1024^4 bytes (TiB). # Provision IOPS dynamically based on the capacity of the instance. Provisioned read IOPS will be calculated by multiplying the capacity of the instance in TiB by the `iops_per_tb` value. For example, for a 2 TiB instance with an `iops_per_tb` value of 17000 the provisioned read IOPS will be 34000. If the calculated value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+          &quot;maxReadIopsPerTb&quot;: &quot;A String&quot;, # Required. Maximum read IOPS per TiB.
+        },
+      },
+      &quot;performanceLimits&quot;: { # The enforced performance limits, calculated from the instance&#x27;s performance configuration. # Output only. Used for getting performance limits.
+        &quot;maxReadIops&quot;: &quot;A String&quot;, # Output only. The max read IOPS.
+        &quot;maxReadThroughputBps&quot;: &quot;A String&quot;, # Output only. The max read throughput in bytes per second.
+        &quot;maxWriteIops&quot;: &quot;A String&quot;, # Output only. The max write IOPS.
+        &quot;maxWriteThroughputBps&quot;: &quot;A String&quot;, # Output only. The max write throughput in bytes per second.
+      },
       &quot;protocol&quot;: &quot;A String&quot;, # Immutable. The protocol indicates the access protocol for all shares in the instance. This field is immutable and it cannot be changed after the instance has been created. Default value: `NFS_V3`.
-      &quot;replication&quot;: { # Replication specifications. # Optional. Replicaition configuration.
-        &quot;replicas&quot;: [ # Replicas configuration on the instance. For now, only a single replica config is supported.
+      &quot;replication&quot;: { # Replication specifications. # Optional. Replication configuration.
+        &quot;replicas&quot;: [ # Replication configuration for the replica instance associated with this instance. Only a single replica is supported.
           { # Replica configuration for the instance.
             &quot;lastActiveSyncTime&quot;: &quot;A String&quot;, # Output only. The timestamp of the latest replication snapshot taken on the active instance and is already replicated safely.
             &quot;peerInstance&quot;: &quot;A String&quot;, # The peer instance.
@@ -467,7 +518,7 @@ Returns:
       &quot;suspensionReasons&quot;: [ # Output only. Field indicates all the reasons the instance is in &quot;SUSPENDED&quot; state.
         &quot;A String&quot;,
       ],
-      &quot;tags&quot;: { # Optional. Input only. Immutable. Tag keys/values directly bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
+      &quot;tags&quot;: { # Optional. Input only. Immutable. Tag key-value pairs are bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
         &quot;a_key&quot;: &quot;A String&quot;,
       },
       &quot;tier&quot;: &quot;A String&quot;, # The service tier of the instance.
@@ -506,11 +557,14 @@ Args:
 { # A Filestore instance.
   &quot;capacityGb&quot;: &quot;A String&quot;, # The storage capacity of the instance in gigabytes (GB = 1024^3 bytes). This capacity can be increased up to `max_capacity_gb` GB in multipliers of `capacity_step_size_gb` GB.
   &quot;capacityStepSizeGb&quot;: &quot;A String&quot;, # Output only. The increase/decrease capacity step size.
+  &quot;configurablePerformanceEnabled&quot;: True or False, # Output only. Indicates whether this instance&#x27;s performance is configurable. If enabled, adjust it using the &#x27;performance_config&#x27; field.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created.
+  &quot;deletionProtectionEnabled&quot;: True or False, # Optional. Indicates whether the instance is protected against deletion.
+  &quot;deletionProtectionReason&quot;: &quot;A String&quot;, # Optional. The reason for enabling deletion protection.
   &quot;description&quot;: &quot;A String&quot;, # The description of the instance (2048 characters or less).
   &quot;directoryServices&quot;: { # Directory Services configuration for Kerberos-based authentication. # Optional. Directory Services configuration for Kerberos-based authentication. Should only be set if protocol is &quot;NFS_V4_1&quot;.
-    &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Active Directory. # Configuration for Managed Service for Microsoft Active Directory.
-      &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix to the mount remote target. Example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
+    &quot;managedActiveDirectory&quot;: { # ManagedActiveDirectoryConfig contains all the parameters for connecting to Managed Service for Microsoft Active Directory (Managed Microsoft AD). # Configuration for Managed Service for Microsoft Active Directory.
+      &quot;computer&quot;: &quot;A String&quot;, # Required. The computer name is used as a prefix in the command to mount the remote target. For example: if the computer is `my-computer`, the mount command will look like: `$mount -o vers=4.1,sec=krb5 my-computer.filestore.: `.
       &quot;domain&quot;: &quot;A String&quot;, # Required. The domain resource name, in the format `projects/{project_id}/locations/global/domains/{domain}`.
     },
   },
@@ -557,9 +611,23 @@ Args:
       &quot;reservedIpRange&quot;: &quot;A String&quot;, # Optional, reserved_ip_range can have one of the following two types of values. * CIDR range value when using DIRECT_PEERING connect mode. * [Allocated IP address range](https://cloud.google.com/compute/docs/ip-addresses/reserve-static-internal-ip-address) when using PRIVATE_SERVICE_ACCESS connect mode. When the name of an allocated IP address range is specified, it must be one of the ranges associated with the private service access connection. When specified as a direct CIDR value, it must be a /29 CIDR block for Basic tier, a /24 CIDR block for High Scale tier, or a /26 CIDR block for Enterprise tier in one of the [internal IP address ranges](https://www.arin.net/reference/research/statistics/address_filters/) that identifies the range of IP addresses reserved for this instance. For example, 10.0.0.0/29, 192.168.0.0/24, or 192.168.0.0/26, respectively. The range you specify can&#x27;t overlap with either existing subnets or assigned IP address ranges for other Filestore instances in the selected VPC network.
     },
   ],
+  &quot;performanceConfig&quot;: { # Used for setting the performance configuration. If the user doesn&#x27;t specify PerformanceConfig, automatically provision the default performance settings as described in https://cloud.google.com/filestore/docs/performance. Larger instances will be linearly set to more IOPS. If the instance&#x27;s capacity is increased or decreased, its performance will be automatically adjusted upwards or downwards accordingly (respectively). # Optional. Used to configure performance.
+    &quot;fixedIops&quot;: { # Fixed IOPS (input/output operations per second) parameters. # Choose a fixed provisioned IOPS value for the instance, which will remain constant regardless of instance capacity. Value must be a multiple of 1000. If the chosen value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+      &quot;maxReadIops&quot;: &quot;A String&quot;, # Required. Maximum raw read IOPS.
+    },
+    &quot;iopsPerTb&quot;: { # IOPS per TB. Filestore defines TB as 1024^4 bytes (TiB). # Provision IOPS dynamically based on the capacity of the instance. Provisioned read IOPS will be calculated by multiplying the capacity of the instance in TiB by the `iops_per_tb` value. For example, for a 2 TiB instance with an `iops_per_tb` value of 17000 the provisioned read IOPS will be 34000. If the calculated value is outside the supported range for the instance&#x27;s capacity during instance creation, instance creation will fail with an `InvalidArgument` error. Similarly, if an instance capacity update would result in a value outside the supported range, the update will fail with an `InvalidArgument` error.
+      &quot;maxReadIopsPerTb&quot;: &quot;A String&quot;, # Required. Maximum read IOPS per TiB.
+    },
+  },
+  &quot;performanceLimits&quot;: { # The enforced performance limits, calculated from the instance&#x27;s performance configuration. # Output only. Used for getting performance limits.
+    &quot;maxReadIops&quot;: &quot;A String&quot;, # Output only. The max read IOPS.
+    &quot;maxReadThroughputBps&quot;: &quot;A String&quot;, # Output only. The max read throughput in bytes per second.
+    &quot;maxWriteIops&quot;: &quot;A String&quot;, # Output only. The max write IOPS.
+    &quot;maxWriteThroughputBps&quot;: &quot;A String&quot;, # Output only. The max write throughput in bytes per second.
+  },
   &quot;protocol&quot;: &quot;A String&quot;, # Immutable. The protocol indicates the access protocol for all shares in the instance. This field is immutable and it cannot be changed after the instance has been created. Default value: `NFS_V3`.
-  &quot;replication&quot;: { # Replication specifications. # Optional. Replicaition configuration.
-    &quot;replicas&quot;: [ # Replicas configuration on the instance. For now, only a single replica config is supported.
+  &quot;replication&quot;: { # Replication specifications. # Optional. Replication configuration.
+    &quot;replicas&quot;: [ # Replication configuration for the replica instance associated with this instance. Only a single replica is supported.
       { # Replica configuration for the instance.
         &quot;lastActiveSyncTime&quot;: &quot;A String&quot;, # Output only. The timestamp of the latest replication snapshot taken on the active instance and is already replicated safely.
         &quot;peerInstance&quot;: &quot;A String&quot;, # The peer instance.
@@ -578,13 +646,13 @@ Args:
   &quot;suspensionReasons&quot;: [ # Output only. Field indicates all the reasons the instance is in &quot;SUSPENDED&quot; state.
     &quot;A String&quot;,
   ],
-  &quot;tags&quot;: { # Optional. Input only. Immutable. Tag keys/values directly bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
+  &quot;tags&quot;: { # Optional. Input only. Immutable. Tag key-value pairs are bound to this resource. For example: &quot;123/environment&quot;: &quot;production&quot;, &quot;123/costCenter&quot;: &quot;marketing&quot;
     &quot;a_key&quot;: &quot;A String&quot;,
   },
   &quot;tier&quot;: &quot;A String&quot;, # The service tier of the instance.
 }
 
-  updateMask: string, Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields: * &quot;description&quot; * &quot;directory_services&quot; * &quot;file_shares&quot; * &quot;labels&quot;
+  updateMask: string, Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields: * &quot;description&quot; * &quot;directory_services&quot; * &quot;file_shares&quot; * &quot;labels&quot; * &quot;performance_config&quot; * &quot;deletion_protection_enabled&quot; * &quot;deletion_protection_reason&quot;
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -616,7 +684,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="promoteReplica">promoteReplica(name, body=None, x__xgafv=None)</code>
-  <pre>Promote an standby instance (replica).
+  <pre>Promote the standby instance (replica).
 
 Args:
   name: string, Required. The resource name of the instance, in the format `projects/{project_id}/locations/{location_id}/instances/{instance_id}`. (required)
