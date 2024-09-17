@@ -1506,9 +1506,9 @@ class Resource(object):
                   callback: callable, A callback to be called for each response, of the
                     form callback(id, response, exception). The first parameter is the
                     request id, and the second is the deserialized response object. The
-                    third is an apiclient.errors.HttpError exception object if an HTTP
-                    error occurred while processing the request, or None if no error
-                    occurred.
+                    third is a googleapiclient.errors.HttpError exception object if an
+                    HTTP error occurred while processing the request, or None if no
+                    error occurred.
 
                 Returns:
                   A BatchHttpRequest object based on the discovery document.

@@ -17,7 +17,7 @@ ENV_PATH=${ROOT_PATH}/ve
 LOG_PATH=${ROOT_PATH}/gae_zip_build.log
 
 # The api client version
-APICLIENT_VERSION=$(python -c "import apiclient; print apiclient.__version__")
+APICLIENT_VERSION=$(python -c "import googleapiclient; print googleapiclient.__version__")
 
 # Where to create the zip.
 DIST_PATH=$(pwd)/dist/gae
@@ -57,7 +57,7 @@ echo "Built zip in ${ZIP_PATH}"
 # Sanity test the zip.
 # TODO (afshar): Run the complete test suite.
 echo "Sanity testing the zip:"
-export SANITY_MODS="httplib2 apiclient uritemplate oauth2client"
+export SANITY_MODS="httplib2 googleapiclient uritemplate oauth2client"
 export SANITY_ZIP=${ZIP_PATH}
 export PYTHONPATH=${ZIP_PATH}
 ${ENV_PATH}/bin/python -c "import sys, os

@@ -44,7 +44,7 @@ import pprint
 import sys
 import time
 
-from apiclient import sample_tools
+from googleapiclient import sample_tools
 from oauth2client import client
 
 
