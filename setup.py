@@ -30,7 +30,7 @@ import os
 
 from setuptools import setup
 
-packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
+packages = ["googleapiclient", "googleapiclient/discovery_cache"]
 
 install_requires = [
     "httplib2>=0.19.0,<1.dev0",
