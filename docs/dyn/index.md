@@ -818,6 +818,7 @@
 * [promotions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1beta.html)
 * [quota_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1beta.html)
 * [reports_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reports_v1beta.html)
+* [reviews_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reviews_v1beta.html)
 
 
 ## metastore
@@ -900,6 +901,10 @@
 ## ondemandscanning
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
+
+
+## oracledatabase
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/oracledatabase_v1.html)
 
 
 ## orgpolicy

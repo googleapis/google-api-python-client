@@ -1517,7 +1517,7 @@
 }
 }
 },
-"revision": "20240806",
+"revision": "20240909",
 "rootUrl": "https://alloydb.googleapis.com/",
 "schemas": {
 "AuthorizedNetwork": {
@@ -2139,15 +2139,23 @@ false
 "description": "Upgrade status of the cluster.",
 "enum": [
 "STATUS_UNSPECIFIED",
+"NOT_STARTED",
+"IN_PROGRESS",
 "SUCCESS",
 "FAILED",
-"PARTIAL_SUCCESS"
+"PARTIAL_SUCCESS",
+"CANCEL_IN_PROGRESS",
+"CANCELLED"
 ],
 "enumDescriptions": [
 "Unspecified status.",
+"Not started.",
+"In progress.",
 "Operation succeeded.",
 "Operation failed.",
-"Operation partially succeeded."
+"Operation partially succeeded.",
+"Cancel is in progress.",
+"Cancellation complete."
 ],
 "type": "string"
 }
@@ -2731,15 +2739,23 @@ false
 "description": "Upgrade status of the instance.",
 "enum": [
 "STATUS_UNSPECIFIED",
+"NOT_STARTED",
+"IN_PROGRESS",
 "SUCCESS",
 "FAILED",
-"PARTIAL_SUCCESS"
+"PARTIAL_SUCCESS",
+"CANCEL_IN_PROGRESS",
+"CANCELLED"
 ],
 "enumDescriptions": [
 "Unspecified status.",
+"Not started.",
+"In progress.",
 "Operation succeeded.",
 "Operation failed.",
-"Operation partially succeeded."
+"Operation partially succeeded.",
+"Cancel is in progress.",
+"Cancellation complete."
 ],
 "type": "string"
 }
@@ -3427,15 +3443,21 @@ false
 "STAGE_UNSPECIFIED",
 "ALLOYDB_PRECHECK",
 "PG_UPGRADE_CHECK",
+"PREPARE_FOR_UPGRADE",
 "PRIMARY_INSTANCE_UPGRADE",
-"READ_POOL_UPGRADE"
+"READ_POOL_INSTANCES_UPGRADE",
+"ROLLBACK",
+"CLEANUP"
 ],
 "enumDescriptions": [
 "Unspecified stage.",
-"This stage is for the custom checks done before upgrade.",
-"This stage is for `pg_upgrade --check` run before upgrade.",
-"This stage is primary upgrade.",
-"This stage is read pool upgrade."
+"Pre-upgrade custom checks, not covered by pg_upgrade.",
+"Pre-upgrade pg_upgrade checks.",
+"Clone the original cluster.",
+"Upgrade the primary instance(downtime).",
+"This stage is read pool upgrade.",
+"Rollback in case of critical failures.",
+"Cleanup."
 ],
 "type": "string"
 },
@@ -3443,15 +3465,23 @@ false
 "description": "Status of the stage.",
 "enum": [
 "STATUS_UNSPECIFIED",
+"NOT_STARTED",
+"IN_PROGRESS",
 "SUCCESS",
 "FAILED",
-"PARTIAL_SUCCESS"
+"PARTIAL_SUCCESS",
+"CANCEL_IN_PROGRESS",
+"CANCELLED"
 ],
 "enumDescriptions": [
 "Unspecified status.",
+"Not started.",
+"In progress.",
 "Operation succeeded.",
 "Operation failed.",
-"Operation partially succeeded."
+"Operation partially succeeded.",
+"Cancel is in progress.",
+"Cancellation complete."
 ],
 "type": "string"
 }
@@ -3489,6 +3519,10 @@ false
 "description": "Configuration for availability of database instance",
 "id": "StorageDatabasecenterPartnerapiV1mainAvailabilityConfiguration",
 "properties": {
+"automaticFailoverRoutingConfigured": {
+"description": "Checks for existence of (multi-cluster) routing configuration that allows automatic failover to a different zone/region in case of an outage. Applicable to Bigtable resources.",
+"type": "boolean"
+},
 "availabilityType": {
 "description": "Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available).",
 "enum": [
@@ -4065,7 +4099,7 @@ false
 "type": "object"
 },
 "StorageDatabasecenterPartnerapiV1mainDatabaseResourceMetadata": {
-"description": "Common model for database resource instance metadata.",
+"description": "Common model for database resource instance metadata. Next ID: 21",
 "id": "StorageDatabasecenterPartnerapiV1mainDatabaseResourceMetadata",
 "properties": {
 "availabilityConfiguration": {
@@ -4203,6 +4237,10 @@ false
 "resourceName": {
 "description": "Required. Different from DatabaseResourceId.unique_id, a resource name can be reused over time. That is, after a resource named \"ABC\" is deleted, the name \"ABC\" can be used to to create a new resource within the same source. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
 "type": "string"
+},
+"tagsSet": {
+"$ref": "StorageDatabasecenterPartnerapiV1mainTags",
+"description": "Optional. Tags associated with this resources."
 },
 "updationTime": {
 "description": "The time at which the resource was updated and recorded at partner service.",
@@ -4590,6 +4628,11 @@ false
 "description": "Memory size in bytes. TODO(b/342344482, b/342346271) add proto validations again after bug fix.",
 "format": "int64",
 "type": "string"
+},
+"shardCount": {
+"description": "Optional. Number of shards (if applicable).",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -4713,6 +4756,20 @@ false
 "timeBasedRetention": {
 "format": "google-duration",
 "type": "string"
+}
+},
+"type": "object"
+},
+"StorageDatabasecenterPartnerapiV1mainTags": {
+"description": "Message type for storing tags. Tags provide a way to create annotations for resources, and in some cases conditionally allow or deny policies based on whether a resource has a specific tag.",
+"id": "StorageDatabasecenterPartnerapiV1mainTags",
+"properties": {
+"tags": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "The Tag key/value mappings.",
+"type": "object"
 }
 },
 "type": "object"
@@ -5098,15 +5155,23 @@ false
 "description": "Status of upgrade operation.",
 "enum": [
 "STATUS_UNSPECIFIED",
+"NOT_STARTED",
+"IN_PROGRESS",
 "SUCCESS",
 "FAILED",
-"PARTIAL_SUCCESS"
+"PARTIAL_SUCCESS",
+"CANCEL_IN_PROGRESS",
+"CANCELLED"
 ],
 "enumDescriptions": [
 "Unspecified status.",
+"Not started.",
+"In progress.",
 "Operation succeeded.",
 "Operation failed.",
-"Operation partially succeeded."
+"Operation partially succeeded.",
+"Cancel is in progress.",
+"Cancellation complete."
 ],
 "type": "string"
 }
@@ -5123,6 +5188,10 @@ false
 "type": "string"
 },
 "type": "array"
+},
+"keepExtraRoles": {
+"description": "Input only. If the user already exists and it has additional roles, keep them granted.",
+"type": "boolean"
 },
 "name": {
 "description": "Output only. Name of the resource in the form of projects/{project}/locations/{location}/cluster/{cluster}/users/{user}.",

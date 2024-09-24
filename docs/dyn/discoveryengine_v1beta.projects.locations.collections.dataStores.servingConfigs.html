@@ -115,6 +115,7 @@ Args:
   &quot;answerGenerationSpec&quot;: { # Answer generation specification. # Answer generation specification.
     &quot;answerLanguageCode&quot;: &quot;A String&quot;, # Language code for Answer. Use language tags defined by [BCP47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt). Note: This is an experimental feature.
     &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No answer is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating answers for adversarial queries and return fallback messages instead.
+    &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
     &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true` or unset, the behavior will be determined automatically by the service.
     &quot;ignoreNonAnswerSeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not answer-seeking. The default value is `false`. Google employs search-query classification to detect answer-seeking queries. No answer is returned if the search query is classified as a non-answer seeking query. If this field is set to `true`, we skip generating answers for non-answer seeking queries and return fallback messages instead.
     &quot;includeCitations&quot;: True or False, # Specifies whether to include citation metadata in the answer. The default value is `false`.
@@ -125,7 +126,7 @@ Args:
       &quot;preamble&quot;: &quot;A String&quot;, # Customized preamble.
     },
   },
-  &quot;asynchronousMode&quot;: True or False, # Asynchronous mode control. If enabled, the response will be returned with answer/session resource name without final answer. The API users need to do the polling to get the latest status of answer/session by calling ConversationalSearchService.GetAnswer or ConversationalSearchService.GetSession method.
+  &quot;asynchronousMode&quot;: True or False, # Deprecated: This field is deprecated. Streaming Answer API will be supported. Asynchronous mode control. If enabled, the response will be returned with answer/session resource name without final answer. The API users need to do the polling to get the latest status of answer/session by calling ConversationalSearchService.GetAnswer or ConversationalSearchService.GetSession method.
   &quot;query&quot;: { # Defines a user inputed query. # Required. Current user query.
     &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
     &quot;text&quot;: &quot;A String&quot;, # Plain text.
@@ -184,23 +185,27 @@ Args:
           &quot;chunkInfo&quot;: { # Chunk information. # Chunk information.
             &quot;chunk&quot;: &quot;A String&quot;, # Chunk resource name.
             &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+            &quot;documentMetadata&quot;: { # Document metadata contains the information of the document of the current chunk. # Metadata of the document from the current chunk.
+              &quot;title&quot;: &quot;A String&quot;, # Title of the document.
+              &quot;uri&quot;: &quot;A String&quot;, # Uri of the document.
+            },
           },
           &quot;unstructuredDocumentInfo&quot;: { # Unstructured document information. # Unstructured document information.
             &quot;document&quot;: &quot;A String&quot;, # Document resource name.
-            &quot;documentContexts&quot;: [ # List of document contexts.
+            &quot;documentContexts&quot;: [ # List of document contexts. The content will be used for Answer Generation. This is supposed to be the main content of the document that can be long and comprehensive.
               { # Document context.
-                &quot;content&quot;: &quot;A String&quot;, # Document content.
+                &quot;content&quot;: &quot;A String&quot;, # Document content to be used for answer generation.
                 &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
               },
             ],
-            &quot;extractiveAnswers&quot;: [ # List of extractive answers.
+            &quot;extractiveAnswers&quot;: [ # Deprecated: This field is deprecated and will have no effect on the Answer generation. Please use document_contexts and extractive_segments fields. List of extractive answers.
               { # Extractive answer. [Guide](https://cloud.google.com/generative-ai-app-builder/docs/snippets#get-answers)
                 &quot;content&quot;: &quot;A String&quot;, # Extractive answer content.
                 &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
               },
             ],
             &quot;extractiveSegments&quot;: [ # List of extractive segments.
-              { # Extractive segment. [Guide](https://cloud.google.com/generative-ai-app-builder/docs/snippets#extractive-segments)
+              { # Extractive segment. [Guide](https://cloud.google.com/generative-ai-app-builder/docs/snippets#extractive-segments) Answer generation will only use it if document_contexts is empty. This is supposed to be shorter snippets.
                 &quot;content&quot;: &quot;A String&quot;, # Extractive segment content.
                 &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
               },
@@ -319,7 +324,7 @@ Returns:
                       &quot;snippetStatus&quot;: &quot;A String&quot;, # Status of the snippet defined by the search team.
                     },
                   ],
-                  &quot;structData&quot;: { # Data representation. The structured JSON data for the document. It&#x27;s populated from the struct data from the Document , or the Chunk in search result .
+                  &quot;structData&quot;: { # Data representation. The structured JSON data for the document. It&#x27;s populated from the struct data from the Document, or the Chunk in search result. .
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
                   },
                   &quot;title&quot;: &quot;A String&quot;, # Title.
@@ -368,7 +373,7 @@ Returns:
   <pre>Gets a ServingConfig. Returns a NotFound error if the ServingConfig does not exist.
 
 Args:
-  name: string, Required. The resource name of the ServingConfig to get. Format: `projects/{project_number}/locations/{location}/collections/{collection}/engines/{engine}/servingConfigs/{serving_config_id}` (required)
+  name: string, Required. The resource name of the ServingConfig to get. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/servingConfigs/{serving_config_id}` (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -414,6 +419,7 @@ Returns:
       },
       &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
         &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+        &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
         &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
         &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
         &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
@@ -463,7 +469,7 @@ Returns:
   <pre>Lists all ServingConfigs linked to this dataStore.
 
 Args:
-  parent: string, Required. Full resource name of the parent resource. Format: `projects/{project_number}/locations/{location}/collections/{collection}/engines/{engine}` (required)
+  parent: string, Required. Full resource name of the parent resource. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}` (required)
   pageSize: integer, Optional. Maximum number of results to return. If unspecified, defaults to 100. If a value greater than 100 is provided, at most 100 results are returned.
   pageToken: string, Optional. A page token, received from a previous `ListServingConfigs` call. Provide this to retrieve the subsequent page.
   x__xgafv: string, V1 error format.
@@ -514,6 +520,7 @@ Returns:
           },
           &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
             &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+            &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
             &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
             &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
             &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
@@ -620,6 +627,7 @@ Args:
       },
       &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
         &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+        &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
         &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
         &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
         &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
@@ -709,6 +717,7 @@ Returns:
       },
       &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
         &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+        &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
         &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
         &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
         &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
@@ -790,7 +799,7 @@ Args:
       { # Detailed document information associated with a user event.
         &quot;id&quot;: &quot;A String&quot;, # The Document resource ID.
         &quot;joined&quot;: True or False, # Output only. Whether the referenced Document can be found in the data store.
-        &quot;name&quot;: &quot;A String&quot;, # The Document resource full name, of the form: `projects/{project_id}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
+        &quot;name&quot;: &quot;A String&quot;, # The Document resource full name, of the form: `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}/branches/{branch_id}/documents/{document_id}`
         &quot;promotionIds&quot;: [ # The promotion IDs associated with this Document. Currently, this field is restricted to at most one ID.
           &quot;A String&quot;,
         ],
@@ -875,6 +884,20 @@ Returns:
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
         },
         &quot;id&quot;: &quot;A String&quot;, # Immutable. The identifier of the document. Id should conform to [RFC-1034](https://tools.ietf.org/html/rfc1034) standard with a length limit of 63 characters.
+        &quot;indexStatus&quot;: { # Index status of the document. # Output only. The index status of the document. * If document is indexed successfully, the index_time field is populated. * Otherwise, if document is not indexed due to errors, the error_samples field is populated. * Otherwise, index_status is unset.
+          &quot;errorSamples&quot;: [ # A sample of errors encountered while indexing the document. If this field is populated, the document is not indexed due to errors.
+            { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).
+              &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+              &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+                {
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+                },
+              ],
+              &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+            },
+          ],
+          &quot;indexTime&quot;: &quot;A String&quot;, # The time when the document was indexed. If this field is populated, it means the document has been indexed.
+        },
         &quot;indexTime&quot;: &quot;A String&quot;, # Output only. The last time the document was indexed. If this field is set, the document could be returned in search results. This field is OUTPUT_ONLY. If this field is not populated, it means the document has never been indexed.
         &quot;jsonData&quot;: &quot;A String&quot;, # The JSON string representation of the document. It should conform to the registered Schema or an `INVALID_ARGUMENT` error is thrown.
         &quot;name&quot;: &quot;A String&quot;, # Immutable. The full resource name of the document. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}/branches/{branch}/documents/{document_id}`. This field must be a UTF-8 encoded string with a length limit of 1024 characters.
@@ -945,6 +968,7 @@ Args:
     },
     &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
       &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+      &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
       &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
       &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
       &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
@@ -1185,6 +1209,20 @@ Returns:
               &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
             },
             &quot;id&quot;: &quot;A String&quot;, # Immutable. The identifier of the document. Id should conform to [RFC-1034](https://tools.ietf.org/html/rfc1034) standard with a length limit of 63 characters.
+            &quot;indexStatus&quot;: { # Index status of the document. # Output only. The index status of the document. * If document is indexed successfully, the index_time field is populated. * Otherwise, if document is not indexed due to errors, the error_samples field is populated. * Otherwise, index_status is unset.
+              &quot;errorSamples&quot;: [ # A sample of errors encountered while indexing the document. If this field is populated, the document is not indexed due to errors.
+                { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).
+                  &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+                  &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+                    {
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+                    },
+                  ],
+                  &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+                },
+              ],
+              &quot;indexTime&quot;: &quot;A String&quot;, # The time when the document was indexed. If this field is populated, it means the document has been indexed.
+            },
             &quot;indexTime&quot;: &quot;A String&quot;, # Output only. The last time the document was indexed. If this field is set, the document could be returned in search results. This field is OUTPUT_ONLY. If this field is not populated, it means the document has never been indexed.
             &quot;jsonData&quot;: &quot;A String&quot;, # The JSON string representation of the document. It should conform to the registered Schema or an `INVALID_ARGUMENT` error is thrown.
             &quot;name&quot;: &quot;A String&quot;, # Immutable. The full resource name of the document. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}/branches/{branch}/documents/{document_id}`. This field must be a UTF-8 encoded string with a length limit of 1024 characters.
@@ -1251,6 +1289,20 @@ Returns:
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
         },
         &quot;id&quot;: &quot;A String&quot;, # Immutable. The identifier of the document. Id should conform to [RFC-1034](https://tools.ietf.org/html/rfc1034) standard with a length limit of 63 characters.
+        &quot;indexStatus&quot;: { # Index status of the document. # Output only. The index status of the document. * If document is indexed successfully, the index_time field is populated. * Otherwise, if document is not indexed due to errors, the error_samples field is populated. * Otherwise, index_status is unset.
+          &quot;errorSamples&quot;: [ # A sample of errors encountered while indexing the document. If this field is populated, the document is not indexed due to errors.
+            { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).
+              &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+              &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+                {
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+                },
+              ],
+              &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+            },
+          ],
+          &quot;indexTime&quot;: &quot;A String&quot;, # The time when the document was indexed. If this field is populated, it means the document has been indexed.
+        },
         &quot;indexTime&quot;: &quot;A String&quot;, # Output only. The last time the document was indexed. If this field is set, the document could be returned in search results. This field is OUTPUT_ONLY. If this field is not populated, it means the document has never been indexed.
         &quot;jsonData&quot;: &quot;A String&quot;, # The JSON string representation of the document. It should conform to the registered Schema or an `INVALID_ARGUMENT` error is thrown.
         &quot;name&quot;: &quot;A String&quot;, # Immutable. The full resource name of the document. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}/branches/{branch}/documents/{document_id}`. This field must be a UTF-8 encoded string with a length limit of 1024 characters.

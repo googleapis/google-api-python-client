@@ -1915,7 +1915,7 @@
 ]
 },
 "listUsable": {
-"description": "Retrieves an aggregated list of all usable backend services in the specified project.",
+"description": "Retrieves a list of all usable backend services in the specified project.",
 "flatPath": "projects/{project}/global/backendServices/listUsable",
 "httpMethod": "GET",
 "id": "compute.backendServices.listUsable",
@@ -20638,7 +20638,7 @@
 ]
 },
 "listUsable": {
-"description": "Retrieves an aggregated list of all usable backend services in the specified project in the given region.",
+"description": "Retrieves a list of all usable backend services in the specified project in the given region.",
 "flatPath": "projects/{project}/regions/{region}/backendServices/listUsable",
 "httpMethod": "GET",
 "id": "compute.regionBackendServices.listUsable",
@@ -37779,7 +37779,7 @@
 }
 }
 },
-"revision": "20240813",
+"revision": "20240919",
 "rootUrl": "https://compute.googleapis.com/",
 "schemas": {
 "AWSV4Signature": {
@@ -39032,6 +39032,10 @@ false
 "description": "The number of threads per physical core. To disable simultaneous multithreading (SMT) set this to 1. If unset, the maximum number of threads supported per core by the underlying processor is assumed.",
 "format": "int32",
 "type": "integer"
+},
+"turboMode": {
+"description": "Turbo frequency mode to use for the instance. Supported modes include: * ALL_CORE_MAX Using empty string or not setting this field will use the platform-specific default turbo mode.",
+"type": "string"
 },
 "visibleCoreCount": {
 "description": "The number of physical cores to expose to an instance. Multiply by the number of threads per core to compute the total number of virtual CPUs to expose to the instance. If unset, the number of cores is inferred from the instance's nominal CPU count and the underlying platform's SMT width.",
@@ -40484,6 +40488,13 @@ false
 "selfLink": {
 "description": "[Output Only] Server-defined URL for the resource.",
 "type": "string"
+},
+"usedBy": {
+"description": "[Output Only] List of resources referencing that backend bucket.",
+"items": {
+"$ref": "BackendBucketUsedBy"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -40766,6 +40777,16 @@ false
 }
 },
 "type": "object"
+}
+},
+"type": "object"
+},
+"BackendBucketUsedBy": {
+"id": "BackendBucketUsedBy",
+"properties": {
+"reference": {
+"description": "[Output Only] Server-defined URL for UrlMaps referencing that BackendBucket.",
+"type": "string"
 }
 },
 "type": "object"
@@ -42287,7 +42308,7 @@ false
 },
 "locationPolicy": {
 "$ref": "LocationPolicy",
-"description": "Policy for chosing target zone. For more information, see Create VMs in bulk ."
+"description": "Policy for choosing target zone. For more information, see Create VMs in bulk."
 },
 "minCount": {
 "description": "The minimum number of instances to create. If no min_count is specified then count is used as the default value. If min_count instances cannot be created, then no instances will be created and instances already created will be deleted.",
@@ -43179,12 +43200,14 @@ false
 "enum": [
 "CONFIDENTIAL_INSTANCE_TYPE_UNSPECIFIED",
 "SEV",
-"SEV_SNP"
+"SEV_SNP",
+"TDX"
 ],
 "enumDescriptions": [
 "No type specified. Do not use this value.",
 "AMD Secure Encrypted Virtualization.",
-"AMD Secure Encrypted Virtualization - Secure Nested Paging."
+"AMD Secure Encrypted Virtualization - Secure Nested Paging.",
+"Intel Trust Domain eXtension."
 ],
 "type": "string"
 },
@@ -47965,11 +47988,13 @@ false
 "SEV_LIVE_MIGRATABLE",
 "SEV_LIVE_MIGRATABLE_V2",
 "SEV_SNP_CAPABLE",
+"TDX_CAPABLE",
 "UEFI_COMPATIBLE",
 "VIRTIO_SCSI_MULTIQUEUE",
 "WINDOWS"
 ],
 "enumDescriptions": [
+"",
 "",
 "",
 "",
@@ -55222,7 +55247,7 @@ false
 "type": "boolean"
 },
 "availableFeatures": {
-"description": "[Output only] List of features available for this Interconnect connection, which can take one of the following values: - MACSEC If present then the Interconnect connection is provisioned on MACsec capable hardware ports. If not present then the Interconnect connection is provisioned on non-MACsec capable ports and MACsec isn't supported and enabling MACsec fails.",
+"description": "[Output only] List of features available for this Interconnect connection, which can take one of the following values: - IF_MACSEC If present then the Interconnect connection is provisioned on MACsec capable hardware ports. If not present then the Interconnect connection is provisioned on non-MACsec capable ports and MACsec isn't supported and enabling MACsec fails.",
 "items": {
 "enum": [
 "IF_MACSEC"
@@ -55375,7 +55400,7 @@ false
 "type": "string"
 },
 "requestedFeatures": {
-"description": "Optional. List of features requested for this Interconnect connection, which can take one of the following values: - MACSEC If specified then the connection is created on MACsec capable hardware ports. If not specified, the default value is false, which allocates non-MACsec capable ports first if available. This parameter can be provided only with Interconnect INSERT. It isn't valid for Interconnect PATCH.",
+"description": "Optional. List of features requested for this Interconnect connection, which can take one of the following values: - IF_MACSEC If specified then the connection is created on MACsec capable hardware ports. If not specified, the default value is false, which allocates non-MACsec capable ports first if available. This parameter can be provided only with Interconnect INSERT. It isn't valid for Interconnect PATCH.",
 "items": {
 "enum": [
 "IF_MACSEC"
@@ -60154,6 +60179,11 @@ false
 "description": "Metadata defined as annotations on the network endpoint.",
 "type": "object"
 },
+"clientDestinationPort": {
+"description": "Represents the port number to which PSC consumer sends packets. Only valid for network endpoint groups created with GCE_VM_IP_PORTMAP endpoint type.",
+"format": "int32",
+"type": "integer"
+},
 "fqdn": {
 "description": "Optional fully qualified domain name of network endpoint. This can only be specified when NetworkEndpointGroup.network_endpoint_type is NON_GCP_FQDN_PORT.",
 "type": "string"
@@ -60233,6 +60263,7 @@ false
 "enum": [
 "GCE_VM_IP",
 "GCE_VM_IP_PORT",
+"GCE_VM_IP_PORTMAP",
 "INTERNET_FQDN_PORT",
 "INTERNET_IP_PORT",
 "NON_GCP_PRIVATE_IP_PORT",
@@ -60242,6 +60273,7 @@ false
 "enumDescriptions": [
 "The network endpoint is represented by an IP address.",
 "The network endpoint is represented by IP address and port pair.",
+"The network endpoint is represented by an IP, Port and Client Destination Port.",
 "The network endpoint is represented by fully qualified domain name and port.",
 "The network endpoint is represented by an internet IP address and port.",
 "The network endpoint is represented by an IP address and port. The endpoint belongs to a VM or pod running in a customer's on-premises.",
@@ -60651,6 +60683,11 @@ false
 "consumerPscAddress": {
 "description": "[Output Only] Address allocated from given subnetwork for PSC. This IP address acts as a VIP for a PSC NEG, allowing it to act as an endpoint in L7 PSC-XLB.",
 "type": "string"
+},
+"producerPort": {
+"description": "The psc producer port is used to connect PSC NEG with specific port on the PSC Producer side; should only be used for the PRIVATE_SERVICE_CONNECT NEG type",
+"format": "int32",
+"type": "integer"
 },
 "pscConnectionId": {
 "description": "[Output Only] The PSC connection id of the PSC Network Endpoint Group Consumer.",
@@ -61453,6 +61490,11 @@ false
 "description": "[Output Only] The name of the firewall policy.",
 "type": "string"
 },
+"priority": {
+"description": "[Output only] Priority of firewall policy association. Not applicable for type=HIERARCHY.",
+"format": "int32",
+"type": "integer"
+},
 "rules": {
 "description": "The rules that apply to the network.",
 "items": {
@@ -61469,9 +61511,11 @@ false
 "enum": [
 "HIERARCHY",
 "NETWORK",
+"SYSTEM",
 "UNSPECIFIED"
 ],
 "enumDescriptions": [
+"",
 "",
 "",
 ""
@@ -78057,7 +78101,7 @@ false
 "type": "string"
 },
 "internalIpv6Prefix": {
-"description": "[Output Only] The internal IPv6 address range that is assigned to this subnetwork.",
+"description": "The internal IPv6 address range that is owned by this subnetwork.",
 "type": "string"
 },
 "ipCidrRange": {

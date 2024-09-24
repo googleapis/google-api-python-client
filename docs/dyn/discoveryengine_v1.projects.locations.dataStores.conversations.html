@@ -109,7 +109,7 @@ h1, h2, h3 {
   <pre>Converses a conversation.
 
 Args:
-  name: string, Required. The resource name of the Conversation to get. Format: `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}/conversations/{conversation_id}`. Use `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}/conversations/-` to activate auto session mode, which automatically creates a new conversation inside a ConverseConversation session. (required)
+  name: string, Required. The resource name of the Conversation to get. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}/conversations/{conversation_id}`. Use `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}/conversations/-` to activate auto session mode, which automatically creates a new conversation inside a ConverseConversation session. (required)
   body: object, The request body.
     The object takes the form of:
 
@@ -118,6 +118,17 @@ Args:
     &quot;conditionBoostSpecs&quot;: [ # Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
       { # Boost applies to documents which match a condition.
         &quot;boost&quot;: 3.14, # Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored. Only one of the (condition, boost) combination or the boost_control_spec below are set. If both are set then the global boost is ignored and the more fine-grained boost_control_spec is applied.
+        &quot;boostControlSpec&quot;: { # Specification for custom ranking based on customer specified attribute value. It provides more controls for customized ranking than the simple (condition, boost) combination above. # Complex specification for custom ranking based on customer defined attribute value.
+          &quot;attributeType&quot;: &quot;A String&quot;, # The attribute type to be used to determine the boost amount. The attribute value can be derived from the field value of the specified field_name. In the case of numerical it is straightforward i.e. attribute_value = numerical_field_value. In the case of freshness however, attribute_value = (time.now() - datetime_field_value).
+          &quot;controlPoints&quot;: [ # The control points used to define the curve. The monotonic function (defined through the interpolation_type above) passes through the control points listed here.
+            { # The control points used to define the curve. The curve defined through these control points can only be monotonically increasing or decreasing(constant values are acceptable).
+              &quot;attributeValue&quot;: &quot;A String&quot;, # Can be one of: 1. The numerical field value. 2. The duration spec for freshness: The value must be formatted as an XSD `dayTimeDuration` value (a restricted subset of an ISO 8601 duration value). The pattern for this is: `nDnM]`.
+              &quot;boostAmount&quot;: 3.14, # The value between -1 to 1 by which to boost the score if the attribute_value evaluates to the value specified above.
+            },
+          ],
+          &quot;fieldName&quot;: &quot;A String&quot;, # The name of the field whose value will be used to determine the boost amount.
+          &quot;interpolationType&quot;: &quot;A String&quot;, # The interpolation type to be applied to connect the control points listed below.
+        },
         &quot;condition&quot;: &quot;A String&quot;, # An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. See SearchRequest.filter for detail syntax and limitations. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: `(document_id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;, &quot;Blue&quot;))`
       },
     ],
@@ -199,9 +210,10 @@ Args:
     &quot;input&quot;: &quot;A String&quot;, # Text input.
   },
   &quot;safeSearch&quot;: True or False, # Whether to turn on safe search.
-  &quot;servingConfig&quot;: &quot;A String&quot;, # The resource name of the Serving Config to use. Format: `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}/servingConfigs/{serving_config_id}` If this is not set, the default serving config will be used.
+  &quot;servingConfig&quot;: &quot;A String&quot;, # The resource name of the Serving Config to use. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}/servingConfigs/{serving_config_id}` If this is not set, the default serving config will be used.
   &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # A specification for configuring the summary returned in the response.
     &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+    &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
     &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
     &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
     &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
@@ -380,6 +392,20 @@ Returns:
           &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
         },
         &quot;id&quot;: &quot;A String&quot;, # Immutable. The identifier of the document. Id should conform to [RFC-1034](https://tools.ietf.org/html/rfc1034) standard with a length limit of 63 characters.
+        &quot;indexStatus&quot;: { # Index status of the document. # Output only. The index status of the document. * If document is indexed successfully, the index_time field is populated. * Otherwise, if document is not indexed due to errors, the error_samples field is populated. * Otherwise, index_status is unset.
+          &quot;errorSamples&quot;: [ # A sample of errors encountered while indexing the document. If this field is populated, the document is not indexed due to errors.
+            { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).
+              &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+              &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+                {
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+                },
+              ],
+              &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+            },
+          ],
+          &quot;indexTime&quot;: &quot;A String&quot;, # The time when the document was indexed. If this field is populated, it means the document has been indexed.
+        },
         &quot;indexTime&quot;: &quot;A String&quot;, # Output only. The last time the document was indexed. If this field is set, the document could be returned in search results. This field is OUTPUT_ONLY. If this field is not populated, it means the document has never been indexed.
         &quot;jsonData&quot;: &quot;A String&quot;, # The JSON string representation of the document. It should conform to the registered Schema or an `INVALID_ARGUMENT` error is thrown.
         &quot;name&quot;: &quot;A String&quot;, # Immutable. The full resource name of the document. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store}/branches/{branch}/documents/{document_id}`. This field must be a UTF-8 encoded string with a length limit of 1024 characters.
@@ -400,7 +426,7 @@ Returns:
   <pre>Creates a Conversation. If the Conversation to create already exists, an ALREADY_EXISTS error is returned.
 
 Args:
-  parent: string, Required. Full resource name of parent data store. Format: `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}` (required)
+  parent: string, Required. Full resource name of parent data store. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}` (required)
   body: object, The request body.
     The object takes the form of:
 
@@ -552,7 +578,7 @@ Returns:
   <pre>Deletes a Conversation. If the Conversation to delete does not exist, a NOT_FOUND error is returned.
 
 Args:
-  name: string, Required. The resource name of the Conversation to delete. Format: `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}/conversations/{conversation_id}` (required)
+  name: string, Required. The resource name of the Conversation to delete. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}/conversations/{conversation_id}` (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -570,7 +596,7 @@ Returns:
   <pre>Gets a Conversation.
 
 Args:
-  name: string, Required. The resource name of the Conversation to get. Format: `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}/conversations/{conversation_id}` (required)
+  name: string, Required. The resource name of the Conversation to get. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}/conversations/{conversation_id}` (required)
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -652,7 +678,7 @@ Returns:
   <pre>Lists all Conversations by their parent DataStore.
 
 Args:
-  parent: string, Required. The data store resource name. Format: `projects/{project_number}/locations/{location_id}/collections/{collection}/dataStores/{data_store_id}` (required)
+  parent: string, Required. The data store resource name. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}` (required)
   filter: string, A filter to apply on the list results. The supported features are: user_pseudo_id, state. Example: &quot;user_pseudo_id = some_id&quot;
   orderBy: string, A comma-separated list of fields to order by, sorted in ascending order. Use &quot;desc&quot; after a field name for descending. Supported fields: * `update_time` * `create_time` * `conversation_name` Example: &quot;update_time desc&quot; &quot;create_time&quot;
   pageSize: integer, Maximum number of results to return. If unspecified, defaults to 50. Max allowed value is 1000.
