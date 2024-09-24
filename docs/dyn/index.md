@@ -903,6 +903,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
 
 
+## oracledatabase
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/oracledatabase_v1.html)
+
+
 ## orgpolicy
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/orgpolicy_v2.html)
 
