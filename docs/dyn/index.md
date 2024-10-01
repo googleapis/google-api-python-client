@@ -535,7 +535,6 @@
 
 ## documentai
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1.html)
-* [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta2.html)
 * [v1beta3](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta3.html)
 
 
@@ -608,6 +607,10 @@
 
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
+
+
+## firebasedataconnect
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedataconnect_v1beta.html)
 
 
 ## firebasedynamiclinks
