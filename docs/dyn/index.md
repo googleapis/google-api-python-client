@@ -41,10 +41,6 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v2.html)
 
 
-## adsensehost
-* [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4_1.html)
-
-
 ## adsenseplatform
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1alpha.html)
