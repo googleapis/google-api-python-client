@@ -41,10 +41,6 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/adsense_v2.html)
 
 
-## adsensehost
-* [v4.1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsensehost_v4_1.html)
-
-
 ## adsenseplatform
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/adsenseplatform_v1alpha.html)
@@ -314,11 +310,6 @@
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2beta.html)
 
 
-## cloudidentity
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudidentity_v1.html)
-* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudidentity_v1beta1.html)
-
-
 ## cloudkms
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudkms_v1.html)
 
@@ -535,7 +526,6 @@
 
 ## documentai
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1.html)
-* [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta2.html)
 * [v1beta3](http://googleapis.github.io/google-api-python-client/docs/dyn/documentai_v1beta3.html)
 
 
@@ -608,6 +598,10 @@
 
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
+
+
+## firebasedataconnect
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedataconnect_v1beta.html)
 
 
 ## firebasedynamiclinks
@@ -818,6 +812,7 @@
 * [promotions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1beta.html)
 * [quota_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1beta.html)
 * [reports_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reports_v1beta.html)
+* [reviews_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reviews_v1beta.html)
 
 
 ## metastore
@@ -900,6 +895,10 @@
 ## ondemandscanning
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
+
+
+## oracledatabase
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/oracledatabase_v1.html)
 
 
 ## orgpolicy

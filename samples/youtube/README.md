@@ -2,4 +2,4 @@
 
 The YouTube API samples are now hosted separately
 from the client library project. You can find them
-[here](https://github.com/youtube/api-samples).
+[here](https://developers.google.com/youtube/v3/code_samples).

@@ -14,7 +14,7 @@
 "canonicalName": "Container",
 "description": "Builds and manages container-based applications, powered by the open source Kubernetes technology.",
 "discoveryVersion": "v1",
-"documentationLink": "https://cloud.google.com/container-engine/",
+"documentationLink": "https://cloud.google.com/kubernetes-engine/docs/",
 "fullyEncodeReservedExpansion": true,
 "icons": {
 "x16": "http://www.google.com/images/icons/product/search-16.gif",
@@ -2565,7 +2565,7 @@
 }
 }
 },
-"revision": "20240806",
+"revision": "20240923",
 "rootUrl": "https://container.googleapis.com/",
 "schemas": {
 "AcceleratorConfig": {
@@ -2624,6 +2624,10 @@
 "maxPodsPerNode": {
 "$ref": "MaxPodsConstraint",
 "description": "The maximum number of pods per node which use this pod network."
+},
+"networkAttachment": {
+"description": "The name of the network attachment for pods to communicate to; cannot be specified along with subnetwork or secondary_pod_range.",
+"type": "string"
 },
 "secondaryPodRange": {
 "description": "The name of the secondary range on the subnet which provides IP address for this pod range.",
@@ -3271,6 +3275,10 @@
 "$ref": "ConfidentialNodes",
 "description": "Configuration of Confidential Nodes. All the nodes in the cluster will be Confidential VM once enabled."
 },
+"controlPlaneEndpointsConfig": {
+"$ref": "ControlPlaneEndpointsConfig",
+"description": "Configuration for all cluster's control plane endpoints."
+},
 "costManagementConfig": {
 "$ref": "CostManagementConfig",
 "description": "Configuration for the fine-grained cost management feature."
@@ -3418,7 +3426,8 @@
 },
 "masterAuthorizedNetworksConfig": {
 "$ref": "MasterAuthorizedNetworksConfig",
-"description": "The configuration options for master authorized networks feature."
+"deprecated": true,
+"description": "The configuration options for master authorized networks feature. Deprecated: Use ControlPlaneEndpointsConfig.IPEndpointsConfig.authorized_networks_config instead."
 },
 "masterIpv4CidrBlock": {
 "deprecated": true,
@@ -3598,6 +3607,10 @@
 "readOnly": true,
 "type": "string"
 },
+"userManagedKeysConfig": {
+"$ref": "UserManagedKeysConfig",
+"description": "The Custom keys configuration for the cluster."
+},
 "verticalPodAutoscaling": {
 "$ref": "VerticalPodAutoscaling",
 "description": "Cluster-level Vertical Pod Autoscaling configuration."
@@ -3740,9 +3753,17 @@
 "$ref": "ClusterTelemetry",
 "description": "The desired telemetry integration for the cluster."
 },
+"desiredCompliancePostureConfig": {
+"$ref": "CompliancePostureConfig",
+"description": "Enable/Disable Compliance Posture features for the cluster."
+},
 "desiredContainerdConfig": {
 "$ref": "ContainerdConfig",
 "description": "The desired containerd config for the cluster."
+},
+"desiredControlPlaneEndpointsConfig": {
+"$ref": "ControlPlaneEndpointsConfig",
+"description": "Control plane endpoints configuration."
 },
 "desiredCostManagementConfig": {
 "$ref": "CostManagementConfig",
@@ -3766,6 +3787,10 @@
 ],
 "type": "string"
 },
+"desiredDefaultEnablePrivateNodes": {
+"description": "Override the default setting of whether future created nodes have private IP addresses only, namely NetworkConfig.default_enable_private_nodes",
+"type": "boolean"
+},
 "desiredDefaultSnatStatus": {
 "$ref": "DefaultSnatStatus",
 "description": "The desired status of whether to disable default sNAT for this cluster."
@@ -3787,7 +3812,8 @@
 "type": "boolean"
 },
 "desiredEnablePrivateEndpoint": {
-"description": "Enable/Disable private endpoint for the cluster's master.",
+"deprecated": true,
+"description": "Enable/Disable private endpoint for the cluster's master. Deprecated: Use desired_control_plane_endpoints_config.ip_endpoints_config.enable_public_endpoint instead. Note that the value of enable_public_endpoint is reversed: if enable_private_endpoint is false, then enable_public_endpoint will be true.",
 "type": "boolean"
 },
 "desiredFleet": {
@@ -3861,7 +3887,8 @@
 },
 "desiredMasterAuthorizedNetworksConfig": {
 "$ref": "MasterAuthorizedNetworksConfig",
-"description": "The desired configuration options for master authorized networks feature."
+"deprecated": true,
+"description": "The desired configuration options for master authorized networks feature. Deprecated: Use desired_control_plane_endpoints_config.ip_endpoints_config.authorized_networks_config instead."
 },
 "desiredMasterVersion": {
 "description": "The Kubernetes version to change the master to. The only valid value is the latest supported version. Users may specify either explicit versions offered by Kubernetes Engine or version aliases, which have the following behavior: - \"latest\": picks the highest valid Kubernetes version - \"1.X\": picks the highest valid patch+gke.N patch in the 1.X version - \"1.X.Y\": picks the highest valid gke.N patch in the 1.X.Y version - \"1.X.Y-gke.N\": picks an explicit Kubernetes version - \"-\": picks the default Kubernetes version",
@@ -3929,7 +3956,8 @@
 },
 "desiredPrivateClusterConfig": {
 "$ref": "PrivateClusterConfig",
-"description": "The desired private cluster configuration. master_global_access_config is the only field that can be changed via this field. See also ClusterUpdate.desired_enable_private_endpoint for modifying other fields within PrivateClusterConfig."
+"deprecated": true,
+"description": "The desired private cluster configuration. master_global_access_config is the only field that can be changed via this field. See also ClusterUpdate.desired_enable_private_endpoint for modifying other fields within PrivateClusterConfig. Deprecated: Use desired_control_plane_endpoints_config.ip_endpoints_config.global_access instead."
 },
 "desiredPrivateIpv6GoogleAccess": {
 "description": "The desired state of IPv6 connectivity to Google Services.",
@@ -4030,6 +4058,10 @@
 "removedAdditionalPodRangesConfig": {
 "$ref": "AdditionalPodRangesConfig",
 "description": "The additional pod ranges that are to be removed from the cluster. The pod ranges specified here must have been specified earlier in the 'additional_pod_ranges_config' argument."
+},
+"userManagedKeysConfig": {
+"$ref": "UserManagedKeysConfig",
+"description": "The Custom keys configuration for the cluster."
 }
 },
 "type": "object"
@@ -4149,6 +4181,21 @@
 },
 "type": "object"
 },
+"ControlPlaneEndpointsConfig": {
+"description": "Configuration for all of the cluster's control plane endpoints.",
+"id": "ControlPlaneEndpointsConfig",
+"properties": {
+"dnsEndpointConfig": {
+"$ref": "DNSEndpointConfig",
+"description": "DNS endpoint configuration."
+},
+"ipEndpointsConfig": {
+"$ref": "IPEndpointsConfig",
+"description": "IP endpoints configuration."
+}
+},
+"type": "object"
+},
 "CostManagementConfig": {
 "description": "Configuration for fine-grained cost management feature.",
 "id": "CostManagementConfig",
@@ -4255,6 +4302,22 @@
 "DNS records are accessible from within the cluster.",
 "DNS records are accessible from within the VPC."
 ],
+"type": "string"
+}
+},
+"type": "object"
+},
+"DNSEndpointConfig": {
+"description": "Describes the configuration of a DNS endpoint.",
+"id": "DNSEndpointConfig",
+"properties": {
+"allowExternalTraffic": {
+"description": "Controls whether user traffic is allowed over this endpoint. Note that GCP-managed services may still use the endpoint even if this is false.",
+"type": "boolean"
+},
+"endpoint": {
+"description": "Output only. The cluster's DNS endpoint configuration. A DNS format address. This is accessible from the public internet. Ex: uid.us-central1.gke.goog. Always present, but the behavior may change according to the value of DNSEndpointConfig.allow_external_traffic.",
+"readOnly": true,
 "type": "string"
 }
 },
@@ -4633,7 +4696,7 @@ false
 "properties": {
 "cacheHeader": {
 "$ref": "HttpCacheControlResponseHeader",
-"description": "OnePlatform automatically extracts this field and uses it to set the HTTP Cache-Control header."
+"description": "For HTTP requests, this field is automatically extracted into the Cache-Control HTTP header."
 },
 "keys": {
 "description": "The public component of the keys used by the cluster to sign token requests.",
@@ -4651,7 +4714,7 @@ false
 "properties": {
 "cacheHeader": {
 "$ref": "HttpCacheControlResponseHeader",
-"description": "OnePlatform automatically extracts this field and uses it to set the HTTP Cache-Control header."
+"description": "For HTTP requests, this field is automatically extracted into the Cache-Control HTTP header."
 },
 "claims_supported": {
 "description": "Supported claims.",
@@ -4920,6 +4983,43 @@ false
 "useRoutes": {
 "description": "Whether routes will be used for pod IPs in the cluster. This is used in conjunction with use_ip_aliases. It cannot be true if use_ip_aliases is true. If both use_ip_aliases and use_routes are false, then the server picks the default IP allocation mode",
 "type": "boolean"
+}
+},
+"type": "object"
+},
+"IPEndpointsConfig": {
+"description": "IP endpoints configuration.",
+"id": "IPEndpointsConfig",
+"properties": {
+"authorizedNetworksConfig": {
+"$ref": "MasterAuthorizedNetworksConfig",
+"description": "Configuration of authorized networks. If enabled, restricts access to the control plane based on source IP. It is invalid to specify both Cluster.masterAuthorizedNetworksConfig and this field at the same time."
+},
+"enablePublicEndpoint": {
+"description": "Controls whether the control plane allows access through a public IP. It is invalid to specify both PrivateClusterConfig.enablePrivateEndpoint and this field at the same time.",
+"type": "boolean"
+},
+"enabled": {
+"description": "Controls whether to allow direct IP access.",
+"type": "boolean"
+},
+"globalAccess": {
+"description": "Controls whether the control plane's private endpoint is accessible from sources in other regions. It is invalid to specify both PrivateClusterMasterGlobalAccessConfig.enabled and this field at the same time.",
+"type": "boolean"
+},
+"privateEndpoint": {
+"description": "Output only. The internal IP address of this cluster's control plane. Only populated if enabled.",
+"readOnly": true,
+"type": "string"
+},
+"privateEndpointSubnetwork": {
+"description": "Subnet to provision the master's private endpoint during cluster creation. Specified in projects/*/regions/*/subnetworks/* format. It is invalid to specify both PrivateClusterConfig.privateEndpointSubnetwork and this field at the same time.",
+"type": "string"
+},
+"publicEndpoint": {
+"description": "Output only. The external IP address of this cluster's control plane. Only populated if enabled.",
+"readOnly": true,
+"type": "string"
 }
 },
 "type": "object"
@@ -5240,7 +5340,9 @@ false
 "WORKLOADS",
 "APISERVER",
 "SCHEDULER",
-"CONTROLLER_MANAGER"
+"CONTROLLER_MANAGER",
+"KCP_SSHD",
+"KCP_CONNECTION"
 ],
 "enumDescriptions": [
 "Default value. This shouldn't be used.",
@@ -5248,7 +5350,9 @@ false
 "workloads",
 "kube-apiserver",
 "kube-scheduler",
-"kube-controller-manager"
+"kube-controller-manager",
+"kcp-sshd",
+"kcp connection logs"
 ],
 "type": "string"
 },
@@ -5418,6 +5522,10 @@ false
 "gcpPublicCidrsAccessEnabled": {
 "description": "Whether master is accessbile via Google Compute Engine Public IP addresses.",
 "type": "boolean"
+},
+"privateEndpointEnforcementEnabled": {
+"description": "Whether master authorized networks is enforced on private endpoint or not.",
+"type": "boolean"
 }
 },
 "type": "object"
@@ -5571,6 +5679,10 @@ false
 "Use the eBPF based GKE Dataplane V2 with additional features. See the [GKE Dataplane V2 documentation](https://cloud.google.com/kubernetes-engine/docs/how-to/dataplane-v2) for more."
 ],
 "type": "string"
+},
+"defaultEnablePrivateNodes": {
+"description": "Controls whether by default nodes have private IP addresses only. It is invalid to specify both PrivateClusterConfig.enablePrivateNodes and this field at the same time. To update the default setting, use ClusterUpdate.desired_default_enable_private_nodes",
+"type": "boolean"
 },
 "defaultSnatStatus": {
 "$ref": "DefaultSnatStatus",
@@ -5800,6 +5912,21 @@ false
 },
 "diskType": {
 "description": "Type of the disk attached to each node (e.g. 'pd-standard', 'pd-ssd' or 'pd-balanced') If unspecified, the default disk type is 'pd-standard'",
+"type": "string"
+},
+"effectiveCgroupMode": {
+"description": "Output only. effective_cgroup_mode is the cgroup mode actually used by the node pool. It is determined by the cgroup mode specified in the LinuxNodeConfig or the default cgroup mode based on the cluster creation version.",
+"enum": [
+"EFFECTIVE_CGROUP_MODE_UNSPECIFIED",
+"EFFECTIVE_CGROUP_MODE_V1",
+"EFFECTIVE_CGROUP_MODE_V2"
+],
+"enumDescriptions": [
+"EFFECTIVE_CGROUP_MODE_UNSPECIFIED means the cgroup configuration for the node pool is unspecified, i.e. the node pool is a Windows node pool.",
+"CGROUP_MODE_V1 means the node pool is configured to use cgroupv1 for the cgroup configuration.",
+"CGROUP_MODE_V2 means the node pool is configured to use cgroupv2 for the cgroup configuration."
+],
+"readOnly": true,
 "type": "string"
 },
 "enableConfidentialStorage": {
@@ -6081,7 +6208,7 @@ false
 "type": "boolean"
 },
 "enablePrivateNodes": {
-"description": "Whether nodes have internal IP addresses only. If enable_private_nodes is not specified, then the value is derived from cluster.privateClusterConfig.enablePrivateNodes",
+"description": "Whether nodes have internal IP addresses only. If enable_private_nodes is not specified, then the value is derived from Cluster.NetworkConfig.default_enable_private_nodes",
 "type": "boolean"
 },
 "networkPerformanceConfig": {
@@ -6716,16 +6843,19 @@ false
 "id": "PrivateClusterConfig",
 "properties": {
 "enablePrivateEndpoint": {
-"description": "Whether the master's internal IP address is used as the cluster endpoint.",
+"deprecated": true,
+"description": "Whether the master's internal IP address is used as the cluster endpoint. Use ControlPlaneEndpointsConfig.IPEndpointsConfig.enable_public_endpoint instead. Note that the value of enable_public_endpoint is reversed: if enable_private_endpoint is false, then enable_public_endpoint will be true.",
 "type": "boolean"
 },
 "enablePrivateNodes": {
-"description": "Whether nodes have internal IP addresses only. If enabled, all nodes are given only RFC 1918 private addresses and communicate with the master via private networking.",
+"deprecated": true,
+"description": "Whether nodes have internal IP addresses only. If enabled, all nodes are given only RFC 1918 private addresses and communicate with the master via private networking. Deprecated: Use NetworkConfig.default_enable_private_nodes instead.",
 "type": "boolean"
 },
 "masterGlobalAccessConfig": {
 "$ref": "PrivateClusterMasterGlobalAccessConfig",
-"description": "Controls master global access settings."
+"deprecated": true,
+"description": "Controls master global access settings. Deprecated: Use ControlPlaneEndpointsConfig.IPEndpointsConfig.enable_global_access instead."
 },
 "masterIpv4CidrBlock": {
 "description": "The IP range in CIDR notation to use for the hosted master network. This range will be used for assigning internal IP addresses to the master or set of masters, as well as the ILB VIP. This range must not overlap with any other ranges in use within the cluster's network.",
@@ -6737,16 +6867,19 @@ false
 "type": "string"
 },
 "privateEndpoint": {
-"description": "Output only. The internal IP address of this cluster's master endpoint.",
+"deprecated": true,
+"description": "Output only. The internal IP address of this cluster's master endpoint. Deprecated: Use ControlPlaneEndpointsConfig.IPEndpointsConfig.private_endpoint instead.",
 "readOnly": true,
 "type": "string"
 },
 "privateEndpointSubnetwork": {
-"description": "Subnet to provision the master's private endpoint during cluster creation. Specified in projects/*/regions/*/subnetworks/* format.",
+"deprecated": true,
+"description": "Subnet to provision the master's private endpoint during cluster creation. Specified in projects/*/regions/*/subnetworks/* format. Deprecated: Use ControlPlaneEndpointsConfig.IPEndpointsConfig.private_endpoint_subnetwork instead.",
 "type": "string"
 },
 "publicEndpoint": {
-"description": "Output only. The external IP address of this cluster's master endpoint.",
+"deprecated": true,
+"description": "Output only. The external IP address of this cluster's master endpoint. Deprecated: Use ControlPlaneEndpointsConfig.IPEndpointsConfig.public_endpoint instead.",
 "readOnly": true,
 "type": "string"
 }
@@ -8390,6 +8523,51 @@ false
 "IN_USE_MANAGED_POD denotes this range was created by GKE and is claimed for pods. It cannot be used for other clusters."
 ],
 "type": "string"
+}
+},
+"type": "object"
+},
+"UserManagedKeysConfig": {
+"description": "UserManagedKeysConfig holds the resource address to Keys which are used for signing certs and token that are used for communication within cluster.",
+"id": "UserManagedKeysConfig",
+"properties": {
+"aggregationCa": {
+"description": "The Certificate Authority Service caPool to use for the aggregation CA in this cluster.",
+"type": "string"
+},
+"clusterCa": {
+"description": "The Certificate Authority Service caPool to use for the cluster CA in this cluster.",
+"type": "string"
+},
+"controlPlaneDiskEncryptionKey": {
+"description": "The Cloud KMS cryptoKey to use for Confidential Hyperdisk on the control plane nodes.",
+"type": "string"
+},
+"etcdApiCa": {
+"description": "Resource path of the Certificate Authority Service caPool to use for the etcd API CA in this cluster.",
+"type": "string"
+},
+"etcdPeerCa": {
+"description": "Resource path of the Certificate Authority Service caPool to use for the etcd peer CA in this cluster.",
+"type": "string"
+},
+"gkeopsEtcdBackupEncryptionKey": {
+"description": "Resource path of the Cloud KMS cryptoKey to use for encryption of internal etcd backups.",
+"type": "string"
+},
+"serviceAccountSigningKeys": {
+"description": "The Cloud KMS cryptoKeyVersions to use for signing service account JWTs issued by this cluster. Format: `projects/{project}/locations/{location}/keyRings/{keyring}/cryptoKeys/{cryptoKey}/cryptoKeyVersions/{cryptoKeyVersion}`",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"serviceAccountVerificationKeys": {
+"description": "The Cloud KMS cryptoKeyVersions to use for verifying service account JWTs issued by this cluster. Format: `projects/{project}/locations/{location}/keyRings/{keyring}/cryptoKeys/{cryptoKey}/cryptoKeyVersions/{cryptoKeyVersion}`",
+"items": {
+"type": "string"
+},
+"type": "array"
 }
 },
 "type": "object"
