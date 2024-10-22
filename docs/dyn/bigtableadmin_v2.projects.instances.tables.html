@@ -180,7 +180,7 @@ Args:
   ],
   &quot;table&quot;: { # A collection of user data indexed by row, column, and timestamp. Each table is served using the resources of its parent cluster. # Required. The Table to create.
     &quot;automatedBackupPolicy&quot;: { # Defines an automated backup policy for a table # If specified, automated backups are enabled for this table. Otherwise, automated backups are disabled.
-      &quot;frequency&quot;: &quot;A String&quot;, # Required. How frequently automated backups should occur. The only supported value at this time is 24 hours.
+      &quot;frequency&quot;: &quot;A String&quot;, # How frequently automated backups should occur. The only supported value at this time is 24 hours. An undefined frequency is treated as 24 hours.
       &quot;retentionPeriod&quot;: &quot;A String&quot;, # Required. How long the automated backups should be retained. The only supported value at this time is 3 days.
     },
     &quot;changeStreamConfig&quot;: { # Change stream configuration. # If specified, enable the change stream on this table. Otherwise, the change stream is disabled and the change stream is not retained.
@@ -227,16 +227,16 @@ Args:
           &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
           &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
         },
-        &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-          &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+        &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+          &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
             &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
             },
-            &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+            &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
             &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
             },
             &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
             },
-            &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+            &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
             &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
             },
           },
@@ -246,8 +246,8 @@ Args:
           &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
           },
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
               },
             },
           },
@@ -258,11 +258,11 @@ Args:
           &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
           },
           &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
                 &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                  &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                    &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                     },
                   },
                 },
@@ -274,8 +274,8 @@ Args:
             &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
           },
           &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
               },
               &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
               },
@@ -327,7 +327,7 @@ Returns:
 
     { # A collection of user data indexed by row, column, and timestamp. Each table is served using the resources of its parent cluster.
   &quot;automatedBackupPolicy&quot;: { # Defines an automated backup policy for a table # If specified, automated backups are enabled for this table. Otherwise, automated backups are disabled.
-    &quot;frequency&quot;: &quot;A String&quot;, # Required. How frequently automated backups should occur. The only supported value at this time is 24 hours.
+    &quot;frequency&quot;: &quot;A String&quot;, # How frequently automated backups should occur. The only supported value at this time is 24 hours. An undefined frequency is treated as 24 hours.
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # Required. How long the automated backups should be retained. The only supported value at this time is 3 days.
   },
   &quot;changeStreamConfig&quot;: { # Change stream configuration. # If specified, enable the change stream on this table. Otherwise, the change stream is disabled and the change stream is not retained.
@@ -374,16 +374,16 @@ Returns:
         &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
         &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
       },
-      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
           &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
           },
-          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
           &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
           },
           &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
           },
-          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
         },
@@ -393,8 +393,8 @@ Returns:
         &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
             },
           },
         },
@@ -405,11 +405,11 @@ Returns:
         &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                  &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                  &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                   },
                 },
               },
@@ -421,8 +421,8 @@ Returns:
           &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
         },
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
@@ -557,7 +557,7 @@ Returns:
 
     { # A collection of user data indexed by row, column, and timestamp. Each table is served using the resources of its parent cluster.
   &quot;automatedBackupPolicy&quot;: { # Defines an automated backup policy for a table # If specified, automated backups are enabled for this table. Otherwise, automated backups are disabled.
-    &quot;frequency&quot;: &quot;A String&quot;, # Required. How frequently automated backups should occur. The only supported value at this time is 24 hours.
+    &quot;frequency&quot;: &quot;A String&quot;, # How frequently automated backups should occur. The only supported value at this time is 24 hours. An undefined frequency is treated as 24 hours.
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # Required. How long the automated backups should be retained. The only supported value at this time is 3 days.
   },
   &quot;changeStreamConfig&quot;: { # Change stream configuration. # If specified, enable the change stream on this table. Otherwise, the change stream is disabled and the change stream is not retained.
@@ -604,16 +604,16 @@ Returns:
         &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
         &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
       },
-      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
           &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
           },
-          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
           &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
           },
           &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
           },
-          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
         },
@@ -623,8 +623,8 @@ Returns:
         &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
             },
           },
         },
@@ -635,11 +635,11 @@ Returns:
         &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                  &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                  &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                   },
                 },
               },
@@ -651,8 +651,8 @@ Returns:
           &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
         },
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
@@ -779,7 +779,7 @@ Returns:
   &quot;tables&quot;: [ # The tables present in the requested instance.
     { # A collection of user data indexed by row, column, and timestamp. Each table is served using the resources of its parent cluster.
       &quot;automatedBackupPolicy&quot;: { # Defines an automated backup policy for a table # If specified, automated backups are enabled for this table. Otherwise, automated backups are disabled.
-        &quot;frequency&quot;: &quot;A String&quot;, # Required. How frequently automated backups should occur. The only supported value at this time is 24 hours.
+        &quot;frequency&quot;: &quot;A String&quot;, # How frequently automated backups should occur. The only supported value at this time is 24 hours. An undefined frequency is treated as 24 hours.
         &quot;retentionPeriod&quot;: &quot;A String&quot;, # Required. How long the automated backups should be retained. The only supported value at this time is 3 days.
       },
       &quot;changeStreamConfig&quot;: { # Change stream configuration. # If specified, enable the change stream on this table. Otherwise, the change stream is disabled and the change stream is not retained.
@@ -826,16 +826,16 @@ Returns:
             &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
             &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
           },
-          &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-            &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+          &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+            &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
               &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
               },
-              &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+              &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
               &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
               },
               &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
               },
-              &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+              &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
               &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
               },
             },
@@ -845,8 +845,8 @@ Returns:
             &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
             },
             &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-              &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+              &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                 },
               },
             },
@@ -857,11 +857,11 @@ Returns:
             &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
             },
             &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-              &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+              &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
                   &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                    &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                      &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                    &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                      &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                       },
                     },
                   },
@@ -873,8 +873,8 @@ Returns:
               &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
             },
             &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-              &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
                 },
                 &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
                 },
@@ -964,16 +964,16 @@ Args:
           &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
           &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
         },
-        &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-          &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+        &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+          &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
             &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
             },
-            &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+            &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
             &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
             },
             &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
             },
-            &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+            &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
             &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
             },
           },
@@ -983,8 +983,8 @@ Args:
           &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
           },
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
               },
             },
           },
@@ -995,11 +995,11 @@ Args:
           &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
           },
           &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
                 &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                  &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                    &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                     },
                   },
                 },
@@ -1011,8 +1011,8 @@ Args:
             &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
           },
           &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
               },
               &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
               },
@@ -1052,16 +1052,16 @@ Args:
           &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
           &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
         },
-        &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-          &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+        &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+          &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
             &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
             },
-            &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+            &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
             &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
             },
             &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
             },
-            &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+            &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
             &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
             },
           },
@@ -1071,8 +1071,8 @@ Args:
           &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
           },
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
               },
             },
           },
@@ -1083,11 +1083,11 @@ Args:
           &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
           },
           &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
                 &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                  &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                    &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                     },
                   },
                 },
@@ -1099,8 +1099,8 @@ Args:
             &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
           },
           &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-            &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-              &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
               },
               &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
               },
@@ -1133,7 +1133,7 @@ Returns:
 
     { # A collection of user data indexed by row, column, and timestamp. Each table is served using the resources of its parent cluster.
   &quot;automatedBackupPolicy&quot;: { # Defines an automated backup policy for a table # If specified, automated backups are enabled for this table. Otherwise, automated backups are disabled.
-    &quot;frequency&quot;: &quot;A String&quot;, # Required. How frequently automated backups should occur. The only supported value at this time is 24 hours.
+    &quot;frequency&quot;: &quot;A String&quot;, # How frequently automated backups should occur. The only supported value at this time is 24 hours. An undefined frequency is treated as 24 hours.
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # Required. How long the automated backups should be retained. The only supported value at this time is 3 days.
   },
   &quot;changeStreamConfig&quot;: { # Change stream configuration. # If specified, enable the change stream on this table. Otherwise, the change stream is disabled and the change stream is not retained.
@@ -1180,16 +1180,16 @@ Returns:
         &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
         &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
       },
-      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
           &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
           },
-          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
           &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
           },
           &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
           },
-          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
         },
@@ -1199,8 +1199,8 @@ Returns:
         &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
             },
           },
         },
@@ -1211,11 +1211,11 @@ Returns:
         &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                  &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                  &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                   },
                 },
               },
@@ -1227,8 +1227,8 @@ Returns:
           &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
         },
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
@@ -1280,7 +1280,7 @@ Args:
 
 { # A collection of user data indexed by row, column, and timestamp. Each table is served using the resources of its parent cluster.
   &quot;automatedBackupPolicy&quot;: { # Defines an automated backup policy for a table # If specified, automated backups are enabled for this table. Otherwise, automated backups are disabled.
-    &quot;frequency&quot;: &quot;A String&quot;, # Required. How frequently automated backups should occur. The only supported value at this time is 24 hours.
+    &quot;frequency&quot;: &quot;A String&quot;, # How frequently automated backups should occur. The only supported value at this time is 24 hours. An undefined frequency is treated as 24 hours.
     &quot;retentionPeriod&quot;: &quot;A String&quot;, # Required. How long the automated backups should be retained. The only supported value at this time is 3 days.
   },
   &quot;changeStreamConfig&quot;: { # Change stream configuration. # If specified, enable the change stream on this table. Otherwise, the change stream is disabled and the change stream is not retained.
@@ -1327,16 +1327,16 @@ Args:
         &quot;averageColumnsPerRow&quot;: 3.14, # How many column qualifiers are present in this column family, averaged over all rows in the table. e.g. For column family &quot;family&quot; in a table with 3 rows: * A row with cells in &quot;family:col&quot; and &quot;other:col&quot; (1 column in &quot;family&quot;) * A row with cells in &quot;family:col&quot;, &quot;family:other_col&quot;, and &quot;other:data&quot; (2 columns in &quot;family&quot;) * A row with cells in &quot;other:col&quot; (0 columns in &quot;family&quot;, &quot;family&quot; not present) would report (1 + 2 + 0)/3 = 1.5 in this field.
         &quot;logicalDataBytes&quot;: &quot;A String&quot;, # How much space the data in the column family occupies. This is roughly how many bytes would be needed to read the contents of the entire column family (e.g. by streaming all contents out).
       },
-      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to/from the underlying data. Each encoding also defines the following properties: * Order-preserving: Does the encoded value sort consistently with the original typed value? Note that Bigtable will always sort data based on the raw encoded value, *not* the decoded type. - Example: BYTES values sort in the same order as their raw encodings. - Counterexample: Encoding INT64 as a fixed-width decimal string does *not* preserve sort order when dealing with negative numbers. `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001)`. * Self-delimiting: If we concatenate two encoded values, can we always tell where the first one ends and the second one begins? - Example: If we encode INT64s to fixed-width STRINGs, the first value will always contain exactly N digits, possibly preceded by a sign. - Counterexample: If we concatenate two UTF-8 encoded STRINGs, we have no way to tell where the first one ends. * Compatibility: Which other systems have matching encoding schemes? For example, does this encoding have a GoogleSQL equivalent? HBase? Java? # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
-        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes will provide either the `input_type` or `state_type`, and reads will always return the `state_type` . # Aggregate
+      &quot;valueType&quot;: { # `Type` represents the type of data that is written to, read from, or stored in Bigtable. It is heavily based on the GoogleSQL standard to help maintain familiarity and consistency across products and features. For compatibility with Bigtable&#x27;s existing untyped APIs, each `Type` includes an `Encoding` which describes how to convert to or from the underlying data. Each encoding can operate in one of two modes: - Sorted: In this mode, Bigtable guarantees that `Encode(X) &lt;= Encode(Y)` if and only if `X &lt;= Y`. This is useful anywhere sort order is important, for example when encoding keys. - Distinct: In this mode, Bigtable guarantees that if `X != Y` then `Encode(X) != Encode(Y)`. However, the converse is not guaranteed. For example, both &quot;{&#x27;foo&#x27;: &#x27;1&#x27;, &#x27;bar&#x27;: &#x27;2&#x27;}&quot; and &quot;{&#x27;bar&#x27;: &#x27;2&#x27;, &#x27;foo&#x27;: &#x27;1&#x27;}&quot; are valid encodings of the same JSON value. The API clearly documents which mode is used wherever an encoding can be configured. Each encoding also documents which values are supported in which modes. For example, when encoding INT64 as a numeric STRING, negative numbers cannot be encoded in sorted mode. This is because `INT64(1) &gt; INT64(-1)`, but `STRING(&quot;-00001&quot;) &gt; STRING(&quot;00001&quot;)`. # The type of data stored in each of this family&#x27;s cell values, including its full encoding. If omitted, the family only serves raw untyped bytes. For now, only the `Aggregate` type is supported. `Aggregate` can only be set at family creation and is immutable afterwards. If `value_type` is `Aggregate`, written data must be compatible with: * `value_type.input_type` for `AddInput` mutations
+        &quot;aggregateType&quot;: { # A value that combines incremental updates into a summarized value. Data is never directly written or read using type `Aggregate`. Writes provide either the `input_type` or `state_type`, and reads always return the `state_type` . # Aggregate
           &quot;hllppUniqueCount&quot;: { # Computes an approximate unique count over the input values. When using raw data as input, be careful to use a consistent encoding. Otherwise the same value encoded differently could count more than once, or two distinct values could count as identical. Input: Any, or omit for Raw State: TBD Special state conversions: `Int64` (the unique count estimate) # HyperLogLogPlusPlusUniqueCount aggregator.
           },
-          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`, which must specify a full encoding. Use `AddInput` mutations to accumulate new inputs.
+          &quot;inputType&quot;: # Object with schema name: Type # Type of the inputs that are accumulated by this `Aggregate`. Use `AddInput` mutations to accumulate new inputs.
           &quot;max&quot;: { # Computes the max of the input values. Allowed input: `Int64` State: same as input # Max aggregator.
           },
           &quot;min&quot;: { # Computes the min of the input values. Allowed input: `Int64` State: same as input # Min aggregator.
           },
-          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen, and will always specify a full encoding.
+          &quot;stateType&quot;: # Object with schema name: Type # Output only. Type that holds the internal accumulator state for the `Aggregate`. This is a function of the `input_type` and `aggregator` chosen.
           &quot;sum&quot;: { # Computes the sum of the input values. Allowed input: `Int64` State: same as input # Sum aggregator.
           },
         },
@@ -1346,8 +1346,8 @@ Args:
         &quot;boolType&quot;: { # bool Values of type `Bool` are stored in `Value.bool_value`. # Bool
         },
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
             },
           },
         },
@@ -1358,11 +1358,11 @@ Args:
         &quot;float64Type&quot;: { # Float64 Values of type `Float64` are stored in `Value.float_value`. # Float64
         },
         &quot;int64Type&quot;: { # Int64 Values of type `Int64` are stored in `Value.int_value`. # Int64
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big endian twos complement `Bytes` value. * Order-preserving? No (positive values only) * Self-delimiting? Yes * Compatibility? - BigQuery Federation `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
-                &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-                  &quot;raw&quot;: { # Leaves the value &quot;as-is&quot; * Order-preserving? Yes * Self-delimiting? No * Compatibility? N/A # Use `Raw` encoding.
+                &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                  &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
                   },
                 },
               },
@@ -1374,8 +1374,8 @@ Args:
           &quot;valueType&quot;: # Object with schema name: Type # The type of the values in a map.
         },
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
-          &quot;encoding&quot;: { # Rules used to convert to/from lower level types. # The encoding to use when converting to/from lower level types.
-            &quot;utf8Bytes&quot;: { # UTF-8 encoding * Order-preserving? Yes (code point order) * Self-delimiting? No * Compatibility? - BigQuery Federation `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
