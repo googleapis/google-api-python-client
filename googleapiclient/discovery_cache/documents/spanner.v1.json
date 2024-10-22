@@ -39,6 +39,11 @@
 },
 {
 "description": "Regional Endpoint",
+"endpointUrl": "https://spanner.us-central2.rep.googleapis.com/",
+"location": "us-central2"
+},
+{
+"description": "Regional Endpoint",
 "endpointUrl": "https://spanner.us-east1.rep.googleapis.com/",
 "location": "us-east1"
 },
@@ -54,6 +59,11 @@
 },
 {
 "description": "Regional Endpoint",
+"endpointUrl": "https://spanner.us-east7.rep.googleapis.com/",
+"location": "us-east7"
+},
+{
+"description": "Regional Endpoint",
 "endpointUrl": "https://spanner.us-south1.rep.googleapis.com/",
 "location": "us-south1"
 },
@@ -66,6 +76,11 @@
 "description": "Regional Endpoint",
 "endpointUrl": "https://spanner.us-west2.rep.googleapis.com/",
 "location": "us-west2"
+},
+{
+"description": "Regional Endpoint",
+"endpointUrl": "https://spanner.us-west3.rep.googleapis.com/",
+"location": "us-west3"
 },
 {
 "description": "Regional Endpoint",
@@ -3304,13 +3319,35 @@
 }
 }
 },
-"revision": "20240930",
+"revision": "20241010",
 "rootUrl": "https://spanner.googleapis.com/",
 "schemas": {
+"AsymmetricAutoscalingOption": {
+"description": "AsymmetricAutoscalingOption specifies the scaling of replicas identified by the given selection.",
+"id": "AsymmetricAutoscalingOption",
+"properties": {
+"overrides": {
+"$ref": "AutoscalingConfigOverrides",
+"description": "Optional. Overrides applied to the top-level autoscaling configuration for the selected replicas."
+},
+"replicaSelection": {
+"$ref": "InstanceReplicaSelection",
+"description": "Required. Selects the replicas to which this AsymmetricAutoscalingOption applies. Only read-only replicas are supported."
+}
+},
+"type": "object"
+},
 "AutoscalingConfig": {
 "description": "Autoscaling configuration for an instance.",
 "id": "AutoscalingConfig",
 "properties": {
+"asymmetricAutoscalingOptions": {
+"description": "Optional. Optional asymmetric autoscaling options. Replicas matching the replica selection criteria will be autoscaled independently from other replicas. The autoscaler will scale the replicas based on the utilization of replicas identified by the replica selection. Replica selections should not overlap with each other. Other replicas (those do not match any replica selection) will be autoscaled together and will have the same compute capacity allocated to them.",
+"items": {
+"$ref": "AsymmetricAutoscalingOption"
+},
+"type": "array"
+},
 "autoscalingLimits": {
 "$ref": "AutoscalingLimits",
 "description": "Required. Autoscaling limits for an instance."
@@ -3318,6 +3355,22 @@
 "autoscalingTargets": {
 "$ref": "AutoscalingTargets",
 "description": "Required. The autoscaling targets for an instance."
+}
+},
+"type": "object"
+},
+"AutoscalingConfigOverrides": {
+"description": "Overrides the top-level autoscaling configuration for the replicas identified by `replica_selection`. All fields in this message are optional. Any unspecified fields will use the corresponding values from the top-level autoscaling configuration.",
+"id": "AutoscalingConfigOverrides",
+"properties": {
+"autoscalingLimits": {
+"$ref": "AutoscalingLimits",
+"description": "Optional. If specified, overrides the min/max limit in the top-level autoscaling configuration for the selected replicas."
+},
+"autoscalingTargetHighPriorityCpuUtilizationPercent": {
+"description": "Optional. If specified, overrides the autoscaling target high_priority_cpu_utilization_percent in the top-level autoscaling configuration for the selected replicas.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -4582,12 +4635,16 @@
 "enum": [
 "NORMAL",
 "PLAN",
-"PROFILE"
+"PROFILE",
+"WITH_STATS",
+"WITH_PLAN_AND_STATS"
 ],
 "enumDescriptions": [
 "The default mode. Only the statement results are returned.",
 "This mode returns only the query plan, without any results or execution statistics information.",
-"This mode returns the query plan, overall execution statistics, operator level execution statistics along with the results. This has a performance overhead compared to the other modes. It is not recommended to use this mode for production traffic."
+"This mode returns the query plan, overall execution statistics, operator level execution statistics along with the results. This has a performance overhead compared to the other modes. It is not recommended to use this mode for production traffic.",
+"This mode returns the overall (but not operator-level) execution statistics along with the results.",
+"This mode returns the query plan, overall (but not operator-level) execution statistics along with the results."
 ],
 "type": "string"
 },
@@ -4886,14 +4943,22 @@
 "type": "string"
 },
 "nodeCount": {
-"description": "The number of nodes allocated to this instance. At most, one of either `node_count` or `processing_units` should be present in the message. Users can set the `node_count` field to specify the target number of nodes allocated to the instance. If autoscaling is enabled, `node_count` is treated as an `OUTPUT_ONLY` field and reflects the current number of nodes allocated to the instance. This might be zero in API responses for instances that are not yet in the `READY` state. For more information, see [Compute capacity, nodes, and processing units](https://cloud.google.com/spanner/docs/compute-capacity).",
+"description": "The number of nodes allocated to this instance. At most, one of either `node_count` or `processing_units` should be present in the message. Users can set the `node_count` field to specify the target number of nodes allocated to the instance. If autoscaling is enabled, `node_count` is treated as an `OUTPUT_ONLY` field and reflects the current number of nodes allocated to the instance. This might be zero in API responses for instances that are not yet in the `READY` state. If the instance has varying node count across replicas (achieved by setting asymmetric_autoscaling_options in autoscaling config), the node_count here is the maximum node count across all replicas. For more information, see [Compute capacity, nodes, and processing units](https://cloud.google.com/spanner/docs/compute-capacity).",
 "format": "int32",
 "type": "integer"
 },
 "processingUnits": {
-"description": "The number of processing units allocated to this instance. At most, one of either `processing_units` or `node_count` should be present in the message. Users can set the `processing_units` field to specify the target number of processing units allocated to the instance. If autoscaling is enabled, `processing_units` is treated as an `OUTPUT_ONLY` field and reflects the current number of processing units allocated to the instance. This might be zero in API responses for instances that are not yet in the `READY` state. For more information, see [Compute capacity, nodes and processing units](https://cloud.google.com/spanner/docs/compute-capacity).",
+"description": "The number of processing units allocated to this instance. At most, one of either `processing_units` or `node_count` should be present in the message. Users can set the `processing_units` field to specify the target number of processing units allocated to the instance. If autoscaling is enabled, `processing_units` is treated as an `OUTPUT_ONLY` field and reflects the current number of processing units allocated to the instance. This might be zero in API responses for instances that are not yet in the `READY` state. If the instance has varying processing units per replica (achieved by setting asymmetric_autoscaling_options in autoscaling config), the processing_units here is the maximum processing units across all replicas. For more information, see [Compute capacity, nodes and processing units](https://cloud.google.com/spanner/docs/compute-capacity).",
 "format": "int32",
 "type": "integer"
+},
+"replicaComputeCapacity": {
+"description": "Output only. Lists the compute capacity per ReplicaSelection. A replica selection identifies a set of replicas with common properties. Replicas identified by a ReplicaSelection are scaled with the same compute capacity.",
+"items": {
+"$ref": "ReplicaComputeCapacity"
+},
+"readOnly": true,
+"type": "array"
 },
 "state": {
 "description": "Output only. The current instance state. For CreateInstance, the state must be either omitted or set to `CREATING`. For UpdateInstance, the state must be either omitted or set to `READY`.",
@@ -5142,6 +5207,17 @@
 "description": "Output only. The time at which the instance partition was most recently updated.",
 "format": "google-datetime",
 "readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"InstanceReplicaSelection": {
+"description": "ReplicaSelection identifies replicas with common properties.",
+"id": "InstanceReplicaSelection",
+"properties": {
+"location": {
+"description": "Required. Name of the location of the replicas (e.g., \"us-central1\").",
 "type": "string"
 }
 },
@@ -6321,6 +6397,27 @@
 },
 "type": "object"
 },
+"ReplicaComputeCapacity": {
+"description": "ReplicaComputeCapacity describes the amount of server resources that are allocated to each replica identified by the replica selection.",
+"id": "ReplicaComputeCapacity",
+"properties": {
+"nodeCount": {
+"description": "The number of nodes allocated to each replica. This may be zero in API responses for instances that are not yet in state `READY`.",
+"format": "int32",
+"type": "integer"
+},
+"processingUnits": {
+"description": "The number of processing units allocated to each replica. This may be zero in API responses for instances that are not yet in state `READY`.",
+"format": "int32",
+"type": "integer"
+},
+"replicaSelection": {
+"$ref": "InstanceReplicaSelection",
+"description": "Required. Identifies replicas by specified properties. All replicas in the selection have the same amount of compute capacity."
+}
+},
+"type": "object"
+},
 "ReplicaInfo": {
 "id": "ReplicaInfo",
 "properties": {
@@ -6927,7 +7024,8 @@
 "NUMERIC",
 "JSON",
 "PROTO",
-"ENUM"
+"ENUM",
+"INTERVAL"
 ],
 "enumDescriptions": [
 "Not specified.",
@@ -6944,7 +7042,8 @@
 "Encoded as `string`, in decimal format or scientific notation format. Decimal format: `[+-]Digits[.[Digits]]` or `+-.Digits` Scientific notation: `[+-]Digits[.[Digits]][ExponentIndicator[+-]Digits]` or `+-.Digits[ExponentIndicator[+-]Digits]` (ExponentIndicator is `\"e\"` or `\"E\"`)",
 "Encoded as a JSON-formatted `string` as described in RFC 7159. The following rules are applied when parsing JSON input: - Whitespace characters are not preserved. - If a JSON object has duplicate keys, only the first key is preserved. - Members of a JSON object are not guaranteed to have their order preserved. - JSON array elements will have their order preserved.",
 "Encoded as a base64-encoded `string`, as described in RFC 4648, section 4.",
-"Encoded as `string`, in decimal format."
+"Encoded as `string`, in decimal format.",
+"Encoded as `string`, in `ISO8601` duration format - `P[n]Y[n]M[n]DT[n]H[n]M[n[.fraction]]S` where `n` is an integer. For example, `P1Y2M3DT4H5M6.5S` represents time duration of 1 year, 2 months, 3 days, 4 hours, 5 minutes, and 6.5 seconds."
 ],
 "type": "string"
 },
