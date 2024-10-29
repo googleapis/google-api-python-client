@@ -229,6 +229,7 @@ Args:
   &quot;mutations&quot;: [ # The mutations to perform. When mode is `TRANSACTIONAL`, mutations affecting a single entity are applied in order. The following sequences of mutations affecting a single entity are not permitted in a single `Commit` request: - `insert` followed by `insert` - `update` followed by `insert` - `upsert` followed by `insert` - `delete` followed by `update` When mode is `NON_TRANSACTIONAL`, no two mutations may affect a single entity.
     { # A mutation to apply to an entity.
       &quot;baseVersion&quot;: &quot;A String&quot;, # The version of the entity that this mutation is being applied to. If this does not match the current version on the server, the mutation conflicts.
+      &quot;conflictResolutionStrategy&quot;: &quot;A String&quot;, # The strategy to use when a conflict is detected. Defaults to `SERVER_VALUE`. If this is set, then `conflict_detection_strategy` must also be set.
       &quot;delete&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # The key of the entity to delete. The entity may or may not already exist. Must have a complete key path and must not be reserved/read-only.
         &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
           &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
@@ -301,6 +302,127 @@ Args:
           &quot;A String&quot;,
         ],
       },
+      &quot;propertyTransforms&quot;: [ # Optional. The transforms to perform on the entity. This field can be set only when the operation is `insert`, `update`, or `upsert`. If present, the transforms are be applied to the entity regardless of the property mask, in order, after the operation.
+        { # A transformation of an entity property.
+          &quot;appendMissingElements&quot;: { # An array value. # Appends the given elements in order if they are not already present in the current property value. If the property is not an array, or if the property does not yet exist, it is first set to the empty array. Equivalent numbers of different types (e.g. 3L and 3.0) are considered equal when checking if a value is missing. NaN is equal to NaN, and the null value is equal to the null value. If the input contains multiple equivalent values, only the first will be considered. The corresponding transform result will be the null value.
+            &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+              # Object with schema name: Value
+            ],
+          },
+          &quot;increment&quot;: { # A message that can hold any of the supported value types and associated metadata. # Adds the given value to the property&#x27;s current value. This must be an integer or a double value. If the property is not an integer or double, or if the property does not yet exist, the transformation will set the property to the given value. If either of the given value or the current property value are doubles, both values will be interpreted as doubles. Double arithmetic and representation of double values follows IEEE 754 semantics. If there is positive/negative integer overflow, the property is resolved to the largest magnitude positive/negative integer.
+            &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+              &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+                # Object with schema name: Value
+              ],
+            },
+            &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+            &quot;booleanValue&quot;: True or False, # A boolean value.
+            &quot;doubleValue&quot;: 3.14, # A double value.
+            &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+            &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+            &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+              &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+              &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+            },
+            &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+            &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+              &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+                &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+                &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+                &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+              },
+              &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+                { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+                  &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+                  &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                  &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                },
+              ],
+            },
+            &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+            &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+            &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+            &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+          },
+          &quot;maximum&quot;: { # A message that can hold any of the supported value types and associated metadata. # Sets the property to the maximum of its current value and the given value. This must be an integer or a double value. If the property is not an integer or double, or if the property does not yet exist, the transformation will set the property to the given value. If a maximum operation is applied where the property and the input value are of mixed types (that is - one is an integer and one is a double) the property takes on the type of the larger operand. If the operands are equivalent (e.g. 3 and 3.0), the property does not change. 0, 0.0, and -0.0 are all zero. The maximum of a zero stored value and zero input value is always the stored value. The maximum of any numeric value x and NaN is NaN.
+            &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+              &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+                # Object with schema name: Value
+              ],
+            },
+            &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+            &quot;booleanValue&quot;: True or False, # A boolean value.
+            &quot;doubleValue&quot;: 3.14, # A double value.
+            &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+            &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+            &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+              &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+              &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+            },
+            &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+            &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+              &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+                &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+                &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+                &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+              },
+              &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+                { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+                  &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+                  &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                  &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                },
+              ],
+            },
+            &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+            &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+            &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+            &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+          },
+          &quot;minimum&quot;: { # A message that can hold any of the supported value types and associated metadata. # Sets the property to the minimum of its current value and the given value. This must be an integer or a double value. If the property is not an integer or double, or if the property does not yet exist, the transformation will set the property to the input value. If a minimum operation is applied where the property and the input value are of mixed types (that is - one is an integer and one is a double) the property takes on the type of the smaller operand. If the operands are equivalent (e.g. 3 and 3.0), the property does not change. 0, 0.0, and -0.0 are all zero. The minimum of a zero stored value and zero input value is always the stored value. The minimum of any numeric value x and NaN is NaN.
+            &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+              &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+                # Object with schema name: Value
+              ],
+            },
+            &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+            &quot;booleanValue&quot;: True or False, # A boolean value.
+            &quot;doubleValue&quot;: 3.14, # A double value.
+            &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+            &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+            &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+              &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+              &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+            },
+            &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+            &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+              &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+                &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+                &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+                &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+              },
+              &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+                { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+                  &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+                  &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                  &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                },
+              ],
+            },
+            &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+            &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+            &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+            &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+          },
+          &quot;property&quot;: &quot;A String&quot;, # Optional. The name of the property. Property paths (a list of property names separated by dots (`.`)) may be used to refer to properties inside entity values. For example `foo.bar` means the property `bar` inside the entity property `foo`. If a property name contains a dot `.` or a backlslash `\`, then that name must be escaped.
+          &quot;removeAllFromArray&quot;: { # An array value. # Removes all of the given elements from the array in the property. If the property is not an array, or if the property does not yet exist, it is set to the empty array. Equivalent numbers of different types (e.g. 3L and 3.0) are considered equal when deciding whether an element should be removed. NaN is equal to NaN, and the null value is equal to the null value. This will remove all equivalent values if there are duplicates. The corresponding transform result will be the null value.
+            &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+              # Object with schema name: Value
+            ],
+          },
+          &quot;setToServerValue&quot;: &quot;A String&quot;, # Sets the property to the given server value.
+        },
+      ],
       &quot;update&quot;: { # A Datastore data object. Must not exceed 1 MiB - 4 bytes. # The entity to update. The entity must already exist. Must have a complete key path.
         &quot;key&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # The entity&#x27;s key. An entity must have a key, unless otherwise documented (for example, an entity in `Value.entity_value` may have no key). An entity&#x27;s kind is its key path&#x27;s last element&#x27;s kind, or null if it has no key.
           &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
@@ -450,6 +572,43 @@ Returns:
           },
         ],
       },
+      &quot;transformResults&quot;: [ # The results of applying each PropertyTransform, in the same order of the request.
+        { # A message that can hold any of the supported value types and associated metadata.
+          &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+            &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+              # Object with schema name: Value
+            ],
+          },
+          &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+          &quot;booleanValue&quot;: True or False, # A boolean value.
+          &quot;doubleValue&quot;: 3.14, # A double value.
+          &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+          &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+          &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+            &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+            &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+          },
+          &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+          &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+            &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+              &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+              &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+              &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+            },
+            &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+              { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+                &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+                &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+              },
+            ],
+          },
+          &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+          &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+          &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+          &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+        },
+      ],
       &quot;updateTime&quot;: &quot;A String&quot;, # The update time of the entity on the server after processing the mutation. If the mutation doesn&#x27;t change anything on the server, then the timestamp will be the update timestamp of the current entity. This field will not be set after a &#x27;delete&#x27;.
       &quot;version&quot;: &quot;A String&quot;, # The version of the entity on the server after processing the mutation. If the mutation doesn&#x27;t change anything on the server, then the version will be the version of the current entity or, if no entity is present, a version that is strictly greater than the version of any previous entity and less than the version of any possible future entity.
     },
@@ -858,7 +1017,7 @@ Args:
         },
       },
     ],
-    &quot;nestedQuery&quot;: { # A query for entities. # Nested query for aggregation
+    &quot;nestedQuery&quot;: { # A query for entities. The query stages are executed in the following order: 1. kind 2. filter 3. projection 4. order + start_cursor + end_cursor 5. offset 6. limit 7. find_nearest # Nested query for aggregation
       &quot;distinctOn&quot;: [ # The properties to make distinct. The query results will contain the first result for each distinct combination of values for the given properties (if empty, all results are returned). Requires: * If `order` is specified, the set of distinct on properties must appear before the non-distinct on properties in `order`.
         { # A reference to a property relative to the kind expressions.
           &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
@@ -912,6 +1071,50 @@ Args:
             &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
             &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
           },
+        },
+      },
+      &quot;findNearest&quot;: { # Nearest Neighbors search config. The ordering provided by FindNearest supersedes the order_by stage. If multiple documents have the same vector distance, the returned document order is not guaranteed to be stable between queries. # Optional. A potential Nearest Neighbors Search. Applies after all other filters and ordering. Finds the closest vector embeddings to the given query vector.
+        &quot;distanceMeasure&quot;: &quot;A String&quot;, # Required. The Distance Measure to use, required.
+        &quot;distanceResultProperty&quot;: &quot;A String&quot;, # Optional. Optional name of the field to output the result of the vector distance calculation. Must conform to entity property limitations.
+        &quot;distanceThreshold&quot;: 3.14, # Optional. Option to specify a threshold for which no less similar documents will be returned. The behavior of the specified `distance_measure` will affect the meaning of the distance threshold. Since DOT_PRODUCT distances increase when the vectors are more similar, the comparison is inverted. * For EUCLIDEAN, COSINE: WHERE distance &lt;= distance_threshold * For DOT_PRODUCT: WHERE distance &gt;= distance_threshold
+        &quot;limit&quot;: 42, # Required. The number of nearest neighbors to return. Must be a positive integer of no more than 100.
+        &quot;queryVector&quot;: { # A message that can hold any of the supported value types and associated metadata. # Required. The query vector that we are searching on. Must be a vector of no more than 2048 dimensions.
+          &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+            &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+              # Object with schema name: Value
+            ],
+          },
+          &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+          &quot;booleanValue&quot;: True or False, # A boolean value.
+          &quot;doubleValue&quot;: 3.14, # A double value.
+          &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+          &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+          &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+            &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+            &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+          },
+          &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+          &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+            &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+              &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+              &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+              &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+            },
+            &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+              { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+                &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+                &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+              },
+            ],
+          },
+          &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+          &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+          &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+          &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+        },
+        &quot;vectorProperty&quot;: { # A reference to a property relative to the kind expressions. # Required. An indexed vector property to search upon. Only documents which contain vectors whose dimensionality match the query_vector can be returned.
+          &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
         },
       },
       &quot;kind&quot;: [ # The kinds to query (if empty, returns entities of all kinds). Currently at most 1 kind may be specified.
@@ -1137,7 +1340,7 @@ Returns:
         },
       },
     ],
-    &quot;nestedQuery&quot;: { # A query for entities. # Nested query for aggregation
+    &quot;nestedQuery&quot;: { # A query for entities. The query stages are executed in the following order: 1. kind 2. filter 3. projection 4. order + start_cursor + end_cursor 5. offset 6. limit 7. find_nearest # Nested query for aggregation
       &quot;distinctOn&quot;: [ # The properties to make distinct. The query results will contain the first result for each distinct combination of values for the given properties (if empty, all results are returned). Requires: * If `order` is specified, the set of distinct on properties must appear before the non-distinct on properties in `order`.
         { # A reference to a property relative to the kind expressions.
           &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
@@ -1191,6 +1394,50 @@ Returns:
             &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
             &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
           },
+        },
+      },
+      &quot;findNearest&quot;: { # Nearest Neighbors search config. The ordering provided by FindNearest supersedes the order_by stage. If multiple documents have the same vector distance, the returned document order is not guaranteed to be stable between queries. # Optional. A potential Nearest Neighbors Search. Applies after all other filters and ordering. Finds the closest vector embeddings to the given query vector.
+        &quot;distanceMeasure&quot;: &quot;A String&quot;, # Required. The Distance Measure to use, required.
+        &quot;distanceResultProperty&quot;: &quot;A String&quot;, # Optional. Optional name of the field to output the result of the vector distance calculation. Must conform to entity property limitations.
+        &quot;distanceThreshold&quot;: 3.14, # Optional. Option to specify a threshold for which no less similar documents will be returned. The behavior of the specified `distance_measure` will affect the meaning of the distance threshold. Since DOT_PRODUCT distances increase when the vectors are more similar, the comparison is inverted. * For EUCLIDEAN, COSINE: WHERE distance &lt;= distance_threshold * For DOT_PRODUCT: WHERE distance &gt;= distance_threshold
+        &quot;limit&quot;: 42, # Required. The number of nearest neighbors to return. Must be a positive integer of no more than 100.
+        &quot;queryVector&quot;: { # A message that can hold any of the supported value types and associated metadata. # Required. The query vector that we are searching on. Must be a vector of no more than 2048 dimensions.
+          &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+            &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+              # Object with schema name: Value
+            ],
+          },
+          &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+          &quot;booleanValue&quot;: True or False, # A boolean value.
+          &quot;doubleValue&quot;: 3.14, # A double value.
+          &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+          &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+          &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+            &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+            &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+          },
+          &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+          &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+            &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+              &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+              &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+              &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+            },
+            &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+              { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+                &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+                &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+                &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+              },
+            ],
+          },
+          &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+          &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+          &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+          &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+        },
+        &quot;vectorProperty&quot;: { # A reference to a property relative to the kind expressions. # Required. An indexed vector property to search upon. Only documents which contain vectors whose dimensionality match the query_vector can be returned.
+          &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
         },
       },
       &quot;kind&quot;: [ # The kinds to query (if empty, returns entities of all kinds). Currently at most 1 kind may be specified.
@@ -1330,7 +1577,7 @@ Args:
       &quot;A String&quot;,
     ],
   },
-  &quot;query&quot;: { # A query for entities. # The query to run.
+  &quot;query&quot;: { # A query for entities. The query stages are executed in the following order: 1. kind 2. filter 3. projection 4. order + start_cursor + end_cursor 5. offset 6. limit 7. find_nearest # The query to run.
     &quot;distinctOn&quot;: [ # The properties to make distinct. The query results will contain the first result for each distinct combination of values for the given properties (if empty, all results are returned). Requires: * If `order` is specified, the set of distinct on properties must appear before the non-distinct on properties in `order`.
       { # A reference to a property relative to the kind expressions.
         &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
@@ -1384,6 +1631,50 @@ Args:
           &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
           &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
         },
+      },
+    },
+    &quot;findNearest&quot;: { # Nearest Neighbors search config. The ordering provided by FindNearest supersedes the order_by stage. If multiple documents have the same vector distance, the returned document order is not guaranteed to be stable between queries. # Optional. A potential Nearest Neighbors Search. Applies after all other filters and ordering. Finds the closest vector embeddings to the given query vector.
+      &quot;distanceMeasure&quot;: &quot;A String&quot;, # Required. The Distance Measure to use, required.
+      &quot;distanceResultProperty&quot;: &quot;A String&quot;, # Optional. Optional name of the field to output the result of the vector distance calculation. Must conform to entity property limitations.
+      &quot;distanceThreshold&quot;: 3.14, # Optional. Option to specify a threshold for which no less similar documents will be returned. The behavior of the specified `distance_measure` will affect the meaning of the distance threshold. Since DOT_PRODUCT distances increase when the vectors are more similar, the comparison is inverted. * For EUCLIDEAN, COSINE: WHERE distance &lt;= distance_threshold * For DOT_PRODUCT: WHERE distance &gt;= distance_threshold
+      &quot;limit&quot;: 42, # Required. The number of nearest neighbors to return. Must be a positive integer of no more than 100.
+      &quot;queryVector&quot;: { # A message that can hold any of the supported value types and associated metadata. # Required. The query vector that we are searching on. Must be a vector of no more than 2048 dimensions.
+        &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+          &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+            # Object with schema name: Value
+          ],
+        },
+        &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+        &quot;booleanValue&quot;: True or False, # A boolean value.
+        &quot;doubleValue&quot;: 3.14, # A double value.
+        &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+        &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+        &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+          &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+          &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+        },
+        &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+        &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+          &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+            &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+            &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+            &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+          },
+          &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+            { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+              &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+              &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+              &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+            },
+          ],
+        },
+        &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+        &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+        &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+        &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+      },
+      &quot;vectorProperty&quot;: { # A reference to a property relative to the kind expressions. # Required. An indexed vector property to search upon. Only documents which contain vectors whose dimensionality match the query_vector can be returned.
+        &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
       },
     },
     &quot;kind&quot;: [ # The kinds to query (if empty, returns entities of all kinds). Currently at most 1 kind may be specified.
@@ -1521,7 +1812,7 @@ Returns:
       ],
     },
   },
-  &quot;query&quot;: { # A query for entities. # The parsed form of the `GqlQuery` from the request, if it was set.
+  &quot;query&quot;: { # A query for entities. The query stages are executed in the following order: 1. kind 2. filter 3. projection 4. order + start_cursor + end_cursor 5. offset 6. limit 7. find_nearest # The parsed form of the `GqlQuery` from the request, if it was set.
     &quot;distinctOn&quot;: [ # The properties to make distinct. The query results will contain the first result for each distinct combination of values for the given properties (if empty, all results are returned). Requires: * If `order` is specified, the set of distinct on properties must appear before the non-distinct on properties in `order`.
       { # A reference to a property relative to the kind expressions.
         &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
@@ -1575,6 +1866,50 @@ Returns:
           &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
           &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
         },
+      },
+    },
+    &quot;findNearest&quot;: { # Nearest Neighbors search config. The ordering provided by FindNearest supersedes the order_by stage. If multiple documents have the same vector distance, the returned document order is not guaranteed to be stable between queries. # Optional. A potential Nearest Neighbors Search. Applies after all other filters and ordering. Finds the closest vector embeddings to the given query vector.
+      &quot;distanceMeasure&quot;: &quot;A String&quot;, # Required. The Distance Measure to use, required.
+      &quot;distanceResultProperty&quot;: &quot;A String&quot;, # Optional. Optional name of the field to output the result of the vector distance calculation. Must conform to entity property limitations.
+      &quot;distanceThreshold&quot;: 3.14, # Optional. Option to specify a threshold for which no less similar documents will be returned. The behavior of the specified `distance_measure` will affect the meaning of the distance threshold. Since DOT_PRODUCT distances increase when the vectors are more similar, the comparison is inverted. * For EUCLIDEAN, COSINE: WHERE distance &lt;= distance_threshold * For DOT_PRODUCT: WHERE distance &gt;= distance_threshold
+      &quot;limit&quot;: 42, # Required. The number of nearest neighbors to return. Must be a positive integer of no more than 100.
+      &quot;queryVector&quot;: { # A message that can hold any of the supported value types and associated metadata. # Required. The query vector that we are searching on. Must be a vector of no more than 2048 dimensions.
+        &quot;arrayValue&quot;: { # An array value. # An array value. Cannot contain another array value. A `Value` instance that sets field `array_value` must not set fields `meaning` or `exclude_from_indexes`.
+          &quot;values&quot;: [ # Values in the array. The order of values in an array is preserved as long as all values have identical settings for &#x27;exclude_from_indexes&#x27;.
+            # Object with schema name: Value
+          ],
+        },
+        &quot;blobValue&quot;: &quot;A String&quot;, # A blob value. May have at most 1,000,000 bytes. When `exclude_from_indexes` is false, may have at most 1500 bytes. In JSON requests, must be base64-encoded.
+        &quot;booleanValue&quot;: True or False, # A boolean value.
+        &quot;doubleValue&quot;: 3.14, # A double value.
+        &quot;entityValue&quot;: # Object with schema name: Entity # An entity value. - May have no key. - May have a key with an incomplete key path. - May have a reserved/read-only key.
+        &quot;excludeFromIndexes&quot;: True or False, # If the value should be excluded from all indexes including those defined explicitly.
+        &quot;geoPointValue&quot;: { # An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard. Values must be within normalized ranges. # A geo point value representing a point on the surface of Earth.
+          &quot;latitude&quot;: 3.14, # The latitude in degrees. It must be in the range [-90.0, +90.0].
+          &quot;longitude&quot;: 3.14, # The longitude in degrees. It must be in the range [-180.0, +180.0].
+        },
+        &quot;integerValue&quot;: &quot;A String&quot;, # An integer value.
+        &quot;keyValue&quot;: { # A unique identifier for an entity. If a key&#x27;s partition ID or any of its path kinds or names are reserved/read-only, the key is reserved/read-only. A reserved/read-only key is forbidden in certain documented contexts. # A key value.
+          &quot;partitionId&quot;: { # A partition ID identifies a grouping of entities. The grouping is always by project and namespace, however the namespace ID may be empty. A partition ID contains several dimensions: project ID and namespace ID. Partition dimensions: - May be `&quot;&quot;`. - Must be valid UTF-8 bytes. - Must have values that match regex `[A-Za-z\d\.\-_]{1,100}` If the value of any dimension matches regex `__.*__`, the partition is reserved/read-only. A reserved/read-only partition ID is forbidden in certain documented contexts. Foreign partition IDs (in which the project ID does not match the context project ID ) are discouraged. Reads and writes of foreign partition IDs may fail if the project is not in an active state. # Entities are partitioned into subsets, currently identified by a project ID and namespace ID. Queries are scoped to a single partition.
+            &quot;databaseId&quot;: &quot;A String&quot;, # If not empty, the ID of the database to which the entities belong.
+            &quot;namespaceId&quot;: &quot;A String&quot;, # If not empty, the ID of the namespace to which the entities belong.
+            &quot;projectId&quot;: &quot;A String&quot;, # The ID of the project to which the entities belong.
+          },
+          &quot;path&quot;: [ # The entity path. An entity path consists of one or more elements composed of a kind and a string or numerical identifier, which identify entities. The first element identifies a _root entity_, the second element identifies a _child_ of the root entity, the third element identifies a child of the second entity, and so forth. The entities identified by all prefixes of the path are called the element&#x27;s _ancestors_. An entity path is always fully complete: *all* of the entity&#x27;s ancestors are required to be in the path along with the entity identifier itself. The only exception is that in some documented cases, the identifier in the last path element (for the entity) itself may be omitted. For example, the last path element of the key of `Mutation.insert` may have no identifier. A path can never be empty, and a path can have at most 100 elements.
+            { # A (kind, ID/name) pair used to construct a key path. If either name or ID is set, the element is complete. If neither is set, the element is incomplete.
+              &quot;id&quot;: &quot;A String&quot;, # The auto-allocated ID of the entity. Never equal to zero. Values less than zero are discouraged and may not be supported in the future.
+              &quot;kind&quot;: &quot;A String&quot;, # The kind of the entity. A kind matching regex `__.*__` is reserved/read-only. A kind must not contain more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+              &quot;name&quot;: &quot;A String&quot;, # The name of the entity. A name matching regex `__.*__` is reserved/read-only. A name must not be more than 1500 bytes when UTF-8 encoded. Cannot be `&quot;&quot;`. Must be valid UTF-8 bytes. Legacy values that are not valid UTF-8 are encoded as `__bytes__` where `` is the base-64 encoding of the bytes.
+            },
+          ],
+        },
+        &quot;meaning&quot;: 42, # The `meaning` field should only be populated for backwards compatibility.
+        &quot;nullValue&quot;: &quot;A String&quot;, # A null value.
+        &quot;stringValue&quot;: &quot;A String&quot;, # A UTF-8 encoded string value. When `exclude_from_indexes` is false (it is indexed) , may have at most 1500 bytes. Otherwise, may be set to at most 1,000,000 bytes.
+        &quot;timestampValue&quot;: &quot;A String&quot;, # A timestamp value. When stored in the Datastore, precise only to microseconds; any additional precision is rounded down.
+      },
+      &quot;vectorProperty&quot;: { # A reference to a property relative to the kind expressions. # Required. An indexed vector property to search upon. Only documents which contain vectors whose dimensionality match the query_vector can be returned.
+        &quot;name&quot;: &quot;A String&quot;, # A reference to a property. Requires: * MUST be a dot-delimited (`.`) string of segments, where each segment conforms to entity property name limitations.
       },
     },
     &quot;kind&quot;: [ # The kinds to query (if empty, returns entities of all kinds). Currently at most 1 kind may be specified.
