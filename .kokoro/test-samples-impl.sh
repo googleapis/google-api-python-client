@@ -33,7 +33,8 @@ export PYTHONUNBUFFERED=1
 env | grep KOKORO
 
 # Install nox
-python3.9 -m pip install --upgrade --quiet nox
+# Remove pin to `virtualenv==20.26.6` once Python 3.7 is dropped
+python3.9 -m pip install --upgrade --quiet nox virtualenv==20.26.6
 
 # Use secrets acessor service account to get secrets
 if [[ -f "${KOKORO_GFILE_DIR}/secrets_viewer_service_account.json" ]]; then
