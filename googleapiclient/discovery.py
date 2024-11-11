@@ -129,7 +129,7 @@ DEFAULT_UNIVERSE = "googleapis.com"
 STACK_QUERY_PARAMETERS = frozenset(["trace", "pp", "userip", "strict"])
 STACK_QUERY_PARAMETER_DEFAULT_VALUE = {"type": "string", "location": "query"}
 
-logger = logging.getLogger("google" + __name__)
+logger = logging.getLogger("google." + __name__)
 try:
     from google.api_core.client_logging import setup_logging
     logging_level_env = os.getenv(GOOGLE_SDK_PYTHON_LOGGING_LEVEL, "CRITICAL")
