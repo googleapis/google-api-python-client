@@ -133,6 +133,7 @@ logger = logging.getLogger("google" + __name__)
 try:
     from google.api_core.client_logging import setup_logging
     logging_level_env = os.getenv(GOOGLE_SDK_PYTHON_LOGGING_LEVEL, "CRITICAL")
+    setup_logging(log_level=logging_level_env)
 except ImportError:
     pass
 
