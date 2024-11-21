@@ -485,6 +485,57 @@
 "https://www.googleapis.com/auth/cloud-platform"
 ]
 },
+"queryStatus": {
+"description": "Query PSC propagation status the status of a Network Connectivity Center hub.",
+"flatPath": "v1/projects/{projectsId}/locations/global/hubs/{hubsId}:queryStatus",
+"httpMethod": "GET",
+"id": "networkconnectivity.projects.locations.global.hubs.queryStatus",
+"parameterOrder": [
+"name"
+],
+"parameters": {
+"filter": {
+"description": "Optional. An expression that filters the list of results. The filter can be used to filter the results by the following fields: * psc_propagation_status.source_spoke * psc_propagation_status.source_group * psc_propagation_status.source_forwarding_rule * psc_propagation_status.target_spoke * psc_propagation_status.target_group * psc_propagation_status.code * psc_propagation_status.message",
+"location": "query",
+"type": "string"
+},
+"groupBy": {
+"description": "Optional. A field that counts are grouped by. A comma-separated list of any of these fields: * psc_propagation_status.source_spoke * psc_propagation_status.source_group * psc_propagation_status.source_forwarding_rule * psc_propagation_status.target_spoke * psc_propagation_status.target_group * psc_propagation_status.code",
+"location": "query",
+"type": "string"
+},
+"name": {
+"description": "Required. The name of the hub.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/global/hubs/[^/]+$",
+"required": true,
+"type": "string"
+},
+"orderBy": {
+"description": "Optional. Sort the results in the ascending order by specific fields returned in the response. A comma-separated list of any of these fields: * psc_propagation_status.source_spoke * psc_propagation_status.source_group * psc_propagation_status.source_forwarding_rule * psc_propagation_status.target_spoke * psc_propagation_status.target_group * psc_propagation_status.code If `group_by` is set, the value of the `order_by` field must be the same as or a subset of the `group_by` field.",
+"location": "query",
+"type": "string"
+},
+"pageSize": {
+"description": "Optional. The maximum number of results to return per page.",
+"format": "int32",
+"location": "query",
+"type": "integer"
+},
+"pageToken": {
+"description": "Optional. The page token.",
+"location": "query",
+"type": "string"
+}
+},
+"path": "v1/{+name}:queryStatus",
+"response": {
+"$ref": "QueryHubStatusResponse"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+},
 "rejectSpoke": {
 "description": "Rejects a Network Connectivity Center spoke from being attached to a hub. If the spoke was previously in the `ACTIVE` state, it transitions to the `INACTIVE` state and is no longer able to connect to other spokes that are attached to the hub.",
 "flatPath": "v1/projects/{projectsId}/locations/global/hubs/{hubsId}:rejectSpoke",
@@ -2812,7 +2863,7 @@
 }
 }
 },
-"revision": "20240923",
+"revision": "20241030",
 "rootUrl": "https://networkconnectivity.googleapis.com/",
 "schemas": {
 "AcceptHubSpokeRequest": {
@@ -2937,6 +2988,20 @@
 "description": "This is used in PSC consumer ForwardingRule to control whether the PSC endpoint can be accessed from another region.",
 "type": "boolean"
 },
+"ipVersion": {
+"description": "The requested IP version for the PSC connection.",
+"enum": [
+"IP_VERSION_UNSPECIFIED",
+"IPV4",
+"IPV6"
+],
+"enumDescriptions": [
+"Default value. We will use IPv4 or IPv6 depending on the IP version of first available subnetwork.",
+"Will use IPv4 only.",
+"Will use IPv6 only."
+],
+"type": "string"
+},
 "network": {
 "description": "The resource path of the consumer network where PSC connections are allowed to be created in. Note, this network does not need be in the ConsumerPscConfig.project in the case of SharedVPC. Example: projects/{projectNumOrId}/global/networks/{networkId}.",
 "type": "string"
@@ -3030,6 +3095,20 @@
 "description": "The IP literal allocated on the consumer network for the PSC forwarding rule that is created to connect to the producer service attachment in this service connection map.",
 "type": "string"
 },
+"ipVersion": {
+"description": "The requested IP version for the PSC connection.",
+"enum": [
+"IP_VERSION_UNSPECIFIED",
+"IPV4",
+"IPV6"
+],
+"enumDescriptions": [
+"Default value. We will use IPv4 or IPv6 depending on the IP version of first available subnetwork.",
+"Will use IPv4 only.",
+"Will use IPv6 only."
+],
+"type": "string"
+},
 "network": {
 "description": "The consumer network whose PSC forwarding rule is connected to the service attachments in this service connection map. Note that the network could be on a different project (shared VPC).",
 "type": "string"
@@ -3070,14 +3149,18 @@
 "ACTIVE",
 "FAILED",
 "CREATING",
-"DELETING"
+"DELETING",
+"CREATE_REPAIRING",
+"DELETE_REPAIRING"
 ],
 "enumDescriptions": [
 "An invalid state as the default case.",
 "The connection has been created successfully. However, for the up-to-date connection status, please use the service attachment's \"ConnectedEndpoint.status\" as the source of truth.",
 "The connection is not functional since some resources on the connection fail to be created.",
 "The connection is being created.",
-"The connection is being deleted."
+"The connection is being deleted.",
+"The connection is being repaired to complete creation.",
+"The connection is being repaired to complete deletion."
 ],
 "type": "string"
 }
@@ -3443,6 +3526,26 @@
 },
 "type": "object"
 },
+"HubStatusEntry": {
+"description": "The hub status entry.",
+"id": "HubStatusEntry",
+"properties": {
+"count": {
+"description": "The number of status. If group_by is not set in the request, the default is 1.",
+"format": "int32",
+"type": "integer"
+},
+"groupBy": {
+"description": "The same group_by field from the request.",
+"type": "string"
+},
+"pscPropagationStatus": {
+"$ref": "PscPropagationStatus",
+"description": "The PSC propagation status."
+}
+},
+"type": "object"
+},
 "InterconnectAttachment": {
 "description": "InterconnectAttachment that this route applies to.",
 "id": "InterconnectAttachment",
@@ -3480,7 +3583,7 @@
 },
 "migration": {
 "$ref": "Migration",
-"description": "Optional. Should be present if usage is set to FOR_MIGRATION."
+"description": "Optional. Must be present if usage is set to FOR_MIGRATION. This field is for internal use."
 },
 "name": {
 "description": "Immutable. The name of an internal range. Format: projects/{project}/locations/{location}/internalRanges/{internal_range} See: https://google.aip.dev/122#fields-representing-resource-names",
@@ -3552,7 +3655,7 @@
 "Unspecified usage is allowed in calls which identify the resource by other fields and do not need Usage set to complete. These are, i.e.: GetInternalRange and DeleteInternalRange. Usage needs to be specified explicitly in CreateInternalRange or UpdateInternalRange calls.",
 "A VPC resource can use the reserved CIDR block by associating it with the internal range resource if usage is set to FOR_VPC.",
 "Ranges created with EXTERNAL_TO_VPC cannot be associated with VPC resources and are meant to block out address ranges for various use cases, like for example, usage on-prem, with dynamic route announcements via interconnect.",
-"Ranges created FOR_MIGRATION can be used to lock a CIDR range between a source and target subnet. If usage is set to FOR_MIGRATION the peering value has to be set to FOR_SELF or default to FOR_SELF when unset."
+"Ranges created FOR_MIGRATION can be used to lock a CIDR range between a source and target subnet. If usage is set to FOR_MIGRATION, the peering value has to be set to FOR_SELF or default to FOR_SELF when unset. This value is for internal use."
 ],
 "type": "string"
 },
@@ -3598,11 +3701,17 @@
 "type": "object"
 },
 "LinkedProducerVpcNetwork": {
-"description": "Next ID: 7",
 "id": "LinkedProducerVpcNetwork",
 "properties": {
 "excludeExportRanges": {
 "description": "Optional. IP ranges encompassing the subnets to be excluded from peering.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"includeExportRanges": {
+"description": "Optional. IP ranges allowed to be included from peering.",
 "items": {
 "type": "string"
 },
@@ -4465,6 +4574,20 @@
 "description": "The last Compute Engine operation to setup PSC connection.",
 "type": "string"
 },
+"ipVersion": {
+"description": "The requested IP version for the PSC connection.",
+"enum": [
+"IP_VERSION_UNSPECIFIED",
+"IPV4",
+"IPV6"
+],
+"enumDescriptions": [
+"Default value. We will use IPv4 or IPv6 depending on the IP version of first available subnetwork.",
+"Will use IPv4 only.",
+"Will use IPv6 only."
+],
+"type": "string"
+},
 "producerInstanceId": {
 "deprecated": true,
 "description": "Immutable. Deprecated. Use producer_instance_metadata instead. An immutable identifier for the producer instance.",
@@ -4498,15 +4621,90 @@
 "ACTIVE",
 "FAILED",
 "CREATING",
-"DELETING"
+"DELETING",
+"CREATE_REPAIRING",
+"DELETE_REPAIRING"
 ],
 "enumDescriptions": [
 "An invalid state as the default case.",
 "The connection has been created successfully. However, for the up-to-date connection status, please use the created forwarding rule's \"PscConnectionStatus\" as the source of truth.",
 "The connection is not functional since some resources on the connection fail to be created.",
 "The connection is being created.",
-"The connection is being deleted."
+"The connection is being deleted.",
+"The connection is being repaired to complete creation.",
+"The connection is being repaired to complete deletion."
 ],
+"type": "string"
+}
+},
+"type": "object"
+},
+"PscPropagationStatus": {
+"description": "The PSC propagation status in a hub.",
+"id": "PscPropagationStatus",
+"properties": {
+"code": {
+"description": "The propagation status.",
+"enum": [
+"CODE_UNSPECIFIED",
+"READY",
+"PROPAGATING",
+"ERROR_PRODUCER_PROPAGATED_CONNECTION_LIMIT_EXCEEDED",
+"ERROR_PRODUCER_NAT_IP_SPACE_EXHAUSTED",
+"ERROR_PRODUCER_QUOTA_EXCEEDED",
+"ERROR_CONSUMER_QUOTA_EXCEEDED"
+],
+"enumDescriptions": [
+"The code is unspecified.",
+"The propagated PSC connection is ready.",
+"PSC connection is propagating. This is a transient state.",
+"The PSC connection propagation failed because the VPC network or the project of the target spoke has exceeded the connection limit set by the producer.",
+"The PSC connection propagation failed because the NAT IP subnet space has been exhausted. It is equivalent to the `Needs attention` status of the PSC connection. See https://cloud.google.com/vpc/docs/about-accessing-vpc-hosted-services-endpoints#connection-statuses.",
+"PSC connection propagation failed because the `PSC_ILB_CONSUMER_FORWARDING_RULES_PER_PRODUCER_NETWORK` quota in the producer VPC network has been exceeded.",
+"The PSC connection propagation failed because the `PSC_PROPAGATED_CONNECTIONS_PER_VPC_NETWORK` quota in the consumer VPC network has been exceeded."
+],
+"type": "string"
+},
+"message": {
+"description": "The human-readable summary of the PSC connection propagation status.",
+"type": "string"
+},
+"sourceForwardingRule": {
+"description": "The name of the forwarding rule exported to the hub.",
+"type": "string"
+},
+"sourceGroup": {
+"description": "The name of the group that the source spoke belongs to.",
+"type": "string"
+},
+"sourceSpoke": {
+"description": "The name of the spoke that the source forwarding rule belongs to.",
+"type": "string"
+},
+"targetGroup": {
+"description": "The name of the group that the target spoke belongs to.",
+"type": "string"
+},
+"targetSpoke": {
+"description": "The name of the spoke that the source forwarding rule propagates to.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"QueryHubStatusResponse": {
+"description": "The response for HubService.QueryHubStatus.",
+"id": "QueryHubStatusResponse",
+"properties": {
+"hubStatusEntries": {
+"description": "The list of hub status.",
+"items": {
+"$ref": "HubStatusEntry"
+},
+"type": "array"
+},
+"nextPageToken": {
+"description": "The token for the next page of the response. To see more results, use this value as the page_token for your next request. If this value is empty, there are no more results.",
 "type": "string"
 }
 },
@@ -4833,7 +5031,7 @@
 "type": "object"
 },
 "ServiceClass": {
-"description": "The ServiceClass resource. Next id: 9",
+"description": "The ServiceClass resource.",
 "id": "ServiceClass",
 "properties": {
 "createTime": {
@@ -4876,7 +5074,7 @@
 "type": "object"
 },
 "ServiceConnectionMap": {
-"description": "The ServiceConnectionMap resource. Next id: 15",
+"description": "The ServiceConnectionMap resource.",
 "id": "ServiceConnectionMap",
 "properties": {
 "consumerPscConfigs": {
@@ -4962,7 +5160,7 @@
 "type": "object"
 },
 "ServiceConnectionPolicy": {
-"description": "The ServiceConnectionPolicy resource. Next id: 12",
+"description": "The ServiceConnectionPolicy resource.",
 "id": "ServiceConnectionPolicy",
 "properties": {
 "createTime": {
@@ -5033,7 +5231,7 @@
 "type": "object"
 },
 "ServiceConnectionToken": {
-"description": "The ServiceConnectionToken resource. Next id: 10",
+"description": "The ServiceConnectionToken resource.",
 "id": "ServiceConnectionToken",
 "properties": {
 "createTime": {
@@ -5155,7 +5353,7 @@
 "type": "string"
 },
 "reasons": {
-"description": "Output only. The reasons for current state of the spoke. Only present when the spoke is in the `INACTIVE` state.",
+"description": "Output only. The reasons for current state of the spoke.",
 "items": {
 "$ref": "StateReason"
 },
@@ -5281,14 +5479,20 @@
 "PENDING_REVIEW",
 "REJECTED",
 "PAUSED",
-"FAILED"
+"FAILED",
+"UPDATE_PENDING_REVIEW",
+"UPDATE_REJECTED",
+"UPDATE_FAILED"
 ],
 "enumDescriptions": [
 "No information available.",
 "The proposed spoke is pending review.",
 "The proposed spoke has been rejected by the hub administrator.",
 "The spoke has been deactivated internally.",
-"Network Connectivity Center encountered errors while accepting the spoke."
+"Network Connectivity Center encountered errors while accepting the spoke.",
+"The proposed spoke update is pending review.",
+"The proposed spoke update has been rejected by the hub administrator.",
+"Network Connectivity Center encountered errors while accepting the spoke update."
 ],
 "readOnly": true,
 "type": "string"
@@ -5372,14 +5576,20 @@
 "PENDING_REVIEW",
 "REJECTED",
 "PAUSED",
-"FAILED"
+"FAILED",
+"UPDATE_PENDING_REVIEW",
+"UPDATE_REJECTED",
+"UPDATE_FAILED"
 ],
 "enumDescriptions": [
 "No information available.",
 "The proposed spoke is pending review.",
 "The proposed spoke has been rejected by the hub administrator.",
 "The spoke has been deactivated internally.",
-"Network Connectivity Center encountered errors while accepting the spoke."
+"Network Connectivity Center encountered errors while accepting the spoke.",
+"The proposed spoke update is pending review.",
+"The proposed spoke update has been rejected by the hub administrator.",
+"Network Connectivity Center encountered errors while accepting the spoke update."
 ],
 "type": "string"
 },

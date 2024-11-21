@@ -2289,7 +2289,7 @@
 }
 }
 },
-"revision": "20241002",
+"revision": "20241029",
 "rootUrl": "https://clouddeploy.googleapis.com/",
 "schemas": {
 "AbandonReleaseRequest": {
@@ -2440,6 +2440,27 @@
 "description": "The response object from `ApproveRollout`.",
 "id": "ApproveRolloutResponse",
 "properties": {},
+"type": "object"
+},
+"AssociatedEntities": {
+"description": "Information about entities associated with a `Target`.",
+"id": "AssociatedEntities",
+"properties": {
+"anthosClusters": {
+"description": "Optional. Information specifying Anthos clusters as associated entities.",
+"items": {
+"$ref": "AnthosCluster"
+},
+"type": "array"
+},
+"gkeClusters": {
+"description": "Optional. Information specifying GKE clusters as associated entities.",
+"items": {
+"$ref": "GkeCluster"
+},
+"type": "array"
+}
+},
 "type": "object"
 },
 "AuditConfig": {
@@ -2673,6 +2694,10 @@ true
 "repairRolloutRule": {
 "$ref": "RepairRolloutRule",
 "description": "Optional. The `RepairRolloutRule` will automatically repair a failed rollout."
+},
+"timedPromoteReleaseRule": {
+"$ref": "TimedPromoteReleaseRule",
+"description": "Optional. The `TimedPromoteReleaseRule` will automatically promote a release from the current target(s) to the specified target(s) on a configured schedule."
 }
 },
 "type": "object"
@@ -2684,6 +2709,10 @@ true
 "targetsPresentCondition": {
 "$ref": "TargetsPresentCondition",
 "description": "Optional. Details around targets enumerated in the rule."
+},
+"timedPromoteReleaseCondition": {
+"$ref": "TimedPromoteReleaseCondition",
+"description": "Optional. TimedPromoteReleaseCondition contains rule conditions specific to a an Automation with a timed promote release rule defined."
 }
 },
 "type": "object"
@@ -2783,9 +2812,14 @@ true
 "type": "string"
 },
 "targetId": {
-"description": "Output only. The ID of the target that represents the promotion stage that initiates the `AutomationRun`. The value of this field is the last segment of a target name.",
+"description": "Output only. The ID of the source target that initiates the `AutomationRun`. The value of this field is the last segment of a target name.",
 "readOnly": true,
 "type": "string"
+},
+"timedPromoteReleaseOperation": {
+"$ref": "TimedPromoteReleaseOperation",
+"description": "Output only. Promotes a release to a specified 'Target' as defined in a Timed Promote Release rule.",
+"readOnly": true
 },
 "updateTime": {
 "description": "Output only. Time at which the automationRun was updated.",
@@ -3988,6 +4022,10 @@ true
 "podSelectorLabel": {
 "description": "Optional. The label to use when selecting Pods for the Deployment and Service resources. This label must already be present in both resources.",
 "type": "string"
+},
+"routeDestinations": {
+"$ref": "RouteDestinations",
+"description": "Optional. Route destinations allow configuring the Gateway API HTTPRoute to be deployed to additional clusters. This option is available for multi-cluster service mesh set ups that require the route to exist in the clusters that call the service. If unspecified, the HTTPRoute will only be deployed to the Target cluster."
 },
 "routeUpdateWaitTime": {
 "description": "Optional. The time to wait for route updates to propagate. The maximum configurable time is 3 hours, in seconds format. If unspecified, there is no wait time.",
@@ -6308,6 +6346,24 @@ true
 },
 "type": "object"
 },
+"RouteDestinations": {
+"description": "Information about route destinations for the Gateway API service mesh.",
+"id": "RouteDestinations",
+"properties": {
+"destinationIds": {
+"description": "Required. The clusters where the Gateway API HTTPRoute resource will be deployed to. Valid entries include the associated entities IDs configured in the Target resource and \"@self\" to include the Target cluster.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"propagateService": {
+"description": "Optional. Whether to propagate the Kubernetes Service to the route destination clusters. The Service will always be deployed to the Target cluster even if the HTTPRoute is not. This option may be used to facilitiate successful DNS lookup in the route destination clusters. Can only be set to true if destinations are specified.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
 "RuntimeConfig": {
 "description": "RuntimeConfig contains the runtime specific configurations for a deployment strategy.",
 "id": "RuntimeConfig",
@@ -6622,6 +6678,13 @@ true
 "$ref": "AnthosCluster",
 "description": "Optional. Information specifying an Anthos Cluster."
 },
+"associatedEntities": {
+"additionalProperties": {
+"$ref": "AssociatedEntities"
+},
+"description": "Optional. Map of entity IDs to their associated entities. Associated entities allows specifying places other than the deployment target for specific features. For example, the Gateway API canary can be configured to deploy the HTTPRoute to a different cluster(s) than the deployment cluster using associated entities. An entity ID must consist of lower-case letters, numbers, and hyphens, start with a letter and end with a letter or a number, and have a max length of 63 characters. In other words, it must match the following regex: `^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`.",
+"type": "object"
+},
 "createTime": {
 "description": "Output only. Time at which the `Target` was created.",
 "format": "google-datetime",
@@ -6864,6 +6927,21 @@ true
 },
 "type": "object"
 },
+"Targets": {
+"description": "The targets involved in a single timed promotion.",
+"id": "Targets",
+"properties": {
+"destinationTargetId": {
+"description": "Optional. The destination target ID.",
+"type": "string"
+},
+"sourceTargetId": {
+"description": "Optional. The source target ID.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "TargetsPresentCondition": {
 "description": "`TargetsPresentCondition` contains information on any Targets referenced in the Delivery Pipeline that do not actually exist.",
 "id": "TargetsPresentCondition",
@@ -6998,6 +7076,81 @@ true
 "$ref": "WeeklyWindow"
 },
 "type": "array"
+}
+},
+"type": "object"
+},
+"TimedPromoteReleaseCondition": {
+"description": "`TimedPromoteReleaseCondition` contains conditions specific to an Automation with a Timed Promote Release rule defined.",
+"id": "TimedPromoteReleaseCondition",
+"properties": {
+"nextPromotionTime": {
+"description": "Output only. When the next scheduled promotion(s) will occur.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"targetsList": {
+"description": "Output only. A list of targets involved in the upcoming timed promotion(s).",
+"items": {
+"$ref": "Targets"
+},
+"readOnly": true,
+"type": "array"
+}
+},
+"type": "object"
+},
+"TimedPromoteReleaseOperation": {
+"description": "Contains the information of an automated timed promote-release operation.",
+"id": "TimedPromoteReleaseOperation",
+"properties": {
+"phase": {
+"description": "Output only. The starting phase of the rollout created by this operation.",
+"readOnly": true,
+"type": "string"
+},
+"release": {
+"description": "Output only. The name of the release to be promoted.",
+"readOnly": true,
+"type": "string"
+},
+"targetId": {
+"description": "Output only. The ID of the target that represents the promotion stage to which the release will be promoted. The value of this field is the last segment of a target name.",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"TimedPromoteReleaseRule": {
+"description": "The `TimedPromoteReleaseRule` will automatically promote a release from the current target(s) to the specified target(s) on a configured schedule.",
+"id": "TimedPromoteReleaseRule",
+"properties": {
+"condition": {
+"$ref": "AutomationRuleCondition",
+"description": "Output only. Information around the state of the Automation rule.",
+"readOnly": true
+},
+"destinationPhase": {
+"description": "Optional. The starting phase of the rollout created by this rule. Default to the first phase.",
+"type": "string"
+},
+"destinationTargetId": {
+"description": "Optional. The ID of the stage in the pipeline to which this `Release` is deploying. If unspecified, default it to the next stage in the promotion flow. The value of this field could be one of the following: * The last segment of a target name * \"@next\", the next target in the promotion sequence",
+"type": "string"
+},
+"id": {
+"description": "Required. ID of the rule. This ID must be unique in the `Automation` resource to which this rule belongs. The format is `[a-z]([a-z0-9-]{0,61}[a-z0-9])?`.",
+"type": "string"
+},
+"schedule": {
+"description": "Required. Schedule in crontab format. e.g. \"0 9 * * 1\" for every Monday at 9am.",
+"type": "string"
+},
+"timeZone": {
+"description": "Required. The time zone in IANA format [IANA Time Zone Database](https://www.iana.org/time-zones) (e.g. America/New_York).",
+"type": "string"
 }
 },
 "type": "object"

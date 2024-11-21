@@ -310,6 +310,11 @@
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudfunctions_v2beta.html)
 
 
+## cloudidentity
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudidentity_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudidentity_v1beta1.html)
+
+
 ## cloudkms
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudkms_v1.html)
 
@@ -863,6 +868,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/mybusinessverifications_v1.html)
 
 
+## netapp
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/netapp_v1.html)
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/netapp_v1beta1.html)
+
+
 ## networkconnectivity
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1.html)
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/networkconnectivity_v1alpha1.html)
@@ -909,6 +919,7 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1beta.html)
+* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v2beta.html)
 
 
 ## oslogin
