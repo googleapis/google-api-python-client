@@ -81,6 +81,9 @@ h1, h2, h3 {
   <code><a href="#close">close()</a></code></p>
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
+  <code><a href="#patch">patch(name, body=None, updateMask=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Updates a ServingConfig. Returns a NOT_FOUND error if the ServingConfig does not exist.</p>
+<p class="toc_element">
   <code><a href="#recommend">recommend(servingConfig, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Makes a recommendation, which requires a contextual user event.</p>
 <p class="toc_element">
@@ -95,6 +98,9 @@ h1, h2, h3 {
 <p class="toc_element">
   <code><a href="#search_next">search_next()</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
+<p class="toc_element">
+  <code><a href="#streamAnswer">streamAnswer(servingConfig, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Answer query method (streaming). It takes one AnswerQueryRequest and returns multiple AnswerQueryResponse messages in a stream.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="answer">answer(servingConfig, body=None, x__xgafv=None)</code>
@@ -138,12 +144,15 @@ Args:
     &quot;queryRephraserSpec&quot;: { # Query rephraser specification. # Query rephraser specification.
       &quot;disable&quot;: True or False, # Disable query rephraser.
       &quot;maxRephraseSteps&quot;: 42, # Max rephrase steps. The max number is 5 steps. If not set or set to &lt; 1, it will be set to 1 by default.
+      &quot;modelSpec&quot;: { # Query Rephraser Model specification. # Optional. Query Rephraser Model specification.
+        &quot;modelType&quot;: &quot;A String&quot;, # Optional. Enabled query rephraser model type. If not set, it will use LARGE by default.
+      },
     },
   },
   &quot;relatedQuestionsSpec&quot;: { # Related questions specification. # Related questions specification.
     &quot;enable&quot;: True or False, # Enable related questions feature if true.
   },
-  &quot;safetySpec&quot;: { # Safety specification. # Model specification.
+  &quot;safetySpec&quot;: { # Safety specification. There are two use cases: 1. when only safety_spec.enable is set, the BLOCK_LOW_AND_ABOVE threshold will be applied for all categories. 2. when safety_spec.enable is set and some safety_settings are set, only specified safety_settings are applied. # Model specification.
     &quot;enable&quot;: True or False, # Enable the safety filtering on the answer response. It is false by default.
   },
   &quot;searchSpec&quot;: { # Search specification. # Search specification.
@@ -169,6 +178,25 @@ Args:
       },
       &quot;dataStoreSpecs&quot;: [ # Specs defining dataStores to filter on in a search call and configurations for those dataStores. This is only considered for engines with multiple dataStores use case. For single dataStore within an engine, they should use the specs at the top level.
         { # A struct to define data stores to filter on in a search call and configurations for those data stores. Otherwise, an `INVALID_ARGUMENT` error is returned.
+          &quot;boostSpec&quot;: { # Boost specification to boost certain documents. # Optional. Boost specification to boost certain documents. For more information on boosting, see [Boosting](https://cloud.google.com/generative-ai-app-builder/docs/boost-search-results)
+            &quot;conditionBoostSpecs&quot;: [ # Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+              { # Boost applies to documents which match a condition.
+                &quot;boost&quot;: 3.14, # Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored. Only one of the (condition, boost) combination or the boost_control_spec below are set. If both are set then the global boost is ignored and the more fine-grained boost_control_spec is applied.
+                &quot;boostControlSpec&quot;: { # Specification for custom ranking based on customer specified attribute value. It provides more controls for customized ranking than the simple (condition, boost) combination above. # Complex specification for custom ranking based on customer defined attribute value.
+                  &quot;attributeType&quot;: &quot;A String&quot;, # The attribute type to be used to determine the boost amount. The attribute value can be derived from the field value of the specified field_name. In the case of numerical it is straightforward i.e. attribute_value = numerical_field_value. In the case of freshness however, attribute_value = (time.now() - datetime_field_value).
+                  &quot;controlPoints&quot;: [ # The control points used to define the curve. The monotonic function (defined through the interpolation_type above) passes through the control points listed here.
+                    { # The control points used to define the curve. The curve defined through these control points can only be monotonically increasing or decreasing(constant values are acceptable).
+                      &quot;attributeValue&quot;: &quot;A String&quot;, # Can be one of: 1. The numerical field value. 2. The duration spec for freshness: The value must be formatted as an XSD `dayTimeDuration` value (a restricted subset of an ISO 8601 duration value). The pattern for this is: `nDnM]`.
+                      &quot;boostAmount&quot;: 3.14, # The value between -1 to 1 by which to boost the score if the attribute_value evaluates to the value specified above.
+                    },
+                  ],
+                  &quot;fieldName&quot;: &quot;A String&quot;, # The name of the field whose value will be used to determine the boost amount.
+                  &quot;interpolationType&quot;: &quot;A String&quot;, # The interpolation type to be applied to connect the control points listed below.
+                },
+                &quot;condition&quot;: &quot;A String&quot;, # An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. See SearchRequest.filter for detail syntax and limitations. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: `(document_id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;, &quot;Blue&quot;))`
+              },
+            ],
+          },
           &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
           &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
         },
@@ -250,6 +278,20 @@ Returns:
     ],
     &quot;completeTime&quot;: &quot;A String&quot;, # Output only. Answer completed timestamp.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. Answer creation timestamp.
+    &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded the answer is by the reference chunks.
+    &quot;groundingSupports&quot;: [ # Optional. Grounding supports.
+      { # Grounding support for a claim in `answer_text`.
+        &quot;endIndex&quot;: &quot;A String&quot;, # Required. End of the claim, exclusive.
+        &quot;groundingCheckRequired&quot;: True or False, # Indicates that this claim required grounding check. When the system decided this claim didn&#x27;t require attribution/grounding check, this field is set to false. In that case, no grounding check was done for the claim and therefore `grounding_score`, `sources` is not returned.
+        &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded is a specific claim by the references. Higher value means that the claim is better supported by the reference chunks.
+        &quot;sources&quot;: [ # Optional. Citation sources for the claim.
+          { # Citation source.
+            &quot;referenceId&quot;: &quot;A String&quot;, # ID of the citation source.
+          },
+        ],
+        &quot;startIndex&quot;: &quot;A String&quot;, # Required. Index indicates the start of the claim, measured in bytes (UTF-8 unicode).
+      },
+    ],
     &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/global/collections/{collection}/engines/{engine}/sessions/*/answers/*`
     &quot;queryUnderstandingInfo&quot;: { # Query understanding information. # Query understanding information.
       &quot;queryClassificationInfo&quot;: [ # Query classification information.
@@ -344,7 +386,9 @@ Returns:
   },
   &quot;answerQueryToken&quot;: &quot;A String&quot;, # A global unique ID used for logging.
   &quot;session&quot;: { # External session proto definition. # Session resource object. It will be only available when session field is set and valid in the AnswerQueryRequest request.
+    &quot;displayName&quot;: &quot;A String&quot;, # Optional. The display name of the session. This field is used to identify the session in the UI. By default, the display name is the first turn query text in the session.
     &quot;endTime&quot;: &quot;A String&quot;, # Output only. The time the session finished.
+    &quot;isPinned&quot;: True or False, # Optional. Whether the session is pinned, pinned session will be displayed on the top of the session list.
     &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/global/collections/{collection}/engines/{engine}/sessions/*`
     &quot;startTime&quot;: &quot;A String&quot;, # Output only. The time the session started.
     &quot;state&quot;: &quot;A String&quot;, # The state of the session.
@@ -369,6 +413,20 @@ Returns:
           ],
           &quot;completeTime&quot;: &quot;A String&quot;, # Output only. Answer completed timestamp.
           &quot;createTime&quot;: &quot;A String&quot;, # Output only. Answer creation timestamp.
+          &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded the answer is by the reference chunks.
+          &quot;groundingSupports&quot;: [ # Optional. Grounding supports.
+            { # Grounding support for a claim in `answer_text`.
+              &quot;endIndex&quot;: &quot;A String&quot;, # Required. End of the claim, exclusive.
+              &quot;groundingCheckRequired&quot;: True or False, # Indicates that this claim required grounding check. When the system decided this claim didn&#x27;t require attribution/grounding check, this field is set to false. In that case, no grounding check was done for the claim and therefore `grounding_score`, `sources` is not returned.
+              &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded is a specific claim by the references. Higher value means that the claim is better supported by the reference chunks.
+              &quot;sources&quot;: [ # Optional. Citation sources for the claim.
+                { # Citation source.
+                  &quot;referenceId&quot;: &quot;A String&quot;, # ID of the citation source.
+                },
+              ],
+              &quot;startIndex&quot;: &quot;A String&quot;, # Required. Index indicates the start of the claim, measured in bytes (UTF-8 unicode).
+            },
+          ],
           &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/global/collections/{collection}/engines/{engine}/sessions/*/answers/*`
           &quot;queryUnderstandingInfo&quot;: { # Query understanding information. # Query understanding information.
             &quot;queryClassificationInfo&quot;: [ # Query classification information.
@@ -475,6 +533,189 @@ Returns:
 <div class="method">
     <code class="details" id="close">close()</code>
   <pre>Close httplib2 connections.</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="patch">patch(name, body=None, updateMask=None, x__xgafv=None)</code>
+  <pre>Updates a ServingConfig. Returns a NOT_FOUND error if the ServingConfig does not exist.
+
+Args:
+  name: string, Immutable. Fully qualified name `projects/{project}/locations/{location}/collections/{collection_id}/engines/{engine_id}/servingConfigs/{serving_config_id}` (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Configures metadata that is used to generate serving time results (e.g. search results or recommendation predictions). The ServingConfig is passed in the search and predict request and generates results.
+  &quot;boostControlIds&quot;: [ # Boost controls to use in serving path. All triggered boost controls will be applied. Boost controls must be in the same data store as the serving config. Maximum of 20 boost controls.
+    &quot;A String&quot;,
+  ],
+  &quot;createTime&quot;: &quot;A String&quot;, # Output only. ServingConfig created timestamp.
+  &quot;displayName&quot;: &quot;A String&quot;, # Required. The human readable serving config display name. Used in Discovery UI. This field must be a UTF-8 encoded string with a length limit of 128 characters. Otherwise, an INVALID_ARGUMENT error is returned.
+  &quot;dissociateControlIds&quot;: [ # Condition do not associate specifications. If multiple do not associate conditions match, all matching do not associate controls in the list will execute. Order does not matter. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;diversityLevel&quot;: &quot;A String&quot;, # How much diversity to use in recommendation model results e.g. `medium-diversity` or `high-diversity`. Currently supported values: * `no-diversity` * `low-diversity` * `medium-diversity` * `high-diversity` * `auto-diversity` If not specified, we choose default based on recommendation model type. Default value: `no-diversity`. Can only be set if SolutionType is SOLUTION_TYPE_RECOMMENDATION.
+  &quot;filterControlIds&quot;: [ # Filter controls to use in serving path. All triggered filter controls will be applied. Filter controls must be in the same data store as the serving config. Maximum of 20 filter controls.
+    &quot;A String&quot;,
+  ],
+  &quot;genericConfig&quot;: { # Specifies the configurations needed for Generic Discovery.Currently we support: * `content_search_spec`: configuration for generic content search. # The GenericConfig of the serving configuration.
+    &quot;contentSearchSpec&quot;: { # A specification for configuring the behavior of content search. # Specifies the expected behavior of content search. Only valid for content-search enabled data store.
+      &quot;chunkSpec&quot;: { # Specifies the chunk spec to be returned from the search response. Only available if the SearchRequest.ContentSearchSpec.search_result_mode is set to CHUNKS # Specifies the chunk spec to be returned from the search response. Only available if the SearchRequest.ContentSearchSpec.search_result_mode is set to CHUNKS
+        &quot;numNextChunks&quot;: 42, # The number of next chunks to be returned of the current chunk. The maximum allowed value is 3. If not specified, no next chunks will be returned.
+        &quot;numPreviousChunks&quot;: 42, # The number of previous chunks to be returned of the current chunk. The maximum allowed value is 3. If not specified, no previous chunks will be returned.
+      },
+      &quot;extractiveContentSpec&quot;: { # A specification for configuring the extractive content in a search response. # If there is no extractive_content_spec provided, there will be no extractive answer in the search response.
+        &quot;maxExtractiveAnswerCount&quot;: 42, # The maximum number of extractive answers returned in each search result. An extractive answer is a verbatim answer extracted from the original document, which provides a precise and contextually relevant answer to the search query. If the number of matching answers is less than the `max_extractive_answer_count`, return all of the answers. Otherwise, return the `max_extractive_answer_count`. At most five answers are returned for each SearchResult.
+        &quot;maxExtractiveSegmentCount&quot;: 42, # The max number of extractive segments returned in each search result. Only applied if the DataStore is set to DataStore.ContentConfig.CONTENT_REQUIRED or DataStore.solution_types is SOLUTION_TYPE_CHAT. An extractive segment is a text segment extracted from the original document that is relevant to the search query, and, in general, more verbose than an extractive answer. The segment could then be used as input for LLMs to generate summaries and answers. If the number of matching segments is less than `max_extractive_segment_count`, return all of the segments. Otherwise, return the `max_extractive_segment_count`.
+        &quot;numNextSegments&quot;: 42, # Return at most `num_next_segments` segments after each selected segments.
+        &quot;numPreviousSegments&quot;: 42, # Specifies whether to also include the adjacent from each selected segments. Return at most `num_previous_segments` segments before each selected segments.
+        &quot;returnExtractiveSegmentScore&quot;: True or False, # Specifies whether to return the confidence score from the extractive segments in each search result. This feature is available only for new or allowlisted data stores. To allowlist your data store, contact your Customer Engineer. The default value is `false`.
+      },
+      &quot;searchResultMode&quot;: &quot;A String&quot;, # Specifies the search result mode. If unspecified, the search result mode defaults to `DOCUMENTS`.
+      &quot;snippetSpec&quot;: { # A specification for configuring snippets in a search response. # If `snippetSpec` is not specified, snippets are not included in the search response.
+        &quot;maxSnippetCount&quot;: 42, # [DEPRECATED] This field is deprecated. To control snippet return, use `return_snippet` field. For backwards compatibility, we will return snippet if max_snippet_count &gt; 0.
+        &quot;referenceOnly&quot;: True or False, # [DEPRECATED] This field is deprecated and will have no affect on the snippet.
+        &quot;returnSnippet&quot;: True or False, # If `true`, then return snippet. If no snippet can be generated, we return &quot;No snippet is available for this page.&quot; A `snippet_status` with `SUCCESS` or `NO_SNIPPET_AVAILABLE` will also be returned.
+      },
+      &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
+        &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+        &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
+        &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
+        &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
+        &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
+        &quot;languageCode&quot;: &quot;A String&quot;, # Language code for Summary. Use language tags defined by [BCP47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt). Note: This is an experimental feature.
+        &quot;modelPromptSpec&quot;: { # Specification of the prompt to use with the model. # If specified, the spec will be used to modify the prompt provided to the LLM.
+          &quot;preamble&quot;: &quot;A String&quot;, # Text at the beginning of the prompt that instructs the assistant. Examples are available in the user guide.
+        },
+        &quot;modelSpec&quot;: { # Specification of the model. # If specified, the spec will be used to modify the model specification provided to the LLM.
+          &quot;version&quot;: &quot;A String&quot;, # The model version used to generate the summary. Supported values are: * `stable`: string. Default value when no value is specified. Uses a generally available, fine-tuned model. For more information, see [Answer generation model versions and lifecycle](https://cloud.google.com/generative-ai-app-builder/docs/answer-generation-models). * `preview`: string. (Public preview) Uses a preview model. For more information, see [Answer generation model versions and lifecycle](https://cloud.google.com/generative-ai-app-builder/docs/answer-generation-models).
+        },
+        &quot;summaryResultCount&quot;: 42, # The number of top results to generate the summary from. If the number of results returned is less than `summaryResultCount`, the summary is generated from all of the results. At most 10 results for documents mode, or 50 for chunks mode, can be used to generate a summary. The chunks mode is used when SearchRequest.ContentSearchSpec.search_result_mode is set to CHUNKS.
+        &quot;useSemanticChunks&quot;: True or False, # If true, answer will be generated from most relevant chunks from top search results. This feature will improve summary quality. Note that with this feature enabled, not all top search results will be referenced and included in the reference list, so the citation source index only points to the search results listed in the reference list.
+      },
+    },
+  },
+  &quot;ignoreControlIds&quot;: [ # Condition ignore specifications. If multiple ignore conditions match, all matching ignore controls in the list will execute. Order does not matter. Maximum number of specifications is 100.
+    &quot;A String&quot;,
+  ],
+  &quot;mediaConfig&quot;: { # Specifies the configurations needed for Media Discovery. Currently we support: * `demote_content_watched`: Threshold for watched content demotion. Customers can specify if using watched content demotion or use viewed detail page. Using the content watched demotion, customers need to specify the watched minutes or percentage exceeds the threshold, the content will be demoted in the recommendation result. * `promote_fresh_content`: cutoff days for fresh content promotion. Customers can specify if using content freshness promotion. If the content was published within the cutoff days, the content will be promoted in the recommendation result. Can only be set if SolutionType is SOLUTION_TYPE_RECOMMENDATION. # The MediaConfig of the serving configuration.
+    &quot;contentFreshnessCutoffDays&quot;: 42, # Specifies the content freshness used for recommendation result. Contents will be demoted if contents were published for more than content freshness cutoff days.
+    &quot;contentWatchedPercentageThreshold&quot;: 3.14, # Specifies the content watched percentage threshold for demotion. Threshold value must be between [0, 1.0] inclusive.
+    &quot;contentWatchedSecondsThreshold&quot;: 3.14, # Specifies the content watched minutes threshold for demotion.
+    &quot;demoteContentWatchedPastDays&quot;: 42, # Optional. Specifies the number of days to look back for demoting watched content. If set to zero or unset, defaults to the maximum of 365 days.
+    &quot;demotionEventType&quot;: &quot;A String&quot;, # Specifies the event type used for demoting recommendation result. Currently supported values: * `view-item`: Item viewed. * `media-play`: Start/resume watching a video, playing a song, etc. * `media-complete`: Finished or stopped midway through a video, song, etc. If unset, watch history demotion will not be applied. Content freshness demotion will still be applied.
+  },
+  &quot;modelId&quot;: &quot;A String&quot;, # The id of the model to use at serving time. Currently only RecommendationModels are supported. Can be changed but only to a compatible model (e.g. others-you-may-like CTR to others-you-may-like CVR). Required when SolutionType is SOLUTION_TYPE_RECOMMENDATION.
+  &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/{location}/collections/{collection_id}/engines/{engine_id}/servingConfigs/{serving_config_id}`
+  &quot;onewaySynonymsControlIds&quot;: [ # Condition oneway synonyms specifications. If multiple oneway synonyms conditions match, all matching oneway synonyms controls in the list will execute. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;promoteControlIds&quot;: [ # Condition promote specifications. Maximum number of specifications is 100.
+    &quot;A String&quot;,
+  ],
+  &quot;rankingExpression&quot;: &quot;A String&quot;, # The ranking expression controls the customized ranking on retrieval documents. To leverage this, document embedding is required. The ranking expression setting in ServingConfig applies to all search requests served by the serving config. However, if SearchRequest.ranking_expression is specified, it overrides the ServingConfig ranking expression. The ranking expression is a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between embedding_field_path and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`.
+  &quot;redirectControlIds&quot;: [ # IDs of the redirect controls. Only the first triggered redirect action is applied, even if multiple apply. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;replacementControlIds&quot;: [ # Condition replacement specifications. Applied according to the order in the list. A previously replaced term can not be re-replaced. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;solutionType&quot;: &quot;A String&quot;, # Required. Immutable. Specifies the solution type that a serving config can be associated with.
+  &quot;synonymsControlIds&quot;: [ # Condition synonyms specifications. If multiple synonyms conditions match, all matching synonyms controls in the list will execute. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;updateTime&quot;: &quot;A String&quot;, # Output only. ServingConfig updated timestamp.
+}
+
+  updateMask: string, Indicates which fields in the provided ServingConfig to update. The following are NOT supported: * ServingConfig.name If not set, all supported fields are updated.
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Configures metadata that is used to generate serving time results (e.g. search results or recommendation predictions). The ServingConfig is passed in the search and predict request and generates results.
+  &quot;boostControlIds&quot;: [ # Boost controls to use in serving path. All triggered boost controls will be applied. Boost controls must be in the same data store as the serving config. Maximum of 20 boost controls.
+    &quot;A String&quot;,
+  ],
+  &quot;createTime&quot;: &quot;A String&quot;, # Output only. ServingConfig created timestamp.
+  &quot;displayName&quot;: &quot;A String&quot;, # Required. The human readable serving config display name. Used in Discovery UI. This field must be a UTF-8 encoded string with a length limit of 128 characters. Otherwise, an INVALID_ARGUMENT error is returned.
+  &quot;dissociateControlIds&quot;: [ # Condition do not associate specifications. If multiple do not associate conditions match, all matching do not associate controls in the list will execute. Order does not matter. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;diversityLevel&quot;: &quot;A String&quot;, # How much diversity to use in recommendation model results e.g. `medium-diversity` or `high-diversity`. Currently supported values: * `no-diversity` * `low-diversity` * `medium-diversity` * `high-diversity` * `auto-diversity` If not specified, we choose default based on recommendation model type. Default value: `no-diversity`. Can only be set if SolutionType is SOLUTION_TYPE_RECOMMENDATION.
+  &quot;filterControlIds&quot;: [ # Filter controls to use in serving path. All triggered filter controls will be applied. Filter controls must be in the same data store as the serving config. Maximum of 20 filter controls.
+    &quot;A String&quot;,
+  ],
+  &quot;genericConfig&quot;: { # Specifies the configurations needed for Generic Discovery.Currently we support: * `content_search_spec`: configuration for generic content search. # The GenericConfig of the serving configuration.
+    &quot;contentSearchSpec&quot;: { # A specification for configuring the behavior of content search. # Specifies the expected behavior of content search. Only valid for content-search enabled data store.
+      &quot;chunkSpec&quot;: { # Specifies the chunk spec to be returned from the search response. Only available if the SearchRequest.ContentSearchSpec.search_result_mode is set to CHUNKS # Specifies the chunk spec to be returned from the search response. Only available if the SearchRequest.ContentSearchSpec.search_result_mode is set to CHUNKS
+        &quot;numNextChunks&quot;: 42, # The number of next chunks to be returned of the current chunk. The maximum allowed value is 3. If not specified, no next chunks will be returned.
+        &quot;numPreviousChunks&quot;: 42, # The number of previous chunks to be returned of the current chunk. The maximum allowed value is 3. If not specified, no previous chunks will be returned.
+      },
+      &quot;extractiveContentSpec&quot;: { # A specification for configuring the extractive content in a search response. # If there is no extractive_content_spec provided, there will be no extractive answer in the search response.
+        &quot;maxExtractiveAnswerCount&quot;: 42, # The maximum number of extractive answers returned in each search result. An extractive answer is a verbatim answer extracted from the original document, which provides a precise and contextually relevant answer to the search query. If the number of matching answers is less than the `max_extractive_answer_count`, return all of the answers. Otherwise, return the `max_extractive_answer_count`. At most five answers are returned for each SearchResult.
+        &quot;maxExtractiveSegmentCount&quot;: 42, # The max number of extractive segments returned in each search result. Only applied if the DataStore is set to DataStore.ContentConfig.CONTENT_REQUIRED or DataStore.solution_types is SOLUTION_TYPE_CHAT. An extractive segment is a text segment extracted from the original document that is relevant to the search query, and, in general, more verbose than an extractive answer. The segment could then be used as input for LLMs to generate summaries and answers. If the number of matching segments is less than `max_extractive_segment_count`, return all of the segments. Otherwise, return the `max_extractive_segment_count`.
+        &quot;numNextSegments&quot;: 42, # Return at most `num_next_segments` segments after each selected segments.
+        &quot;numPreviousSegments&quot;: 42, # Specifies whether to also include the adjacent from each selected segments. Return at most `num_previous_segments` segments before each selected segments.
+        &quot;returnExtractiveSegmentScore&quot;: True or False, # Specifies whether to return the confidence score from the extractive segments in each search result. This feature is available only for new or allowlisted data stores. To allowlist your data store, contact your Customer Engineer. The default value is `false`.
+      },
+      &quot;searchResultMode&quot;: &quot;A String&quot;, # Specifies the search result mode. If unspecified, the search result mode defaults to `DOCUMENTS`.
+      &quot;snippetSpec&quot;: { # A specification for configuring snippets in a search response. # If `snippetSpec` is not specified, snippets are not included in the search response.
+        &quot;maxSnippetCount&quot;: 42, # [DEPRECATED] This field is deprecated. To control snippet return, use `return_snippet` field. For backwards compatibility, we will return snippet if max_snippet_count &gt; 0.
+        &quot;referenceOnly&quot;: True or False, # [DEPRECATED] This field is deprecated and will have no affect on the snippet.
+        &quot;returnSnippet&quot;: True or False, # If `true`, then return snippet. If no snippet can be generated, we return &quot;No snippet is available for this page.&quot; A `snippet_status` with `SUCCESS` or `NO_SNIPPET_AVAILABLE` will also be returned.
+      },
+      &quot;summarySpec&quot;: { # A specification for configuring a summary returned in a search response. # If `summarySpec` is not specified, summaries are not included in the search response.
+        &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No summary is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating summaries for adversarial queries and return fallback messages instead.
+        &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
+        &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. The default value is `false`. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true`, only queries with high relevance search results will generate answers.
+        &quot;ignoreNonSummarySeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not summary-seeking. The default value is `false`. Google employs search-query classification to detect summary-seeking queries. No summary is returned if the search query is classified as a non-summary seeking query. For example, `why is the sky blue` and `Who is the best soccer player in the world?` are summary-seeking queries, but `SFO airport` and `world cup 2026` are not. They are most likely navigational queries. If this field is set to `true`, we skip generating summaries for non-summary seeking queries and return fallback messages instead.
+        &quot;includeCitations&quot;: True or False, # Specifies whether to include citations in the summary. The default value is `false`. When this field is set to `true`, summaries include in-line citation numbers. Example summary including citations: BigQuery is Google Cloud&#x27;s fully managed and completely serverless enterprise data warehouse [1]. BigQuery supports all data types, works across clouds, and has built-in machine learning and business intelligence, all within a unified platform [2, 3]. The citation numbers refer to the returned search results and are 1-indexed. For example, [1] means that the sentence is attributed to the first search result. [2, 3] means that the sentence is attributed to both the second and third search results.
+        &quot;languageCode&quot;: &quot;A String&quot;, # Language code for Summary. Use language tags defined by [BCP47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt). Note: This is an experimental feature.
+        &quot;modelPromptSpec&quot;: { # Specification of the prompt to use with the model. # If specified, the spec will be used to modify the prompt provided to the LLM.
+          &quot;preamble&quot;: &quot;A String&quot;, # Text at the beginning of the prompt that instructs the assistant. Examples are available in the user guide.
+        },
+        &quot;modelSpec&quot;: { # Specification of the model. # If specified, the spec will be used to modify the model specification provided to the LLM.
+          &quot;version&quot;: &quot;A String&quot;, # The model version used to generate the summary. Supported values are: * `stable`: string. Default value when no value is specified. Uses a generally available, fine-tuned model. For more information, see [Answer generation model versions and lifecycle](https://cloud.google.com/generative-ai-app-builder/docs/answer-generation-models). * `preview`: string. (Public preview) Uses a preview model. For more information, see [Answer generation model versions and lifecycle](https://cloud.google.com/generative-ai-app-builder/docs/answer-generation-models).
+        },
+        &quot;summaryResultCount&quot;: 42, # The number of top results to generate the summary from. If the number of results returned is less than `summaryResultCount`, the summary is generated from all of the results. At most 10 results for documents mode, or 50 for chunks mode, can be used to generate a summary. The chunks mode is used when SearchRequest.ContentSearchSpec.search_result_mode is set to CHUNKS.
+        &quot;useSemanticChunks&quot;: True or False, # If true, answer will be generated from most relevant chunks from top search results. This feature will improve summary quality. Note that with this feature enabled, not all top search results will be referenced and included in the reference list, so the citation source index only points to the search results listed in the reference list.
+      },
+    },
+  },
+  &quot;ignoreControlIds&quot;: [ # Condition ignore specifications. If multiple ignore conditions match, all matching ignore controls in the list will execute. Order does not matter. Maximum number of specifications is 100.
+    &quot;A String&quot;,
+  ],
+  &quot;mediaConfig&quot;: { # Specifies the configurations needed for Media Discovery. Currently we support: * `demote_content_watched`: Threshold for watched content demotion. Customers can specify if using watched content demotion or use viewed detail page. Using the content watched demotion, customers need to specify the watched minutes or percentage exceeds the threshold, the content will be demoted in the recommendation result. * `promote_fresh_content`: cutoff days for fresh content promotion. Customers can specify if using content freshness promotion. If the content was published within the cutoff days, the content will be promoted in the recommendation result. Can only be set if SolutionType is SOLUTION_TYPE_RECOMMENDATION. # The MediaConfig of the serving configuration.
+    &quot;contentFreshnessCutoffDays&quot;: 42, # Specifies the content freshness used for recommendation result. Contents will be demoted if contents were published for more than content freshness cutoff days.
+    &quot;contentWatchedPercentageThreshold&quot;: 3.14, # Specifies the content watched percentage threshold for demotion. Threshold value must be between [0, 1.0] inclusive.
+    &quot;contentWatchedSecondsThreshold&quot;: 3.14, # Specifies the content watched minutes threshold for demotion.
+    &quot;demoteContentWatchedPastDays&quot;: 42, # Optional. Specifies the number of days to look back for demoting watched content. If set to zero or unset, defaults to the maximum of 365 days.
+    &quot;demotionEventType&quot;: &quot;A String&quot;, # Specifies the event type used for demoting recommendation result. Currently supported values: * `view-item`: Item viewed. * `media-play`: Start/resume watching a video, playing a song, etc. * `media-complete`: Finished or stopped midway through a video, song, etc. If unset, watch history demotion will not be applied. Content freshness demotion will still be applied.
+  },
+  &quot;modelId&quot;: &quot;A String&quot;, # The id of the model to use at serving time. Currently only RecommendationModels are supported. Can be changed but only to a compatible model (e.g. others-you-may-like CTR to others-you-may-like CVR). Required when SolutionType is SOLUTION_TYPE_RECOMMENDATION.
+  &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/{location}/collections/{collection_id}/engines/{engine_id}/servingConfigs/{serving_config_id}`
+  &quot;onewaySynonymsControlIds&quot;: [ # Condition oneway synonyms specifications. If multiple oneway synonyms conditions match, all matching oneway synonyms controls in the list will execute. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;promoteControlIds&quot;: [ # Condition promote specifications. Maximum number of specifications is 100.
+    &quot;A String&quot;,
+  ],
+  &quot;rankingExpression&quot;: &quot;A String&quot;, # The ranking expression controls the customized ranking on retrieval documents. To leverage this, document embedding is required. The ranking expression setting in ServingConfig applies to all search requests served by the serving config. However, if SearchRequest.ranking_expression is specified, it overrides the ServingConfig ranking expression. The ranking expression is a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between embedding_field_path and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`.
+  &quot;redirectControlIds&quot;: [ # IDs of the redirect controls. Only the first triggered redirect action is applied, even if multiple apply. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;replacementControlIds&quot;: [ # Condition replacement specifications. Applied according to the order in the list. A previously replaced term can not be re-replaced. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;solutionType&quot;: &quot;A String&quot;, # Required. Immutable. Specifies the solution type that a serving config can be associated with.
+  &quot;synonymsControlIds&quot;: [ # Condition synonyms specifications. If multiple synonyms conditions match, all matching synonyms controls in the list will execute. Maximum number of specifications is 100. Can only be set if SolutionType is SOLUTION_TYPE_SEARCH.
+    &quot;A String&quot;,
+  ],
+  &quot;updateTime&quot;: &quot;A String&quot;, # Output only. ServingConfig updated timestamp.
+}</pre>
 </div>
 
 <div class="method">
@@ -736,6 +977,25 @@ Args:
   },
   &quot;dataStoreSpecs&quot;: [ # Specs defining DataStores to filter on in a search call and configurations for those data stores. This is only considered for Engines with multiple data stores. For engines with a single data store, the specs directly under SearchRequest should be used.
     { # A struct to define data stores to filter on in a search call and configurations for those data stores. Otherwise, an `INVALID_ARGUMENT` error is returned.
+      &quot;boostSpec&quot;: { # Boost specification to boost certain documents. # Optional. Boost specification to boost certain documents. For more information on boosting, see [Boosting](https://cloud.google.com/generative-ai-app-builder/docs/boost-search-results)
+        &quot;conditionBoostSpecs&quot;: [ # Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+          { # Boost applies to documents which match a condition.
+            &quot;boost&quot;: 3.14, # Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored. Only one of the (condition, boost) combination or the boost_control_spec below are set. If both are set then the global boost is ignored and the more fine-grained boost_control_spec is applied.
+            &quot;boostControlSpec&quot;: { # Specification for custom ranking based on customer specified attribute value. It provides more controls for customized ranking than the simple (condition, boost) combination above. # Complex specification for custom ranking based on customer defined attribute value.
+              &quot;attributeType&quot;: &quot;A String&quot;, # The attribute type to be used to determine the boost amount. The attribute value can be derived from the field value of the specified field_name. In the case of numerical it is straightforward i.e. attribute_value = numerical_field_value. In the case of freshness however, attribute_value = (time.now() - datetime_field_value).
+              &quot;controlPoints&quot;: [ # The control points used to define the curve. The monotonic function (defined through the interpolation_type above) passes through the control points listed here.
+                { # The control points used to define the curve. The curve defined through these control points can only be monotonically increasing or decreasing(constant values are acceptable).
+                  &quot;attributeValue&quot;: &quot;A String&quot;, # Can be one of: 1. The numerical field value. 2. The duration spec for freshness: The value must be formatted as an XSD `dayTimeDuration` value (a restricted subset of an ISO 8601 duration value). The pattern for this is: `nDnM]`.
+                  &quot;boostAmount&quot;: 3.14, # The value between -1 to 1 by which to boost the score if the attribute_value evaluates to the value specified above.
+                },
+              ],
+              &quot;fieldName&quot;: &quot;A String&quot;, # The name of the field whose value will be used to determine the boost amount.
+              &quot;interpolationType&quot;: &quot;A String&quot;, # The interpolation type to be applied to connect the control points listed below.
+            },
+            &quot;condition&quot;: &quot;A String&quot;, # An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. See SearchRequest.filter for detail syntax and limitations. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: `(document_id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;, &quot;Blue&quot;))`
+          },
+        ],
+      },
       &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
       &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
     },
@@ -1040,6 +1300,25 @@ Args:
   },
   &quot;dataStoreSpecs&quot;: [ # Specs defining DataStores to filter on in a search call and configurations for those data stores. This is only considered for Engines with multiple data stores. For engines with a single data store, the specs directly under SearchRequest should be used.
     { # A struct to define data stores to filter on in a search call and configurations for those data stores. Otherwise, an `INVALID_ARGUMENT` error is returned.
+      &quot;boostSpec&quot;: { # Boost specification to boost certain documents. # Optional. Boost specification to boost certain documents. For more information on boosting, see [Boosting](https://cloud.google.com/generative-ai-app-builder/docs/boost-search-results)
+        &quot;conditionBoostSpecs&quot;: [ # Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+          { # Boost applies to documents which match a condition.
+            &quot;boost&quot;: 3.14, # Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored. Only one of the (condition, boost) combination or the boost_control_spec below are set. If both are set then the global boost is ignored and the more fine-grained boost_control_spec is applied.
+            &quot;boostControlSpec&quot;: { # Specification for custom ranking based on customer specified attribute value. It provides more controls for customized ranking than the simple (condition, boost) combination above. # Complex specification for custom ranking based on customer defined attribute value.
+              &quot;attributeType&quot;: &quot;A String&quot;, # The attribute type to be used to determine the boost amount. The attribute value can be derived from the field value of the specified field_name. In the case of numerical it is straightforward i.e. attribute_value = numerical_field_value. In the case of freshness however, attribute_value = (time.now() - datetime_field_value).
+              &quot;controlPoints&quot;: [ # The control points used to define the curve. The monotonic function (defined through the interpolation_type above) passes through the control points listed here.
+                { # The control points used to define the curve. The curve defined through these control points can only be monotonically increasing or decreasing(constant values are acceptable).
+                  &quot;attributeValue&quot;: &quot;A String&quot;, # Can be one of: 1. The numerical field value. 2. The duration spec for freshness: The value must be formatted as an XSD `dayTimeDuration` value (a restricted subset of an ISO 8601 duration value). The pattern for this is: `nDnM]`.
+                  &quot;boostAmount&quot;: 3.14, # The value between -1 to 1 by which to boost the score if the attribute_value evaluates to the value specified above.
+                },
+              ],
+              &quot;fieldName&quot;: &quot;A String&quot;, # The name of the field whose value will be used to determine the boost amount.
+              &quot;interpolationType&quot;: &quot;A String&quot;, # The interpolation type to be applied to connect the control points listed below.
+            },
+            &quot;condition&quot;: &quot;A String&quot;, # An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. See SearchRequest.filter for detail syntax and limitations. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: `(document_id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;, &quot;Blue&quot;))`
+          },
+        ],
+      },
       &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
       &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
     },
@@ -1302,6 +1581,434 @@ Returns:
           A request object that you can call &#x27;execute()&#x27; on to request the next
           page. Returns None if there are no more items in the collection.
         </pre>
+</div>
+
+<div class="method">
+    <code class="details" id="streamAnswer">streamAnswer(servingConfig, body=None, x__xgafv=None)</code>
+  <pre>Answer query method (streaming). It takes one AnswerQueryRequest and returns multiple AnswerQueryResponse messages in a stream.
+
+Args:
+  servingConfig: string, Required. The resource name of the Search serving config, such as `projects/*/locations/global/collections/default_collection/engines/*/servingConfigs/default_serving_config`, or `projects/*/locations/global/collections/default_collection/dataStores/*/servingConfigs/default_serving_config`. This field is used to identify the serving configuration name, set of models used to make the search. (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request message for ConversationalSearchService.AnswerQuery method.
+  &quot;answerGenerationSpec&quot;: { # Answer generation specification. # Answer generation specification.
+    &quot;answerLanguageCode&quot;: &quot;A String&quot;, # Language code for Answer. Use language tags defined by [BCP47](https://www.rfc-editor.org/rfc/bcp/bcp47.txt). Note: This is an experimental feature.
+    &quot;ignoreAdversarialQuery&quot;: True or False, # Specifies whether to filter out adversarial queries. The default value is `false`. Google employs search-query classification to detect adversarial queries. No answer is returned if the search query is classified as an adversarial query. For example, a user might ask a question regarding negative comments about the company or submit a query designed to generate unsafe, policy-violating output. If this field is set to `true`, we skip generating answers for adversarial queries and return fallback messages instead.
+    &quot;ignoreJailBreakingQuery&quot;: True or False, # Optional. Specifies whether to filter out jail-breaking queries. The default value is `false`. Google employs search-query classification to detect jail-breaking queries. No summary is returned if the search query is classified as a jail-breaking query. A user might add instructions to the query to change the tone, style, language, content of the answer, or ask the model to act as a different entity, e.g. &quot;Reply in the tone of a competing company&#x27;s CEO&quot;. If this field is set to `true`, we skip generating summaries for jail-breaking queries and return fallback messages instead.
+    &quot;ignoreLowRelevantContent&quot;: True or False, # Specifies whether to filter out queries that have low relevance. If this field is set to `false`, all search results are used regardless of relevance to generate answers. If set to `true` or unset, the behavior will be determined automatically by the service.
+    &quot;ignoreNonAnswerSeekingQuery&quot;: True or False, # Specifies whether to filter out queries that are not answer-seeking. The default value is `false`. Google employs search-query classification to detect answer-seeking queries. No answer is returned if the search query is classified as a non-answer seeking query. If this field is set to `true`, we skip generating answers for non-answer seeking queries and return fallback messages instead.
+    &quot;includeCitations&quot;: True or False, # Specifies whether to include citation metadata in the answer. The default value is `false`.
+    &quot;modelSpec&quot;: { # Answer Generation Model specification. # Answer generation model specification.
+      &quot;modelVersion&quot;: &quot;A String&quot;, # Model version. If not set, it will use the default stable model. Allowed values are: stable, preview.
+    },
+    &quot;promptSpec&quot;: { # Answer generation prompt specification. # Answer generation prompt specification.
+      &quot;preamble&quot;: &quot;A String&quot;, # Customized preamble.
+    },
+  },
+  &quot;asynchronousMode&quot;: True or False, # Deprecated: This field is deprecated. Streaming Answer API will be supported. Asynchronous mode control. If enabled, the response will be returned with answer/session resource name without final answer. The API users need to do the polling to get the latest status of answer/session by calling ConversationalSearchService.GetAnswer or ConversationalSearchService.GetSession method.
+  &quot;groundingSpec&quot;: { # Grounding specification. # Optional. Grounding specification.
+    &quot;filteringLevel&quot;: &quot;A String&quot;, # Optional. Specifies whether to enable the filtering based on grounding score and at what level.
+    &quot;includeGroundingSupports&quot;: True or False, # Optional. Specifies whether to include grounding_supports in the answer. The default value is `false`. When this field is set to `true`, returned answer will have `grounding_score` and will contain GroundingSupports for each claim.
+  },
+  &quot;query&quot;: { # Defines a user inputed query. # Required. Current user query.
+    &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
+    &quot;text&quot;: &quot;A String&quot;, # Plain text.
+  },
+  &quot;queryUnderstandingSpec&quot;: { # Query understanding specification. # Query understanding specification.
+    &quot;queryClassificationSpec&quot;: { # Query classification specification. # Query classification specification.
+      &quot;types&quot;: [ # Enabled query classification types.
+        &quot;A String&quot;,
+      ],
+    },
+    &quot;queryRephraserSpec&quot;: { # Query rephraser specification. # Query rephraser specification.
+      &quot;disable&quot;: True or False, # Disable query rephraser.
+      &quot;maxRephraseSteps&quot;: 42, # Max rephrase steps. The max number is 5 steps. If not set or set to &lt; 1, it will be set to 1 by default.
+      &quot;modelSpec&quot;: { # Query Rephraser Model specification. # Optional. Query Rephraser Model specification.
+        &quot;modelType&quot;: &quot;A String&quot;, # Optional. Enabled query rephraser model type. If not set, it will use LARGE by default.
+      },
+    },
+  },
+  &quot;relatedQuestionsSpec&quot;: { # Related questions specification. # Related questions specification.
+    &quot;enable&quot;: True or False, # Enable related questions feature if true.
+  },
+  &quot;safetySpec&quot;: { # Safety specification. There are two use cases: 1. when only safety_spec.enable is set, the BLOCK_LOW_AND_ABOVE threshold will be applied for all categories. 2. when safety_spec.enable is set and some safety_settings are set, only specified safety_settings are applied. # Model specification.
+    &quot;enable&quot;: True or False, # Enable the safety filtering on the answer response. It is false by default.
+  },
+  &quot;searchSpec&quot;: { # Search specification. # Search specification.
+    &quot;searchParams&quot;: { # Search parameters. # Search parameters.
+      &quot;boostSpec&quot;: { # Boost specification to boost certain documents. # Boost specification to boost certain documents in search results which may affect the answer query response. For more information on boosting, see [Boosting](https://cloud.google.com/retail/docs/boosting#boost)
+        &quot;conditionBoostSpecs&quot;: [ # Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+          { # Boost applies to documents which match a condition.
+            &quot;boost&quot;: 3.14, # Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored. Only one of the (condition, boost) combination or the boost_control_spec below are set. If both are set then the global boost is ignored and the more fine-grained boost_control_spec is applied.
+            &quot;boostControlSpec&quot;: { # Specification for custom ranking based on customer specified attribute value. It provides more controls for customized ranking than the simple (condition, boost) combination above. # Complex specification for custom ranking based on customer defined attribute value.
+              &quot;attributeType&quot;: &quot;A String&quot;, # The attribute type to be used to determine the boost amount. The attribute value can be derived from the field value of the specified field_name. In the case of numerical it is straightforward i.e. attribute_value = numerical_field_value. In the case of freshness however, attribute_value = (time.now() - datetime_field_value).
+              &quot;controlPoints&quot;: [ # The control points used to define the curve. The monotonic function (defined through the interpolation_type above) passes through the control points listed here.
+                { # The control points used to define the curve. The curve defined through these control points can only be monotonically increasing or decreasing(constant values are acceptable).
+                  &quot;attributeValue&quot;: &quot;A String&quot;, # Can be one of: 1. The numerical field value. 2. The duration spec for freshness: The value must be formatted as an XSD `dayTimeDuration` value (a restricted subset of an ISO 8601 duration value). The pattern for this is: `nDnM]`.
+                  &quot;boostAmount&quot;: 3.14, # The value between -1 to 1 by which to boost the score if the attribute_value evaluates to the value specified above.
+                },
+              ],
+              &quot;fieldName&quot;: &quot;A String&quot;, # The name of the field whose value will be used to determine the boost amount.
+              &quot;interpolationType&quot;: &quot;A String&quot;, # The interpolation type to be applied to connect the control points listed below.
+            },
+            &quot;condition&quot;: &quot;A String&quot;, # An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. See SearchRequest.filter for detail syntax and limitations. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: `(document_id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;, &quot;Blue&quot;))`
+          },
+        ],
+      },
+      &quot;dataStoreSpecs&quot;: [ # Specs defining dataStores to filter on in a search call and configurations for those dataStores. This is only considered for engines with multiple dataStores use case. For single dataStore within an engine, they should use the specs at the top level.
+        { # A struct to define data stores to filter on in a search call and configurations for those data stores. Otherwise, an `INVALID_ARGUMENT` error is returned.
+          &quot;boostSpec&quot;: { # Boost specification to boost certain documents. # Optional. Boost specification to boost certain documents. For more information on boosting, see [Boosting](https://cloud.google.com/generative-ai-app-builder/docs/boost-search-results)
+            &quot;conditionBoostSpecs&quot;: [ # Condition boost specifications. If a document matches multiple conditions in the specifictions, boost scores from these specifications are all applied and combined in a non-linear way. Maximum number of specifications is 20.
+              { # Boost applies to documents which match a condition.
+                &quot;boost&quot;: 3.14, # Strength of the condition boost, which should be in [-1, 1]. Negative boost means demotion. Default is 0.0. Setting to 1.0 gives the document a big promotion. However, it does not necessarily mean that the boosted document will be the top result at all times, nor that other documents will be excluded. Results could still be shown even when none of them matches the condition. And results that are significantly more relevant to the search query can still trump your heavily favored but irrelevant documents. Setting to -1.0 gives the document a big demotion. However, results that are deeply relevant might still be shown. The document will have an upstream battle to get a fairly high ranking, but it is not blocked out completely. Setting to 0.0 means no boost applied. The boosting condition is ignored. Only one of the (condition, boost) combination or the boost_control_spec below are set. If both are set then the global boost is ignored and the more fine-grained boost_control_spec is applied.
+                &quot;boostControlSpec&quot;: { # Specification for custom ranking based on customer specified attribute value. It provides more controls for customized ranking than the simple (condition, boost) combination above. # Complex specification for custom ranking based on customer defined attribute value.
+                  &quot;attributeType&quot;: &quot;A String&quot;, # The attribute type to be used to determine the boost amount. The attribute value can be derived from the field value of the specified field_name. In the case of numerical it is straightforward i.e. attribute_value = numerical_field_value. In the case of freshness however, attribute_value = (time.now() - datetime_field_value).
+                  &quot;controlPoints&quot;: [ # The control points used to define the curve. The monotonic function (defined through the interpolation_type above) passes through the control points listed here.
+                    { # The control points used to define the curve. The curve defined through these control points can only be monotonically increasing or decreasing(constant values are acceptable).
+                      &quot;attributeValue&quot;: &quot;A String&quot;, # Can be one of: 1. The numerical field value. 2. The duration spec for freshness: The value must be formatted as an XSD `dayTimeDuration` value (a restricted subset of an ISO 8601 duration value). The pattern for this is: `nDnM]`.
+                      &quot;boostAmount&quot;: 3.14, # The value between -1 to 1 by which to boost the score if the attribute_value evaluates to the value specified above.
+                    },
+                  ],
+                  &quot;fieldName&quot;: &quot;A String&quot;, # The name of the field whose value will be used to determine the boost amount.
+                  &quot;interpolationType&quot;: &quot;A String&quot;, # The interpolation type to be applied to connect the control points listed below.
+                },
+                &quot;condition&quot;: &quot;A String&quot;, # An expression which specifies a boost condition. The syntax and supported fields are the same as a filter expression. See SearchRequest.filter for detail syntax and limitations. Examples: * To boost documents with document ID &quot;doc_1&quot; or &quot;doc_2&quot;, and color &quot;Red&quot; or &quot;Blue&quot;: `(document_id: ANY(&quot;doc_1&quot;, &quot;doc_2&quot;)) AND (color: ANY(&quot;Red&quot;, &quot;Blue&quot;))`
+              },
+            ],
+          },
+          &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
+          &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
+        },
+      ],
+      &quot;filter&quot;: &quot;A String&quot;, # The filter syntax consists of an expression language for constructing a predicate from one or more fields of the documents being filtered. Filter expression is case-sensitive. This will be used to filter search results which may affect the Answer response. If this field is unrecognizable, an `INVALID_ARGUMENT` is returned. Filtering in Vertex AI Search is done by mapping the LHS filter key to a key property defined in the Vertex AI Search backend -- this mapping is defined by the customer in their schema. For example a media customers might have a field &#x27;name&#x27; in their schema. In this case the filter would look like this: filter --&gt; name:&#x27;ANY(&quot;king kong&quot;)&#x27; For more information about filtering including syntax and filter operators, see [Filter](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
+      &quot;maxReturnResults&quot;: 42, # Number of search results to return. The default value is 10.
+      &quot;orderBy&quot;: &quot;A String&quot;, # The order in which documents are returned. Documents can be ordered by a field in an Document object. Leave it unset if ordered by relevance. `order_by` expression is case-sensitive. For more information on ordering, see [Ordering](https://cloud.google.com/retail/docs/filter-and-order#order) If this field is unrecognizable, an `INVALID_ARGUMENT` is returned.
+      &quot;searchResultMode&quot;: &quot;A String&quot;, # Specifies the search result mode. If unspecified, the search result mode defaults to `DOCUMENTS`. See [parse and chunk documents](https://cloud.google.com/generative-ai-app-builder/docs/parse-chunk-documents)
+    },
+    &quot;searchResultList&quot;: { # Search result list. # Search result list.
+      &quot;searchResults&quot;: [ # Search results.
+        { # Search result.
+          &quot;chunkInfo&quot;: { # Chunk information. # Chunk information.
+            &quot;chunk&quot;: &quot;A String&quot;, # Chunk resource name.
+            &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+            &quot;documentMetadata&quot;: { # Document metadata contains the information of the document of the current chunk. # Metadata of the document from the current chunk.
+              &quot;title&quot;: &quot;A String&quot;, # Title of the document.
+              &quot;uri&quot;: &quot;A String&quot;, # Uri of the document.
+            },
+          },
+          &quot;unstructuredDocumentInfo&quot;: { # Unstructured document information. # Unstructured document information.
+            &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+            &quot;documentContexts&quot;: [ # List of document contexts. The content will be used for Answer Generation. This is supposed to be the main content of the document that can be long and comprehensive.
+              { # Document context.
+                &quot;content&quot;: &quot;A String&quot;, # Document content to be used for answer generation.
+                &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+              },
+            ],
+            &quot;extractiveAnswers&quot;: [ # Deprecated: This field is deprecated and will have no effect on the Answer generation. Please use document_contexts and extractive_segments fields. List of extractive answers.
+              { # Extractive answer. [Guide](https://cloud.google.com/generative-ai-app-builder/docs/snippets#get-answers)
+                &quot;content&quot;: &quot;A String&quot;, # Extractive answer content.
+                &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+              },
+            ],
+            &quot;extractiveSegments&quot;: [ # List of extractive segments.
+              { # Extractive segment. [Guide](https://cloud.google.com/generative-ai-app-builder/docs/snippets#extractive-segments) Answer generation will only use it if document_contexts is empty. This is supposed to be shorter snippets.
+                &quot;content&quot;: &quot;A String&quot;, # Extractive segment content.
+                &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+              },
+            ],
+            &quot;title&quot;: &quot;A String&quot;, # Title.
+            &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+          },
+        },
+      ],
+    },
+  },
+  &quot;session&quot;: &quot;A String&quot;, # The session resource name. Not required. When session field is not set, the API is in sessionless mode. We support auto session mode: users can use the wildcard symbol `-` as session ID. A new ID will be automatically generated and assigned.
+  &quot;userLabels&quot;: { # The user labels applied to a resource must meet the following requirements: * Each resource can have multiple labels, up to a maximum of 64. * Each label must be a key-value pair. * Keys have a minimum length of 1 character and a maximum length of 63 characters and cannot be empty. Values can be empty and have a maximum length of 63 characters. * Keys and values can contain only lowercase letters, numeric characters, underscores, and dashes. All characters must use UTF-8 encoding, and international characters are allowed. * The key portion of a label must be unique. However, you can use the same key with multiple resources. * Keys must start with a lowercase letter or international character. See [Google Cloud Document](https://cloud.google.com/resource-manager/docs/creating-managing-labels#requirements) for more details.
+    &quot;a_key&quot;: &quot;A String&quot;,
+  },
+  &quot;userPseudoId&quot;: &quot;A String&quot;, # A unique identifier for tracking visitors. For example, this could be implemented with an HTTP cookie, which should be able to uniquely identify a visitor on a single device. This unique identifier should not change if the visitor logs in or out of the website. This field should NOT have a fixed value such as `unknown_visitor`. The field must be a UTF-8 encoded string with a length limit of 128 characters. Otherwise, an `INVALID_ARGUMENT` error is returned.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Response message for ConversationalSearchService.AnswerQuery method.
+  &quot;answer&quot;: { # Defines an answer. # Answer resource object. If AnswerQueryRequest.QueryUnderstandingSpec.QueryRephraserSpec.max_rephrase_steps is greater than 1, use Answer.name to fetch answer information using ConversationalSearchService.GetAnswer API.
+    &quot;answerSkippedReasons&quot;: [ # Additional answer-skipped reasons. This provides the reason for ignored cases. If nothing is skipped, this field is not set.
+      &quot;A String&quot;,
+    ],
+    &quot;answerText&quot;: &quot;A String&quot;, # The textual answer.
+    &quot;citations&quot;: [ # Citations.
+      { # Citation info for a segment.
+        &quot;endIndex&quot;: &quot;A String&quot;, # End of the attributed segment, exclusive.
+        &quot;sources&quot;: [ # Citation sources for the attributed segment.
+          { # Citation source.
+            &quot;referenceId&quot;: &quot;A String&quot;, # ID of the citation source.
+          },
+        ],
+        &quot;startIndex&quot;: &quot;A String&quot;, # Index indicates the start of the segment, measured in bytes (UTF-8 unicode).
+      },
+    ],
+    &quot;completeTime&quot;: &quot;A String&quot;, # Output only. Answer completed timestamp.
+    &quot;createTime&quot;: &quot;A String&quot;, # Output only. Answer creation timestamp.
+    &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded the answer is by the reference chunks.
+    &quot;groundingSupports&quot;: [ # Optional. Grounding supports.
+      { # Grounding support for a claim in `answer_text`.
+        &quot;endIndex&quot;: &quot;A String&quot;, # Required. End of the claim, exclusive.
+        &quot;groundingCheckRequired&quot;: True or False, # Indicates that this claim required grounding check. When the system decided this claim didn&#x27;t require attribution/grounding check, this field is set to false. In that case, no grounding check was done for the claim and therefore `grounding_score`, `sources` is not returned.
+        &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded is a specific claim by the references. Higher value means that the claim is better supported by the reference chunks.
+        &quot;sources&quot;: [ # Optional. Citation sources for the claim.
+          { # Citation source.
+            &quot;referenceId&quot;: &quot;A String&quot;, # ID of the citation source.
+          },
+        ],
+        &quot;startIndex&quot;: &quot;A String&quot;, # Required. Index indicates the start of the claim, measured in bytes (UTF-8 unicode).
+      },
+    ],
+    &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/global/collections/{collection}/engines/{engine}/sessions/*/answers/*`
+    &quot;queryUnderstandingInfo&quot;: { # Query understanding information. # Query understanding information.
+      &quot;queryClassificationInfo&quot;: [ # Query classification information.
+        { # Query classification information.
+          &quot;positive&quot;: True or False, # Classification output.
+          &quot;type&quot;: &quot;A String&quot;, # Query classification type.
+        },
+      ],
+    },
+    &quot;references&quot;: [ # References.
+      { # Reference.
+        &quot;chunkInfo&quot;: { # Chunk information. # Chunk information.
+          &quot;chunk&quot;: &quot;A String&quot;, # Chunk resource name.
+          &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+          &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
+            &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+            &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+            &quot;structData&quot;: { # The structured JSON metadata for the document. It is populated from the struct data from the Chunk in search result.
+              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+            },
+            &quot;title&quot;: &quot;A String&quot;, # Title.
+            &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+          },
+          &quot;relevanceScore&quot;: 3.14, # The relevance of the chunk for a given query. Values range from 0.0 (completely irrelevant) to 1.0 (completely relevant). This value is for informational purpose only. It may change for the same query and chunk at any time due to a model retraining or change in implementation.
+        },
+        &quot;structuredDocumentInfo&quot;: { # Structured search information. # Structured document information.
+          &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+          &quot;structData&quot;: { # Structured search data.
+            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+          },
+        },
+        &quot;unstructuredDocumentInfo&quot;: { # Unstructured document information. # Unstructured document information.
+          &quot;chunkContents&quot;: [ # List of cited chunk contents derived from document content.
+            { # Chunk content.
+              &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+              &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+              &quot;relevanceScore&quot;: 3.14, # The relevance of the chunk for a given query. Values range from 0.0 (completely irrelevant) to 1.0 (completely relevant). This value is for informational purpose only. It may change for the same query and chunk at any time due to a model retraining or change in implementation.
+            },
+          ],
+          &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+          &quot;structData&quot;: { # The structured JSON metadata for the document. It is populated from the struct data from the Chunk in search result.
+            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+          },
+          &quot;title&quot;: &quot;A String&quot;, # Title.
+          &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+        },
+      },
+    ],
+    &quot;relatedQuestions&quot;: [ # Suggested related questions.
+      &quot;A String&quot;,
+    ],
+    &quot;state&quot;: &quot;A String&quot;, # The state of the answer generation.
+    &quot;steps&quot;: [ # Answer generation steps.
+      { # Step information.
+        &quot;actions&quot;: [ # Actions.
+          { # Action.
+            &quot;observation&quot;: { # Observation. # Observation.
+              &quot;searchResults&quot;: [ # Search results observed by the search action, it can be snippets info or chunk info, depending on the citation type set by the user.
+                {
+                  &quot;chunkInfo&quot;: [ # If citation_type is CHUNK_LEVEL_CITATION and chunk mode is on, populate chunk info.
+                    { # Chunk information.
+                      &quot;chunk&quot;: &quot;A String&quot;, # Chunk resource name.
+                      &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+                      &quot;relevanceScore&quot;: 3.14, # The relevance of the chunk for a given query. Values range from 0.0 (completely irrelevant) to 1.0 (completely relevant). This value is for informational purpose only. It may change for the same query and chunk at any time due to a model retraining or change in implementation.
+                    },
+                  ],
+                  &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+                  &quot;snippetInfo&quot;: [ # If citation_type is DOCUMENT_LEVEL_CITATION, populate document level snippets.
+                    { # Snippet information.
+                      &quot;snippet&quot;: &quot;A String&quot;, # Snippet content.
+                      &quot;snippetStatus&quot;: &quot;A String&quot;, # Status of the snippet defined by the search team.
+                    },
+                  ],
+                  &quot;structData&quot;: { # Data representation. The structured JSON data for the document. It&#x27;s populated from the struct data from the Document, or the Chunk in search result.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  },
+                  &quot;title&quot;: &quot;A String&quot;, # Title.
+                  &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+                },
+              ],
+            },
+            &quot;searchAction&quot;: { # Search action. # Search action.
+              &quot;query&quot;: &quot;A String&quot;, # The query to search.
+            },
+          },
+        ],
+        &quot;description&quot;: &quot;A String&quot;, # The description of the step.
+        &quot;state&quot;: &quot;A String&quot;, # The state of the step.
+        &quot;thought&quot;: &quot;A String&quot;, # The thought of the step.
+      },
+    ],
+  },
+  &quot;answerQueryToken&quot;: &quot;A String&quot;, # A global unique ID used for logging.
+  &quot;session&quot;: { # External session proto definition. # Session resource object. It will be only available when session field is set and valid in the AnswerQueryRequest request.
+    &quot;displayName&quot;: &quot;A String&quot;, # Optional. The display name of the session. This field is used to identify the session in the UI. By default, the display name is the first turn query text in the session.
+    &quot;endTime&quot;: &quot;A String&quot;, # Output only. The time the session finished.
+    &quot;isPinned&quot;: True or False, # Optional. Whether the session is pinned, pinned session will be displayed on the top of the session list.
+    &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/global/collections/{collection}/engines/{engine}/sessions/*`
+    &quot;startTime&quot;: &quot;A String&quot;, # Output only. The time the session started.
+    &quot;state&quot;: &quot;A String&quot;, # The state of the session.
+    &quot;turns&quot;: [ # Turns.
+      { # Represents a turn, including a query from the user and a answer from service.
+        &quot;answer&quot;: &quot;A String&quot;, # The resource name of the answer to the user query. Only set if the answer generation (/answer API call) happened in this turn.
+        &quot;detailedAnswer&quot;: { # Defines an answer. # Output only. In ConversationalSearchService.GetSession API, if GetSessionRequest.include_answer_details is set to true, this field will be populated when getting answer query session.
+          &quot;answerSkippedReasons&quot;: [ # Additional answer-skipped reasons. This provides the reason for ignored cases. If nothing is skipped, this field is not set.
+            &quot;A String&quot;,
+          ],
+          &quot;answerText&quot;: &quot;A String&quot;, # The textual answer.
+          &quot;citations&quot;: [ # Citations.
+            { # Citation info for a segment.
+              &quot;endIndex&quot;: &quot;A String&quot;, # End of the attributed segment, exclusive.
+              &quot;sources&quot;: [ # Citation sources for the attributed segment.
+                { # Citation source.
+                  &quot;referenceId&quot;: &quot;A String&quot;, # ID of the citation source.
+                },
+              ],
+              &quot;startIndex&quot;: &quot;A String&quot;, # Index indicates the start of the segment, measured in bytes (UTF-8 unicode).
+            },
+          ],
+          &quot;completeTime&quot;: &quot;A String&quot;, # Output only. Answer completed timestamp.
+          &quot;createTime&quot;: &quot;A String&quot;, # Output only. Answer creation timestamp.
+          &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded the answer is by the reference chunks.
+          &quot;groundingSupports&quot;: [ # Optional. Grounding supports.
+            { # Grounding support for a claim in `answer_text`.
+              &quot;endIndex&quot;: &quot;A String&quot;, # Required. End of the claim, exclusive.
+              &quot;groundingCheckRequired&quot;: True or False, # Indicates that this claim required grounding check. When the system decided this claim didn&#x27;t require attribution/grounding check, this field is set to false. In that case, no grounding check was done for the claim and therefore `grounding_score`, `sources` is not returned.
+              &quot;groundingScore&quot;: 3.14, # A score in the range of [0, 1] describing how grounded is a specific claim by the references. Higher value means that the claim is better supported by the reference chunks.
+              &quot;sources&quot;: [ # Optional. Citation sources for the claim.
+                { # Citation source.
+                  &quot;referenceId&quot;: &quot;A String&quot;, # ID of the citation source.
+                },
+              ],
+              &quot;startIndex&quot;: &quot;A String&quot;, # Required. Index indicates the start of the claim, measured in bytes (UTF-8 unicode).
+            },
+          ],
+          &quot;name&quot;: &quot;A String&quot;, # Immutable. Fully qualified name `projects/{project}/locations/global/collections/{collection}/engines/{engine}/sessions/*/answers/*`
+          &quot;queryUnderstandingInfo&quot;: { # Query understanding information. # Query understanding information.
+            &quot;queryClassificationInfo&quot;: [ # Query classification information.
+              { # Query classification information.
+                &quot;positive&quot;: True or False, # Classification output.
+                &quot;type&quot;: &quot;A String&quot;, # Query classification type.
+              },
+            ],
+          },
+          &quot;references&quot;: [ # References.
+            { # Reference.
+              &quot;chunkInfo&quot;: { # Chunk information. # Chunk information.
+                &quot;chunk&quot;: &quot;A String&quot;, # Chunk resource name.
+                &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+                &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
+                  &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+                  &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+                  &quot;structData&quot;: { # The structured JSON metadata for the document. It is populated from the struct data from the Chunk in search result.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                  },
+                  &quot;title&quot;: &quot;A String&quot;, # Title.
+                  &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+                },
+                &quot;relevanceScore&quot;: 3.14, # The relevance of the chunk for a given query. Values range from 0.0 (completely irrelevant) to 1.0 (completely relevant). This value is for informational purpose only. It may change for the same query and chunk at any time due to a model retraining or change in implementation.
+              },
+              &quot;structuredDocumentInfo&quot;: { # Structured search information. # Structured document information.
+                &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+                &quot;structData&quot;: { # Structured search data.
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+              },
+              &quot;unstructuredDocumentInfo&quot;: { # Unstructured document information. # Unstructured document information.
+                &quot;chunkContents&quot;: [ # List of cited chunk contents derived from document content.
+                  { # Chunk content.
+                    &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+                    &quot;pageIdentifier&quot;: &quot;A String&quot;, # Page identifier.
+                    &quot;relevanceScore&quot;: 3.14, # The relevance of the chunk for a given query. Values range from 0.0 (completely irrelevant) to 1.0 (completely relevant). This value is for informational purpose only. It may change for the same query and chunk at any time due to a model retraining or change in implementation.
+                  },
+                ],
+                &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+                &quot;structData&quot;: { # The structured JSON metadata for the document. It is populated from the struct data from the Chunk in search result.
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+                &quot;title&quot;: &quot;A String&quot;, # Title.
+                &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+              },
+            },
+          ],
+          &quot;relatedQuestions&quot;: [ # Suggested related questions.
+            &quot;A String&quot;,
+          ],
+          &quot;state&quot;: &quot;A String&quot;, # The state of the answer generation.
+          &quot;steps&quot;: [ # Answer generation steps.
+            { # Step information.
+              &quot;actions&quot;: [ # Actions.
+                { # Action.
+                  &quot;observation&quot;: { # Observation. # Observation.
+                    &quot;searchResults&quot;: [ # Search results observed by the search action, it can be snippets info or chunk info, depending on the citation type set by the user.
+                      {
+                        &quot;chunkInfo&quot;: [ # If citation_type is CHUNK_LEVEL_CITATION and chunk mode is on, populate chunk info.
+                          { # Chunk information.
+                            &quot;chunk&quot;: &quot;A String&quot;, # Chunk resource name.
+                            &quot;content&quot;: &quot;A String&quot;, # Chunk textual content.
+                            &quot;relevanceScore&quot;: 3.14, # The relevance of the chunk for a given query. Values range from 0.0 (completely irrelevant) to 1.0 (completely relevant). This value is for informational purpose only. It may change for the same query and chunk at any time due to a model retraining or change in implementation.
+                          },
+                        ],
+                        &quot;document&quot;: &quot;A String&quot;, # Document resource name.
+                        &quot;snippetInfo&quot;: [ # If citation_type is DOCUMENT_LEVEL_CITATION, populate document level snippets.
+                          { # Snippet information.
+                            &quot;snippet&quot;: &quot;A String&quot;, # Snippet content.
+                            &quot;snippetStatus&quot;: &quot;A String&quot;, # Status of the snippet defined by the search team.
+                          },
+                        ],
+                        &quot;structData&quot;: { # Data representation. The structured JSON data for the document. It&#x27;s populated from the struct data from the Document, or the Chunk in search result.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
+                        &quot;title&quot;: &quot;A String&quot;, # Title.
+                        &quot;uri&quot;: &quot;A String&quot;, # URI for the document.
+                      },
+                    ],
+                  },
+                  &quot;searchAction&quot;: { # Search action. # Search action.
+                    &quot;query&quot;: &quot;A String&quot;, # The query to search.
+                  },
+                },
+              ],
+              &quot;description&quot;: &quot;A String&quot;, # The description of the step.
+              &quot;state&quot;: &quot;A String&quot;, # The state of the step.
+              &quot;thought&quot;: &quot;A String&quot;, # The thought of the step.
+            },
+          ],
+        },
+        &quot;query&quot;: { # Defines a user inputed query. # The user query.
+          &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
+          &quot;text&quot;: &quot;A String&quot;, # Plain text.
+        },
+      },
+    ],
+    &quot;userPseudoId&quot;: &quot;A String&quot;, # A unique identifier for tracking users.
+  },
+}</pre>
 </div>
 
 </body></html>

@@ -370,7 +370,7 @@
 "clusters": {
 "methods": {
 "backup": {
-"description": "Backup Redis Cluster. If this is the first time a backup is being created, a backup collection will be created at the backend, and this backup belongs to this collection. Both collection and backup will have a resource name. Backup will be executed for each shard. A replica (primary if nonHA) will be selected to perform the execution. Backup call will be rejected if there is an ongoing backup or update operation.",
+"description": "Backup Redis Cluster. If this is the first time a backup is being created, a backup collection will be created at the backend, and this backup belongs to this collection. Both collection and backup will have a resource name. Backup will be executed for each shard. A replica (primary if nonHA) will be selected to perform the execution. Backup call will be rejected if there is an ongoing backup or update operation. Be aware that during preview, if the cluster's internal software version is too old, critical update will be performed before actual backup. Once the internal software version is updated to the minimum version required by the backup feature, subsequent backups will not require critical update. After preview, there will be no critical update needed for backup.",
 "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/clusters/{clustersId}:backup",
 "httpMethod": "POST",
 "id": "redis.projects.locations.clusters.backup",
@@ -1067,7 +1067,7 @@
 }
 }
 },
-"revision": "20241114",
+"revision": "20241203",
 "rootUrl": "https://redis.googleapis.com/",
 "schemas": {
 "AOFConfig": {
@@ -1116,7 +1116,7 @@
 "description": "Optional. Trigger automated backups at a fixed frequency."
 },
 "retention": {
-"description": "Optional. How long to keep automated backups before the backups are deleted. If not specified, the default value is 100 years which is also the maximum value supported. The minimum value is 1 day.",
+"description": "Optional. How long to keep automated backups before the backups are deleted. The value should be between 1 day and 365 days. If not specified, the default value is 35 days.",
 "format": "google-duration",
 "type": "string"
 }
@@ -1257,13 +1257,15 @@
 "STATE_UNSPECIFIED",
 "CREATING",
 "ACTIVE",
-"DELETING"
+"DELETING",
+"SUSPENDED"
 ],
 "enumDescriptions": [
 "The default value, not set.",
 "The backup is being created.",
 "The backup is active to be used.",
-"The backup is being deleted."
+"The backup is being deleted.",
+"The backup is currently suspended due to reasons like project deletion, billing account closure, etc."
 ],
 "readOnly": true,
 "type": "string"
@@ -1271,6 +1273,11 @@
 "totalSizeBytes": {
 "description": "Output only. Total size of the backup in bytes.",
 "format": "int64",
+"readOnly": true,
+"type": "string"
+},
+"uid": {
+"description": "Output only. System assigned unique identifier of the backup.",
 "readOnly": true,
 "type": "string"
 }
@@ -1309,6 +1316,11 @@
 },
 "name": {
 "description": "Identifier. Full resource path of the backup collection.",
+"type": "string"
+},
+"uid": {
+"description": "Output only. System assigned unique identifier of the backup collection.",
+"readOnly": true,
 "type": "string"
 }
 },
@@ -1764,6 +1776,10 @@
 "description": "Detailed information of each PSC connection.",
 "id": "ConnectionDetail",
 "properties": {
+"pscAutoConnection": {
+"$ref": "PscAutoConnection",
+"description": "Detailed information of a PSC connection that is created through service connectivity automation."
+},
 "pscConnection": {
 "$ref": "PscConnection",
 "description": "Detailed information of a PSC connection that is created by the customer who owns the cluster."
@@ -2879,7 +2895,7 @@ false
 "properties": {
 "startTime": {
 "$ref": "TimeOfDay",
-"description": "Optional. The start time of every automated backup in UTC. It must be set to the start of an hour. If not specified, the default value is the start of the hour when the automated backup config is enabled. For example, if the automated backup config is enabled at 10:13 AM UTC without specifying start_time, the default start time is 10:00 AM UTC."
+"description": "Required. The start time of every automated backup in UTC. It must be set to the start of an hour. This field is required."
 }
 },
 "type": "object"
@@ -3959,6 +3975,73 @@ false
 },
 "version": {
 "description": "Version of the underlying database engine. Example values: For MySQL, it could be \"8.0\", \"5.7\" etc.. For Postgres, it could be \"14\", \"15\" etc..",
+"type": "string"
+}
+},
+"type": "object"
+},
+"PscAutoConnection": {
+"description": "Details of consumer resources in a PSC connection that is created through Service Connectivity Automation.",
+"id": "PscAutoConnection",
+"properties": {
+"address": {
+"description": "Output only. The IP allocated on the consumer network for the PSC forwarding rule.",
+"readOnly": true,
+"type": "string"
+},
+"connectionType": {
+"description": "Output only. Type of the PSC connection.",
+"enum": [
+"CONNECTION_TYPE_UNSPECIFIED",
+"CONNECTION_TYPE_DISCOVERY",
+"CONNECTION_TYPE_PRIMARY",
+"CONNECTION_TYPE_READER"
+],
+"enumDescriptions": [
+"Cluster endpoint Type is not set",
+"Cluster endpoint that will be used as for cluster topology discovery.",
+"Cluster endpoint that will be used as primary endpoint to access primary.",
+"Cluster endpoint that will be used as reader endpoint to access replicas."
+],
+"readOnly": true,
+"type": "string"
+},
+"forwardingRule": {
+"description": "Output only. The URI of the consumer side forwarding rule. Example: projects/{projectNumOrId}/regions/us-east1/forwardingRules/{resourceId}.",
+"readOnly": true,
+"type": "string"
+},
+"network": {
+"description": "Required. The consumer network where the IP address resides, in the form of projects/{project_id}/global/networks/{network_id}.",
+"type": "string"
+},
+"projectId": {
+"description": "Required. The consumer project_id where the forwarding rule is created from.",
+"type": "string"
+},
+"pscConnectionId": {
+"description": "Output only. The PSC connection id of the forwarding rule connected to the service attachment.",
+"readOnly": true,
+"type": "string"
+},
+"pscConnectionStatus": {
+"description": "Output only. The status of the PSC connection. Please note that this value is updated periodically. Please use Private Service Connect APIs for the latest status.",
+"enum": [
+"PSC_CONNECTION_STATUS_UNSPECIFIED",
+"PSC_CONNECTION_STATUS_ACTIVE",
+"PSC_CONNECTION_STATUS_NOT_FOUND"
+],
+"enumDescriptions": [
+"PSC connection status is not specified.",
+"The connection is active",
+"Connection not found"
+],
+"readOnly": true,
+"type": "string"
+},
+"serviceAttachment": {
+"description": "Output only. The service attachment which is the target of the PSC connection, in the form of projects/{project-id}/regions/{region}/serviceAttachments/{service-attachment-id}.",
+"readOnly": true,
 "type": "string"
 }
 },
