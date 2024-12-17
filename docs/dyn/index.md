@@ -1105,6 +1105,10 @@
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/securitycenter_v1beta2.html)
 
 
+## securityposture
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/securityposture_v1.html)
+
+
 ## serviceconsumermanagement
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/serviceconsumermanagement_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/serviceconsumermanagement_v1beta1.html)
