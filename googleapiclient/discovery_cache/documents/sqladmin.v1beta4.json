@@ -1193,7 +1193,7 @@
 ],
 "parameters": {
 "failover": {
-"description": "Set to true to invoke a replica failover to the designated DR replica. As part of replica failover, the promote operation attempts to add the original primary instance as a replica of the promoted DR replica when the original primary instance comes back online. If set to false or not specified, then the original primary instance becomes an independent Cloud SQL primary instance. Only applicable to MySQL.",
+"description": "Set to true to invoke a replica failover to the DR replica. As part of replica failover, the promote operation attempts to add the original primary instance as a replica of the promoted DR replica when the original primary instance comes back online. If set to false or not specified, then the original primary instance becomes an independent Cloud SQL primary instance.",
 "location": "query",
 "type": "boolean"
 },
@@ -1485,7 +1485,7 @@
 ]
 },
 "switchover": {
-"description": "Switches over from the primary instance to the designated DR replica instance.",
+"description": "Switches over from the primary instance to the DR replica instance.",
 "flatPath": "sql/v1beta4/projects/{project}/instances/{instance}/switchover",
 "httpMethod": "POST",
 "id": "sql.instances.switchover",
@@ -1495,7 +1495,7 @@
 ],
 "parameters": {
 "dbTimeout": {
-"description": "Optional. (MySQL only) Cloud SQL instance operations timeout, which is a sum of all database operations. Default value is 10 minutes and can be modified to a maximum value of 24 hours.",
+"description": "Optional. (MySQL and PostgreSQL only) Cloud SQL instance operations timeout, which is a sum of all database operations. Default value is 10 minutes and can be modified to a maximum value of 24 hours.",
 "format": "google-duration",
 "location": "query",
 "type": "string"
@@ -2366,7 +2366,7 @@
 }
 }
 },
-"revision": "20241108",
+"revision": "20241204",
 "rootUrl": "https://sqladmin.googleapis.com/",
 "schemas": {
 "AclEntry": {
@@ -2855,6 +2855,13 @@ false
 "On premises instance."
 ],
 "type": "string"
+},
+"customSubjectAlternativeNames": {
+"description": "Custom subject alternative names for the server certificate.",
+"items": {
+"type": "string"
+},
+"type": "array"
 },
 "databaseVersion": {
 "description": "The database engine type and version. The `databaseVersion` field cannot be changed after instance creation. MySQL instances: `MYSQL_8_0`, `MYSQL_5_7` (default), or `MYSQL_5_6`. PostgreSQL instances: `POSTGRES_9_6`, `POSTGRES_10`, `POSTGRES_11` or `POSTGRES_12` (default), `POSTGRES_13`, or `POSTGRES_14`. SQL Server instances: `SQLSERVER_2017_STANDARD` (default), `SQLSERVER_2017_ENTERPRISE`, `SQLSERVER_2017_EXPRESS`, `SQLSERVER_2017_WEB`, `SQLSERVER_2019_STANDARD`, `SQLSERVER_2019_ENTERPRISE`, `SQLSERVER_2019_EXPRESS`, or `SQLSERVER_2019_WEB`.",
@@ -3448,7 +3455,7 @@ false
 },
 "replicationCluster": {
 "$ref": "ReplicationCluster",
-"description": "A primary instance and disaster recovery (DR) replica pair. A DR replica is a cross-region replica that you designate for failover in the event that the primary instance experiences regional failure. Only applicable to MySQL."
+"description": "A primary instance and disaster recovery (DR) replica pair. A DR replica is a cross-region replica that you designate for failover in the event that the primary instance experiences regional failure. Applicable to MySQL and PostgreSQL."
 },
 "rootPassword": {
 "description": "Initial root password. Use only on creation. You must set root passwords before you can connect to PostgreSQL instances.",
@@ -3559,6 +3566,13 @@ true
 "switchTransactionLogsToCloudStorageEnabled": {
 "description": "Input only. Whether Cloud SQL is enabled to switch storing point-in-time recovery log files from a data disk to Cloud Storage.",
 "type": "boolean"
+},
+"tags": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "Optional. Input only. Immutable. Tag keys and tag values that are bound to this instance. You must represent each item in the map as: `\"\" : \"\"`. For example, a single resource can have the following tags: ``` \"123/environment\": \"production\", \"123/costCenter\": \"marketing\", ``` For more information on tag creation and management, see https://cloud.google.com/resource-manager/docs/tags/tags-overview.",
+"type": "object"
 },
 "upgradableDatabaseVersions": {
 "description": "Output only. All database versions that are available for upgrade.",
@@ -4682,6 +4696,13 @@ false
 },
 "type": "array"
 },
+"customSubjectAlternativeNames": {
+"description": "Optional. Custom Subject Alternative Name(SAN)s for a Cloud SQL instance.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
 "enablePrivatePathForGoogleCloudServices": {
 "description": "Controls connectivity to private IP instances from Google services, such as BigQuery.",
 "type": "boolean"
@@ -4707,13 +4728,19 @@ false
 "enum": [
 "CA_MODE_UNSPECIFIED",
 "GOOGLE_MANAGED_INTERNAL_CA",
-"GOOGLE_MANAGED_CAS_CA"
+"GOOGLE_MANAGED_CAS_CA",
+"CUSTOMER_MANAGED_CAS_CA"
 ],
 "enumDescriptions": [
 "CA mode is unspecified. It is effectively the same as `GOOGLE_MANAGED_INTERNAL_CA`.",
 "Google-managed self-signed internal CA.",
-"Google-managed regional CA part of root CA hierarchy hosted on Google Cloud's Certificate Authority Service (CAS)."
+"Google-managed regional CA part of root CA hierarchy hosted on Google Cloud's Certificate Authority Service (CAS).",
+"Customer-managed CA hosted on Google Cloud's Certificate Authority Service (CAS)."
 ],
+"type": "string"
+},
+"serverCaPool": {
+"description": "Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects//locations//caPools/",
 "type": "string"
 },
 "sslMode": {
@@ -5185,6 +5212,10 @@ false
 ],
 "type": "string"
 },
+"subOperationType": {
+"$ref": "SqlSubOperationType",
+"description": "Optional. The sub operation based on the operation type."
+},
 "targetId": {
 "description": "Name of the database instance related to this operation.",
 "type": "string"
@@ -5250,7 +5281,7 @@ false
 "type": "string"
 },
 "cancelRequested": {
-"description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have Operation.error value with a google.rpc.Status.code of 1, corresponding to `Code.CANCELLED`.",
+"description": "Output only. Identifies whether the user has requested cancellation of the operation. Operations that have been cancelled successfully have google.longrunning.Operation.error value with a google.rpc.Status.code of `1`, corresponding to `Code.CANCELLED`.",
 "readOnly": true,
 "type": "boolean"
 },
@@ -5457,7 +5488,7 @@ false
 "type": "object"
 },
 "ReplicationCluster": {
-"description": "A primary instance and disaster recovery (DR) replica pair. A DR replica is a cross-region replica that you designate for failover in the event that the primary instance has regional failure. Only applicable to MySQL.",
+"description": "A primary instance and disaster recovery (DR) replica pair. A DR replica is a cross-region replica that you designate for failover in the event that the primary instance has regional failure. Applicable to MySQL and PostgreSQL.",
 "id": "ReplicationCluster",
 "properties": {
 "drReplica": {
@@ -5470,7 +5501,7 @@ false
 "type": "string"
 },
 "psaWriteEndpoint": {
-"description": "Output only. If set, it indicates this instance has a private service access (PSA) dns endpoint that is pointing to the primary instance of the cluster. If this instance is the primary, the dns should be pointing to this instance. After Switchover or Replica failover, this DNS endpoint points to the promoted instance. This is a read-only field, returned to the user as information. This field can exist even if a standalone instance does not yet have a replica, or had a DR replica that was deleted.",
+"description": "Output only. If set, this field indicates this instance has a private service access (PSA) DNS endpoint that is pointing to the primary instance of the cluster. If this instance is the primary, then the DNS endpoint points to this instance. After a switchover or replica failover operation, this DNS endpoint points to the promoted instance. This is a read-only field, returned to the user as information. This field can exist even if a standalone instance doesn't have a DR replica yet or the DR replica is deleted.",
 "readOnly": true,
 "type": "string"
 }
@@ -6295,6 +6326,31 @@ true
 "type": "string"
 },
 "type": "array"
+}
+},
+"type": "object"
+},
+"SqlSubOperationType": {
+"description": "The sub operation type based on the operation type.",
+"id": "SqlSubOperationType",
+"properties": {
+"maintenanceType": {
+"description": "The type of maintenance to be performed on the instance.",
+"enum": [
+"SQL_MAINTENANCE_TYPE_UNSPECIFIED",
+"INSTANCE_MAINTENANCE",
+"REPLICA_INCLUDED_MAINTENANCE",
+"INSTANCE_SELF_SERVICE_MAINTENANCE",
+"REPLICA_INCLUDED_SELF_SERVICE_MAINTENANCE"
+],
+"enumDescriptions": [
+"Maintenance type is unspecified.",
+"Indicates that a standalone instance is undergoing maintenance. The instance can be either a primary instance or a replica.",
+"Indicates that the primary instance and all of its replicas, including cascading replicas, are undergoing maintenance. Maintenance is performed on groups of replicas first, followed by the primary instance.",
+"Indicates that the standalone instance is undergoing maintenance, initiated by self-service. The instance can be either a primary instance or a replica.",
+"Indicates that the primary instance and all of its replicas are undergoing maintenance, initiated by self-service. Maintenance is performed on groups of replicas first, followed by the primary instance."
+],
+"type": "string"
 }
 },
 "type": "object"
