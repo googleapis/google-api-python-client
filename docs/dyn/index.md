@@ -143,6 +143,10 @@
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/area120tables_v1alpha1.html)
 
 
+## areainsights
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/areainsights_v1.html)
+
+
 ## artifactregistry
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/artifactregistry_v1beta1.html)
