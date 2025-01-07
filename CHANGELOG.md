@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.158.0](https://github.com/googleapis/google-api-python-client/compare/v2.157.0...v2.158.0) (2025-01-07)
+
+
+### Features
+
+* **adsenseplatform:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/2e08aa478378c61ad8051bef05ea9ced6c9b5208 ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **analyticshub:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/be62507dcd0ce2cc5c70a84b768c1e7dbebdc180 ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **androidenterprise:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b2db0a32020e3bc10f05931ec6c3a14a405b289e ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **chat:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/a00cf4154f2dd1dd4a3456bf484c534c93879c27 ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **connectors:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/ee7ce06b6aa5adf11ec2ee2119148e0dc9252838 ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **datamigration:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/f6ddabbb69af5fab6b590c070cdfabf8c1e61d64 ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **deploymentmanager:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/79e1bcbfe6c44f1e71125c5ebc61c1feef3a40de ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **firebaseml:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/e788b57c719f562843c143ec8750140e826ae194 ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+* **serviceusage:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/0ed3e908aec5579ea878e653b69f9a0bcbfcd1ce ([5313113](https://github.com/googleapis/google-api-python-client/commit/5313113e489e40db2efa94fbc436d09383547f69))
+
 ## [2.157.0](https://github.com/googleapis/google-api-python-client/compare/v2.156.0...v2.157.0) (2024-12-24)
 
 
