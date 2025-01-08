@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
 
-This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google_api_client_libraries)
+This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google-api-client-libraries)
 for Google's discovery based APIs. To get started, please see the
 [docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md).
 
