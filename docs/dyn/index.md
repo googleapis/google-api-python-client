@@ -1056,10 +1056,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/reseller_v1.html)
 
 
-## resourcesettings
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/resourcesettings_v1.html)
-
-
 ## retail
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/retail_v2.html)
 * [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/retail_v2alpha.html)
