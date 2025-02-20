@@ -518,6 +518,7 @@
 ## displayvideo
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v3.html)
+* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v4.html)
 
 
 ## dlp
@@ -1054,10 +1055,6 @@
 
 ## reseller
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/reseller_v1.html)
-
-
-## resourcesettings
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/resourcesettings_v1.html)
 
 
 ## retail

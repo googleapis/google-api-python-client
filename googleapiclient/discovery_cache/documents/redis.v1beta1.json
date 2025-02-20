@@ -573,7 +573,7 @@
 "type": "string"
 },
 "updateMask": {
-"description": "Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields from Cluster: * `size_gb` * `replica_count`",
+"description": "Required. Mask of fields to update. At least one path must be supplied in this field. The elements of the repeated paths field may only include these fields from Cluster: * `size_gb` * `replica_count` * `cluster_endpoints`",
 "format": "google-fieldmask",
 "location": "query",
 "type": "string"
@@ -1067,7 +1067,7 @@
 }
 }
 },
-"revision": "20241212",
+"revision": "20250206",
 "rootUrl": "https://redis.googleapis.com/",
 "schemas": {
 "AOFConfig": {
@@ -1205,6 +1205,11 @@
 "readOnly": true,
 "type": "string"
 },
+"encryptionInfo": {
+"$ref": "EncryptionInfo",
+"description": "Output only. Encryption information of the backup.",
+"readOnly": true
+},
 "engineVersion": {
 "description": "Output only. redis-7.2, valkey-7.5",
 "readOnly": true,
@@ -1311,6 +1316,17 @@
 },
 "clusterUid": {
 "description": "Output only. The cluster uid of the backup collection.",
+"readOnly": true,
+"type": "string"
+},
+"createTime": {
+"description": "Output only. The time when the backup collection was created.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"kmsKey": {
+"description": "Output only. The KMS key used to encrypt the backups under this backup collection.",
 "readOnly": true,
 "type": "string"
 },
@@ -1435,6 +1451,10 @@
 "description": "A cluster instance.",
 "id": "Cluster",
 "properties": {
+"asyncClusterEndpointsDeletionEnabled": {
+"description": "Optional. If true, cluster endpoints that are created and registered by customers can be deleted asynchronously. That is, such a cluster endpoint can be de-registered before the forwarding rules in the cluster endpoint are deleted.",
+"type": "boolean"
+},
 "authorizationMode": {
 "description": "Optional. The authorization mode of the Redis cluster. If not provided, auth feature is disabled for the cluster.",
 "enum": [
@@ -1487,9 +1507,18 @@
 "readOnly": true,
 "type": "array"
 },
+"encryptionInfo": {
+"$ref": "EncryptionInfo",
+"description": "Output only. Encryption information of the data at rest of the cluster.",
+"readOnly": true
+},
 "gcsSource": {
 "$ref": "GcsBackupSource",
 "description": "Optional. Backups stored in Cloud Storage buckets. The Cloud Storage buckets need to be the same region as the clusters. Read permission is required to import from the provided Cloud Storage objects."
+},
+"kmsKey": {
+"description": "Optional. The KMS key used to encrypt the at-rest data of the cluster.",
+"type": "string"
 },
 "maintenancePolicy": {
 "$ref": "ClusterMaintenancePolicy",
@@ -2084,7 +2113,13 @@
 "SIGNAL_TYPE_DATA_EXPORT_TO_EXTERNAL_CLOUD_STORAGE_BUCKET",
 "SIGNAL_TYPE_DATA_EXPORT_TO_PUBLIC_CLOUD_STORAGE_BUCKET",
 "SIGNAL_TYPE_WEAK_PASSWORD_HASH_ALGORITHM",
-"SIGNAL_TYPE_NO_USER_PASSWORD_POLICY"
+"SIGNAL_TYPE_NO_USER_PASSWORD_POLICY",
+"SIGNAL_TYPE_HOT_NODE",
+"SIGNAL_TYPE_NO_POINT_IN_TIME_RECOVERY",
+"SIGNAL_TYPE_RESOURCE_SUSPENDED",
+"SIGNAL_TYPE_EXPENSIVE_COMMANDS",
+"SIGNAL_TYPE_NO_MAINTENANCE_POLICY_CONFIGURED",
+"SIGNAL_TYPE_NO_DELETION_PROTECTION"
 ],
 "enumDeprecated": [
 false,
@@ -2092,6 +2127,12 @@ false,
 false,
 true,
 true,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,
@@ -2250,7 +2291,13 @@ false
 "Detects if database instance data exported to a Cloud Storage bucket outside of the organization.",
 "Detects if database instance data exported to a Cloud Storage bucket that is owned by the organization and is publicly accessible.",
 "Detects if a database instance is using a weak password hash algorithm.",
-"Detects if a database instance has no user password policy set."
+"Detects if a database instance has no user password policy set.",
+"Detects if a database instance/cluster has a hot node.",
+"Detects if a database instance has no point in time recovery enabled.",
+"Detects if a database instance/cluster is suspended.",
+"Detects that expensive commands are being run on a database instance impacting overall performance.",
+"Indicates that the instance does not have a maintenance policy configured.",
+"Deletion Protection Disabled for the resource"
 ],
 "type": "string"
 },
@@ -2314,7 +2361,7 @@ false
 "type": "object"
 },
 "DatabaseResourceMetadata": {
-"description": "Common model for database resource instance metadata. Next ID: 23",
+"description": "Common model for database resource instance metadata. Next ID: 24",
 "id": "DatabaseResourceMetadata",
 "properties": {
 "availabilityConfiguration": {
@@ -2415,6 +2462,7 @@ false
 "SUB_RESOURCE_TYPE_PRIMARY",
 "SUB_RESOURCE_TYPE_SECONDARY",
 "SUB_RESOURCE_TYPE_READ_REPLICA",
+"SUB_RESOURCE_TYPE_EXTERNAL_PRIMARY",
 "SUB_RESOURCE_TYPE_OTHER"
 ],
 "enumDeprecated": [
@@ -2427,10 +2475,11 @@ true,
 false,
 false,
 false,
+false,
 false
 ],
 "enumDescriptions": [
-"",
+"Unspecified.",
 "For rest of the other categories.",
 "A regular primary database instance.",
 "A cluster or an instance acting as a secondary.",
@@ -2439,6 +2488,7 @@ false
 "A regular primary database instance.",
 "A cluster or an instance acting as a secondary.",
 "An instance acting as a read-replica.",
+"An instance acting as an external primary.",
 "For rest of the other categories."
 ],
 "type": "string"
@@ -2469,6 +2519,28 @@ false
 },
 "resourceName": {
 "description": "Required. Different from DatabaseResourceId.unique_id, a resource name can be reused over time. That is, after a resource named \"ABC\" is deleted, the name \"ABC\" can be used to to create a new resource within the same source. Resource name to follow CAIS resource_name format as noted here go/condor-common-datamodel",
+"type": "string"
+},
+"suspensionReason": {
+"description": "Suspension reason for the resource.",
+"enum": [
+"SUSPENSION_REASON_UNSPECIFIED",
+"WIPEOUT_HIDE_EVENT",
+"WIPEOUT_PURGE_EVENT",
+"BILLING_DISABLED",
+"ABUSER_DETECTED",
+"ENCRYPTION_KEY_INACCESSIBLE",
+"REPLICATED_CLUSTER_ENCRYPTION_KEY_INACCESSIBLE"
+],
+"enumDescriptions": [
+"Suspension reason is unspecified.",
+"Wipeout hide event.",
+"Wipeout purge event.",
+"Billing disabled for project",
+"Abuse detected for resource",
+"Encryption key inaccessible.",
+"Replicated cluster encryption key inaccessible."
+],
 "type": "string"
 },
 "tagsSet": {
@@ -2623,7 +2695,13 @@ false
 "SIGNAL_TYPE_DATA_EXPORT_TO_EXTERNAL_CLOUD_STORAGE_BUCKET",
 "SIGNAL_TYPE_DATA_EXPORT_TO_PUBLIC_CLOUD_STORAGE_BUCKET",
 "SIGNAL_TYPE_WEAK_PASSWORD_HASH_ALGORITHM",
-"SIGNAL_TYPE_NO_USER_PASSWORD_POLICY"
+"SIGNAL_TYPE_NO_USER_PASSWORD_POLICY",
+"SIGNAL_TYPE_HOT_NODE",
+"SIGNAL_TYPE_NO_POINT_IN_TIME_RECOVERY",
+"SIGNAL_TYPE_RESOURCE_SUSPENDED",
+"SIGNAL_TYPE_EXPENSIVE_COMMANDS",
+"SIGNAL_TYPE_NO_MAINTENANCE_POLICY_CONFIGURED",
+"SIGNAL_TYPE_NO_DELETION_PROTECTION"
 ],
 "enumDeprecated": [
 false,
@@ -2631,6 +2709,12 @@ false,
 false,
 true,
 true,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,
@@ -2789,7 +2873,13 @@ false
 "Detects if database instance data exported to a Cloud Storage bucket outside of the organization.",
 "Detects if database instance data exported to a Cloud Storage bucket that is owned by the organization and is publicly accessible.",
 "Detects if a database instance is using a weak password hash algorithm.",
-"Detects if a database instance has no user password policy set."
+"Detects if a database instance has no user password policy set.",
+"Detects if a database instance/cluster has a hot node.",
+"Detects if a database instance has no point in time recovery enabled.",
+"Detects if a database instance/cluster is suspended.",
+"Detects that expensive commands are being run on a database instance impacting overall performance.",
+"Indicates that the instance does not have a maintenance policy configured.",
+"Deletion Protection Disabled for the resource"
 ],
 "type": "string"
 }
@@ -2825,6 +2915,69 @@ false
 "properties": {},
 "type": "object"
 },
+"EncryptionInfo": {
+"description": "EncryptionInfo describes the encryption information of a cluster or a backup.",
+"id": "EncryptionInfo",
+"properties": {
+"encryptionType": {
+"description": "Output only. Type of encryption.",
+"enum": [
+"TYPE_UNSPECIFIED",
+"GOOGLE_DEFAULT_ENCRYPTION",
+"CUSTOMER_MANAGED_ENCRYPTION"
+],
+"enumDescriptions": [
+"Encryption type not specified. Defaults to GOOGLE_DEFAULT_ENCRYPTION.",
+"The data is encrypted at rest with a key that is fully managed by Google. No key version will be populated. This is the default state.",
+"The data is encrypted at rest with a key that is managed by the customer. KMS key versions will be populated."
+],
+"readOnly": true,
+"type": "string"
+},
+"kmsKeyPrimaryState": {
+"description": "Output only. The state of the primary version of the KMS key perceived by the system. This field is not populated in backups.",
+"enum": [
+"KMS_KEY_STATE_UNSPECIFIED",
+"ENABLED",
+"PERMISSION_DENIED",
+"DISABLED",
+"DESTROYED",
+"DESTROY_SCHEDULED",
+"EKM_KEY_UNREACHABLE_DETECTED",
+"BILLING_DISABLED",
+"UNKNOWN_FAILURE"
+],
+"enumDescriptions": [
+"The default value. This value is unused.",
+"The KMS key is enabled and correctly configured.",
+"Permission denied on the KMS key.",
+"The KMS key is disabled.",
+"The KMS key is destroyed.",
+"The KMS key is scheduled to be destroyed.",
+"The EKM key is unreachable.",
+"Billing is disabled for the project.",
+"All other unknown failures."
+],
+"readOnly": true,
+"type": "string"
+},
+"kmsKeyVersions": {
+"description": "Output only. KMS key versions that are being used to protect the data at-rest.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
+},
+"lastUpdateTime": {
+"description": "Output only. The most recent time when the encryption info was updated.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
 "Entitlement": {
 "description": "Proto representing the access that a user has to a specific feature/service. NextId: 3.",
 "id": "Entitlement",
@@ -2847,11 +3000,21 @@ false
 "description": "An enum that represents the type of this entitlement.",
 "enum": [
 "ENTITLEMENT_TYPE_UNSPECIFIED",
-"GEMINI"
+"GEMINI",
+"NATIVE",
+"GCA_STANDARD"
+],
+"enumDeprecated": [
+false,
+true,
+false,
+false
 ],
 "enumDescriptions": [
-"",
-"The root entitlement representing Gemini package ownership."
+"The entitlement type is unspecified.",
+"The root entitlement representing Gemini package ownership.This will no longer be supported in the future.",
+"The entitlement representing Native Tier, This will be the default Entitlement going forward with GCA Enablement.",
+"The entitlement representing GCA-Standard Tier."
 ],
 "type": "string"
 }
@@ -3320,6 +3483,10 @@ false
 "$ref": "BackupRun",
 "description": "Information about the last backup attempt for this database"
 },
+"isDeletionProtectionEnabled": {
+"description": "Whether deletion protection is enabled for this internal resource.",
+"type": "boolean"
+},
 "product": {
 "$ref": "Product"
 },
@@ -3508,7 +3675,8 @@ false
 "id": "MachineConfiguration",
 "properties": {
 "cpuCount": {
-"description": "The number of CPUs. TODO(b/342344482, b/342346271) add proto validations again after bug fix.",
+"deprecated": true,
+"description": "The number of CPUs. Deprecated. Use vcpu_count instead. TODO(b/342344482, b/342346271) add proto validations again after bug fix.",
 "format": "int32",
 "type": "integer"
 },
@@ -3680,7 +3848,10 @@ false
 "MEMORY_UTILIZATION",
 "NETWORK_CONNECTIONS",
 "STORAGE_UTILIZATION",
-"STORAGE_USED_BYTES"
+"STORAGE_USED_BYTES",
+"NODE_COUNT",
+"MEMORY_USED_BYTES",
+"PROCESSING_UNIT_COUNT"
 ],
 "enumDescriptions": [
 "Unspecified metric type.",
@@ -3688,7 +3859,10 @@ false
 "Memory utilization for a resource. The value is a fraction between 0.0 and 1.0 (may momentarily exceed 1.0 in some cases).",
 "Number of network connections for a resource.",
 "Storage utilization for a resource. The value is a fraction between 0.0 and 1.0 (may momentarily exceed 1.0 in some cases).",
-"Sotrage used by a resource."
+"Sotrage used by a resource.",
+"Node count for a resource. It represents the number of node units in a bigtable/spanner instance.",
+"Memory used by a resource (in bytes).",
+"Processing units used by a resource. It represents the number of processing units in a spanner instance."
 ],
 "type": "string"
 },
@@ -4481,6 +4655,24 @@ false
 "description": "Represents information about an updating cluster.",
 "id": "UpdateInfo",
 "properties": {
+"targetNodeType": {
+"description": "Target node type for redis cluster.",
+"enum": [
+"NODE_TYPE_UNSPECIFIED",
+"REDIS_SHARED_CORE_NANO",
+"REDIS_HIGHMEM_MEDIUM",
+"REDIS_HIGHMEM_XLARGE",
+"REDIS_STANDARD_SMALL"
+],
+"enumDescriptions": [
+"Node type unspecified",
+"Redis shared core nano node_type.",
+"Redis highmem medium node_type.",
+"Redis highmem xlarge node_type.",
+"Redis standard small node_type."
+],
+"type": "string"
+},
 "targetReplicaCount": {
 "description": "Target number of replica nodes per shard.",
 "format": "int32",
