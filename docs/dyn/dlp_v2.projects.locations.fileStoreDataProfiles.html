@@ -277,6 +277,14 @@ Returns:
           &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
         },
       },
+      &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+        &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+          &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+          },
+          &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+          },
+        },
+      },
       &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
       &quot;targets&quot;: [ # Target to match against for determining what to scan and how frequently.
         { # Target used to match against for Discovery.
@@ -473,6 +481,36 @@ Returns:
             },
           },
           &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
+          },
+          &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+            &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+              &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+              &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+            },
+            &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+            },
+            &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+              &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+                &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+                  &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                    { # A pattern to match against one or more dataset resources.
+                      &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                    },
+                  ],
+                },
+              },
+              &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+              },
+              &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+                &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+              },
+            },
+            &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+              &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+                &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+              },
+              &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+            },
           },
         },
       ],
@@ -734,7 +772,7 @@ Returns:
   ],
   &quot;fileStoreIsEmpty&quot;: True or False, # The file store does not have any files.
   &quot;fileStoreLocation&quot;: &quot;A String&quot;, # The location of the file store. * Cloud Storage: https://cloud.google.com/storage/docs/locations#available-locations * Amazon S3: https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
-  &quot;fileStorePath&quot;: &quot;A String&quot;, # The file store path. * Cloud Storage: `gs://{bucket}` * Amazon S3: `s3://{bucket}`
+  &quot;fileStorePath&quot;: &quot;A String&quot;, # The file store path. * Cloud Storage: `gs://{bucket}` * Amazon S3: `s3://{bucket}` * Vertex AI dataset: `projects/{project_number}/locations/{location}/datasets/{dataset_id}`
   &quot;fullResource&quot;: &quot;A String&quot;, # The resource name of the resource profiled. https://cloud.google.com/apis/design/resource_names#full_resource_name Example format of an S3 bucket full resource name: `//cloudasset.googleapis.com/organizations/{org_id}/otherCloudConnections/aws/arn:aws:s3:::{bucket_name}`
   &quot;lastModifiedTime&quot;: &quot;A String&quot;, # The time the file store was last modified.
   &quot;locationType&quot;: &quot;A String&quot;, # The location type of the file store (region, dual-region, multi-region, etc). If dual-region, expect data_storage_locations to be populated.
@@ -754,6 +792,11 @@ Returns:
   },
   &quot;projectDataProfile&quot;: &quot;A String&quot;, # The resource name of the project data profile for this file store.
   &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID that owns the resource. For Amazon S3 buckets, this is the AWS Account Id.
+  &quot;relatedResources&quot;: [ # Resources related to this profile.
+    { # A related resource. Examples: * The source BigQuery table for a Vertex AI dataset. * The source Cloud Storage bucket for a Vertex AI dataset.
+      &quot;fullResource&quot;: &quot;A String&quot;, # The full resource name of the related resource.
+    },
+  ],
   &quot;resourceAttributes&quot;: { # Attributes of the resource being profiled. Currently used attributes: * customer_managed_encryption: boolean - true: the resource is encrypted with a customer-managed key. - false: the resource is encrypted with a provider-managed key.
     &quot;a_key&quot;: { # Set of primitive values supported by the system. Note that for the purposes of inspection or transformation, the number of bytes considered to comprise a &#x27;Value&#x27; is based on its representation as a UTF-8 encoded string. For example, if &#x27;integer_value&#x27; is set to 123456789, the number of bytes would be counted as 9, even though an int64 only holds up to 8 bytes of data.
       &quot;booleanValue&quot;: True or False, # boolean
@@ -956,6 +999,14 @@ Returns:
               &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
             },
           },
+          &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+            &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+              &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+              },
+              &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+              },
+            },
+          },
           &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
           &quot;targets&quot;: [ # Target to match against for determining what to scan and how frequently.
             { # Target used to match against for Discovery.
@@ -1152,6 +1203,36 @@ Returns:
                 },
               },
               &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
+              },
+              &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+                &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+                  &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+                  &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+                },
+                &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+                },
+                &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+                  &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+                    &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+                      &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                        { # A pattern to match against one or more dataset resources.
+                          &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                        },
+                      ],
+                    },
+                  },
+                  &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+                  },
+                  &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+                    &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+                  },
+                },
+                &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+                  &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+                    &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+                  },
+                  &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+                },
               },
             },
           ],
@@ -1413,7 +1494,7 @@ Returns:
       ],
       &quot;fileStoreIsEmpty&quot;: True or False, # The file store does not have any files.
       &quot;fileStoreLocation&quot;: &quot;A String&quot;, # The location of the file store. * Cloud Storage: https://cloud.google.com/storage/docs/locations#available-locations * Amazon S3: https://docs.aws.amazon.com/general/latest/gr/rande.html#regional-endpoints
-      &quot;fileStorePath&quot;: &quot;A String&quot;, # The file store path. * Cloud Storage: `gs://{bucket}` * Amazon S3: `s3://{bucket}`
+      &quot;fileStorePath&quot;: &quot;A String&quot;, # The file store path. * Cloud Storage: `gs://{bucket}` * Amazon S3: `s3://{bucket}` * Vertex AI dataset: `projects/{project_number}/locations/{location}/datasets/{dataset_id}`
       &quot;fullResource&quot;: &quot;A String&quot;, # The resource name of the resource profiled. https://cloud.google.com/apis/design/resource_names#full_resource_name Example format of an S3 bucket full resource name: `//cloudasset.googleapis.com/organizations/{org_id}/otherCloudConnections/aws/arn:aws:s3:::{bucket_name}`
       &quot;lastModifiedTime&quot;: &quot;A String&quot;, # The time the file store was last modified.
       &quot;locationType&quot;: &quot;A String&quot;, # The location type of the file store (region, dual-region, multi-region, etc). If dual-region, expect data_storage_locations to be populated.
@@ -1433,6 +1514,11 @@ Returns:
       },
       &quot;projectDataProfile&quot;: &quot;A String&quot;, # The resource name of the project data profile for this file store.
       &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID that owns the resource. For Amazon S3 buckets, this is the AWS Account Id.
+      &quot;relatedResources&quot;: [ # Resources related to this profile.
+        { # A related resource. Examples: * The source BigQuery table for a Vertex AI dataset. * The source Cloud Storage bucket for a Vertex AI dataset.
+          &quot;fullResource&quot;: &quot;A String&quot;, # The full resource name of the related resource.
+        },
+      ],
       &quot;resourceAttributes&quot;: { # Attributes of the resource being profiled. Currently used attributes: * customer_managed_encryption: boolean - true: the resource is encrypted with a customer-managed key. - false: the resource is encrypted with a provider-managed key.
         &quot;a_key&quot;: { # Set of primitive values supported by the system. Note that for the purposes of inspection or transformation, the number of bytes considered to comprise a &#x27;Value&#x27; is based on its representation as a UTF-8 encoded string. For example, if &#x27;integer_value&#x27; is set to 123456789, the number of bytes would be counted as 9, even though an int64 only holds up to 8 bytes of data.
           &quot;booleanValue&quot;: True or False, # boolean

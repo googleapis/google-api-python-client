@@ -297,6 +297,9 @@ h1, h2, h3 {
   <code><a href="#deploy">deploy(destination, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Deploys publisher models.</p>
 <p class="toc_element">
+  <code><a href="#evaluateDataset">evaluateDataset(location, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Evaluates a dataset based on a set of given metrics.</p>
+<p class="toc_element">
   <code><a href="#evaluateInstances">evaluateInstances(location, body=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Evaluates instances based on a given metric.</p>
 <p class="toc_element">
@@ -581,18 +584,17 @@ Args:
 
 { # Request message for ModelGardenService.DeployPublisherModel.
   &quot;acceptEula&quot;: True or False, # Optional. Whether the user accepts the End User License Agreement (EULA) for the model.
-  &quot;dedicatedResources&quot;: { # A description of resources that are dedicated to a DeployedModel, and that need a higher degree of manual configuration. # Optional. The dedicated resources to use for the endpoint. If not set, the default resources will be used.
+  &quot;dedicatedResources&quot;: { # A description of resources that are dedicated to a DeployedModel or DeployedIndex, and that need a higher degree of manual configuration. # Optional. The dedicated resources to use for the endpoint. If not set, the default resources will be used.
     &quot;autoscalingMetricSpecs&quot;: [ # Immutable. The metric specifications that overrides a resource utilization metric (CPU utilization, accelerator&#x27;s duty cycle, and so on) target value (default to 60 if not set). At most one entry is allowed per metric. If machine_spec.accelerator_count is above 0, the autoscaling will be based on both CPU utilization and accelerator&#x27;s duty cycle metrics and scale up when either metrics exceeds its target value while scale down if both metrics are under their target value. The default target value is 60 for both metrics. If machine_spec.accelerator_count is 0, the autoscaling will be based on CPU utilization metric only with default target value 60 if not explicitly set. For example, in the case of Online Prediction, if you want to override target CPU utilization to 80, you should set autoscaling_metric_specs.metric_name to `aiplatform.googleapis.com/prediction/online/cpu/utilization` and autoscaling_metric_specs.target to `80`.
       { # The metric specification that defines the target resource utilization (CPU utilization, accelerator&#x27;s duty cycle, and so on) for calculating the desired replica count.
         &quot;metricName&quot;: &quot;A String&quot;, # Required. The resource metric name. Supported metrics: * For Online Prediction: * `aiplatform.googleapis.com/prediction/online/accelerator/duty_cycle` * `aiplatform.googleapis.com/prediction/online/cpu/utilization`
         &quot;target&quot;: 42, # The target resource utilization in percentage (1% - 100%) for the given metric; once the real usage deviates from the target by a certain percentage, the machine replicas change. The default value is 60 (representing 60%) if not provided.
       },
     ],
-    &quot;machineSpec&quot;: { # Specification of a single machine. # Required. Immutable. The specification of a single machine used by the prediction.
+    &quot;machineSpec&quot;: { # Specification of a single machine. # Required. Immutable. The specification of a single machine being used.
       &quot;acceleratorCount&quot;: 42, # The number of accelerators to attach to the machine.
       &quot;acceleratorType&quot;: &quot;A String&quot;, # Immutable. The type of accelerator(s) that may be attached to the machine as per accelerator_count.
       &quot;machineType&quot;: &quot;A String&quot;, # Immutable. The type of the machine. See the [list of machine types supported for prediction](https://cloud.google.com/vertex-ai/docs/predictions/configure-compute#machine-types) See the [list of machine types supported for custom training](https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types). For DeployedModel this field is optional, and the default value is `n1-standard-2`. For BatchPredictionJob or as part of WorkerPoolSpec this field is required.
-      &quot;multihostGpuNodeCount&quot;: 42, # Optional. Immutable. The number of nodes per replica for multihost GPU deployments.
       &quot;reservationAffinity&quot;: { # A ReservationAffinity can be used to configure a Vertex AI resource (e.g., a DeployedModel) to draw its Compute Engine resources from a Shared Reservation, or exclusively from on-demand capacity. # Optional. Immutable. Configuration controlling how this resource pool consumes reservation.
         &quot;key&quot;: &quot;A String&quot;, # Optional. Corresponds to the label key of a reservation resource. To target a SPECIFIC_RESERVATION by name, use `compute.googleapis.com/reservation-name` as the key and specify the name of your reservation as its value.
         &quot;reservationAffinityType&quot;: &quot;A String&quot;, # Required. Specifies the reservation affinity type.
@@ -602,15 +604,103 @@ Args:
       },
       &quot;tpuTopology&quot;: &quot;A String&quot;, # Immutable. The topology of the TPUs. Corresponds to the TPU topologies available from GKE. (Example: tpu_topology: &quot;2x2x1&quot;).
     },
-    &quot;maxReplicaCount&quot;: 42, # Immutable. The maximum number of replicas this DeployedModel may be deployed on when the traffic against it increases. If the requested value is too large, the deployment will error, but if deployment succeeds then the ability to scale the model to that many replicas is guaranteed (barring service outages). If traffic against the DeployedModel increases beyond what its replicas at maximum may handle, a portion of the traffic will be dropped. If this value is not provided, will use min_replica_count as the default value. The value of this field impacts the charge against Vertex CPU and GPU quotas. Specifically, you will be charged for (max_replica_count * number of cores in the selected machine type) and (max_replica_count * number of GPUs per replica in the selected machine type).
-    &quot;minReplicaCount&quot;: 42, # Required. Immutable. The minimum number of machine replicas this DeployedModel will be always deployed on. This value must be greater than or equal to 1. If traffic against the DeployedModel increases, it may dynamically be deployed onto more replicas, and as traffic decreases, some of these extra replicas may be freed.
-    &quot;requiredReplicaCount&quot;: 42, # Optional. Number of required available replicas for the deployment to succeed. This field is only needed when partial model deployment/mutation is desired. If set, the model deploy/mutate operation will succeed once available_replica_count reaches required_replica_count, and the rest of the replicas will be retried. If not set, the default required_replica_count will be min_replica_count.
+    &quot;maxReplicaCount&quot;: 42, # Immutable. The maximum number of replicas that may be deployed on when the traffic against it increases. If the requested value is too large, the deployment will error, but if deployment succeeds then the ability to scale to that many replicas is guaranteed (barring service outages). If traffic increases beyond what its replicas at maximum may handle, a portion of the traffic will be dropped. If this value is not provided, will use min_replica_count as the default value. The value of this field impacts the charge against Vertex CPU and GPU quotas. Specifically, you will be charged for (max_replica_count * number of cores in the selected machine type) and (max_replica_count * number of GPUs per replica in the selected machine type).
+    &quot;minReplicaCount&quot;: 42, # Required. Immutable. The minimum number of machine replicas that will be always deployed on. This value must be greater than or equal to 1. If traffic increases, it may dynamically be deployed onto more replicas, and as traffic decreases, some of these extra replicas may be freed.
+    &quot;requiredReplicaCount&quot;: 42, # Optional. Number of required available replicas for the deployment to succeed. This field is only needed when partial deployment/mutation is desired. If set, the deploy/mutate operation will succeed once available_replica_count reaches required_replica_count, and the rest of the replicas will be retried. If not set, the default required_replica_count will be min_replica_count.
     &quot;spot&quot;: True or False, # Optional. If true, schedule the deployment workload on [spot VMs](https://cloud.google.com/kubernetes-engine/docs/concepts/spot-vms).
   },
   &quot;endpointDisplayName&quot;: &quot;A String&quot;, # Optional. The user-specified display name of the endpoint. If not set, a default name will be used.
   &quot;huggingFaceAccessToken&quot;: &quot;A String&quot;, # Optional. The Hugging Face read access token used to access the model artifacts of gated models.
-  &quot;model&quot;: &quot;A String&quot;, # Required. The name of the PublisherModel resource. Format: `publishers/{publisher}/models/{publisher_model}@{version_id}`, or `publishers/hf-{hugging-face-author}/models/{hugging-face-model-name}@001` or Hugging Face model ID like `google/gemma-2-2b-it`.
+  &quot;model&quot;: &quot;A String&quot;, # Required. The model to deploy. Format: 1. `publishers/{publisher}/models/{publisher_model}@{version_id}`, or `publishers/hf-{hugging-face-author}/models/{hugging-face-model-name}@001`. 2. Hugging Face model ID like `google/gemma-2-2b-it`. 3. Custom model Google Cloud Storage URI like `gs://bucket`. 4. Custom model zip file like `https://abc.com/a.zip`.
   &quot;modelDisplayName&quot;: &quot;A String&quot;, # Optional. The user-specified display name of the uploaded model. If not set, a default name will be used.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # This resource represents a long-running operation that is the result of a network API call.
+  &quot;done&quot;: True or False, # If the value is `false`, it means the operation is still in progress. If `true`, the operation is completed, and either `error` or `response` is available.
+  &quot;error&quot;: { # The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors). # The error result of the operation in case of failure or cancellation.
+    &quot;code&quot;: 42, # The status code, which should be an enum value of google.rpc.Code.
+    &quot;details&quot;: [ # A list of messages that carry the error details. There is a common set of message types for APIs to use.
+      {
+        &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+      },
+    ],
+    &quot;message&quot;: &quot;A String&quot;, # A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.
+  },
+  &quot;metadata&quot;: { # Service-specific metadata associated with the operation. It typically contains progress information and common metadata such as create time. Some services might not provide such metadata. Any method that returns a long-running operation should document the metadata type, if any.
+    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # The server-assigned name, which is only unique within the same service that originally returns it. If you use the default HTTP mapping, the `name` should be a resource name ending with `operations/{unique_id}`.
+  &quot;response&quot;: { # The normal, successful response of the operation. If the original method returns no data on success, such as `Delete`, the response is `google.protobuf.Empty`. If the original method is standard `Get`/`Create`/`Update`, the response should be the resource. For other methods, the response should have the type `XxxResponse`, where `Xxx` is the original method name. For example, if the original method name is `TakeSnapshot()`, the inferred response type is `TakeSnapshotResponse`.
+    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+  },
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="evaluateDataset">evaluateDataset(location, body=None, x__xgafv=None)</code>
+  <pre>Evaluates a dataset based on a set of given metrics.
+
+Args:
+  location: string, Required. The resource name of the Location to evaluate the dataset. Format: `projects/{project}/locations/{location}` (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request message for EvaluationService.EvaluateDataset.
+  &quot;autoraterConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Optional. Autorater config used for evaluation.
+    &quot;autoraterModel&quot;: &quot;A String&quot;, # Optional. The fully qualified name of the publisher model or tuned autorater endpoint to use. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Tuned model endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`
+    &quot;flipEnabled&quot;: True or False, # Optional. Whether to flip the candidate and baseline responses. This is only applicable to the pairwise metric. If enabled, also provide PairwiseMetricSpec.candidate_response_field_name and PairwiseMetricSpec.baseline_response_field_name. When rendering PairwiseMetricSpec.metric_prompt_template, the candidate and baseline fields will be flipped for half of the samples to reduce bias.
+    &quot;samplingCount&quot;: 42, # Optional. Number of samples for each instance in the dataset. If not specified, the default is 4. Minimum value is 1, maximum value is 32.
+  },
+  &quot;dataset&quot;: { # The dataset used for evaluation. # Required. The dataset used for evaluation.
+    &quot;bigquerySource&quot;: { # The BigQuery location for the input content. # BigQuery source holds the dataset.
+      &quot;inputUri&quot;: &quot;A String&quot;, # Required. BigQuery URI to a table, up to 2000 characters long. Accepted forms: * BigQuery path. For example: `bq://projectId.bqDatasetId.bqTableId`.
+    },
+    &quot;gcsSource&quot;: { # The Google Cloud Storage location for the input content. # Cloud storage source holds the dataset.
+      &quot;uris&quot;: [ # Required. Google Cloud Storage URI(-s) to the input file(s). May contain wildcards. For more information on wildcards, see https://cloud.google.com/storage/docs/gsutil/addlhelp/WildcardNames.
+        &quot;A String&quot;,
+      ],
+    },
+  },
+  &quot;metrics&quot;: [ # Required. The metrics used for evaluation.
+    { # The metric used for dataset level evaluation.
+      &quot;aggregationMetrics&quot;: [ # Optional. The aggregation metrics to use.
+        &quot;A String&quot;,
+      ],
+      &quot;bleuSpec&quot;: { # Spec for bleu score metric - calculates the precision of n-grams in the prediction as compared to reference - returns a score ranging between 0 to 1. # Spec for bleu metric.
+        &quot;useEffectiveOrder&quot;: True or False, # Optional. Whether to use_effective_order to compute bleu score.
+      },
+      &quot;exactMatchSpec&quot;: { # Spec for exact match metric - returns 1 if prediction and reference exactly matches, otherwise 0. # Spec for exact match metric.
+      },
+      &quot;pairwiseMetricSpec&quot;: { # Spec for pairwise metric. # Spec for pairwise metric.
+        &quot;baselineResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the baseline response.
+        &quot;candidateResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the candidate response.
+        &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Metric prompt template for pairwise metric.
+        &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for pairwise metric.
+      },
+      &quot;pointwiseMetricSpec&quot;: { # Spec for pointwise metric. # Spec for pointwise metric.
+        &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Metric prompt template for pointwise metric.
+        &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for pointwise metric.
+      },
+      &quot;rougeSpec&quot;: { # Spec for rouge score metric - calculates the recall of n-grams in prediction as compared to reference - returns a score ranging between 0 and 1. # Spec for rouge metric.
+        &quot;rougeType&quot;: &quot;A String&quot;, # Optional. Supported rouge types are rougen[1-9], rougeL, and rougeLsum.
+        &quot;splitSummaries&quot;: True or False, # Optional. Whether to split summaries while using rougeLsum.
+        &quot;useStemmer&quot;: True or False, # Optional. Whether to use stemmer to compute rouge score.
+      },
+    },
+  ],
+  &quot;outputConfig&quot;: { # Config for evaluation output. # Required. Config for evaluation output.
+    &quot;gcsDestination&quot;: { # The Google Cloud Storage location where the output is to be written to. # Cloud storage destination for evaluation output.
+      &quot;outputUriPrefix&quot;: &quot;A String&quot;, # Required. Google Cloud Storage URI to output directory. If the uri doesn&#x27;t end with &#x27;/&#x27;, a &#x27;/&#x27; will be automatically appended. The directory is created if it doesn&#x27;t exist.
+    },
+  },
 }
 
   x__xgafv: string, V1 error format.
