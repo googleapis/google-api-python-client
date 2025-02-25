@@ -15,11 +15,13 @@
 
 set -eo pipefail
 
+CURRENT_DIR=$(dirname "${BASH_SOURCE[0]}")
+
 if [[ -z "${PROJECT_ROOT:-}" ]]; then
-    PROJECT_ROOT="github/google-api-python-client"
+  PROJECT_ROOT=$(realpath "${CURRENT_DIR}/..")
 fi
 
-cd "${PROJECT_ROOT}"
+pushd "${PROJECT_ROOT}"
 
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
@@ -28,10 +30,16 @@ export PYTHONUNBUFFERED=1
 env | grep KOKORO
 
 # Setup service account credentials.
-export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/service-account.json
+if [[ -f "${KOKORO_GFILE_DIR}/service-account.json" ]]
+then
+  export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/service-account.json
+fi
 
 # Setup project id.
-export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
+if [[ -f "${KOKORO_GFILE_DIR}/project-id.json" ]]
+then
+  export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
+fi
 
 # If this is a continuous build, send the test log to the FlakyBot.
 # See https://github.com/googleapis/repo-automation-bots/tree/main/packages/flakybot.
@@ -46,7 +54,7 @@ fi
 # If NOX_SESSION is set, it only runs the specified session,
 # otherwise run all the sessions.
 if [[ -n "${NOX_SESSION:-}" ]]; then
-    python3 -m nox -s ${NOX_SESSION:-}
+  python3 -m nox -s ${NOX_SESSION:-}
 else
-    python3 -m nox
+  python3 -m nox
 fi
