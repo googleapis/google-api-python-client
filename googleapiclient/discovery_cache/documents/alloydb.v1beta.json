@@ -1581,6 +1581,21 @@
 "pattern": "^projects/[^/]+/locations/[^/]+$",
 "required": true,
 "type": "string"
+},
+"scope": {
+"description": "Optional. The scope for which supported flags are requested. If not specified, default is DATABASE.",
+"enum": [
+"SCOPE_UNSPECIFIED",
+"DATABASE",
+"CONNECTION_POOL"
+],
+"enumDescriptions": [
+"The scope of the flag is not specified. Default is DATABASE.",
+"The flag is a database flag.",
+"The flag is a connection pool flag."
+],
+"location": "query",
+"type": "string"
 }
 },
 "path": "v1beta/{+parent}/supportedDatabaseFlags",
@@ -1598,7 +1613,7 @@
 }
 }
 },
-"revision": "20250205",
+"revision": "20250219",
 "rootUrl": "https://alloydb.googleapis.com/",
 "schemas": {
 "AuthorizedNetwork": {
@@ -2291,7 +2306,7 @@ false
 },
 "encryptionConfig": {
 "$ref": "EncryptionConfig",
-"description": "The encryption config can be specified to encrypt the backups with a customer-managed encryption key (CMEK). When this field is not specified, the backup will then use default encryption scheme to protect the user data."
+"description": "The encryption config can be specified to encrypt the backups with a customer-managed encryption key (CMEK). When this field is not specified, the backup will use the cluster's encryption config."
 },
 "recoveryWindowDays": {
 "description": "The number of days that are eligible to restore from using PITR. To support the entire recovery window, backups and logs are retained for one day more than the recovery window. If not set, defaults to 14 days.",
@@ -3223,7 +3238,7 @@ false
 "type": "object"
 },
 "Node": {
-"description": "Details of a single node in the instance. Nodes in an AlloyDB instance are ephemereal, they can change during update, failover, autohealing and resize operations.",
+"description": "Details of a single node in the instance. Nodes in an AlloyDB instance are ephemeral, they can change during update, failover, autohealing and resize operations.",
 "id": "Node",
 "properties": {
 "id": {
@@ -3366,6 +3381,11 @@ false
 "readOnly": true,
 "type": "string"
 },
+"upgradeClusterStatus": {
+"$ref": "UpgradeClusterStatus",
+"description": "Output only. UpgradeClusterStatus related metadata.",
+"readOnly": true
+},
 "verb": {
 "description": "Output only. Name of the verb executed by the operation.",
 "readOnly": true,
@@ -3408,6 +3428,36 @@ false
 },
 "type": "object"
 },
+"PscAutoConnectionConfig": {
+"description": "Configuration for setting up PSC service automation. Consumer projects in the configs will be allowlisted automatically for the instance.",
+"id": "PscAutoConnectionConfig",
+"properties": {
+"consumerNetwork": {
+"description": "The consumer network for the PSC service automation, example: \"projects/vpc-host-project/global/networks/default\". The consumer network might be hosted a different project than the consumer project.",
+"type": "string"
+},
+"consumerNetworkStatus": {
+"description": "Output only. The status of the service connection policy.",
+"readOnly": true,
+"type": "string"
+},
+"consumerProject": {
+"description": "The consumer project to which the PSC service automation endpoint will be created.",
+"type": "string"
+},
+"ipAddress": {
+"description": "Output only. The IP address of the PSC service automation endpoint.",
+"readOnly": true,
+"type": "string"
+},
+"status": {
+"description": "Output only. The status of the PSC service automation connection.",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
 "PscConfig": {
 "description": "PscConfig contains PSC related configuration at a cluster level.",
 "id": "PscConfig",
@@ -3433,6 +3483,13 @@ false
 "description": "Optional. List of consumer projects that are allowed to create PSC endpoints to service-attachments to this instance.",
 "items": {
 "type": "string"
+},
+"type": "array"
+},
+"pscAutoConnections": {
+"description": "Optional. Configurations for setting up PSC service automation.",
+"items": {
+"$ref": "PscAutoConnectionConfig"
 },
 "type": "array"
 },
@@ -3531,6 +3588,17 @@ false
 "description": "Read capacity, i.e. number of nodes in a read pool instance.",
 "format": "int32",
 "type": "integer"
+}
+},
+"type": "object"
+},
+"ReadPoolInstancesUpgradeStageStatus": {
+"description": "Read pool instances upgrade specific status.",
+"id": "ReadPoolInstancesUpgradeStageStatus",
+"properties": {
+"upgradeStats": {
+"$ref": "Stats",
+"description": "Read pool instances upgrade statistics."
 }
 },
 "type": "object"
@@ -3751,6 +3819,92 @@ false
 "Cancellation complete."
 ],
 "type": "string"
+}
+},
+"type": "object"
+},
+"StageStatus": {
+"description": "Status of an upgrade stage.",
+"id": "StageStatus",
+"properties": {
+"readPoolInstancesUpgrade": {
+"$ref": "ReadPoolInstancesUpgradeStageStatus",
+"description": "Read pool instances upgrade metadata."
+},
+"stage": {
+"description": "Upgrade stage.",
+"enum": [
+"STAGE_UNSPECIFIED",
+"ALLOYDB_PRECHECK",
+"PG_UPGRADE_CHECK",
+"PREPARE_FOR_UPGRADE",
+"PRIMARY_INSTANCE_UPGRADE",
+"READ_POOL_INSTANCES_UPGRADE",
+"ROLLBACK",
+"CLEANUP"
+],
+"enumDescriptions": [
+"Unspecified stage.",
+"Pre-upgrade custom checks, not covered by pg_upgrade.",
+"Pre-upgrade pg_upgrade checks.",
+"Clone the original cluster.",
+"Upgrade the primary instance(downtime).",
+"This stage is read pool upgrade.",
+"Rollback in case of critical failures.",
+"Cleanup."
+],
+"type": "string"
+},
+"state": {
+"description": "State of this stage.",
+"enum": [
+"STATUS_UNSPECIFIED",
+"NOT_STARTED",
+"IN_PROGRESS",
+"SUCCESS",
+"FAILED",
+"PARTIAL_SUCCESS",
+"CANCEL_IN_PROGRESS",
+"CANCELLED"
+],
+"enumDescriptions": [
+"Unspecified status.",
+"Not started.",
+"In progress.",
+"Operation succeeded.",
+"Operation failed.",
+"Operation partially succeeded.",
+"Cancel is in progress.",
+"Cancellation complete."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"Stats": {
+"description": "Upgrade stats for read pool instances.",
+"id": "Stats",
+"properties": {
+"failed": {
+"description": "Number of read pool instances which failed to upgrade.",
+"format": "int32",
+"type": "integer"
+},
+"notStarted": {
+"description": "Number of read pool instances for which upgrade has not started.",
+"format": "int32",
+"type": "integer"
+},
+"ongoing": {
+"description": "Number of read pool instances undergoing upgrade.",
+"format": "int32",
+"type": "integer"
+},
+"success": {
+"description": "Number of read pool instances successfully upgraded.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -4148,7 +4302,8 @@ false
 "SIGNAL_TYPE_RESOURCE_SUSPENDED",
 "SIGNAL_TYPE_EXPENSIVE_COMMANDS",
 "SIGNAL_TYPE_NO_MAINTENANCE_POLICY_CONFIGURED",
-"SIGNAL_TYPE_NO_DELETION_PROTECTION"
+"SIGNAL_TYPE_NO_DELETION_PROTECTION",
+"SIGNAL_TYPE_INEFFICIENT_QUERY"
 ],
 "enumDeprecated": [
 false,
@@ -4156,6 +4311,7 @@ false,
 false,
 true,
 true,
+false,
 false,
 false,
 false,
@@ -4326,7 +4482,8 @@ false
 "Detects if a database instance/cluster is suspended.",
 "Detects that expensive commands are being run on a database instance impacting overall performance.",
 "Indicates that the instance does not have a maintenance policy configured.",
-"Deletion Protection Disabled for the resource"
+"Deletion Protection Disabled for the resource",
+"Indicates that the instance has inefficient queries detected."
 ],
 "type": "string"
 },
@@ -4390,7 +4547,7 @@ false
 "type": "object"
 },
 "StorageDatabasecenterPartnerapiV1mainDatabaseResourceMetadata": {
-"description": "Common model for database resource instance metadata. Next ID: 24",
+"description": "Common model for database resource instance metadata. Next ID: 25",
 "id": "StorageDatabasecenterPartnerapiV1mainDatabaseResourceMetadata",
 "properties": {
 "availabilityConfiguration": {
@@ -4475,6 +4632,10 @@ false
 ],
 "type": "string"
 },
+"gcbdrConfiguration": {
+"$ref": "StorageDatabasecenterPartnerapiV1mainGCBDRConfiguration",
+"description": "GCBDR configuration for the resource."
+},
 "id": {
 "$ref": "StorageDatabasecenterPartnerapiV1mainDatabaseResourceId",
 "description": "Required. Unique identifier for a Database resource"
@@ -4551,7 +4712,7 @@ false
 "type": "string"
 },
 "suspensionReason": {
-"description": "Suspension reason for the resource.",
+"description": "Optional. Suspension reason for the resource.",
 "enum": [
 "SUSPENSION_REASON_UNSPECIFIED",
 "WIPEOUT_HIDE_EVENT",
@@ -4730,7 +4891,8 @@ false
 "SIGNAL_TYPE_RESOURCE_SUSPENDED",
 "SIGNAL_TYPE_EXPENSIVE_COMMANDS",
 "SIGNAL_TYPE_NO_MAINTENANCE_POLICY_CONFIGURED",
-"SIGNAL_TYPE_NO_DELETION_PROTECTION"
+"SIGNAL_TYPE_NO_DELETION_PROTECTION",
+"SIGNAL_TYPE_INEFFICIENT_QUERY"
 ],
 "enumDeprecated": [
 false,
@@ -4738,6 +4900,7 @@ false,
 false,
 true,
 true,
+false,
 false,
 false,
 false,
@@ -4908,7 +5071,8 @@ false
 "Detects if a database instance/cluster is suspended.",
 "Detects that expensive commands are being run on a database instance impacting overall performance.",
 "Indicates that the instance does not have a maintenance policy configured.",
-"Deletion Protection Disabled for the resource"
+"Deletion Protection Disabled for the resource",
+"Indicates that the instance has inefficient queries detected."
 ],
 "type": "string"
 }
@@ -4954,6 +5118,17 @@ false
 "The entitlement representing GCA-Standard Tier."
 ],
 "type": "string"
+}
+},
+"type": "object"
+},
+"StorageDatabasecenterPartnerapiV1mainGCBDRConfiguration": {
+"description": "GCBDR Configuration for the resource.",
+"id": "StorageDatabasecenterPartnerapiV1mainGCBDRConfiguration",
+"properties": {
+"gcbdrManaged": {
+"description": "Whether the resource is managed by GCBDR.",
+"type": "boolean"
 }
 },
 "type": "object"
@@ -5358,9 +5533,32 @@ false
 "description": "The name of the flag resource, following Google Cloud conventions, e.g.: * projects/{project}/locations/{location}/flags/{flag} This field currently has no semantic meaning.",
 "type": "string"
 },
+"recommendedIntegerValue": {
+"description": "The recommended value for an INTEGER flag.",
+"format": "int64",
+"type": "string"
+},
+"recommendedStringValue": {
+"description": "The recommended value for a STRING flag.",
+"type": "string"
+},
 "requiresDbRestart": {
 "description": "Whether setting or updating this flag on an Instance requires a database restart. If a flag that requires database restart is set, the backend will automatically restart the database (making sure to satisfy any availability SLO's).",
 "type": "boolean"
+},
+"scope": {
+"description": "The scope of the flag.",
+"enum": [
+"SCOPE_UNSPECIFIED",
+"DATABASE",
+"CONNECTION_POOL"
+],
+"enumDescriptions": [
+"The scope of the flag is not specified. Default is DATABASE.",
+"The flag is a database flag.",
+"The flag is a connection pool flag."
+],
+"type": "string"
 },
 "stringRestrictions": {
 "$ref": "StringRestrictions",
@@ -5569,6 +5767,98 @@ false
 "Operation partially succeeded.",
 "Cancel is in progress.",
 "Cancellation complete."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"UpgradeClusterStatus": {
+"description": "Message for current status of the Major Version Upgrade operation.",
+"id": "UpgradeClusterStatus",
+"properties": {
+"cancellable": {
+"description": "Whether the operation is cancellable.",
+"type": "boolean"
+},
+"sourceVersion": {
+"description": "Source database major version.",
+"enum": [
+"DATABASE_VERSION_UNSPECIFIED",
+"POSTGRES_13",
+"POSTGRES_14",
+"POSTGRES_15",
+"POSTGRES_16"
+],
+"enumDeprecated": [
+false,
+true,
+false,
+false,
+false
+],
+"enumDescriptions": [
+"This is an unknown database version.",
+"DEPRECATED - The database version is Postgres 13.",
+"The database version is Postgres 14.",
+"The database version is Postgres 15.",
+"The database version is Postgres 16."
+],
+"type": "string"
+},
+"stages": {
+"description": "Status of all upgrade stages.",
+"items": {
+"$ref": "StageStatus"
+},
+"type": "array"
+},
+"state": {
+"description": "Cluster Major Version Upgrade state.",
+"enum": [
+"STATUS_UNSPECIFIED",
+"NOT_STARTED",
+"IN_PROGRESS",
+"SUCCESS",
+"FAILED",
+"PARTIAL_SUCCESS",
+"CANCEL_IN_PROGRESS",
+"CANCELLED"
+],
+"enumDescriptions": [
+"Unspecified status.",
+"Not started.",
+"In progress.",
+"Operation succeeded.",
+"Operation failed.",
+"Operation partially succeeded.",
+"Cancel is in progress.",
+"Cancellation complete."
+],
+"type": "string"
+},
+"targetVersion": {
+"description": "Target database major version.",
+"enum": [
+"DATABASE_VERSION_UNSPECIFIED",
+"POSTGRES_13",
+"POSTGRES_14",
+"POSTGRES_15",
+"POSTGRES_16"
+],
+"enumDeprecated": [
+false,
+true,
+false,
+false,
+false
+],
+"enumDescriptions": [
+"This is an unknown database version.",
+"DEPRECATED - The database version is Postgres 13.",
+"The database version is Postgres 14.",
+"The database version is Postgres 15.",
+"The database version is Postgres 16."
 ],
 "type": "string"
 }
