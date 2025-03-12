@@ -363,7 +363,7 @@
 ],
 "parameters": {
 "filter": {
-"description": "Multiple filter queries are separated by spaces. For example, 'instance:abc type:FINAL. You can filter by type, instance name, creation time, or location.",
+"description": "Multiple filter queries are separated by spaces. For example, 'instance:abc AND type:FINAL, 'location:us', 'backupInterval.startTime>=1950-01-01T01:01:25.771Z'. You can filter by type, instance, backupInterval.startTime (creation time), or location.",
 "location": "query",
 "type": "string"
 },
@@ -2550,7 +2550,7 @@
 }
 }
 },
-"revision": "20250216",
+"revision": "20250226",
 "rootUrl": "https://sqladmin.googleapis.com/",
 "schemas": {
 "AclEntry": {
@@ -2712,6 +2712,17 @@
 "description": "The name of the database instance.",
 "type": "string"
 },
+"instanceDeletionTime": {
+"description": "Optional. Output only. Timestamp in UTC of when the instance associated with this backup is deleted.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"instanceSettings": {
+"$ref": "DatabaseInstance",
+"description": "Optional. Output only. Instance setting of the source instance that's associated with this backup.",
+"readOnly": true
+},
 "kind": {
 "description": "Output only. This is always `sql#backup`.",
 "readOnly": true,
@@ -2786,7 +2797,7 @@
 "type": "string"
 },
 "ttlDays": {
-"description": "Input only. The time-to-live (TTL) interval for this resource (in days). For example: ttlDays:7 means 7 days.",
+"description": "Input only. The time-to-live (TTL) interval for this resource (in days). For example: ttlDays:7, means 7 days from the current time. The expiration time can't exceed 365 days from the time that the backup is created.",
 "format": "int64",
 "type": "string"
 },
@@ -3348,6 +3359,14 @@ false
 "description": "The dns name of the instance.",
 "type": "string"
 },
+"dnsNames": {
+"description": "Output only. The list of DNS names used by this instance.",
+"items": {
+"$ref": "DnsNameMapping"
+},
+"readOnly": true,
+"type": "array"
+},
 "ipAddresses": {
 "description": "The assigned IP addresses for the instance.",
 "items": {
@@ -3673,6 +3692,14 @@ false
 "description": "Output only. The dns name of the instance.",
 "readOnly": true,
 "type": "string"
+},
+"dnsNames": {
+"description": "Output only. The list of DNS names used by this instance.",
+"items": {
+"$ref": "DnsNameMapping"
+},
+"readOnly": true,
+"type": "array"
 },
 "etag": {
 "description": "This field is deprecated and will be removed from a future version of the API. Use the `settings.settingsVersion` field instead.",
@@ -4084,6 +4111,47 @@ true
 },
 "type": "object"
 },
+"DnsNameMapping": {
+"description": "DNS metadata.",
+"id": "DnsNameMapping",
+"properties": {
+"connectionType": {
+"description": "Output only. The connection type of the DNS name.",
+"enum": [
+"CONNECTION_TYPE_UNSPECIFIED",
+"PUBLIC",
+"PRIVATE_SERVICES_ACCESS",
+"PRIVATE_SERVICE_CONNECT"
+],
+"enumDescriptions": [
+"Unknown connection type.",
+"Public IP.",
+"Private services access (private IP).",
+"Private Service Connect."
+],
+"readOnly": true,
+"type": "string"
+},
+"dnsScope": {
+"description": "Output only. The scope that the DNS name applies to.",
+"enum": [
+"DNS_SCOPE_UNSPECIFIED",
+"INSTANCE"
+],
+"enumDescriptions": [
+"Unknown DNS scope.",
+"Indicates a instance-level DNS name."
+],
+"readOnly": true,
+"type": "string"
+},
+"name": {
+"description": "The DNS name.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "Empty": {
 "description": "A generic empty message that you can re-use to avoid defining duplicated empty messages in your APIs. A typical example is to use it as the request or the response type of an API method. For instance: service Foo { rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty); }",
 "id": "Empty",
@@ -4171,7 +4239,7 @@ true
 "type": "object"
 },
 "databases": {
-"description": "Databases to be exported. `MySQL instances:` If `fileType` is `SQL` and no database is specified, all databases are exported, except for the `mysql` system database. If `fileType` is `CSV`, you can specify one database, either by using this property or by using the `csvExportOptions.selectQuery` property, which takes precedence over this property. `PostgreSQL instances:` You must specify one database to be exported. If `fileType` is `CSV`, this database must match the one specified in the `csvExportOptions.selectQuery` property. `SQL Server instances:` You must specify one database to be exported, and the `fileType` must be `BAK`.",
+"description": "Databases to be exported. `MySQL instances:` If `fileType` is `SQL` and no database is specified, all databases are exported, except for the `mysql` system database. If `fileType` is `CSV`, you can specify one database, either by using this property or by using the `csvExportOptions.selectQuery` property, which takes precedence over this property. `PostgreSQL instances:` If you don't specify a database by name, all user databases in the instance are exported. This excludes system databases and Cloud SQL databases used to manage internal operations. Exporting all user databases is only available for directory-formatted parallel export. If `fileType` is `CSV`, this database must match the one specified in the `csvExportOptions.selectQuery` property. `SQL Server instances:` You must specify one database to be exported, and the `fileType` must be `BAK`.",
 "items": {
 "type": "string"
 },
@@ -4183,13 +4251,15 @@ true
 "SQL_FILE_TYPE_UNSPECIFIED",
 "SQL",
 "CSV",
-"BAK"
+"BAK",
+"TDE"
 ],
 "enumDescriptions": [
 "Unknown file type.",
 "File containing SQL statements.",
 "File in CSV format.",
-""
+"",
+"TDE certificate."
 ],
 "type": "string"
 },
@@ -4724,7 +4794,7 @@ false
 "type": "object"
 },
 "database": {
-"description": "The target database for the import. If `fileType` is `SQL`, this field is required only if the import file does not specify a database, and is overridden by any database specification in the import file. If `fileType` is `CSV`, one database must be specified.",
+"description": "The target database for the import. If `fileType` is `SQL`, this field is required only if the import file does not specify a database, and is overridden by any database specification in the import file. For entire instance parallel import operations, the database is overridden by the database name stored in subdirectory name. If `fileType` is `CSV`, one database must be specified.",
 "type": "string"
 },
 "fileType": {
@@ -4733,13 +4803,15 @@ false
 "SQL_FILE_TYPE_UNSPECIFIED",
 "SQL",
 "CSV",
-"BAK"
+"BAK",
+"TDE"
 ],
 "enumDescriptions": [
 "Unknown file type.",
 "File containing SQL statements.",
 "File in CSV format.",
-""
+"",
+"TDE certificate."
 ],
 "type": "string"
 },
@@ -5038,7 +5110,7 @@ false
 },
 "restoreInstanceSettings": {
 "$ref": "DatabaseInstance",
-"description": "Optional. By using this parameter, Cloud SQL overrides any instance settings that it stored with the instance settings that you want to restore. You can't change the Instance's major database version and you can only increase the disk size. You can use this field to restore new instances only."
+"description": "Optional. By using this parameter, Cloud SQL overrides any instance settings stored in the backup you are restoring from. You can't change the instance's major database version and you can only increase the disk size. You can use this field to restore new instances only. This field is not applicable for restore to existing instances."
 }
 },
 "type": "object"
@@ -5152,7 +5224,7 @@ false
 "type": "string"
 },
 "serverCaPool": {
-"description": "Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects//locations//caPools/",
+"description": "Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects/{PROJECT}/locations/{REGION}/caPools/{CA_POOL_ID}",
 "type": "string"
 },
 "sslMode": {
@@ -6264,6 +6336,10 @@ false
 "The asynchronous replication mode for First Generation instances. It provides a slight performance gain, but if an outage occurs while this option is set to asynchronous, you can lose up to a few seconds of updates to your data."
 ],
 "type": "string"
+},
+"retainBackupsOnDelete": {
+"description": "Optional. When this parameter is set to true, Cloud SQL retains backups of the instance even after the instance is deleted. The ON_DEMAND backup will be retained until customer deletes the backup or the project. The AUTOMATED backup will be retained based on the backups retention setting.",
+"type": "boolean"
 },
 "settingsVersion": {
 "description": "The version of instance settings. This is a required field for update method to make sure concurrent updates are handled properly. During update, use the most recent settingsVersion value for this instance and do not try to update this value.",
