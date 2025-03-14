@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.164.1](https://github.com/googleapis/google-api-python-client/compare/v2.164.0...v2.164.1) (2025-03-14)
+
+
+### Bug Fixes
+
+* Resolve issue where pre-release versions of dependencies are installed ([#2576](https://github.com/googleapis/google-api-python-client/issues/2576)) ([21847ef](https://github.com/googleapis/google-api-python-client/commit/21847efba036e2c7459b6105a1485080664a3a34))
+
 ## [2.164.0](https://github.com/googleapis/google-api-python-client/compare/v2.163.0...v2.164.0) (2025-03-11)
 
 
