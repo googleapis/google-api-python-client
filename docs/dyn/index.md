@@ -794,6 +794,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedidentities_v1beta1.html)
 
 
+## managedkafka
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedkafka_v1.html)
+
+
 ## manufacturers
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/manufacturers_v1.html)
 
