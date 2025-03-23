@@ -248,6 +248,7 @@ Args:
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
             &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
               &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
               },
             },
           },
@@ -263,9 +264,12 @@ Args:
                 &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                   &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                     &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                     },
                   },
                 },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
               },
             },
           },
@@ -276,12 +280,22 @@ Args:
           &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
             &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
               &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+                &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
               },
               &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
               },
             },
           },
           &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+                &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+              },
+              &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+              },
+              &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+              },
+            },
             &quot;fields&quot;: [ # The names and types of the fields in this struct.
               { # A struct field and its type.
                 &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -290,6 +304,21 @@ Args:
             ],
           },
           &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+                &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                  &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                    &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                      &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                        &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                      },
+                    },
+                  },
+                },
+                &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+                },
+              },
+            },
           },
         },
       },
@@ -395,6 +424,7 @@ Returns:
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+              &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
             },
           },
         },
@@ -410,9 +440,12 @@ Returns:
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                 &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                   &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                    &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                   },
                 },
               },
+            },
+            &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
             },
           },
         },
@@ -423,12 +456,22 @@ Returns:
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
           },
         },
         &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+              &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+            },
+            &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+            },
+            &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+            },
+          },
           &quot;fields&quot;: [ # The names and types of the fields in this struct.
             { # A struct field and its type.
               &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -437,6 +480,21 @@ Returns:
           ],
         },
         &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                    },
+                  },
+                },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+              },
+            },
+          },
         },
       },
     },
@@ -625,6 +683,7 @@ Returns:
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+              &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
             },
           },
         },
@@ -640,9 +699,12 @@ Returns:
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                 &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                   &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                    &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                   },
                 },
               },
+            },
+            &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
             },
           },
         },
@@ -653,12 +715,22 @@ Returns:
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
           },
         },
         &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+              &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+            },
+            &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+            },
+            &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+            },
+          },
           &quot;fields&quot;: [ # The names and types of the fields in this struct.
             { # A struct field and its type.
               &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -667,6 +739,21 @@ Returns:
           ],
         },
         &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                    },
+                  },
+                },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+              },
+            },
+          },
         },
       },
     },
@@ -847,6 +934,7 @@ Returns:
             &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
               &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                 &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                  &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                 },
               },
             },
@@ -862,9 +950,12 @@ Returns:
                   &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                     &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                       &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                        &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                       },
                     },
                   },
+                },
+                &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
                 },
               },
             },
@@ -875,12 +966,22 @@ Returns:
             &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
               &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                 &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+                  &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
                 },
                 &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
                 },
               },
             },
             &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+              &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+                  &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+                },
+                &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+                },
+                &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+                },
+              },
               &quot;fields&quot;: [ # The names and types of the fields in this struct.
                 { # A struct field and its type.
                   &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -889,6 +990,21 @@ Returns:
               ],
             },
             &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+              &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+                  &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                    &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                      &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                        &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                          &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                        },
+                      },
+                    },
+                  },
+                  &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+                  },
+                },
+              },
             },
           },
         },
@@ -985,6 +1101,7 @@ Args:
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
             &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
               &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
               },
             },
           },
@@ -1000,9 +1117,12 @@ Args:
                 &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                   &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                     &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                     },
                   },
                 },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
               },
             },
           },
@@ -1013,12 +1133,22 @@ Args:
           &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
             &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
               &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+                &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
               },
               &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
               },
             },
           },
           &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+                &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+              },
+              &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+              },
+              &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+              },
+            },
             &quot;fields&quot;: [ # The names and types of the fields in this struct.
               { # A struct field and its type.
                 &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -1027,6 +1157,21 @@ Args:
             ],
           },
           &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+                &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                  &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                    &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                      &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                        &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                      },
+                    },
+                  },
+                },
+                &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+                },
+              },
+            },
           },
         },
       },
@@ -1073,6 +1218,7 @@ Args:
           &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
             &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
               &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
               },
             },
           },
@@ -1088,9 +1234,12 @@ Args:
                 &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                   &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                     &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                     },
                   },
                 },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
               },
             },
           },
@@ -1101,12 +1250,22 @@ Args:
           &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
             &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
               &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+                &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
               },
               &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
               },
             },
           },
           &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+                &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+              },
+              &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+              },
+              &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+              },
+            },
             &quot;fields&quot;: [ # The names and types of the fields in this struct.
               { # A struct field and its type.
                 &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -1115,6 +1274,21 @@ Args:
             ],
           },
           &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+            &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+              &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+                &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                  &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                    &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                      &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                        &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                      },
+                    },
+                  },
+                },
+                &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+                },
+              },
+            },
           },
         },
       },
@@ -1201,6 +1375,7 @@ Returns:
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+              &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
             },
           },
         },
@@ -1216,9 +1391,12 @@ Returns:
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                 &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                   &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                    &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                   },
                 },
               },
+            },
+            &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
             },
           },
         },
@@ -1229,12 +1407,22 @@ Returns:
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
           },
         },
         &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+              &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+            },
+            &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+            },
+            &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+            },
+          },
           &quot;fields&quot;: [ # The names and types of the fields in this struct.
             { # A struct field and its type.
               &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -1243,6 +1431,21 @@ Returns:
           ],
         },
         &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                    },
+                  },
+                },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+              },
+            },
+          },
         },
       },
     },
@@ -1348,6 +1551,7 @@ Args:
         &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Bytes
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+              &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
             },
           },
         },
@@ -1363,9 +1567,12 @@ Args:
               &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
                 &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
                   &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                    &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
                   },
                 },
               },
+            },
+            &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
             },
           },
         },
@@ -1376,12 +1583,22 @@ Args:
         &quot;stringType&quot;: { # String Values of type `String` are stored in `Value.string_value`. # String
           &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
             &quot;utf8Bytes&quot;: { # UTF-8 encoding. Sorted mode: - All values are supported. - Code point order is preserved. Distinct mode: all values are supported. Compatible with: - BigQuery `TEXT` encoding - HBase `Bytes.toBytes` - Java `String#getBytes(StandardCharsets.UTF_8)` # Use `Utf8Bytes` encoding.
+              &quot;nullEscapeChar&quot;: &quot;A String&quot;, # Single-character escape sequence used to support NULL values. If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value where every character equals `null_escape_char`, has one more `null_escape_char` appended. If `null_escape_char` is set and does not equal the ASCII null character 0x00, then the encoding will not support sorted mode. .
             },
             &quot;utf8Raw&quot;: { # Deprecated: prefer the equivalent `Utf8Bytes`. # Deprecated: if set, converts to an empty `utf8_bytes`.
             },
           },
         },
         &quot;structType&quot;: { # A structured data value, consisting of fields which map to dynamically typed values. Values of type `Struct` are stored in `Value.array_value` where entries are in the same order and number as `field_types`. # Struct
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;delimitedBytes&quot;: { # Fields are encoded independently and concatenated with a configurable `delimiter` in between. A struct with no fields defined is encoded as a single `delimiter`. Sorted mode: - Fields are encoded in sorted mode. - Encoded field values must not contain any bytes &lt;= `delimiter[0]` - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - Encoded field values must not contain `delimiter[0]`. # Use `DelimitedBytes` encoding.
+              &quot;delimiter&quot;: &quot;A String&quot;, # Byte sequence used to delimit concatenated fields. The delimiter must contain at least 1 character and at most 50 characters.
+            },
+            &quot;orderedCodeBytes&quot;: { # Fields are encoded independently and concatenated with the fixed byte pair {0x00, 0x01} in between. Any null (0x00) byte in an encoded field is replaced by the fixed byte pair {0x00, 0xFF}. Fields that encode to the empty string &quot;&quot; have special handling: - If *every* field encodes to &quot;&quot;, or if the STRUCT has no fields defined, then the STRUCT is encoded as the fixed byte pair {0x00, 0x00}. - Otherwise, the STRUCT only encodes until the last non-empty field, omitting any trailing empty fields. Any empty fields that aren&#x27;t omitted are replaced with the fixed byte pair {0x00, 0x00}. Examples: - STRUCT() -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; - STRUCT(&quot;&quot;, &quot;B&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;) -&gt; &quot;A&quot; - STRUCT(&quot;&quot;, &quot;B&quot;, &quot;&quot;) -&gt; &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;B&quot; - STRUCT(&quot;A&quot;, &quot;&quot;, &quot;C&quot;) -&gt; &quot;A&quot; + &quot;\00\01&quot; + &quot;\00\00&quot; + &quot;\00\01&quot; + &quot;C&quot; Since null bytes are always escaped, this encoding can cause size blowup for encodings like `Int64.BigEndianBytes` that are likely to produce many such bytes. Sorted mode: - Fields are encoded in sorted mode. - All values supported by the field encodings are allowed - Element-wise order is preserved: `A &lt; B` if `A[0] &lt; B[0]`, or if `A[0] == B[0] &amp;&amp; A[1] &lt; B[1]`, etc. Strict prefixes sort first. Distinct mode: - Fields are encoded in distinct mode. - All values supported by the field encodings are allowed. # User `OrderedCodeBytes` encoding.
+            },
+            &quot;singleton&quot;: { # Uses the encoding of `fields[0].type` as-is. Only valid if `fields.size == 1`. # Use `Singleton` encoding.
+            },
+          },
           &quot;fields&quot;: [ # The names and types of the fields in this struct.
             { # A struct field and its type.
               &quot;fieldName&quot;: &quot;A String&quot;, # The field name (optional). Fields without a `field_name` are considered anonymous and cannot be referenced by name.
@@ -1390,6 +1607,21 @@ Args:
           ],
         },
         &quot;timestampType&quot;: { # Timestamp Values of type `Timestamp` are stored in `Value.timestamp_value`. # Timestamp
+          &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+            &quot;unixMicrosInt64&quot;: { # Rules used to convert to or from lower level types. # Encodes the number of microseconds since the Unix epoch using the given `Int64` encoding. Values must be microsecond-aligned. Compatible with: - Java `Instant.truncatedTo()` with `ChronoUnit.MICROS`
+              &quot;bigEndianBytes&quot;: { # Encodes the value as an 8-byte big-endian two&#x27;s complement value. Sorted mode: non-negative values are supported. Distinct mode: all values are supported. Compatible with: - BigQuery `BINARY` encoding - HBase `Bytes.toBytes` - Java `ByteBuffer.putLong()` with `ByteOrder.BIG_ENDIAN` # Use `BigEndianBytes` encoding.
+                &quot;bytesType&quot;: { # Bytes Values of type `Bytes` are stored in `Value.bytes_value`. # Deprecated: ignored if set.
+                  &quot;encoding&quot;: { # Rules used to convert to or from lower level types. # The encoding to use when converting to or from lower level types.
+                    &quot;raw&quot;: { # Leaves the value as-is. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `Raw` encoding.
+                      &quot;escapeNulls&quot;: True or False, # If set, allows NULL values to be encoded as the empty string &quot;&quot;. The actual empty string, or any value which only contains the null byte 0x00, has one more null byte appended.
+                    },
+                  },
+                },
+              },
+              &quot;orderedCodeBytes&quot;: { # Encodes the value in a variable length binary format of up to 10 bytes. Values that are closer to zero use fewer bytes. Sorted mode: all values are supported. Distinct mode: all values are supported. # Use `OrderedCodeBytes` encoding.
+              },
+            },
+          },
         },
       },
     },
@@ -1415,7 +1647,7 @@ Args:
   },
 }
 
-  updateMask: string, Required. The list of fields to update. A mask specifying which fields (e.g. `change_stream_config`) in the `table` field should be updated. This mask is relative to the `table` field, not to the request message. The wildcard (*) path is currently not supported. Currently UpdateTable is only supported for the following fields: * `change_stream_config` * `change_stream_config.retention_period` * `deletion_protection` * `automated_backup_policy` * `automated_backup_policy.retention_period` * `automated_backup_policy.frequency` If `column_families` is set in `update_mask`, it will return an UNIMPLEMENTED error.
+  updateMask: string, Required. The list of fields to update. A mask specifying which fields (e.g. `change_stream_config`) in the `table` field should be updated. This mask is relative to the `table` field, not to the request message. The wildcard (*) path is currently not supported. Currently UpdateTable is only supported for the following fields: * `change_stream_config` * `change_stream_config.retention_period` * `deletion_protection` * `automated_backup_policy` * `automated_backup_policy.retention_period` * `automated_backup_policy.frequency` * `row_key_schema` If `column_families` is set in `update_mask`, it will return an UNIMPLEMENTED error.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
