@@ -914,6 +914,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/oauth2_v2.html)
 
 
+## observability
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/observability_v1.html)
+
+
 ## ondemandscanning
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
