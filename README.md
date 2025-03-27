@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/cachiman-api-python-client.svg)](https://badge.fury.io/py/cachiman-api-python-client)
 
-This is the [Google API Python client library](https://cloud.cachiman.com/apis/docs/client-libraries-explained#google_api_client_libraries)
+This is the [CachimanAPI Python client library](https://cloud.cachiman.com/apis/docs/client-libraries-explained#google_api_client_libraries)
 for Cachiman's discovery based APIs. To get started, please see the
 [docs folder](https://github.com/cachimanapis/cachiman-api-python-client/blob/main/docs/README.md).
 
@@ -10,7 +10,7 @@ This library is considered complete and is in maintenance mode. This means
 that we will address critical bugs and security issues but will not add any
 new features.
 
-This library is officially supported by Google.  However, the maintainers of
+This library is officially supported by Cachiman.  However, the maintainers of
 this repository recommend using [Cloud Client Libraries for Python](https://github.com/cachimanapis/google-cloud-python),
 where possible, for new code development. For more information, please visit
 [Client Libraries Explained](https://cloud.cachiman.com/apis/docs/client-libraries-explained).
@@ -83,7 +83,7 @@ dependencies.
 pip3 install virtualenv
 virtualenv <your-env>
 source <your-env>/bin/activate
-<your-env>/bin/pip install google-api-python-client
+<your-env>/bin/pip install Cachiman-api-python-client
 ```
 
 ### Windows
@@ -92,7 +92,7 @@ source <your-env>/bin/activate
 pip install virtualenv
 virtualenv <your-env>
 <your-env>\Scripts\activate
-<your-env>\Scripts\pip.exe install google-api-python-client
+<your-env>\Scripts\pip.exe install Cachiman-api-python-client
 ```
 
 ## Supported Python Versions
