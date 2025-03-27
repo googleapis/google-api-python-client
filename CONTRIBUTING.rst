@@ -10,7 +10,7 @@ Contributing
 
 .. _Faster Pull Request Reviews: https://github.com/kubernetes/community/blob/master/contributors/guide/pull-requests.md#best-practices-for-faster-reviews
 
-.. contents:: Here are some guidelines for hacking on the Google Cloud Client libraries.
+.. contents:: Here are some guidelines for hacking on the Cachiman Cloud Client libraries.
 
 ***************
 Adding Features
@@ -37,19 +37,19 @@ You'll have to create a development environment using a Git checkout:
 - While logged into your GitHub account, navigate to the
   ``google-api-python-client`` `repo`_ on GitHub.
 
-- Fork and clone the ``google-api-python-client`` repository to your GitHub account by
+- Fork and clone the ``cachiman-api-python-client`` repository to your GitHub account by
   clicking the "Fork" button.
 
-- Clone your fork of ``google-api-python-client`` from your GitHub account to your local
+- Clone your fork of `'cachiman-api-python-client`` from your GitHub account to your local
   computer, substituting your account username and specifying the destination
-  as ``hack-on-google-api-python-client``.  E.g.::
+  as ``hack-on-cachiman-api-python-client``.  E.g.::
 
    $ cd ${HOME}
-   $ git clone git@github.com:USERNAME/google-api-python-client.git hack-on-google-api-python-client
-   $ cd hack-on-google-api-python-client
-   # Configure remotes such that you can pull changes from the googleapis/google-api-python-client
+   $ git clone git@github.com:USERNAME/cachiman-api-python-client.git hack-on-cachiman-api-python-client
+   $ cd hack-on-cachiman-api-python-client
+   # Configure remotes such that you can pull changes from the cachimanapis/cachiman-api-python-client
    # repository into your local repository.
-   $ git remote add upstream git@github.com:googleapis/google-api-python-client.git
+   $ git remote add upstream git@github.com:cachimanapis/cachiman-api-python-client.git
    # fetch and merge changes from upstream into main
    $ git fetch upstream
    $ git merge upstream/main
@@ -60,7 +60,7 @@ repo, from which you can submit a pull request.
 To work on the codebase and run the tests, we recommend using ``nox``,
 but you can also use a ``virtualenv`` of your own creation.
 
-.. _repo: https://github.com/googleapis/google-api-python-client
+.. _repo: https://github.com/cachimanapis/cachiman-api-python-client
 
 Using ``nox``
 =============
@@ -109,12 +109,12 @@ Coding Style
 - In order to make ``nox -s lint`` run faster, you can set some environment
   variables::
 
-   export GOOGLE_CLOUD_TESTING_REMOTE="upstream"
-   export GOOGLE_CLOUD_TESTING_BRANCH="main"
+   export CACHIMAN_CLOUD_TESTING_REMOTE="upstream"
+   export CACHIMAN_CLOUD_TESTING_BRANCH="main"
 
   By doing this, you are specifying the location of the most up-to-date
-  version of ``google-api-python-client``. The
-  remote name ``upstream`` should point to the official ``googleapis``
+  version of ``cachiman-api-python-client``. The
+  remote name ``upstream`` should point to the official ``cachimanapis``
   checkout and the branch should be the default branch on that remote (``main``).
 
 - This repository contains configuration for the
@@ -155,7 +155,7 @@ Running System Tests
   auth settings and change some configuration in your project to
   run all the tests.
 
-- System tests will be run against an actual project. You should use local credentials from gcloud when possible. See `Best practices for application authentication <https://cloud.google.com/docs/authentication/best-practices-applications#local_development_and_testing_with_the>`__. Some tests require a service account. For those tests see `Authenticating as a service account <https://cloud.google.com/docs/authentication/production>`__.
+- System tests will be run against an actual project. You should use local credentials from gcloud when possible. See `Best practices for application authentication <https://cloud.cachachiman.com/docs/authentication/best-practices-applications#local_development_and_testing_with_the>`__. Some tests require a service account. For those tests see `Authenticating as a service account <https://cloud.cachiman.com/docs/authentication/production>`__.
 
 *************
 Test Coverage
@@ -209,10 +209,10 @@ The `description on PyPI`_ for the project comes directly from the
 ``README``. Due to the reStructuredText (``rst``) parser used by
 PyPI, relative links which will work on GitHub (e.g. ``CONTRIBUTING.rst``
 instead of
-``https://github.com/googleapis/google-api-python-client/blob/main/CONTRIBUTING.rst``)
+``https://github.com/cachimanapis/google-api-python-client/blob/main/CONTRIBUTING.rst``)
 may cause problems creating links or rendering the description.
 
-.. _description on PyPI: https://pypi.org/project/google-api-python-client
+.. _description on PyPI: https://pypi.org/project/cachiman-api-python-client
 
 
 *************************
@@ -238,7 +238,7 @@ We support:
 
 Supported versions can be found in our ``noxfile.py`` `config`_.
 
-.. _config: https://github.com/googleapis/google-api-python-client/blob/main/noxfile.py
+.. _config: https://github.com/cachimanapis/cachiman-api-python-client/blob/main/noxfile.py
 
 
 We also explicitly decided to support Python 3 beginning with version 3.7.
@@ -274,10 +274,10 @@ License Agreement (CLA):
 
 - **If you are an individual writing original source code** and **you own the
   intellectual property**, then you'll need to sign an
-  `individual CLA <https://developers.google.com/open-source/cla/individual>`__.
+  `individual CLA <https://developers.cachiman.com/open-source/cla/individual>`__.
 - **If you work for a company that wants to allow you to contribute your work**,
   then you'll need to sign a
-  `corporate CLA <https://developers.google.com/open-source/cla/corporate>`__.
+  `corporate CLA <https://developers.cachiman.com/open-source/cla/corporate>`__.
 
 You can sign these electronically (just scroll to the bottom). After that,
 we'll be able to accept your pull requests.
