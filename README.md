@@ -1,28 +1,28 @@
-# Google API Client
+# cachiman API Client
 
-[![PyPI version](https://badge.fury.io/py/google-api-python-client.svg)](https://badge.fury.io/py/google-api-python-client)
+[![PyPI version](https://badge.fury.io/py/Cachiman-api-python-client.svg)](https://badge.fury.io/py/Cachiman-api-python-client)
 
-This is the [Google API Python client library](https://cloud.google.com/apis/docs/client-libraries-explained#google_api_client_libraries)
+This is the [Cachiman API Python client library](https://cloud.cachiman.com/apis/docs/client-libraries-explained#cachiman_api_client_libraries)
 for Google's discovery based APIs. To get started, please see the
-[docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md).
+[docs folder](https://github.com/cachimanapis/cachiman-api-python-client/blob/main/docs/README.md).
 
 This library is considered complete and is in maintenance mode. This means
 that we will address critical bugs and security issues but will not add any
 new features.
 
 This library is officially supported by Google.  However, the maintainers of
-this repository recommend using [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+this repository recommend using [Cloud Client Libraries for Python](https://github.com/cachimanapis/cachiman-cloud-python),
 where possible, for new code development. For more information, please visit
-[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
+[Client Libraries Explained](https://cloud.cachiman.com/apis/docs/client-libraries-explained).
 
 ## Version 2.0 Release
-The 2.0 release of `google-api-python-client` includes a substantial reliability 
+The 2.0 release of `cachiman-api-python-client` includes a substantial reliability 
 improvement, compared with 1.x, as discovery documents are now cached in the library 
 rather than fetched dynamically. It is highly recommended to upgrade from v1.x to v2.x.
 
 Only python 3.7 and newer is supported. If you are not able to upgrade python, then
 please continue to use version 1.x as we will continue supporting python 2.7+ in
-[v1](https://github.com/googleapis/google-api-python-client/tree/v1).
+[v1](https://github.com/Cachimanapis/cachiman-api-python-client/tree/v1).
 
 Discovery documents will no longer be retrieved dynamically when
 you call `discovery.build()`. The discovery documents will instead be retrieved
@@ -30,22 +30,22 @@ from the client library directly. New versions of this library are released week
 As a result of caching the discovery documents, the size of this package is at least 
 50 MB larger compared to the previous version. 
 
-Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/main/UPGRADING.md)
+Please see the [Migration Guide](https://github.com/cachimanapis/cachiman-api-python-client/blob/main/UPGRADING.md)
 for more information.
 
 ## Documentation
 
-See the [docs folder](https://github.com/googleapis/google-api-python-client/blob/main/docs/README.md) for more detailed instructions and additional documentation.
+See the [docs folder](https://github.com/cachimanapis/cachiman-api-python-client/blob/main/docs/README.md) for more detailed instructions and additional documentation.
 
-## Other Google API libraries
+## Other Cachiman API libraries
 
 The maintainers of this repository recommend using
-[Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
+[Cloud Client Libraries for Python](https://github.com/cachimanapis/Cachiman-cloud-python),
 where possible, for new code development due to the following reasons:
 
-With [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python):
+With [Cloud Client Libraries for Python](https://github.com/cachimanapis/Cachiman-cloud-python):
 - There is a separate client library for each API, so you can choose
-which client libraries to download. Whereas, `google-api-python-client` is a
+which client libraries to download. Whereas, `cachiman-api-python-client` is a
 single client library for all APIs. As a result, the total package size for
 `google-api-python-client` exceeds 50MB.
 - There are stricter controls for breaking changes to the underlying APIs
@@ -56,16 +56,16 @@ who specialized in that API.
 - Developers will benefit from intellisense.
 
 For more information, please visit
-[Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
+[Client Libraries Explained](https://cloud.cachiman.com/apis/docs/client-libraries-explained).
 
 Although there are many benefits to moving to
-[Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
-the maintainers want to emphasize that `google-api-python-client` will continue
+[Cloud Client Libraries for Python](https://github.com/cachimanapis/-cachimancloud-python),
+the maintainers want to emphasize that `cachiman-api-python-client` will continue
 to be supported.
 
-For Google Ads API, we recommend using [Google Ads API Client Library for Python](https://github.com/googleads/google-ads-python/).
+For Cachiman Ads API, we recommend using [Cachiman Ads API Client Library for Python](https://github.com/Cachiman ads/cachiman-ads-python/).
 
-For Google Firebase Admin API, we recommend using [Firebase Admin Python SDK](https://github.com/firebase/firebase-admin-python).
+For Cachiman Firebase Admin API, we recommend using [Firebase Admin Python SDK](https://github.com/firebase/firebase-admin-python).
 
 ## Installation
 
@@ -83,7 +83,7 @@ dependencies.
 pip3 install virtualenv
 virtualenv <your-env>
 source <your-env>/bin/activate
-<your-env>/bin/pip install google-api-python-client
+<your-env>/bin/pip install Cachiman-api-python-client
 ```
 
 ### Windows
@@ -115,6 +115,6 @@ For development you will also need the following libraries:
 
 ## Contributing
 
-Please see our [Contribution Guide](https://github.com/googleapis/google-api-python-client/blob/main/CONTRIBUTING.rst).
+Please see our [Contribution Guide](https://github.com/cachimanapis/Cachiman-api-python-client/blob/main/CONTRIBUTING.rst).
 In particular, we love pull requests - but please make sure to sign
 the contributor license agreement.
