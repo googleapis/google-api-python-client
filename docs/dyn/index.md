@@ -518,6 +518,7 @@
 ## displayvideo
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v3.html)
+* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v4.html)
 
 
 ## dlp
@@ -793,6 +794,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedidentities_v1beta1.html)
 
 
+## managedkafka
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedkafka_v1.html)
+
+
 ## manufacturers
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/manufacturers_v1.html)
 
@@ -907,6 +912,10 @@
 
 ## oauth2
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/oauth2_v2.html)
+
+
+## observability
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/observability_v1.html)
 
 
 ## ondemandscanning

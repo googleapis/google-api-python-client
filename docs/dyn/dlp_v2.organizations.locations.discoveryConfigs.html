@@ -121,6 +121,11 @@ Args:
             &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
             &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
           },
+          &quot;sampleFindingsTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store sample data profile findings in an existing table or a new table in an existing dataset. Each regeneration will result in new rows in BigQuery. Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished.
+            &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
+            &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
+            &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
+          },
         },
         &quot;pubSubNotification&quot;: { # Send a Pub/Sub message into the given Pub/Sub topic to connect other systems to data profile generation. The message payload data will be the byte serialization of `DataProfilePubSubMessage`. # Publish a message into the Pub/Sub topic.
           &quot;detailOfMessage&quot;: &quot;A String&quot;, # How much data to include in the Pub/Sub message. If the user wishes to limit the size of the message, they can use resource_name and fetch the profile fields they wish to. Per table profile (not per column).
@@ -195,6 +200,14 @@ Args:
       &quot;awsLocation&quot;: { # The AWS starting location for discovery. # The AWS starting location for discovery.
         &quot;accountId&quot;: &quot;A String&quot;, # The AWS account ID that this discovery config applies to. Within an AWS organization, you can find the AWS account ID inside an AWS account ARN. Example: arn:{partition}:organizations::{management_account_id}:account/{org_id}/{account_id}
         &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
+      },
+    },
+    &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+      &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+        &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+        },
+        &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+        },
       },
     },
     &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
@@ -394,6 +407,36 @@ Args:
         },
         &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
         },
+        &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+          &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+            &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+            &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+          },
+          &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+          },
+          &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+            &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+              &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+                &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                  { # A pattern to match against one or more dataset resources.
+                    &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                  },
+                ],
+              },
+            },
+            &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+            },
+            &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+              &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+            },
+          },
+          &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+            &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+              &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+            },
+            &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+          },
+        },
       },
     ],
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of a DiscoveryConfig.
@@ -413,6 +456,11 @@ Returns:
     { # A task to execute when a data profile has been generated.
       &quot;exportData&quot;: { # If set, the detailed data profiles will be persisted to the location of your choice whenever updated. # Export data profiles into a provided location.
         &quot;profileTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store all profiles to BigQuery. * The system will create a new dataset and table for you if none are are provided. The dataset will be named `sensitive_data_protection_discovery` and table will be named `discovery_profiles`. This table will be placed in the same project as the container project running the scan. After the first profile is generated and the dataset and table are created, the discovery scan configuration will be updated with the dataset and table names. * See [Analyze data profiles stored in BigQuery](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles). * See [Sample queries for your BigQuery table](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#sample_sql_queries). * Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished. * The Pub/Sub notification is sent before the streaming buffer is guaranteed to be written, so data may not be instantly visible to queries by the time your topic receives the Pub/Sub notification. * The best practice is to use the same table for an entire organization so that you can take advantage of the [provided Looker reports](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#use_a_premade_report). If you use VPC Service Controls to define security perimeters, then you must use a separate table for each boundary.
+          &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
+          &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
+          &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
+        },
+        &quot;sampleFindingsTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store sample data profile findings in an existing table or a new table in an existing dataset. Each regeneration will result in new rows in BigQuery. Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished.
           &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
           &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
           &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
@@ -491,6 +539,14 @@ Returns:
     &quot;awsLocation&quot;: { # The AWS starting location for discovery. # The AWS starting location for discovery.
       &quot;accountId&quot;: &quot;A String&quot;, # The AWS account ID that this discovery config applies to. Within an AWS organization, you can find the AWS account ID inside an AWS account ARN. Example: arn:{partition}:organizations::{management_account_id}:account/{org_id}/{account_id}
       &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
+    },
+  },
+  &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+    &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+      &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+      },
+      &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+      },
     },
   },
   &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
@@ -689,6 +745,36 @@ Returns:
         },
       },
       &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
+      },
+      &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+        &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+          &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+          &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+        },
+        &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+        },
+        &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+          &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+            &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+              &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                { # A pattern to match against one or more dataset resources.
+                  &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                },
+              ],
+            },
+          },
+          &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+          },
+          &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+            &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+          },
+        },
+        &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
+          &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+        },
       },
     },
   ],
@@ -737,6 +823,11 @@ Returns:
           &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
           &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
         },
+        &quot;sampleFindingsTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store sample data profile findings in an existing table or a new table in an existing dataset. Each regeneration will result in new rows in BigQuery. Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished.
+          &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
+          &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
+          &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
+        },
       },
       &quot;pubSubNotification&quot;: { # Send a Pub/Sub message into the given Pub/Sub topic to connect other systems to data profile generation. The message payload data will be the byte serialization of `DataProfilePubSubMessage`. # Publish a message into the Pub/Sub topic.
         &quot;detailOfMessage&quot;: &quot;A String&quot;, # How much data to include in the Pub/Sub message. If the user wishes to limit the size of the message, they can use resource_name and fetch the profile fields they wish to. Per table profile (not per column).
@@ -811,6 +902,14 @@ Returns:
     &quot;awsLocation&quot;: { # The AWS starting location for discovery. # The AWS starting location for discovery.
       &quot;accountId&quot;: &quot;A String&quot;, # The AWS account ID that this discovery config applies to. Within an AWS organization, you can find the AWS account ID inside an AWS account ARN. Example: arn:{partition}:organizations::{management_account_id}:account/{org_id}/{account_id}
       &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
+    },
+  },
+  &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+    &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+      &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+      },
+      &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+      },
     },
   },
   &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
@@ -1010,6 +1109,36 @@ Returns:
       },
       &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
       },
+      &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+        &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+          &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+          &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+        },
+        &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+        },
+        &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+          &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+            &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+              &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                { # A pattern to match against one or more dataset resources.
+                  &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                },
+              ],
+            },
+          },
+          &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+          },
+          &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+            &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+          },
+        },
+        &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
+          &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+        },
+      },
     },
   ],
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of a DiscoveryConfig.
@@ -1040,6 +1169,11 @@ Returns:
         { # A task to execute when a data profile has been generated.
           &quot;exportData&quot;: { # If set, the detailed data profiles will be persisted to the location of your choice whenever updated. # Export data profiles into a provided location.
             &quot;profileTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store all profiles to BigQuery. * The system will create a new dataset and table for you if none are are provided. The dataset will be named `sensitive_data_protection_discovery` and table will be named `discovery_profiles`. This table will be placed in the same project as the container project running the scan. After the first profile is generated and the dataset and table are created, the discovery scan configuration will be updated with the dataset and table names. * See [Analyze data profiles stored in BigQuery](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles). * See [Sample queries for your BigQuery table](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#sample_sql_queries). * Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished. * The Pub/Sub notification is sent before the streaming buffer is guaranteed to be written, so data may not be instantly visible to queries by the time your topic receives the Pub/Sub notification. * The best practice is to use the same table for an entire organization so that you can take advantage of the [provided Looker reports](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#use_a_premade_report). If you use VPC Service Controls to define security perimeters, then you must use a separate table for each boundary.
+              &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
+              &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
+              &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
+            },
+            &quot;sampleFindingsTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store sample data profile findings in an existing table or a new table in an existing dataset. Each regeneration will result in new rows in BigQuery. Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished.
               &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
               &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
               &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
@@ -1118,6 +1252,14 @@ Returns:
         &quot;awsLocation&quot;: { # The AWS starting location for discovery. # The AWS starting location for discovery.
           &quot;accountId&quot;: &quot;A String&quot;, # The AWS account ID that this discovery config applies to. Within an AWS organization, you can find the AWS account ID inside an AWS account ARN. Example: arn:{partition}:organizations::{management_account_id}:account/{org_id}/{account_id}
           &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
+        },
+      },
+      &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+        &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+          &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+          },
+          &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+          },
         },
       },
       &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
@@ -1317,6 +1459,36 @@ Returns:
           },
           &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
           },
+          &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+            &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+              &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+              &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+            },
+            &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+            },
+            &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+              &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+                &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+                  &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                    { # A pattern to match against one or more dataset resources.
+                      &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                    },
+                  ],
+                },
+              },
+              &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+              },
+              &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+                &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+              },
+            },
+            &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+              &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+                &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+              },
+              &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+            },
+          },
         },
       ],
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of a DiscoveryConfig.
@@ -1355,6 +1527,11 @@ Args:
       { # A task to execute when a data profile has been generated.
         &quot;exportData&quot;: { # If set, the detailed data profiles will be persisted to the location of your choice whenever updated. # Export data profiles into a provided location.
           &quot;profileTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store all profiles to BigQuery. * The system will create a new dataset and table for you if none are are provided. The dataset will be named `sensitive_data_protection_discovery` and table will be named `discovery_profiles`. This table will be placed in the same project as the container project running the scan. After the first profile is generated and the dataset and table are created, the discovery scan configuration will be updated with the dataset and table names. * See [Analyze data profiles stored in BigQuery](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles). * See [Sample queries for your BigQuery table](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#sample_sql_queries). * Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished. * The Pub/Sub notification is sent before the streaming buffer is guaranteed to be written, so data may not be instantly visible to queries by the time your topic receives the Pub/Sub notification. * The best practice is to use the same table for an entire organization so that you can take advantage of the [provided Looker reports](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#use_a_premade_report). If you use VPC Service Controls to define security perimeters, then you must use a separate table for each boundary.
+            &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
+            &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
+            &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
+          },
+          &quot;sampleFindingsTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store sample data profile findings in an existing table or a new table in an existing dataset. Each regeneration will result in new rows in BigQuery. Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished.
             &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
             &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
             &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
@@ -1433,6 +1610,14 @@ Args:
       &quot;awsLocation&quot;: { # The AWS starting location for discovery. # The AWS starting location for discovery.
         &quot;accountId&quot;: &quot;A String&quot;, # The AWS account ID that this discovery config applies to. Within an AWS organization, you can find the AWS account ID inside an AWS account ARN. Example: arn:{partition}:organizations::{management_account_id}:account/{org_id}/{account_id}
         &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
+      },
+    },
+    &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+      &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+        &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+        },
+        &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+        },
       },
     },
     &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
@@ -1632,6 +1817,36 @@ Args:
         },
         &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
         },
+        &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+          &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+            &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+            &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+          },
+          &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+          },
+          &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+            &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+              &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+                &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                  { # A pattern to match against one or more dataset resources.
+                    &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                  },
+                ],
+              },
+            },
+            &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+            },
+            &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+              &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+            },
+          },
+          &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+            &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+              &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+            },
+            &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+          },
+        },
       },
     ],
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The last update timestamp of a DiscoveryConfig.
@@ -1652,6 +1867,11 @@ Returns:
     { # A task to execute when a data profile has been generated.
       &quot;exportData&quot;: { # If set, the detailed data profiles will be persisted to the location of your choice whenever updated. # Export data profiles into a provided location.
         &quot;profileTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store all profiles to BigQuery. * The system will create a new dataset and table for you if none are are provided. The dataset will be named `sensitive_data_protection_discovery` and table will be named `discovery_profiles`. This table will be placed in the same project as the container project running the scan. After the first profile is generated and the dataset and table are created, the discovery scan configuration will be updated with the dataset and table names. * See [Analyze data profiles stored in BigQuery](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles). * See [Sample queries for your BigQuery table](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#sample_sql_queries). * Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished. * The Pub/Sub notification is sent before the streaming buffer is guaranteed to be written, so data may not be instantly visible to queries by the time your topic receives the Pub/Sub notification. * The best practice is to use the same table for an entire organization so that you can take advantage of the [provided Looker reports](https://cloud.google.com/sensitive-data-protection/docs/analyze-data-profiles#use_a_premade_report). If you use VPC Service Controls to define security perimeters, then you must use a separate table for each boundary.
+          &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
+          &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
+          &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
+        },
+        &quot;sampleFindingsTable&quot;: { # Message defining the location of a BigQuery table. A table is uniquely identified by its project_id, dataset_id, and table_name. Within a query a table is often referenced with a string in the format of: `:.` or `..`. # Store sample data profile findings in an existing table or a new table in an existing dataset. Each regeneration will result in new rows in BigQuery. Data is inserted using [streaming insert](https://cloud.google.com/blog/products/bigquery/life-of-a-bigquery-streaming-insert) and so data may be in the buffer for a period of time after the profile has finished.
           &quot;datasetId&quot;: &quot;A String&quot;, # Dataset ID of the table.
           &quot;projectId&quot;: &quot;A String&quot;, # The Google Cloud project ID of the project containing the table. If omitted, project ID is inferred from the API call.
           &quot;tableId&quot;: &quot;A String&quot;, # Name of the table.
@@ -1730,6 +1950,14 @@ Returns:
     &quot;awsLocation&quot;: { # The AWS starting location for discovery. # The AWS starting location for discovery.
       &quot;accountId&quot;: &quot;A String&quot;, # The AWS account ID that this discovery config applies to. Within an AWS organization, you can find the AWS account ID inside an AWS account ARN. Example: arn:{partition}:organizations::{management_account_id}:account/{org_id}/{account_id}
       &quot;allAssetInventoryAssets&quot;: True or False, # All AWS assets stored in Asset Inventory that didn&#x27;t match other AWS discovery configs.
+    },
+  },
+  &quot;processingLocation&quot;: { # Configure processing location for discovery and inspection. For example, image OCR is only provided in limited regions but configuring ProcessingLocation will redirect OCR to a location where OCR is provided. # Optional. Processing location configuration. Vertex AI dataset scanning will set processing_location.image_fallback_type to MultiRegionProcessing by default.
+    &quot;imageFallbackLocation&quot;: { # Configure image processing to fall back to the configured processing option below if unavailable in the request location. # Image processing will fall back using this configuration.
+      &quot;globalProcessing&quot;: { # Processing will happen in the global region. # Processing will happen in the global region.
+      },
+      &quot;multiRegionProcessing&quot;: { # Processing will happen in a multi-region that contains the current region if available. # Processing will happen in a multi-region that contains the current region if available.
+      },
     },
   },
   &quot;status&quot;: &quot;A String&quot;, # Required. A status for this configuration.
@@ -1928,6 +2156,36 @@ Returns:
         },
       },
       &quot;secretsTarget&quot;: { # Discovery target for credentials and secrets in cloud resource metadata. This target does not include any filtering or frequency controls. Cloud DLP will scan cloud resource metadata for secrets daily. No inspect template should be included in the discovery config for a security benchmarks scan. Instead, the built-in list of secrets and credentials infoTypes will be used (see https://cloud.google.com/sensitive-data-protection/docs/infotypes-reference#credentials_and_secrets). Credentials and secrets discovered will be reported as vulnerabilities to Security Command Center. # Discovery target that looks for credentials and secrets stored in cloud resource metadata and reports them as vulnerabilities to Security Command Center. Only one target of this type is allowed.
+      },
+      &quot;vertexDatasetTarget&quot;: { # Target used to match against for discovery with Vertex AI datasets. # Vertex AI dataset target for Discovery. The first target to match a dataset will be the one applied. Note that discovery for Vertex AI can incur Cloud Storage Class B operation charges for storage.objects.get operations and retrieval fees. For more information, see [Cloud Storage pricing](https://cloud.google.com/storage/pricing#price-tables). Note that discovery for Vertex AI dataset will not be able to scan images unless DiscoveryConfig.processing_location.image_fallback_location has multi_region_processing or global_processing configured.
+        &quot;conditions&quot;: { # Requirements that must be true before a dataset is profiled for the first time. # In addition to matching the filter, these conditions must be true before a profile is generated.
+          &quot;createdAfter&quot;: &quot;A String&quot;, # Vertex AI dataset must have been created after this date. Used to avoid backfilling.
+          &quot;minAge&quot;: &quot;A String&quot;, # Minimum age a Vertex AI dataset must have. If set, the value must be 1 hour or greater.
+        },
+        &quot;disabled&quot;: { # Do not profile the tables. # Disable profiling for datasets that match this filter.
+        },
+        &quot;filter&quot;: { # Determines what datasets will have profiles generated within an organization or project. Includes the ability to filter by regular expression patterns on project ID or dataset regex. # Required. The datasets the discovery cadence applies to. The first target with a matching filter will be the one to apply to a dataset.
+          &quot;collection&quot;: { # Match dataset resources using regex filters. # A specific set of Vertex AI datasets for this filter to apply to.
+            &quot;vertexDatasetRegexes&quot;: { # A collection of regular expressions to determine what datasets to match against. # The regex used to filter dataset resources.
+              &quot;patterns&quot;: [ # Required. The group of regular expression patterns to match against one or more datasets. Maximum of 100 entries. The sum of the lengths of all regular expressions can&#x27;t exceed 10 KiB.
+                { # A pattern to match against one or more dataset resources.
+                  &quot;projectIdRegex&quot;: &quot;A String&quot;, # For organizations, if unset, will match all projects. Has no effect for configurations created within a project.
+                },
+              ],
+            },
+          },
+          &quot;others&quot;: { # Match discovery resources not covered by any other filter. # Catch-all. This should always be the last target in the list because anything above it will apply first. Should only appear once in a configuration. If none is specified, a default one will be added automatically.
+          },
+          &quot;vertexDatasetResourceReference&quot;: { # Identifies a single Vertex AI dataset. # The dataset resource to scan. Targets including this can only include one target (the target with this dataset resource reference).
+            &quot;datasetResourceName&quot;: &quot;A String&quot;, # Required. The name of the dataset resource. If set within a project-level configuration, the specified resource must be within the project.
+          },
+        },
+        &quot;generationCadence&quot;: { # How often existing datasets should have their profiles refreshed. New datasets are scanned as quickly as possible depending on system capacity. # How often and when to update profiles. New datasets that match both the filter and conditions are scanned as quickly as possible depending on system capacity.
+          &quot;inspectTemplateModifiedCadence&quot;: { # The cadence at which to update data profiles when the inspection rules defined by the `InspectTemplate` change. # Governs when to update data profiles when the inspection rules defined by the `InspectTemplate` change. If not set, changing the template will not cause a data profile to be updated.
+            &quot;frequency&quot;: &quot;A String&quot;, # How frequently data profiles can be updated when the template is modified. Defaults to never.
+          },
+          &quot;refreshFrequency&quot;: &quot;A String&quot;, # If you set this field, profiles are refreshed at this frequency regardless of whether the underlying datasets have changed. Defaults to never.
+        },
       },
     },
   ],
