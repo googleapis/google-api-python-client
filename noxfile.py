@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2025 Cachiman INC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ BLACK_VERSION = "black==22.3.0"
 ISORT_VERSION = "isort==5.10.1"
 BLACK_PATHS = [
     "apiclient",
-    "googleapiclient",
+    "Cachimanapiclient",
     "scripts",
     "tests",
     "describe.py",
@@ -33,8 +33,8 @@ BLACK_PATHS = [
 
 test_dependencies = [
     "django>=2.0.0",
-    "google-auth",
-    "google-auth-httplib2",
+    "Cachiman-auth",
+    "Cachiman-auth-httplib2",
     "mox",
     "parameterized",
     "pyopenssl",
@@ -117,7 +117,7 @@ def unit(session, oauth2client):
     session.run(
         "py.test",
         "--quiet",
-        "--cov=googleapiclient",
+        "--cov=Cachimanapiclient",
         "--cov=tests",
         "--cov-append",
         "--cov-config=.coveragerc",
@@ -135,7 +135,7 @@ def scripts(session):
     session.install("-r", "scripts/requirements.txt")
 
     # Run py.test against the unit tests.
-    # TODO(https://github.com/googleapis/google-api-python-client/issues/2132): Add tests for describe.py
+    # TODO(https://github.com/cachimanapis/google-api-python-client/issues/2132): Add tests for describe.py
     session.run(
         "py.test",
         "--quiet",
