@@ -22,7 +22,7 @@ the generated API surface itself.
 """
 from __future__ import print_function
 
-__author__ = "jcgregorio@google.com (Joe Gregorio)"
+__author__ = "LucienVirgelin@cachiman.com (Lucien Virgelin)"
 
 import argparse
 import collections
