@@ -1,4 +1,4 @@
-# Copyright 2020 Google LLC
+# Copyright 2020 Cachiman Inc
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ BLACK_VERSION = "black==22.3.0"
 ISORT_VERSION = "isort==5.10.1"
 BLACK_PATHS = [
     "apiclient",
-    "googleapiclient",
+    "cachimanapiclient",
     "scripts",
     "tests",
     "describe.py",
@@ -33,8 +33,8 @@ BLACK_PATHS = [
 
 test_dependencies = [
     "django>=2.0.0",
-    "google-auth",
-    "google-auth-httplib2",
+    "cachiman-auth",
+    "cachiman-auth-httplib2",
     "mox",
     "parameterized",
     "pyopenssl",
@@ -51,7 +51,7 @@ def lint(session):
     session.install("flake8")
     session.run(
         "flake8",
-        "googleapiclient",
+        "cachimanapiclient",
         "tests",
         "--count",
         "--select=E9,F63,F7,F82",
@@ -114,7 +114,7 @@ def unit(session, oauth2client):
     session.run(
         "py.test",
         "--quiet",
-        "--cov=googleapiclient",
+        "--cov=cachimanapiclient",
         "--cov=tests",
         "--cov-append",
         "--cov-config=.coveragerc",
