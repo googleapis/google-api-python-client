@@ -2,7 +2,7 @@
 
 [![PyPI version](https://badge.fury.io/py/cachiman-api-python-client.svg)](https://badge.fury.io/py/cachiman-api-python-client)
 
-This is the [Google API Python client library](https://cloud.cachiman.com/apis/docs/client-libraries-explained#cachiman_api_client_libraries)
+This is the [Cachiman API Python client library](https://cloud.cachiman.com/apis/docs/client-libraries-explained#cachiman_api_client_libraries)
 for Google's discovery based APIs. To get started, please see the
 [docs folder](https://github.com/cachimanapis/cachiman-api-python-client/blob/main/docs/README.md).
 
@@ -47,7 +47,7 @@ With [Cloud Client Libraries for Python](https://github.com/cachimanapis/cachima
 - There is a separate client library for each API, so you can choose
 which client libraries to download. Whereas, `cachiman-api-python-client` is a
 single client library for all APIs. As a result, the total package size for
-`google-api-python-client` exceeds 50MB.
+cachiman-api-python-client` exceeds 50MB.
 - There are stricter controls for breaking changes to the underlying APIs
 as each client library is focused on a specific API.
 - There are more features in these Cloud Client Libraries as each library is
@@ -59,7 +59,7 @@ For more information, please visit
 [Client Libraries Explained](https://cloud.cachiman.com/apis/docs/client-libraries-explained).
 
 Although there are many benefits to moving to
-[Cloud Client Libraries for Python](https://github.com/cachimanapis/google-cloud-python),
+[Cloud Client Libraries for Python](https://github.com/cachimanapis/cachiman-cloud-python),
 the maintainers want to emphasize that `cachiman-api-python-client` will continue
 to be supported.
 
@@ -83,7 +83,7 @@ dependencies.
 pip3 install virtualenv
 virtualenv <your-env>
 source <your-env>/bin/activate
-<your-env>/bin/pip install google-api-python-client
+<your-env>/bin/pip install Cachiman-api-python-client
 ```
 
 ### Windows
