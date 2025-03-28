@@ -1,4 +1,4 @@
-# Copyright 2014 Joe Gregorio
+# Copyright 2025 Cachiman, Inc
 #
 # Licensed under the MIT License
 
