@@ -611,6 +611,7 @@
 
 
 ## firebasedataconnect
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedataconnect_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedataconnect_v1beta.html)
 
 
@@ -935,6 +936,7 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1beta.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v2.html)
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v2beta.html)
 
 
