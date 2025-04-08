@@ -255,6 +255,11 @@ h1, h2, h3 {
 <p class="firstline">Returns the schedules Resource.</p>
 
 <p class="toc_element">
+  <code><a href="aiplatform_v1beta1.projects.locations.sessions.html">sessions()</a></code>
+</p>
+<p class="firstline">Returns the sessions Resource.</p>
+
+<p class="toc_element">
   <code><a href="aiplatform_v1beta1.projects.locations.solvers.html">solvers()</a></code>
 </p>
 <p class="firstline">Returns the solvers Resource.</p>
@@ -309,7 +314,7 @@ h1, h2, h3 {
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets information about a location.</p>
 <p class="toc_element">
-  <code><a href="#list">list(name, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
+  <code><a href="#list">list(name, extraLocationTypes=None, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists information about the supported locations for this service.</p>
 <p class="toc_element">
   <code><a href="#list_next">list_next()</a></code></p>
@@ -871,7 +876,7 @@ Args:
     The object takes the form of:
 
 { # Request message for EvaluationService.EvaluateDataset.
-  &quot;autoraterConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Optional. Autorater config used for evaluation.
+  &quot;autoraterConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Optional. Autorater config used for evaluation. Currently only publisher Gemini models are supported. Format: `projects/{PROJECT}/locations/{LOCATION}/publishers/google/models/{MODEL}.`
     &quot;autoraterModel&quot;: &quot;A String&quot;, # Optional. The fully qualified name of the publisher model or tuned autorater endpoint to use. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Tuned model endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`
     &quot;flipEnabled&quot;: True or False, # Optional. Whether to flip the candidate and baseline responses. This is only applicable to the pairwise metric. If enabled, also provide PairwiseMetricSpec.candidate_response_field_name and PairwiseMetricSpec.baseline_response_field_name. When rendering PairwiseMetricSpec.metric_prompt_template, the candidate and baseline fields will be flipped for half of the samples to reduce bias.
     &quot;samplingCount&quot;: 42, # Optional. Number of samples for each instance in the dataset. If not specified, the default is 4. Minimum value is 1, maximum value is 32.
@@ -880,7 +885,7 @@ Args:
     &quot;bigquerySource&quot;: { # The BigQuery location for the input content. # BigQuery source holds the dataset.
       &quot;inputUri&quot;: &quot;A String&quot;, # Required. BigQuery URI to a table, up to 2000 characters long. Accepted forms: * BigQuery path. For example: `bq://projectId.bqDatasetId.bqTableId`.
     },
-    &quot;gcsSource&quot;: { # The Google Cloud Storage location for the input content. # Cloud storage source holds the dataset.
+    &quot;gcsSource&quot;: { # The Google Cloud Storage location for the input content. # Cloud storage source holds the dataset. Currently only one Cloud Storage file path is supported.
       &quot;uris&quot;: [ # Required. Google Cloud Storage URI(-s) to the input file(s). May contain wildcards. For more information on wildcards, see https://cloud.google.com/storage/docs/gsutil/addlhelp/WildcardNames.
         &quot;A String&quot;,
       ],
@@ -899,10 +904,16 @@ Args:
       &quot;pairwiseMetricSpec&quot;: { # Spec for pairwise metric. # Spec for pairwise metric.
         &quot;baselineResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the baseline response.
         &quot;candidateResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the candidate response.
+        &quot;customOutputFormatConfig&quot;: { # Spec for custom output format configuration. # Optional. CustomOutputFormatConfig allows customization of metric output. When this config is set, the default output is replaced with the raw output string. If a custom format is chosen, the `pairwise_choice` and `explanation` fields in the corresponding metric result will be empty.
+          &quot;returnRawOutput&quot;: True or False, # Optional. Whether to return raw output.
+        },
         &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Metric prompt template for pairwise metric.
         &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for pairwise metric.
       },
       &quot;pointwiseMetricSpec&quot;: { # Spec for pointwise metric. # Spec for pointwise metric.
+        &quot;customOutputFormatConfig&quot;: { # Spec for custom output format configuration. # Optional. CustomOutputFormatConfig allows customization of metric output. By default, metrics return a score and explanation. When this config is set, the default output is replaced with either: - The raw output string. - A parsed output based on a user-defined schema. If a custom format is chosen, the `score` and `explanation` fields in the corresponding metric result will be empty.
+          &quot;returnRawOutput&quot;: True or False, # Optional. Whether to return raw output.
+        },
         &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Metric prompt template for pointwise metric.
         &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for pointwise metric.
       },
@@ -1045,11 +1056,67 @@ Args:
   },
   &quot;pairwiseMetricInput&quot;: { # Input for pairwise metric. # Input for pairwise metric.
     &quot;instance&quot;: { # Pairwise metric instance. Usually one instance corresponds to one row in an evaluation dataset. # Required. Pairwise metric instance.
+      &quot;contentMapInstance&quot;: { # Map of placeholder in metric prompt template to contents of model input. # Key-value contents for the mutlimodality input, including text, image, video, audio, and pdf, etc. The key is placeholder in metric prompt template, and the value is the multimodal content.
+        &quot;values&quot;: { # Optional. Map of placeholder to contents.
+          &quot;a_key&quot;: { # Repeated Content type.
+            &quot;contents&quot;: [ # Optional. Repeated contents.
+              { # The base structured datatype containing multi-part content of a message. A `Content` includes a `role` field designating the producer of the `Content` and a `parts` field containing multi-part data that contains the content of the message turn.
+                &quot;parts&quot;: [ # Required. Ordered `Parts` that constitute a single message. Parts may have different IANA MIME types.
+                  { # A datatype containing media that is part of a multi-part `Content` message. A `Part` consists of data which has an associated datatype. A `Part` can only contain one of the accepted types in `Part.data`. A `Part` must have a fixed IANA MIME type identifying the type and subtype of the media if `inline_data` or `file_data` field is filled with raw bytes.
+                    &quot;codeExecutionResult&quot;: { # Result of executing the [ExecutableCode]. Always follows a `part` containing the [ExecutableCode]. # Optional. Result of executing the [ExecutableCode].
+                      &quot;outcome&quot;: &quot;A String&quot;, # Required. Outcome of the code execution.
+                      &quot;output&quot;: &quot;A String&quot;, # Optional. Contains stdout when code execution is successful, stderr or other description otherwise.
+                    },
+                    &quot;executableCode&quot;: { # Code generated by the model that is meant to be executed, and the result returned to the model. Generated when using the [FunctionDeclaration] tool and [FunctionCallingConfig] mode is set to [Mode.CODE]. # Optional. Code generated by the model that is meant to be executed.
+                      &quot;code&quot;: &quot;A String&quot;, # Required. The code to be executed.
+                      &quot;language&quot;: &quot;A String&quot;, # Required. Programming language of the `code`.
+                    },
+                    &quot;fileData&quot;: { # URI based data. # Optional. URI based data.
+                      &quot;displayName&quot;: &quot;A String&quot;, # Optional. Display name of the file data. Used to provide a label or filename to distinguish file datas. This field is only returned in PromptMessage for prompt management. It is not currently used in the Gemini GenerateContent calls.
+                      &quot;fileUri&quot;: &quot;A String&quot;, # Required. URI.
+                      &quot;mimeType&quot;: &quot;A String&quot;, # Required. The IANA standard MIME type of the source data.
+                    },
+                    &quot;functionCall&quot;: { # A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] and a structured JSON object containing the parameters and their values. # Optional. A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] with the parameters and their values.
+                      &quot;args&quot;: { # Optional. Required. The function parameters and values in JSON object format. See [FunctionDeclaration.parameters] for parameter details.
+                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                      },
+                      &quot;id&quot;: &quot;A String&quot;, # Optional. The unique id of the function call. If populated, the client to execute the `function_call` and return the response with the matching `id`.
+                      &quot;name&quot;: &quot;A String&quot;, # Required. The name of the function to call. Matches [FunctionDeclaration.name].
+                    },
+                    &quot;functionResponse&quot;: { # The result output from a [FunctionCall] that contains a string representing the [FunctionDeclaration.name] and a structured JSON object containing any output from the function is used as context to the model. This should contain the result of a [FunctionCall] made based on model prediction. # Optional. The result output of a [FunctionCall] that contains a string representing the [FunctionDeclaration.name] and a structured JSON object containing any output from the function call. It is used as context to the model.
+                      &quot;id&quot;: &quot;A String&quot;, # Optional. The id of the function call this response is for. Populated by the client to match the corresponding function call `id`.
+                      &quot;name&quot;: &quot;A String&quot;, # Required. The name of the function to call. Matches [FunctionDeclaration.name] and [FunctionCall.name].
+                      &quot;response&quot;: { # Required. The function response in JSON object format. Use &quot;output&quot; key to specify function output and &quot;error&quot; key to specify error details (if any). If &quot;output&quot; and &quot;error&quot; keys are not specified, then whole &quot;response&quot; is treated as function output.
+                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                      },
+                    },
+                    &quot;inlineData&quot;: { # Content blob. # Optional. Inlined bytes data.
+                      &quot;data&quot;: &quot;A String&quot;, # Required. Raw bytes.
+                      &quot;displayName&quot;: &quot;A String&quot;, # Optional. Display name of the blob. Used to provide a label or filename to distinguish blobs. This field is only returned in PromptMessage for prompt management. It is not currently used in the Gemini GenerateContent calls.
+                      &quot;mimeType&quot;: &quot;A String&quot;, # Required. The IANA standard MIME type of the source data.
+                    },
+                    &quot;text&quot;: &quot;A String&quot;, # Optional. Text part (can be code).
+                    &quot;thought&quot;: True or False, # Output only. Indicates if the part is thought from the model.
+                    &quot;videoMetadata&quot;: { # Metadata describes the input video content. # Optional. Video metadata. The metadata should only be specified while the video data is presented in inline_data or file_data.
+                      &quot;endOffset&quot;: &quot;A String&quot;, # Optional. The end offset of the video.
+                      &quot;startOffset&quot;: &quot;A String&quot;, # Optional. The start offset of the video.
+                    },
+                  },
+                ],
+                &quot;role&quot;: &quot;A String&quot;, # Optional. The producer of the content. Must be either &#x27;user&#x27; or &#x27;model&#x27;. Useful to set for multi-turn conversations, otherwise can be left blank or unset.
+              },
+            ],
+          },
+        },
+      },
       &quot;jsonInstance&quot;: &quot;A String&quot;, # Instance specified as a json string. String key-value pairs are expected in the json_instance to render PairwiseMetricSpec.instance_prompt_template.
     },
     &quot;metricSpec&quot;: { # Spec for pairwise metric. # Required. Spec for pairwise metric.
       &quot;baselineResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the baseline response.
       &quot;candidateResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the candidate response.
+      &quot;customOutputFormatConfig&quot;: { # Spec for custom output format configuration. # Optional. CustomOutputFormatConfig allows customization of metric output. When this config is set, the default output is replaced with the raw output string. If a custom format is chosen, the `pairwise_choice` and `explanation` fields in the corresponding metric result will be empty.
+        &quot;returnRawOutput&quot;: True or False, # Optional. Whether to return raw output.
+      },
       &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Metric prompt template for pairwise metric.
       &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for pairwise metric.
     },
@@ -1082,9 +1149,65 @@ Args:
   },
   &quot;pointwiseMetricInput&quot;: { # Input for pointwise metric. # Input for pointwise metric.
     &quot;instance&quot;: { # Pointwise metric instance. Usually one instance corresponds to one row in an evaluation dataset. # Required. Pointwise metric instance.
+      &quot;contentMapInstance&quot;: { # Map of placeholder in metric prompt template to contents of model input. # Key-value contents for the mutlimodality input, including text, image, video, audio, and pdf, etc. The key is placeholder in metric prompt template, and the value is the multimodal content.
+        &quot;values&quot;: { # Optional. Map of placeholder to contents.
+          &quot;a_key&quot;: { # Repeated Content type.
+            &quot;contents&quot;: [ # Optional. Repeated contents.
+              { # The base structured datatype containing multi-part content of a message. A `Content` includes a `role` field designating the producer of the `Content` and a `parts` field containing multi-part data that contains the content of the message turn.
+                &quot;parts&quot;: [ # Required. Ordered `Parts` that constitute a single message. Parts may have different IANA MIME types.
+                  { # A datatype containing media that is part of a multi-part `Content` message. A `Part` consists of data which has an associated datatype. A `Part` can only contain one of the accepted types in `Part.data`. A `Part` must have a fixed IANA MIME type identifying the type and subtype of the media if `inline_data` or `file_data` field is filled with raw bytes.
+                    &quot;codeExecutionResult&quot;: { # Result of executing the [ExecutableCode]. Always follows a `part` containing the [ExecutableCode]. # Optional. Result of executing the [ExecutableCode].
+                      &quot;outcome&quot;: &quot;A String&quot;, # Required. Outcome of the code execution.
+                      &quot;output&quot;: &quot;A String&quot;, # Optional. Contains stdout when code execution is successful, stderr or other description otherwise.
+                    },
+                    &quot;executableCode&quot;: { # Code generated by the model that is meant to be executed, and the result returned to the model. Generated when using the [FunctionDeclaration] tool and [FunctionCallingConfig] mode is set to [Mode.CODE]. # Optional. Code generated by the model that is meant to be executed.
+                      &quot;code&quot;: &quot;A String&quot;, # Required. The code to be executed.
+                      &quot;language&quot;: &quot;A String&quot;, # Required. Programming language of the `code`.
+                    },
+                    &quot;fileData&quot;: { # URI based data. # Optional. URI based data.
+                      &quot;displayName&quot;: &quot;A String&quot;, # Optional. Display name of the file data. Used to provide a label or filename to distinguish file datas. This field is only returned in PromptMessage for prompt management. It is not currently used in the Gemini GenerateContent calls.
+                      &quot;fileUri&quot;: &quot;A String&quot;, # Required. URI.
+                      &quot;mimeType&quot;: &quot;A String&quot;, # Required. The IANA standard MIME type of the source data.
+                    },
+                    &quot;functionCall&quot;: { # A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] and a structured JSON object containing the parameters and their values. # Optional. A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] with the parameters and their values.
+                      &quot;args&quot;: { # Optional. Required. The function parameters and values in JSON object format. See [FunctionDeclaration.parameters] for parameter details.
+                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                      },
+                      &quot;id&quot;: &quot;A String&quot;, # Optional. The unique id of the function call. If populated, the client to execute the `function_call` and return the response with the matching `id`.
+                      &quot;name&quot;: &quot;A String&quot;, # Required. The name of the function to call. Matches [FunctionDeclaration.name].
+                    },
+                    &quot;functionResponse&quot;: { # The result output from a [FunctionCall] that contains a string representing the [FunctionDeclaration.name] and a structured JSON object containing any output from the function is used as context to the model. This should contain the result of a [FunctionCall] made based on model prediction. # Optional. The result output of a [FunctionCall] that contains a string representing the [FunctionDeclaration.name] and a structured JSON object containing any output from the function call. It is used as context to the model.
+                      &quot;id&quot;: &quot;A String&quot;, # Optional. The id of the function call this response is for. Populated by the client to match the corresponding function call `id`.
+                      &quot;name&quot;: &quot;A String&quot;, # Required. The name of the function to call. Matches [FunctionDeclaration.name] and [FunctionCall.name].
+                      &quot;response&quot;: { # Required. The function response in JSON object format. Use &quot;output&quot; key to specify function output and &quot;error&quot; key to specify error details (if any). If &quot;output&quot; and &quot;error&quot; keys are not specified, then whole &quot;response&quot; is treated as function output.
+                        &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                      },
+                    },
+                    &quot;inlineData&quot;: { # Content blob. # Optional. Inlined bytes data.
+                      &quot;data&quot;: &quot;A String&quot;, # Required. Raw bytes.
+                      &quot;displayName&quot;: &quot;A String&quot;, # Optional. Display name of the blob. Used to provide a label or filename to distinguish blobs. This field is only returned in PromptMessage for prompt management. It is not currently used in the Gemini GenerateContent calls.
+                      &quot;mimeType&quot;: &quot;A String&quot;, # Required. The IANA standard MIME type of the source data.
+                    },
+                    &quot;text&quot;: &quot;A String&quot;, # Optional. Text part (can be code).
+                    &quot;thought&quot;: True or False, # Output only. Indicates if the part is thought from the model.
+                    &quot;videoMetadata&quot;: { # Metadata describes the input video content. # Optional. Video metadata. The metadata should only be specified while the video data is presented in inline_data or file_data.
+                      &quot;endOffset&quot;: &quot;A String&quot;, # Optional. The end offset of the video.
+                      &quot;startOffset&quot;: &quot;A String&quot;, # Optional. The start offset of the video.
+                    },
+                  },
+                ],
+                &quot;role&quot;: &quot;A String&quot;, # Optional. The producer of the content. Must be either &#x27;user&#x27; or &#x27;model&#x27;. Useful to set for multi-turn conversations, otherwise can be left blank or unset.
+              },
+            ],
+          },
+        },
+      },
       &quot;jsonInstance&quot;: &quot;A String&quot;, # Instance specified as a json string. String key-value pairs are expected in the json_instance to render PointwiseMetricSpec.instance_prompt_template.
     },
     &quot;metricSpec&quot;: { # Spec for pointwise metric. # Required. Spec for pointwise metric.
+      &quot;customOutputFormatConfig&quot;: { # Spec for custom output format configuration. # Optional. CustomOutputFormatConfig allows customization of metric output. By default, metrics return a score and explanation. When this config is set, the default output is replaced with either: - The raw output string. - A parsed output based on a user-defined schema. If a custom format is chosen, the `score` and `explanation` fields in the corresponding metric result will be empty.
+        &quot;returnRawOutput&quot;: True or False, # Optional. Whether to return raw output.
+      },
       &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Metric prompt template for pointwise metric.
       &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for pointwise metric.
     },
@@ -1148,6 +1271,13 @@ Args:
       &quot;rougeType&quot;: &quot;A String&quot;, # Optional. Supported rouge types are rougen[1-9], rougeL, and rougeLsum.
       &quot;splitSummaries&quot;: True or False, # Optional. Whether to split summaries while using rougeLsum.
       &quot;useStemmer&quot;: True or False, # Optional. Whether to use stemmer to compute rouge score.
+    },
+  },
+  &quot;rubricBasedInstructionFollowingInput&quot;: { # Instance and metric spec for RubricBasedInstructionFollowing metric. # Rubric Based Instruction Following metric.
+    &quot;instance&quot;: { # Instance for RubricBasedInstructionFollowing metric - one instance corresponds to one row in an evaluation dataset. # Required. Instance for RubricBasedInstructionFollowing metric.
+      &quot;jsonInstance&quot;: &quot;A String&quot;, # Required. Instance specified as a json string. String key-value pairs are expected in the json_instance to render RubricBasedInstructionFollowing prompt templates.
+    },
+    &quot;metricSpec&quot;: { # Spec for RubricBasedInstructionFollowing metric - returns rubrics and verdicts corresponding to rubrics along with overall score. # Required. Spec for RubricBasedInstructionFollowing metric.
     },
   },
   &quot;safetyInput&quot;: { # Input for safety metric. # Input for safety metric.
@@ -1424,6 +1554,13 @@ Returns:
     &quot;score&quot;: 3.14, # Output only. MetricX score. Range depends on version.
   },
   &quot;pairwiseMetricResult&quot;: { # Spec for pairwise metric result. # Result for pairwise metric.
+    &quot;customOutput&quot;: { # Spec for custom output. # Output only. Spec for custom output.
+      &quot;rawOutputs&quot;: { # Raw output. # Output only. List of raw output strings.
+        &quot;rawOutput&quot;: [ # Output only. Raw output string.
+          &quot;A String&quot;,
+        ],
+      },
+    },
     &quot;explanation&quot;: &quot;A String&quot;, # Output only. Explanation for pairwise metric score.
     &quot;pairwiseChoice&quot;: &quot;A String&quot;, # Output only. Pairwise metric choice.
   },
@@ -1438,6 +1575,13 @@ Returns:
     &quot;pairwiseChoice&quot;: &quot;A String&quot;, # Output only. Pairwise summarization prediction choice.
   },
   &quot;pointwiseMetricResult&quot;: { # Spec for pointwise metric result. # Generic metrics. Result for pointwise metric.
+    &quot;customOutput&quot;: { # Spec for custom output. # Output only. Spec for custom output.
+      &quot;rawOutputs&quot;: { # Raw output. # Output only. List of raw output strings.
+        &quot;rawOutput&quot;: [ # Output only. Raw output string.
+          &quot;A String&quot;,
+        ],
+      },
+    },
     &quot;explanation&quot;: &quot;A String&quot;, # Output only. Explanation for pointwise metric score.
     &quot;score&quot;: 3.14, # Output only. Pointwise metric score.
   },
@@ -1467,6 +1611,15 @@ Returns:
         &quot;score&quot;: 3.14, # Output only. Rouge score.
       },
     ],
+  },
+  &quot;rubricBasedInstructionFollowingResult&quot;: { # Result for RubricBasedInstructionFollowing metric. # Result for rubric based instruction following metric.
+    &quot;rubricCritiqueResults&quot;: [ # Output only. List of per rubric critique results.
+      { # Rubric critique result.
+        &quot;rubric&quot;: &quot;A String&quot;, # Output only. Rubric to be evaluated.
+        &quot;verdict&quot;: True or False, # Output only. Verdict for the rubric - true if the rubric is met, false otherwise.
+      },
+    ],
+    &quot;score&quot;: 3.14, # Output only. Overall score for the instruction following.
   },
   &quot;safetyResult&quot;: { # Spec for safety result. # Result for safety metric.
     &quot;confidence&quot;: 3.14, # Output only. Confidence for safety score.
@@ -1589,11 +1742,12 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list">list(name, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</code>
+    <code class="details" id="list">list(name, extraLocationTypes=None, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</code>
   <pre>Lists information about the supported locations for this service.
 
 Args:
   name: string, The resource that owns the locations collection, if applicable. (required)
+  extraLocationTypes: string, Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations. (repeated)
   filter: string, A filter to narrow down results to a preferred subset. The filtering language accepts strings like `&quot;displayName=tokyo&quot;`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).
   pageSize: integer, The maximum number of results to return. If not set, the service selects a default.
   pageToken: string, A page token received from the `next_page_token` field in the response. Send that page token to receive the subsequent page.
