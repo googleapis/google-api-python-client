@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.168.0](https://github.com/googleapis/google-api-python-client/compare/v2.167.0...v2.168.0) (2025-04-15)
+
+
+### Features
+
+* **chromeuxreport:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/b66a5742eb2d94a7d154a32351ce4f0b52d83c72 ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **css:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/3d3137d216ed6a18a17f39529b31d1b355ef1ca2 ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **deploymentmanager:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/528aec66a6c295c187f4130ba0b63944928dd453 ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **digitalassetlinks:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c26fe6e63bc8d724734b09d060868066deeef816 ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **displayvideo:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/177766f8673265fbaefba7919bdc80f72d30a5b8 ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **meet:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/68b4db0a062ed7c68f602e2db7630647c46a5575 ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **merchantapi:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/c054c5bc8ce1c2a47f42578f3bc9ef9177e575fc ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+* **tagmanager:** Update the api https://togithub.com/googleapis/google-api-python-client/commit/0ab7696b1c812ad12d7232a01f008c1ea21de87a ([e2aaf41](https://github.com/googleapis/google-api-python-client/commit/e2aaf41f7ea490fb2c19fdc7b826c01fba10795e))
+
+
+### Bug Fixes
+
+* Remove setup.cfg configuration for creating universal wheels ([#2580](https://github.com/googleapis/google-api-python-client/issues/2580)) ([607bd3d](https://github.com/googleapis/google-api-python-client/commit/607bd3d5168f0902632f6a75671d2b3d865b28d9))
+
 ## [2.167.0](https://github.com/googleapis/google-api-python-client/compare/v2.166.0...v2.167.0) (2025-04-11)
 
 
