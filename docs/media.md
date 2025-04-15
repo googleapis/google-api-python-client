@@ -60,7 +60,7 @@ If a request fails, an [`googleapiclient.errors.HttpError`](https://googleapis.g
 The following is a good exception handling pattern for resumable media uploads:
 
 ```py
-except apiclient.errors.HttpError, e:
+except googleapiclient.errors.HttpError, e:
   if e.resp.status in [404]:
     # Start the upload all over again.
   elif e.resp.status in [500, 502, 503, 504]:
