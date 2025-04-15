@@ -1187,6 +1187,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/storage_v1.html)
 
 
+## storagebatchoperations
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/storagebatchoperations_v1.html)
+
+
 ## storagetransfer
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/storagetransfer_v1.html)
 
