@@ -143,6 +143,12 @@
 "name"
 ],
 "parameters": {
+"extraLocationTypes": {
+"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"location": "query",
+"repeated": true,
+"type": "string"
+},
 "filter": {
 "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like `\"displayName=tokyo\"`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).",
 "location": "query",
@@ -346,6 +352,12 @@
 "name"
 ],
 "parameters": {
+"extraLocationTypes": {
+"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"location": "query",
+"repeated": true,
+"type": "string"
+},
 "filter": {
 "description": "A filter to narrow down results to a preferred subset. The filtering language accepts strings like `\"displayName=tokyo\"`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).",
 "location": "query",
@@ -961,7 +973,7 @@
 }
 }
 },
-"revision": "20250319",
+"revision": "20250409",
 "rootUrl": "https://networkmanagement.googleapis.com/",
 "schemas": {
 "AbortInfo": {
@@ -1583,7 +1595,11 @@ false
 "NO_ADVERTISED_ROUTE_TO_GCP_DESTINATION",
 "NO_TRAFFIC_SELECTOR_TO_GCP_DESTINATION",
 "NO_KNOWN_ROUTE_FROM_PEERED_NETWORK_TO_DESTINATION",
-"PRIVATE_NAT_TO_PSC_ENDPOINT_UNSUPPORTED"
+"PRIVATE_NAT_TO_PSC_ENDPOINT_UNSUPPORTED",
+"PSC_PORT_MAPPING_PORT_MISMATCH",
+"PSC_PORT_MAPPING_WITHOUT_PSC_CONNECTION_UNSUPPORTED",
+"UNSUPPORTED_ROUTE_MATCHED_FOR_NAT64_DESTINATION",
+"TRAFFIC_FROM_HYBRID_ENDPOINT_TO_INTERNET_DISALLOWED"
 ],
 "enumDescriptions": [
 "Cause is unspecified.",
@@ -1604,9 +1620,9 @@ false
 "The packet does not match a policy-based VPN tunnel local selector.",
 "The packet does not match a policy-based VPN tunnel remote selector.",
 "Packet with internal destination address sent to the internet gateway.",
-"Instance with only an internal IP address tries to access Google API and services, but private Google access is not enabled in the subnet.",
+"Endpoint with only an internal IP address tries to access Google API and services, but Private Google Access is not enabled in the subnet or is not applicable.",
 "Source endpoint tries to access Google API and services through the VPN tunnel to another network, but Private Google Access needs to be enabled in the source endpoint network.",
-"Instance with only an internal IP address tries to access external hosts, but Cloud NAT is not enabled in the subnet, unless special configurations on a VM allow this connection.",
+"Endpoint with only an internal IP address tries to access external hosts, but there is no matching Cloud NAT gateway in the subnet.",
 "Destination internal address cannot be resolved to a known target. If this is a shared VPC scenario, verify if the service project ID is provided as test input. Otherwise, verify if the IP address is being used in the project.",
 "Forwarding rule's protocol and ports do not match the packet header.",
 "Forwarding rule does not have backends configured.",
@@ -1670,7 +1686,11 @@ false
 "Packet from the non-GCP (on-prem) or unknown GCP network is dropped due to the destination IP address not belonging to any IP prefix advertised via BGP by the Cloud Router.",
 "Packet from the non-GCP (on-prem) or unknown GCP network is dropped due to the destination IP address not belonging to any IP prefix included to the local traffic selector of the VPN tunnel.",
 "Packet from the unknown peered network is dropped due to no known route from the source network to the destination IP address.",
-"Sending packets processed by the Private NAT Gateways to the Private Service Connect endpoints is not supported."
+"Sending packets processed by the Private NAT Gateways to the Private Service Connect endpoints is not supported.",
+"Packet is sent to the PSC port mapping service, but its destination port does not match any port mapping rules.",
+"Sending packets directly to the PSC port mapping service without going through the PSC connection is not supported.",
+"Packet with destination IP address within the reserved NAT64 range is dropped due to matching a route of an unsupported type.",
+"Packet could be dropped because hybrid endpoint like a VPN gateway or Interconnect is not allowed to send traffic to the Internet."
 ],
 "type": "string"
 },
@@ -2139,7 +2159,8 @@ false
 "CLOUD_DNS",
 "GOOGLE_API",
 "GOOGLE_API_PSC",
-"GOOGLE_API_VPC_SC"
+"GOOGLE_API_VPC_SC",
+"SERVERLESS_VPC_ACCESS"
 ],
 "enumDescriptions": [
 "Unspecified Google Service.",
@@ -2148,7 +2169,8 @@ false
 "Connectivity from Cloud DNS to forwarding targets or alternate name servers that use private routing. https://cloud.google.com/dns/docs/zones/forwarding-zones#firewall-rules https://cloud.google.com/dns/docs/policies#firewall-rules",
 "private.googleapis.com and restricted.googleapis.com",
 "Google API via Private Service Connect. https://cloud.google.com/vpc/docs/configure-private-service-connect-apis",
-"Google API via VPC Service Controls. https://cloud.google.com/vpc/docs/configure-private-service-connect-apis"
+"Google API via VPC Service Controls. https://cloud.google.com/vpc/docs/configure-private-service-connect-apis",
+"Google API via Serverless VPC Access. https://cloud.google.com/vpc/docs/serverless-vpc-access"
 ],
 "type": "string"
 },
@@ -2748,7 +2770,14 @@ false
 },
 "destinationEgressLocation": {
 "$ref": "EdgeLocation",
-"description": "The EdgeLocation from which a packet destined for/originating from the internet will egress/ingress the Google network. This will only be populated for a connectivity test which has an internet destination/source address. The absence of this field *must not* be used as an indication that the destination/source is part of the Google network."
+"description": "The EdgeLocation from which a packet, destined to the internet, will egress the Google network. This will only be populated for a connectivity test which has an internet destination address. The absence of this field *must not* be used as an indication that the destination is part of the Google network."
+},
+"edgeResponses": {
+"description": "Probing results for all edge devices.",
+"items": {
+"$ref": "SingleEdgeResponse"
+},
+"type": "array"
 },
 "endpointInfo": {
 "$ref": "EndpointInfo",
@@ -2757,6 +2786,10 @@ false
 "error": {
 "$ref": "Status",
 "description": "Details about an internal failure or the cancellation of active probing."
+},
+"probedAllDevices": {
+"description": "Whether all relevant edge devices were probed.",
+"type": "boolean"
 },
 "probingLatency": {
 "$ref": "LatencyDistribution",
@@ -3177,6 +3210,53 @@ false
 "description": "OPTIONAL: A FieldMask specifying which fields of the policy to modify. Only the fields in the mask will be modified. If no mask is provided, the following default mask is used: `paths: \"bindings, etag\"`",
 "format": "google-fieldmask",
 "type": "string"
+}
+},
+"type": "object"
+},
+"SingleEdgeResponse": {
+"description": "Probing results for a single edge device.",
+"id": "SingleEdgeResponse",
+"properties": {
+"destinationEgressLocation": {
+"$ref": "EdgeLocation",
+"description": "The EdgeLocation from which a packet, destined to the internet, will egress the Google network. This will only be populated for a connectivity test which has an internet destination address. The absence of this field *must not* be used as an indication that the destination is part of the Google network."
+},
+"destinationRouter": {
+"description": "Router name in the format '{router}.{metroshard}'. For example: pf01.aaa01, pr02.aaa01.",
+"type": "string"
+},
+"probingLatency": {
+"$ref": "LatencyDistribution",
+"description": "Latency as measured by active probing in one direction: from the source to the destination endpoint."
+},
+"result": {
+"description": "The overall result of active probing for this egress device.",
+"enum": [
+"PROBING_RESULT_UNSPECIFIED",
+"REACHABLE",
+"UNREACHABLE",
+"REACHABILITY_INCONSISTENT",
+"UNDETERMINED"
+],
+"enumDescriptions": [
+"No result was specified.",
+"At least 95% of packets reached the destination.",
+"No packets reached the destination.",
+"Less than 95% of packets reached the destination.",
+"Reachability could not be determined. Possible reasons are: * The user lacks permission to access some of the network resources required to run the test. * No valid source endpoint could be derived from the request. * An internal error occurred."
+],
+"type": "string"
+},
+"sentProbeCount": {
+"description": "Number of probes sent.",
+"format": "int32",
+"type": "integer"
+},
+"successfulProbeCount": {
+"description": "Number of probes that reached the destination.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -3627,7 +3707,7 @@ false
 "type": "string"
 },
 "state": {
-"description": "Optional. The state of the VPC Flow Log configuration. Default value is ENABLED. When creating a new configuration, it must be enabled.",
+"description": "Optional. The state of the VPC Flow Log configuration. Default value is ENABLED. When creating a new configuration, it must be enabled. Setting state=DISABLED will pause the log generation for this config.",
 "enum": [
 "STATE_UNSPECIFIED",
 "ENABLED",
