@@ -19,7 +19,7 @@ A client library for Google's discovery based APIs.
 from __future__ import absolute_import
 
 __author__ = "jcgregorio@google.com (Joe Gregorio)"
-__all__ = ["build", "build_from_document", "fix_method_name", "key2param"]
+__all__ = ["build", "build_from_document", "fix_method_name", "key2param", "Resource"]
 
 from collections import OrderedDict
 import collections.abc
