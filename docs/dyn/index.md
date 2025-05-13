@@ -606,6 +606,11 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappdistribution_v1alpha.html)
 
 
+## firebaseapphosting
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseapphosting_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseapphosting_v1beta.html)
+
+
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
 
@@ -821,8 +826,10 @@
 * [conversions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_conversions_v1beta.html)
 * [datasources_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_datasources_v1beta.html)
 * [inventories_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_inventories_v1beta.html)
+* [issueresolution_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_issueresolution_v1beta.html)
 * [lfp_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_lfp_v1beta.html)
 * [notifications_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_notifications_v1beta.html)
+* [ordertracking_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_ordertracking_v1beta.html)
 * [products_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_products_v1beta.html)
 * [promotions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1beta.html)
 * [quota_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1beta.html)
