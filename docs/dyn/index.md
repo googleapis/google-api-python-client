@@ -120,6 +120,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigeeregistry_v1.html)
 
 
+## apihub
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apihub_v1.html)
+
+
 ## apikeys
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/apikeys_v2.html)
 
