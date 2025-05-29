@@ -1,0 +1,55 @@
+import csv
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+# إعداد مفاتيح API
+MERCHANT_ID = 'YOUR_MERCHANT_ID'  # استبدل برقم معرف التاجر الخاص بك
+SERVICE_ACCOUNT_FILE = 'path/to/service-account-key.json'  # مسار ملف مفتاح حساب الخدمة
+
+credentials = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE,
+    scopes=['https://www.googleapis.com/auth/content']
+ )
+
+# إنشاء خدمة Content API
+service = build('content', 'v2.1', credentials=credentials)
+
+# قراءة ملف CSV
+with open('google_merchant_rental_template.csv', 'r', encoding='utf-8') as file:
+    reader = csv.DictReader(file)
+    for row in reader:
+        # إنشاء كائن المنتج
+        product = {
+            'offerId': row['id'],
+            'title': row['title'],
+            'description': row['description'],
+            'link': row['link'],
+            'imageLink': row['image_link'],
+            'contentLanguage': 'ar',  # اللغة العربية
+            'targetCountry': 'SA',    # السعودية
+            'channel': 'online',
+            'availability': row['availability'],
+            'condition': row['condition'],
+            'googleProductCategory': row['google_product_category'],
+            'brand': row['brand'],
+            'customLabel0': row['custom_label_0'],
+        }
+        
+        # إضافة السعر (إذا كان "طلب عرض سعر"، استخدم سعراً رمزياً)
+        if row['price'] == 'طلب عرض سعر':
+            product['price'] = {
+                'value': '100',
+                'currency': 'SAR'
+            }
+            product['customLabel1'] = 'طلب عرض سعر'
+        else:
+            price_parts = row['price'].split(' ')
+            product['price'] = {
+                'value': price_parts[0],
+                'currency': price_parts[1]
+            }
+        
+        # إرسال المنتج إلى Content API
+        request = service.products().insert(merchantId=MERCHANT_ID, body=product)
+        result = request.execute()
+        print(f"تمت إضافة المنتج: {row['id']}")
