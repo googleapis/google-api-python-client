@@ -87,10 +87,6 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticshub_v1beta1.html)
 
 
-## analyticsreporting
-* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticsreporting_v4.html)
-
-
 ## androiddeviceprovisioning
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/androiddeviceprovisioning_v1.html)
 
