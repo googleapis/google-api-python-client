@@ -1090,6 +1090,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/runtimeconfig_v1beta1.html)
 
 
+## saasservicemgmt
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/saasservicemgmt_v1beta1.html)
+
+
 ## safebrowsing
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v4.html)
 * [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v5.html)
