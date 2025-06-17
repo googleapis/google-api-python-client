@@ -156,7 +156,7 @@ Args:
     &quot;includeGroundingSupports&quot;: True or False, # Optional. Specifies whether to include grounding_supports in the answer. The default value is `false`. When this field is set to `true`, returned answer will have `grounding_score` and will contain GroundingSupports for each claim.
   },
   &quot;query&quot;: { # Defines a user inputed query. # Required. Current user query.
-    &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
+    &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
     &quot;text&quot;: &quot;A String&quot;, # Plain text.
   },
   &quot;queryUnderstandingSpec&quot;: { # Query understanding specification. # Query understanding specification.
@@ -462,7 +462,7 @@ Returns:
     &quot;state&quot;: &quot;A String&quot;, # The state of the session.
     &quot;turns&quot;: [ # Turns.
       { # Represents a turn, including a query from the user and a answer from service.
-        &quot;answer&quot;: &quot;A String&quot;, # The resource name of the answer to the user query. Only set if the answer generation (/answer API call) happened in this turn.
+        &quot;answer&quot;: &quot;A String&quot;, # Optional. The resource name of the answer to the user query. Only set if the answer generation (/answer API call) happened in this turn.
         &quot;detailedAnswer&quot;: { # Defines an answer. # Output only. In ConversationalSearchService.GetSession API, if GetSessionRequest.include_answer_details is set to true, this field will be populated when getting answer query session.
           &quot;answerSkippedReasons&quot;: [ # Additional answer-skipped reasons. This provides the reason for ignored cases. If nothing is skipped, this field is not set.
             &quot;A String&quot;,
@@ -614,12 +614,9 @@ Returns:
             },
           ],
         },
-        &quot;query&quot;: { # Defines a user inputed query. # The user query.
-          &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
+        &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
+          &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
           &quot;text&quot;: &quot;A String&quot;, # Plain text.
-        },
-        &quot;queryConfigs&quot;: { # Optional. Represents metadata related to the query config, for example LLM model and version used, model parameters (temperature, grounding parameters, etc.). We don&#x27;t want to import directly the [AnswerGenerationSpec] structure as this will serve a more general purpose and a wider set of customers. This information is used in particular when rendering alternative answers to the same prompt, providing visual information about how each answer was generated. The prefix &quot;google.&quot; will be reserved for the key, and 1P services (Answer, Assistant, etc.) should always store their information with &quot;google..&quot;. 3P services can use anything not starting with &quot;google.&quot;
-          &quot;a_key&quot;: &quot;A String&quot;,
         },
       },
     ],
@@ -1303,6 +1300,7 @@ Returns:
               &quot;idpWide&quot;: True or False, # All users within the Identity Provider.
               &quot;principals&quot;: [ # List of principals.
                 { # Principal identifier of a user or a group.
+                  &quot;externalEntityId&quot;: &quot;A String&quot;, # For 3P application identities which are not present in the customer identity provider.
                   &quot;groupId&quot;: &quot;A String&quot;, # Group identifier. For Google Workspace user account, group_id should be the google workspace group email. For non-google identity provider user account, group_id is the mapped group identifier configured during the workforcepool config.
                   &quot;userId&quot;: &quot;A String&quot;, # User identifier. For Google Workspace user account, user_id should be the google workspace user email. For non-google identity provider user account, user_id is the mapped user identifier configured during the workforcepool config.
                 },
@@ -1522,7 +1520,7 @@ Args:
     &quot;condition&quot;: &quot;A String&quot;, # The condition under which query expansion should occur. Default to Condition.DISABLED.
     &quot;pinUnexpandedResults&quot;: True or False, # Whether to pin unexpanded results. If this field is set to true, unexpanded products are always at the top of the search results, followed by the expanded results.
   },
-  &quot;rankingExpression&quot;: &quot;A String&quot;, # The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The syntax and supported features depend on the ranking_expression_backend value. If ranking_expression_backend is not provided, it defaults to BYOE. === BYOE === If ranking_expression_backend is not provided or set to `BYOE`, it should be a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between embedding_field_path and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`. === CLEARBOX === If ranking_expression_backend is set to `CLEARBOX`, the following expression types (and combinations of those chained using + or * operators) are supported: * double * signal * log(signal) * exp(signal) * rr(signal, double &gt; 0) -- reciprocal rank transformation with second argument being a denominator constant. * is_nan(signal) -- returns 0 if signal is NaN, 1 otherwise. * fill_nan(signal1, signal2 | double) -- if signal1 is NaN, returns signal2 | double, else returns signal1. Examples: * 0.2 * gecko_score + 0.8 * log(bm25_score) * 0.2 * exp(fill_nan(gecko_score, 0)) + 0.3 * is_nan(bm25_score) * 0.2 * rr(gecko_score, 16) + 0.8 * rr(bm25_score, 32) The following signals are supported: * gecko_score -- semantic similarity adjustment * bm25_score -- keyword match adjustment * jetstream_score -- semantic relevance adjustment * pctr_rank -- predicted conversion rate adjustment as a rank * freshness_rank -- freshness adjustment as a rank * base_rank -- the default rank of the result
+  &quot;rankingExpression&quot;: &quot;A String&quot;, # Optional. The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The syntax and supported features depend on the `ranking_expression_backend` value. If `ranking_expression_backend` is not provided, it defaults to `RANK_BY_EMBEDDING`. If ranking_expression_backend is not provided or set to `RANK_BY_EMBEDDING`, it should be a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between `embedding_field_path` and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`. If ranking_expression_backend is set to `RANK_BY_FORMULA`, the following expression types (and combinations of those chained using + or * operators) are supported: * `double` * `signal` * `log(signal)` * `exp(signal)` * `rr(signal, double &gt; 0)` -- reciprocal rank transformation with second argument being a denominator constant. * `is_nan(signal)` -- returns 0 if signal is NaN, 1 otherwise. * `fill_nan(signal1, signal2 | double)` -- if signal1 is NaN, returns signal2 | double, else returns signal1. Here are a few examples of ranking formulas that use the supported ranking expression types: - `0.2 * semantic_similarity_score + 0.8 * log(keyword_similarity_score)` -- mostly rank by the logarithm of `keyword_similarity_score` with slight `semantic_smilarity_score` adjustment. - `0.2 * exp(fill_nan(semantic_similarity_score, 0)) + 0.3 * is_nan(keyword_similarity_score)` -- rank by the exponent of `semantic_similarity_score` filling the value with 0 if it&#x27;s NaN, also add constant 0.3 adjustment to the final score if `semantic_similarity_score` is NaN. - `0.2 * rr(semantic_similarity_score, 16) + 0.8 * rr(keyword_similarity_score, 16)` -- mostly rank by the reciprocal rank of `keyword_similarity_score` with slight adjustment of reciprocal rank of `semantic_smilarity_score`. The following signals are supported: * `semantic_similarity_score`: semantic similarity adjustment that is calculated using the embeddings generated by a proprietary Google model. This score determines how semantically similar a search query is to a document. * `keyword_similarity_score`: keyword match adjustment uses the Best Match 25 (BM25) ranking function. This score is calculated using a probabilistic model to estimate the probability that a document is relevant to a given query. * `relevance_score`: semantic relevance adjustment that uses a proprietary Google model to determine the meaning and intent behind a user&#x27;s query in context with the content in the documents. * `pctr_rank`: predicted conversion rate adjustment as a rank use predicted Click-through rate (pCTR) to gauge the relevance and attractiveness of a search result from a user&#x27;s perspective. A higher pCTR suggests that the result is more likely to satisfy the user&#x27;s query and intent, making it a valuable signal for ranking. * `freshness_rank`: freshness adjustment as a rank * `base_rank`: the default rank of the result
   &quot;rankingExpressionBackend&quot;: &quot;A String&quot;, # Optional. The backend to use for the ranking expression evaluation.
   &quot;regionCode&quot;: &quot;A String&quot;, # The Unicode country/region code (CLDR) of a location, such as &quot;US&quot; and &quot;419&quot;. For more information, see [Standard fields](https://cloud.google.com/apis/design/standard_fields). If set, then results will be boosted based on the region_code provided.
   &quot;relevanceScoreSpec&quot;: { # The specification for returning the document relevance score. # Optional. The specification for returning the relevance score.
@@ -1542,6 +1540,7 @@ Args:
   &quot;spellCorrectionSpec&quot;: { # The specification for query spell correction. # The spell correction specification that specifies the mode under which spell correction takes effect.
     &quot;mode&quot;: &quot;A String&quot;, # The mode under which spell correction replaces the original search query. Defaults to Mode.AUTO.
   },
+  &quot;useLatestData&quot;: True or False, # Uses the Engine, ServingConfig and Control freshly read from the database. Note: this skips config cache and introduces dependency on databases, which could significantly increase the API latency. It should only be used for testing, but not serving end users.
   &quot;userInfo&quot;: { # Information of an end user. # Information about the end user. Highly recommended for analytics and personalization. UserInfo.user_agent is used to deduce `device_type` for analytics.
     &quot;timeZone&quot;: &quot;A String&quot;, # Optional. IANA time zone, e.g. Europe/Budapest.
     &quot;userAgent&quot;: &quot;A String&quot;, # User agent as included in the HTTP header. The field must be a UTF-8 encoded string with a length limit of 1,000 characters. Otherwise, an `INVALID_ARGUMENT` error is returned. This should not be set when using the client side event reporting with GTM or JavaScript tag in UserEventService.CollectUserEvent or if UserEvent.direct_user_request is set.
@@ -1699,6 +1698,7 @@ Returns:
                   &quot;idpWide&quot;: True or False, # All users within the Identity Provider.
                   &quot;principals&quot;: [ # List of principals.
                     { # Principal identifier of a user or a group.
+                      &quot;externalEntityId&quot;: &quot;A String&quot;, # For 3P application identities which are not present in the customer identity provider.
                       &quot;groupId&quot;: &quot;A String&quot;, # Group identifier. For Google Workspace user account, group_id should be the google workspace group email. For non-google identity provider user account, group_id is the mapped group identifier configured during the workforcepool config.
                       &quot;userId&quot;: &quot;A String&quot;, # User identifier. For Google Workspace user account, user_id should be the google workspace user email. For non-google identity provider user account, user_id is the mapped user identifier configured during the workforcepool config.
                     },
@@ -1808,6 +1808,7 @@ Returns:
               &quot;idpWide&quot;: True or False, # All users within the Identity Provider.
               &quot;principals&quot;: [ # List of principals.
                 { # Principal identifier of a user or a group.
+                  &quot;externalEntityId&quot;: &quot;A String&quot;, # For 3P application identities which are not present in the customer identity provider.
                   &quot;groupId&quot;: &quot;A String&quot;, # Group identifier. For Google Workspace user account, group_id should be the google workspace group email. For non-google identity provider user account, group_id is the mapped group identifier configured during the workforcepool config.
                   &quot;userId&quot;: &quot;A String&quot;, # User identifier. For Google Workspace user account, user_id should be the google workspace user email. For non-google identity provider user account, user_id is the mapped user identifier configured during the workforcepool config.
                 },
@@ -2101,7 +2102,7 @@ Args:
     &quot;condition&quot;: &quot;A String&quot;, # The condition under which query expansion should occur. Default to Condition.DISABLED.
     &quot;pinUnexpandedResults&quot;: True or False, # Whether to pin unexpanded results. If this field is set to true, unexpanded products are always at the top of the search results, followed by the expanded results.
   },
-  &quot;rankingExpression&quot;: &quot;A String&quot;, # The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The syntax and supported features depend on the ranking_expression_backend value. If ranking_expression_backend is not provided, it defaults to BYOE. === BYOE === If ranking_expression_backend is not provided or set to `BYOE`, it should be a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between embedding_field_path and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`. === CLEARBOX === If ranking_expression_backend is set to `CLEARBOX`, the following expression types (and combinations of those chained using + or * operators) are supported: * double * signal * log(signal) * exp(signal) * rr(signal, double &gt; 0) -- reciprocal rank transformation with second argument being a denominator constant. * is_nan(signal) -- returns 0 if signal is NaN, 1 otherwise. * fill_nan(signal1, signal2 | double) -- if signal1 is NaN, returns signal2 | double, else returns signal1. Examples: * 0.2 * gecko_score + 0.8 * log(bm25_score) * 0.2 * exp(fill_nan(gecko_score, 0)) + 0.3 * is_nan(bm25_score) * 0.2 * rr(gecko_score, 16) + 0.8 * rr(bm25_score, 32) The following signals are supported: * gecko_score -- semantic similarity adjustment * bm25_score -- keyword match adjustment * jetstream_score -- semantic relevance adjustment * pctr_rank -- predicted conversion rate adjustment as a rank * freshness_rank -- freshness adjustment as a rank * base_rank -- the default rank of the result
+  &quot;rankingExpression&quot;: &quot;A String&quot;, # Optional. The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The syntax and supported features depend on the `ranking_expression_backend` value. If `ranking_expression_backend` is not provided, it defaults to `RANK_BY_EMBEDDING`. If ranking_expression_backend is not provided or set to `RANK_BY_EMBEDDING`, it should be a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between `embedding_field_path` and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`. If ranking_expression_backend is set to `RANK_BY_FORMULA`, the following expression types (and combinations of those chained using + or * operators) are supported: * `double` * `signal` * `log(signal)` * `exp(signal)` * `rr(signal, double &gt; 0)` -- reciprocal rank transformation with second argument being a denominator constant. * `is_nan(signal)` -- returns 0 if signal is NaN, 1 otherwise. * `fill_nan(signal1, signal2 | double)` -- if signal1 is NaN, returns signal2 | double, else returns signal1. Here are a few examples of ranking formulas that use the supported ranking expression types: - `0.2 * semantic_similarity_score + 0.8 * log(keyword_similarity_score)` -- mostly rank by the logarithm of `keyword_similarity_score` with slight `semantic_smilarity_score` adjustment. - `0.2 * exp(fill_nan(semantic_similarity_score, 0)) + 0.3 * is_nan(keyword_similarity_score)` -- rank by the exponent of `semantic_similarity_score` filling the value with 0 if it&#x27;s NaN, also add constant 0.3 adjustment to the final score if `semantic_similarity_score` is NaN. - `0.2 * rr(semantic_similarity_score, 16) + 0.8 * rr(keyword_similarity_score, 16)` -- mostly rank by the reciprocal rank of `keyword_similarity_score` with slight adjustment of reciprocal rank of `semantic_smilarity_score`. The following signals are supported: * `semantic_similarity_score`: semantic similarity adjustment that is calculated using the embeddings generated by a proprietary Google model. This score determines how semantically similar a search query is to a document. * `keyword_similarity_score`: keyword match adjustment uses the Best Match 25 (BM25) ranking function. This score is calculated using a probabilistic model to estimate the probability that a document is relevant to a given query. * `relevance_score`: semantic relevance adjustment that uses a proprietary Google model to determine the meaning and intent behind a user&#x27;s query in context with the content in the documents. * `pctr_rank`: predicted conversion rate adjustment as a rank use predicted Click-through rate (pCTR) to gauge the relevance and attractiveness of a search result from a user&#x27;s perspective. A higher pCTR suggests that the result is more likely to satisfy the user&#x27;s query and intent, making it a valuable signal for ranking. * `freshness_rank`: freshness adjustment as a rank * `base_rank`: the default rank of the result
   &quot;rankingExpressionBackend&quot;: &quot;A String&quot;, # Optional. The backend to use for the ranking expression evaluation.
   &quot;regionCode&quot;: &quot;A String&quot;, # The Unicode country/region code (CLDR) of a location, such as &quot;US&quot; and &quot;419&quot;. For more information, see [Standard fields](https://cloud.google.com/apis/design/standard_fields). If set, then results will be boosted based on the region_code provided.
   &quot;relevanceScoreSpec&quot;: { # The specification for returning the document relevance score. # Optional. The specification for returning the relevance score.
@@ -2121,6 +2122,7 @@ Args:
   &quot;spellCorrectionSpec&quot;: { # The specification for query spell correction. # The spell correction specification that specifies the mode under which spell correction takes effect.
     &quot;mode&quot;: &quot;A String&quot;, # The mode under which spell correction replaces the original search query. Defaults to Mode.AUTO.
   },
+  &quot;useLatestData&quot;: True or False, # Uses the Engine, ServingConfig and Control freshly read from the database. Note: this skips config cache and introduces dependency on databases, which could significantly increase the API latency. It should only be used for testing, but not serving end users.
   &quot;userInfo&quot;: { # Information of an end user. # Information about the end user. Highly recommended for analytics and personalization. UserInfo.user_agent is used to deduce `device_type` for analytics.
     &quot;timeZone&quot;: &quot;A String&quot;, # Optional. IANA time zone, e.g. Europe/Budapest.
     &quot;userAgent&quot;: &quot;A String&quot;, # User agent as included in the HTTP header. The field must be a UTF-8 encoded string with a length limit of 1,000 characters. Otherwise, an `INVALID_ARGUMENT` error is returned. This should not be set when using the client side event reporting with GTM or JavaScript tag in UserEventService.CollectUserEvent or if UserEvent.direct_user_request is set.
@@ -2278,6 +2280,7 @@ Returns:
                   &quot;idpWide&quot;: True or False, # All users within the Identity Provider.
                   &quot;principals&quot;: [ # List of principals.
                     { # Principal identifier of a user or a group.
+                      &quot;externalEntityId&quot;: &quot;A String&quot;, # For 3P application identities which are not present in the customer identity provider.
                       &quot;groupId&quot;: &quot;A String&quot;, # Group identifier. For Google Workspace user account, group_id should be the google workspace group email. For non-google identity provider user account, group_id is the mapped group identifier configured during the workforcepool config.
                       &quot;userId&quot;: &quot;A String&quot;, # User identifier. For Google Workspace user account, user_id should be the google workspace user email. For non-google identity provider user account, user_id is the mapped user identifier configured during the workforcepool config.
                     },
@@ -2387,6 +2390,7 @@ Returns:
               &quot;idpWide&quot;: True or False, # All users within the Identity Provider.
               &quot;principals&quot;: [ # List of principals.
                 { # Principal identifier of a user or a group.
+                  &quot;externalEntityId&quot;: &quot;A String&quot;, # For 3P application identities which are not present in the customer identity provider.
                   &quot;groupId&quot;: &quot;A String&quot;, # Group identifier. For Google Workspace user account, group_id should be the google workspace group email. For non-google identity provider user account, group_id is the mapped group identifier configured during the workforcepool config.
                   &quot;userId&quot;: &quot;A String&quot;, # User identifier. For Google Workspace user account, user_id should be the google workspace user email. For non-google identity provider user account, user_id is the mapped user identifier configured during the workforcepool config.
                 },
@@ -2584,7 +2588,7 @@ Args:
     &quot;includeGroundingSupports&quot;: True or False, # Optional. Specifies whether to include grounding_supports in the answer. The default value is `false`. When this field is set to `true`, returned answer will have `grounding_score` and will contain GroundingSupports for each claim.
   },
   &quot;query&quot;: { # Defines a user inputed query. # Required. Current user query.
-    &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
+    &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
     &quot;text&quot;: &quot;A String&quot;, # Plain text.
   },
   &quot;queryUnderstandingSpec&quot;: { # Query understanding specification. # Query understanding specification.
@@ -2890,7 +2894,7 @@ Returns:
     &quot;state&quot;: &quot;A String&quot;, # The state of the session.
     &quot;turns&quot;: [ # Turns.
       { # Represents a turn, including a query from the user and a answer from service.
-        &quot;answer&quot;: &quot;A String&quot;, # The resource name of the answer to the user query. Only set if the answer generation (/answer API call) happened in this turn.
+        &quot;answer&quot;: &quot;A String&quot;, # Optional. The resource name of the answer to the user query. Only set if the answer generation (/answer API call) happened in this turn.
         &quot;detailedAnswer&quot;: { # Defines an answer. # Output only. In ConversationalSearchService.GetSession API, if GetSessionRequest.include_answer_details is set to true, this field will be populated when getting answer query session.
           &quot;answerSkippedReasons&quot;: [ # Additional answer-skipped reasons. This provides the reason for ignored cases. If nothing is skipped, this field is not set.
             &quot;A String&quot;,
@@ -3042,12 +3046,9 @@ Returns:
             },
           ],
         },
-        &quot;query&quot;: { # Defines a user inputed query. # The user query.
-          &quot;queryId&quot;: &quot;A String&quot;, # Unique Id for the query.
+        &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
+          &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
           &quot;text&quot;: &quot;A String&quot;, # Plain text.
-        },
-        &quot;queryConfigs&quot;: { # Optional. Represents metadata related to the query config, for example LLM model and version used, model parameters (temperature, grounding parameters, etc.). We don&#x27;t want to import directly the [AnswerGenerationSpec] structure as this will serve a more general purpose and a wider set of customers. This information is used in particular when rendering alternative answers to the same prompt, providing visual information about how each answer was generated. The prefix &quot;google.&quot; will be reserved for the key, and 1P services (Answer, Assistant, etc.) should always store their information with &quot;google..&quot;. 3P services can use anything not starting with &quot;google.&quot;
-          &quot;a_key&quot;: &quot;A String&quot;,
         },
       },
     ],
