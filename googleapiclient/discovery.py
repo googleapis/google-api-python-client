@@ -76,6 +76,7 @@ from googleapiclient.http import (
     HttpMock,
     HttpMockSequence,
     HttpRequest,
+    AsyncHttpRequest, #Team_CKL CODE added
     MediaFileUpload,
     MediaUpload,
     build_http,
@@ -197,7 +198,7 @@ def build(
     discoveryServiceUrl=None,
     developerKey=None,
     model=None,
-    requestBuilder=HttpRequest,
+    requestBuilder=AsyncHttpRequest, #Team_CKL code modified to async
     credentials=None,
     cache_discovery=True,
     cache=None,
@@ -435,7 +436,7 @@ def _retrieve_discovery_doc(
 
     # Execute this request with retries build into HttpRequest
     # Note that it will already raise an error if we don't get a 2xx response
-    req = HttpRequest(http, HttpRequest.null_postproc, actual_url)
+    req = AsyncHttpRequest(http, AsyncHttpRequest.null_postproc, actual_url) #Team_CKL Code modified 
     resp, content = req.execute(num_retries=num_retries)
 
     try:
@@ -468,7 +469,7 @@ def build_from_document(
     http=None,
     developerKey=None,
     model=None,
-    requestBuilder=HttpRequest,
+    requestBuilder=AsyncHttpRequest, #Team_CKL code modified to async
     credentials=None,
     client_options=None,
     adc_cert_path=None,
