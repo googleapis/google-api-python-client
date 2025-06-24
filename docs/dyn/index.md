@@ -161,6 +161,7 @@
 ## authorizedbuyersmarketplace
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1beta.html)
 
 
 ## backupdr
