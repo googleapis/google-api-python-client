@@ -46,7 +46,11 @@ s.move(templated_files / "CONTRIBUTING.rst")
 # Copy configuration file for renovate
 s.move(templated_files / "renovate.json")
 
-# Use a python runtime which is available in the owlbot post processor here
-# https://github.com/googleapis/synthtool/blob/master/docker/owlbot/python/Dockerfile
+# ----------------------------------------------------------------------------
+# Samples templates
+# ----------------------------------------------------------------------------
+
+python.py_samples(skip_readmes=True)
+
 for noxfile in Path(".").glob("**/noxfile.py"):
-    s.shell.run(["nox", "-s", "format-3.10"], cwd=noxfile.parent, hide_output=False)
+    s.shell.run(["nox", "-s", "format"], cwd=noxfile.parent, hide_output=False)
