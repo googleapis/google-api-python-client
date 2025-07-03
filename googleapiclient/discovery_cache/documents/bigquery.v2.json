@@ -276,9 +276,9 @@
 ],
 "enumDescriptions": [
 "The default value. Default to the FULL view.",
-"Includes metadata information for the dataset, such as location, etag, lastModifiedTime, etc.",
-"Includes ACL information for the dataset, which defines dataset access for one or more entities.",
-"Includes both dataset metadata and ACL information."
+"Updates metadata information for the dataset, such as friendlyName, description, labels, etc.",
+"Updates ACL information for the dataset, which defines dataset access for one or more entities.",
+"Updates both dataset metadata and ACL information."
 ],
 "location": "query",
 "type": "string"
@@ -413,6 +413,23 @@
 "pattern": "^[^/]+$",
 "required": true,
 "type": "string"
+},
+"updateMode": {
+"description": "Optional. Specifies the fields of dataset that update/patch operation is targeting By default, both metadata and ACL fields are updated.",
+"enum": [
+"UPDATE_MODE_UNSPECIFIED",
+"UPDATE_METADATA",
+"UPDATE_ACL",
+"UPDATE_FULL"
+],
+"enumDescriptions": [
+"The default value. Default to the UPDATE_FULL.",
+"Includes metadata information for the dataset, such as friendlyName, description, labels, etc.",
+"Includes ACL information for the dataset, which defines dataset access for one or more entities.",
+"Includes both dataset metadata and ACL information."
+],
+"location": "query",
+"type": "string"
 }
 },
 "path": "projects/{+projectId}/datasets/{+datasetId}",
@@ -492,6 +509,23 @@
 "location": "path",
 "pattern": "^[^/]+$",
 "required": true,
+"type": "string"
+},
+"updateMode": {
+"description": "Optional. Specifies the fields of dataset that update/patch operation is targeting By default, both metadata and ACL fields are updated.",
+"enum": [
+"UPDATE_MODE_UNSPECIFIED",
+"UPDATE_METADATA",
+"UPDATE_ACL",
+"UPDATE_FULL"
+],
+"enumDescriptions": [
+"The default value. Default to the UPDATE_FULL.",
+"Includes metadata information for the dataset, such as friendlyName, description, labels, etc.",
+"Includes ACL information for the dataset, which defines dataset access for one or more entities.",
+"Includes both dataset metadata and ACL information."
+],
+"location": "query",
 "type": "string"
 }
 },
@@ -2256,7 +2290,7 @@
 }
 }
 },
-"revision": "20250216",
+"revision": "20250511",
 "rootUrl": "https://bigquery.googleapis.com/",
 "schemas": {
 "AggregateClassificationMetrics": {
@@ -2853,7 +2887,7 @@
 "type": "object"
 },
 "BigLakeConfiguration": {
-"description": "Configuration for BigLake managed tables.",
+"description": "Configuration for BigQuery tables for Apache Iceberg (formerly BigLake managed tables.)",
 "id": "BigLakeConfiguration",
 "properties": {
 "connectionId": {
@@ -3375,6 +3409,13 @@
 "description": "Optional. Specifies a string that represents a null value in a CSV file. For example, if you specify \"\\N\", BigQuery interprets \"\\N\" as a null value when querying a CSV file. The default value is the empty string. If you set this property to a custom value, BigQuery throws an error if an empty string is present for all data types except for STRING and BYTE. For STRING and BYTE columns, BigQuery interprets the empty string as an empty value.",
 "type": "string"
 },
+"nullMarkers": {
+"description": "Optional. A list of strings represented as SQL NULL value in a CSV file. null_marker and null_markers can't be set at the same time. If null_marker is set, null_markers has to be not set. If null_markers is set, null_marker has to be not set. If both null_marker and null_markers are set at the same time, a user error would be thrown. Any strings listed in null_markers, including empty string would be interpreted as SQL NULL. This applies to all column types.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
 "preserveAsciiControlCharacters": {
 "description": "Optional. Indicates if the embedded ASCII control characters (the first 32 characters in the ASCII-table, from '\\x00' to '\\x1F') are preserved.",
 "type": "boolean"
@@ -3388,6 +3429,10 @@
 "skipLeadingRows": {
 "description": "Optional. The number of rows at the top of a CSV file that BigQuery will skip when reading the data. The default value is 0. This property is useful if you have header rows in the file that should be skipped. When autodetect is on, the behavior is the following: * skipLeadingRows unspecified - Autodetect tries to detect headers in the first row. If they are not detected, the row is read as data. Otherwise data is read starting from the second row. * skipLeadingRows is 0 - Instructs autodetect that there are no headers and data should be read starting from the first row. * skipLeadingRows = N > 0 - Autodetect skips N-1 rows and tries to detect headers in row N. If headers are not detected, row N is just skipped. Otherwise row N is used to extract column names for the detected schema.",
 "format": "int64",
+"type": "string"
+},
+"sourceColumnMatch": {
+"description": "Optional. Controls the strategy used to match loaded columns to the schema. If not set, a sensible default is chosen based on how the schema is provided. If autodetect is used, then columns are matched by name. Otherwise, columns are matched by position. This is done to keep the behavior backward-compatible. Acceptable values are: POSITION - matches by position. This assumes that the columns are ordered the same way as the schema. NAME - matches by name. This reads the header row as column names and reorders columns to match the field names in the schema.",
 "type": "string"
 }
 },
@@ -3717,6 +3762,11 @@
 "datasetReference": {
 "$ref": "DatasetReference",
 "description": "The dataset reference. Use this property to access specific parts of the dataset's ID, such as project ID or dataset ID."
+},
+"externalDatasetReference": {
+"$ref": "ExternalDatasetReference",
+"description": "Output only. Reference to a read-only external dataset defined in data catalogs outside of BigQuery. Filled out when the dataset type is EXTERNAL.",
+"readOnly": true
 },
 "friendlyName": {
 "description": "An alternate name for the dataset. The friendly name is purely decorative in nature.",
@@ -5270,6 +5320,10 @@
 "query": {
 "$ref": "JobConfigurationQuery",
 "description": "[Pick one] Configures a query job."
+},
+"reservation": {
+"description": "Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.",
+"type": "string"
 }
 },
 "type": "object"
@@ -5468,6 +5522,13 @@
 "description": "Optional. Specifies a string that represents a null value in a CSV file. For example, if you specify \"\\N\", BigQuery interprets \"\\N\" as a null value when loading a CSV file. The default value is the empty string. If you set this property to a custom value, BigQuery throws an error if an empty string is present for all data types except for STRING and BYTE. For STRING and BYTE columns, BigQuery interprets the empty string as an empty value.",
 "type": "string"
 },
+"nullMarkers": {
+"description": "Optional. A list of strings represented as SQL NULL value in a CSV file. null_marker and null_markers can't be set at the same time. If null_marker is set, null_markers has to be not set. If null_markers is set, null_marker has to be not set. If both null_marker and null_markers are set at the same time, a user error would be thrown. Any strings listed in null_markers, including empty string would be interpreted as SQL NULL. This applies to all column types.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
 "parquetOptions": {
 "$ref": "ParquetOptions",
 "description": "Optional. Additional properties to set if sourceFormat is set to PARQUET."
@@ -5521,6 +5582,20 @@
 "format": "int32",
 "type": "integer"
 },
+"sourceColumnMatch": {
+"description": "Optional. Controls the strategy used to match loaded columns to the schema. If not set, a sensible default is chosen based on how the schema is provided. If autodetect is used, then columns are matched by name. Otherwise, columns are matched by position. This is done to keep the behavior backward-compatible.",
+"enum": [
+"SOURCE_COLUMN_MATCH_UNSPECIFIED",
+"POSITION",
+"NAME"
+],
+"enumDescriptions": [
+"Uses sensible defaults based on how the schema is provided. If autodetect is used, then columns are matched by name. Otherwise, columns are matched by position. This is done to keep the behavior backward-compatible.",
+"Matches by position. This assumes that the columns are ordered the same way as the schema.",
+"Matches by name. This reads the header row as column names and reorders columns to match the field names in the schema."
+],
+"type": "string"
+},
 "sourceFormat": {
 "description": "Optional. The format of the data files. For CSV files, specify \"CSV\". For datastore backups, specify \"DATASTORE_BACKUP\". For newline-delimited JSON, specify \"NEWLINE_DELIMITED_JSON\". For Avro, specify \"AVRO\". For parquet, specify \"PARQUET\". For orc, specify \"ORC\". The default value is CSV.",
 "type": "string"
@@ -5541,7 +5616,7 @@
 "description": "Time-based partitioning specification for the destination table. Only one of timePartitioning and rangePartitioning should be specified."
 },
 "timeZone": {
-"description": "Optional. [Experimental] Default time zone that will apply when parsing timestamp values that have no specific time zone.",
+"description": "Optional. Default time zone that will apply when parsing timestamp values that have no specific time zone.",
 "type": "string"
 },
 "timestampFormat": {
@@ -5553,7 +5628,7 @@
 "type": "boolean"
 },
 "writeDisposition": {
-"description": "Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints and uses the schema from the load job. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_APPEND. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.",
+"description": "Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints and uses the schema from the load job. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_APPEND. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.",
 "type": "string"
 }
 },
@@ -5691,7 +5766,7 @@
 "type": "array"
 },
 "writeDisposition": {
-"description": "Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.",
+"description": "Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a 'duplicate' error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.",
 "type": "string"
 },
 "writeIncrementalResults": {
@@ -6199,7 +6274,7 @@
 "type": "array"
 },
 "referencedTables": {
-"description": "Output only. Referenced tables for the job. Queries that reference more than 50 tables will not have a complete list.",
+"description": "Output only. Referenced tables for the job.",
 "items": {
 "$ref": "TableReference"
 },
@@ -7574,6 +7649,10 @@
 "description": "Optional. A unique user provided identifier to ensure idempotent behavior for queries. Note that this is different from the job_id. It has the following properties: 1. It is case-sensitive, limited to up to 36 ASCII characters. A UUID is recommended. 2. Read only queries can ignore this token since they are nullipotent by definition. 3. For the purposes of idempotency ensured by the request_id, a request is considered duplicate of another only if they have the same request_id and are actually duplicates. When determining whether a request is a duplicate of another request, all parameters in the request that may affect the result are considered. For example, query, connection_properties, query_parameters, use_legacy_sql are parameters that affect the result and are considered when determining whether a request is a duplicate, but properties like timeout_ms don't affect the result and are thus not considered. Dry run query requests are never considered duplicate of another request. 4. When a duplicate mutating query request is detected, it returns: a. the results of the mutation if it completes successfully within the timeout. b. the running operation if it is still in progress at the end of the timeout. 5. Its lifetime is limited to 15 minutes. In other words, if two requests are sent with the same request_id, but more than 15 minutes apart, idempotency is not guaranteed.",
 "type": "string"
 },
+"reservation": {
+"description": "Optional. The reservation that jobs.query request would use. User can specify a reservation to execute the job.query. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.",
+"type": "string"
+},
 "timeoutMs": {
 "description": "Optional. Optional: Specifies the maximum amount of time, in milliseconds, that the client is willing to wait for the query to complete. By default, this limit is 10 seconds (10,000 milliseconds). If the query is complete, the jobComplete field in the response is true. If the query has not yet completed, jobComplete is false. You can request a longer timeout period in the timeoutMs field. However, the call is not guaranteed to wait for the specified timeout; it typically returns after around 200 seconds (200,000 milliseconds), even if the query is not complete. If jobComplete is false, you can continue to wait for the query to complete by calling the getQueryResults method until the jobComplete field in the getQueryResults response is true.",
 "format": "uint32",
@@ -7739,6 +7818,11 @@
 "description": "Total units of work remaining for the query. This number can be revised (increased or decreased) while the query is running.",
 "format": "int64",
 "type": "string"
+},
+"shuffleRamUsageRatio": {
+"description": "Total shuffle usage ratio in shuffle RAM per reservation of this query. This will be provided for reservation customers only.",
+"format": "double",
+"type": "number"
 },
 "totalSlotMs": {
 "description": "Cumulative slot-ms consumed by the query.",
@@ -8857,7 +8941,7 @@
 "properties": {
 "biglakeConfiguration": {
 "$ref": "BigLakeConfiguration",
-"description": "Optional. Specifies the configuration of a BigLake managed table."
+"description": "Optional. Specifies the configuration of a BigQuery table for Apache Iceberg."
 },
 "cloneDefinition": {
 "$ref": "CloneDefinition",

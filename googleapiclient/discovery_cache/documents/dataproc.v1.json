@@ -2399,6 +2399,13 @@
 "name"
 ],
 "parameters": {
+"jobIds": {
+"description": "Optional. List of Job IDs to filter by if provided.",
+"format": "int64",
+"location": "query",
+"repeated": true,
+"type": "string"
+},
 "jobStatus": {
 "description": "Optional. List only jobs in the specific state.",
 "enum": [
@@ -2469,6 +2476,12 @@
 "location": "path",
 "pattern": "^projects/[^/]+/locations/[^/]+/sessions/[^/]+/sparkApplications/[^/]+$",
 "required": true,
+"type": "string"
+},
+"operationIds": {
+"description": "Optional. List of Spark Connect operation IDs to filter by if provided.",
+"location": "query",
+"repeated": true,
 "type": "string"
 },
 "pageSize": {
@@ -2663,6 +2676,13 @@
 "parent": {
 "description": "Required. Parent (Session) resource reference.",
 "location": "query",
+"type": "string"
+},
+"stageIds": {
+"description": "Optional. List of Stage IDs to filter by if provided.",
+"format": "int64",
+"location": "query",
+"repeated": true,
 "type": "string"
 },
 "stageStatus": {
@@ -4978,7 +4998,7 @@
 }
 }
 },
-"revision": "20250207",
+"revision": "20250604",
 "rootUrl": "https://dataproc.googleapis.com/",
 "schemas": {
 "AcceleratorConfig": {
@@ -5404,6 +5424,27 @@
 },
 "type": "object"
 },
+"AuthenticationConfig": {
+"description": "Authentication configuration for a workload is used to set the default identity for the workload execution. The config specifies the type of identity (service account or user) that will be used by workloads to access resources on the project(s).",
+"id": "AuthenticationConfig",
+"properties": {
+"userWorkloadAuthenticationType": {
+"description": "Optional. Authentication type for the user workload running in containers.",
+"enum": [
+"AUTHENTICATION_TYPE_UNSPECIFIED",
+"SERVICE_ACCOUNT",
+"END_USER_CREDENTIALS"
+],
+"enumDescriptions": [
+"If AuthenticationType is unspecified then END_USER_CREDENTIALS is used for 3.0 and newer runtimes, and SERVICE_ACCOUNT is used for older runtimes.",
+"Use service account credentials for authenticating to other services.",
+"Use OAuth credentials associated with the workload creator/user for authenticating to other services."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "AutoscalingConfig": {
 "description": "Autoscaling Policy config associated with the cluster.",
 "id": "AutoscalingConfig",
@@ -5421,6 +5462,20 @@
 "properties": {
 "basicAlgorithm": {
 "$ref": "BasicAutoscalingAlgorithm"
+},
+"clusterType": {
+"description": "Optional. The type of the clusters for which this autoscaling policy is to be configured.",
+"enum": [
+"CLUSTER_TYPE_UNSPECIFIED",
+"STANDARD",
+"ZERO_SCALE"
+],
+"enumDescriptions": [
+"Not set.",
+"Standard dataproc cluster with a minimum of two primary workers.",
+"Clusters that can use only secondary workers and be scaled down to zero secondary worker nodes."
+],
+"type": "string"
 },
 "id": {
 "description": "Required. The policy id.The id must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), and hyphens (-). Cannot begin or end with underscore or hyphen. Must consist of between 3 and 50 characters.",
@@ -5460,13 +5515,17 @@
 "SCENARIO_UNSPECIFIED",
 "SCALING",
 "BROADCAST_HASH_JOIN",
-"MEMORY"
+"MEMORY",
+"NONE",
+"AUTO"
 ],
 "enumDescriptions": [
 "Default value.",
 "Scaling recommendations such as initialExecutors.",
 "Adding hints for potential relation broadcasts.",
-"Memory management for workloads."
+"Memory management for workloads.",
+"No autotuning.",
+"Automatic selection of scenarios."
 ],
 "type": "string"
 },
@@ -5833,6 +5892,36 @@
 "$ref": "AuxiliaryNodeGroup"
 },
 "type": "array"
+},
+"clusterTier": {
+"description": "Optional. The tier of the cluster.",
+"enum": [
+"CLUSTER_TIER_UNSPECIFIED",
+"CLUSTER_TIER_STANDARD",
+"CLUSTER_TIER_PREMIUM"
+],
+"enumDescriptions": [
+"Not set. Works the same as CLUSTER_TIER_STANDARD.",
+"Standard dataproc cluster.",
+"Premium dataproc cluster."
+],
+"type": "string"
+},
+"clusterType": {
+"description": "Optional. The type of the cluster.",
+"enum": [
+"CLUSTER_TYPE_UNSPECIFIED",
+"STANDARD",
+"SINGLE_NODE",
+"ZERO_SCALE"
+],
+"enumDescriptions": [
+"Not set.",
+"Standard dataproc cluster with a minimum of two primary workers.",
+"https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/single-node-clusters",
+"Clusters that can use only secondary workers and be scaled down to zero secondary worker nodes."
+],
+"type": "string"
 },
 "configBucket": {
 "description": "Optional. A Cloud Storage bucket used to stage job dependencies, config files, and job driver console output. If you do not specify a staging bucket, Cloud Dataproc will determine a Cloud Storage location (US, ASIA, or EU) for your cluster's staging bucket according to the Compute Engine zone where your cluster is deployed, and then create and manage this project-level, per-location bucket (see Dataproc staging and temp buckets (https://cloud.google.com/dataproc/docs/concepts/configuring-clusters/staging-bucket)). This field requires a Cloud Storage bucket name, not a gs://... URI to a Cloud Storage bucket.",
@@ -6318,7 +6407,7 @@
 "type": "object"
 },
 "DiskConfig": {
-"description": "Specifies the config of disk options for a group of VM instances.",
+"description": "Specifies the config of boot disk and attached disk options for a group of VM instances.",
 "id": "DiskConfig",
 "properties": {
 "bootDiskProvisionedIops": {
@@ -6428,6 +6517,10 @@
 "description": "Execution configuration for a workload.",
 "id": "ExecutionConfig",
 "properties": {
+"authenticationConfig": {
+"$ref": "AuthenticationConfig",
+"description": "Optional. Authentication configuration used to set the default identity for the workload execution. The config specifies the type of identity (service account or user) that will be used by workloads to access resources on the project(s)."
+},
 "idleTtl": {
 "description": "Optional. Applies to sessions only. The duration to keep the session alive while it's idling. Exceeding this threshold causes the session to terminate. This field cannot be set on a batch workload. Minimum value is 10 minutes; maximum value is 14 days (see JSON representation of Duration (https://developers.google.com/protocol-buffers/docs/proto3#json)). Defaults to 1 hour if not set. If both ttl and idle_ttl are specified for an interactive session, the conditions are treated as OR conditions: the workload will be terminated when it has been idle for idle_ttl or when ttl has been exceeded, whichever occurs first.",
 "format": "google-duration",
@@ -6972,7 +7065,7 @@
 "additionalProperties": {
 "type": "string"
 },
-"description": "Optional. Resource manager tags to add to all instances (see Resource manager tags resources (https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing)).",
+"description": "Optional. Resource manager tags (https://cloud.google.com/resource-manager/docs/tags/tags-creating-and-managing) to add to all instances (see Use secure tags in Dataproc (https://cloud.google.com/dataproc/docs/guides/attach-secure-tags)).",
 "type": "object"
 },
 "serviceAccount": {
@@ -8453,7 +8546,7 @@
 "id": "Metric",
 "properties": {
 "metricOverrides": {
-"description": "Optional. Specify one or more Custom metrics (https://cloud.google.com/dataproc/docs/guides/dataproc-metrics#custom_metrics) to collect for the metric course (for the SPARK metric source (any Spark metric (https://spark.apache.org/docs/latest/monitoring.html#metrics) can be specified).Provide metrics in the following format: METRIC_SOURCE: INSTANCE:GROUP:METRIC Use camelcase as appropriate.Examples: yarn:ResourceManager:QueueMetrics:AppsCompleted spark:driver:DAGScheduler:job.allJobs sparkHistoryServer:JVM:Memory:NonHeapMemoryUsage.committed hiveserver2:JVM:Memory:NonHeapMemoryUsage.used Notes: Only the specified overridden metrics are collected for the metric source. For example, if one or more spark:executive metrics are listed as metric overrides, other SPARK metrics are not collected. The collection of the metrics for other enabled custom metric sources is unaffected. For example, if both SPARK andd YARN metric sources are enabled, and overrides are provided for Spark metrics only, all YARN metrics are collected.",
+"description": "Optional. Specify one or more Custom metrics (https://cloud.google.com/dataproc/docs/guides/dataproc-metrics#custom_metrics) to collect for the metric course (for the SPARK metric source (any Spark metric (https://spark.apache.org/docs/latest/monitoring.html#metrics) can be specified).Provide metrics in the following format: METRIC_SOURCE: INSTANCE:GROUP:METRIC Use camelcase as appropriate.Examples: yarn:ResourceManager:QueueMetrics:AppsCompleted spark:driver:DAGScheduler:job.allJobs sparkHistoryServer:JVM:Memory:NonHeapMemoryUsage.committed hiveserver2:JVM:Memory:NonHeapMemoryUsage.used Notes: Only the specified overridden metrics are collected for the metric source. For example, if one or more spark:executive metrics are listed as metric overrides, other SPARK metrics are not collected. The collection of the metrics for other enabled custom metric sources is unaffected. For example, if both SPARK and YARN metric sources are enabled, and overrides are provided for Spark metrics only, all YARN metrics are collected.",
 "items": {
 "type": "string"
 },
@@ -8644,7 +8737,8 @@
 "REPAIR",
 "UPDATE_LABELS",
 "START",
-"STOP"
+"STOP",
+"UPDATE_METADATA_CONFIG"
 ],
 "enumDescriptions": [
 "Node group operation type is unknown.",
@@ -8655,7 +8749,8 @@
 "Repair node group operation type.",
 "Update node group label operation type.",
 "Start node group operation type.",
-"Stop node group operation type."
+"Stop node group operation type.",
+"This operation type is used to update the metadata config of a node group. We update the metadata of the VMs in the node group and await for intended config change to be completed at the node group level. Currently, only the identity config update is supported."
 ],
 "type": "string"
 },
@@ -9046,6 +9141,21 @@
 "totalCores": {
 "format": "int32",
 "type": "integer"
+}
+},
+"type": "object"
+},
+"PropertiesInfo": {
+"description": "Properties of the workload organized by origin.",
+"id": "PropertiesInfo",
+"properties": {
+"autotuningProperties": {
+"additionalProperties": {
+"$ref": "ValueInfo"
+},
+"description": "Output only. Properties set by autotuning engine.",
+"readOnly": true,
+"type": "object"
 }
 },
 "type": "object"
@@ -9701,6 +9811,10 @@
 "description": "Output only. A URI pointing to the location of the stdout and stderr of the workload.",
 "readOnly": true,
 "type": "string"
+},
+"propertiesInfo": {
+"$ref": "PropertiesInfo",
+"description": "Optional. Properties of the workload organized by origin."
 }
 },
 "type": "object"
@@ -10531,12 +10645,14 @@
 "enum": [
 "COMPONENT_UNSPECIFIED",
 "ANACONDA",
+"DELTA",
 "DOCKER",
 "DRUID",
 "FLINK",
 "HBASE",
 "HIVE_WEBHCAT",
 "HUDI",
+"ICEBERG",
 "JUPYTER",
 "PIG",
 "PRESTO",
@@ -10549,12 +10665,14 @@
 "enumDescriptions": [
 "Unspecified component. Specifying this will cause Cluster creation to fail.",
 "The Anaconda component is no longer supported or applicable to supported Dataproc on Compute Engine image versions (https://cloud.google.com/dataproc/docs/concepts/versioning/dataproc-version-clusters#supported-dataproc-image-versions). It cannot be activated on clusters created with supported Dataproc on Compute Engine image versions.",
+"Delta Lake.",
 "Docker",
 "The Druid query engine. (alpha)",
 "Flink",
 "HBase. (beta)",
 "The Hive Web HCatalog (the REST service for accessing HCatalog).",
 "Hudi.",
+"Iceberg.",
 "The Jupyter Notebook.",
 "The Pig component.",
 "The Presto query engine.",
@@ -12447,9 +12565,19 @@
 "format": "int64",
 "type": "string"
 },
+"milliSlotSeconds": {
+"description": "Optional. Slot usage in (milliSlot x seconds).",
+"format": "int64",
+"type": "string"
+},
 "shuffleStorageGbSeconds": {
 "description": "Optional. Shuffle storage usage in (GB x seconds) (see Dataproc Serverless pricing (https://cloud.google.com/dataproc-serverless/pricing)).",
 "format": "int64",
+"type": "string"
+},
+"updateTime": {
+"description": "Optional. The timestamp of the usage metrics.",
+"format": "google-datetime",
 "type": "string"
 }
 },
@@ -12478,6 +12606,11 @@
 "format": "int64",
 "type": "string"
 },
+"milliSlot": {
+"description": "Optional. Milli (one-thousandth) Slot usage of the workload.",
+"format": "int64",
+"type": "string"
+},
 "shuffleStorageGb": {
 "description": "Optional. Shuffle Storage in gigabytes (GB). (see Dataproc Serverless pricing (https://cloud.google.com/dataproc-serverless/pricing))",
 "format": "int64",
@@ -12491,6 +12624,25 @@
 "snapshotTime": {
 "description": "Optional. The timestamp of the usage snapshot.",
 "format": "google-datetime",
+"type": "string"
+}
+},
+"type": "object"
+},
+"ValueInfo": {
+"description": "Annotatated property value.",
+"id": "ValueInfo",
+"properties": {
+"annotation": {
+"description": "Annotation, comment or explanation why the property was set.",
+"type": "string"
+},
+"overriddenValue": {
+"description": "Optional. Value which was replaced by the corresponding component.",
+"type": "string"
+},
+"value": {
+"description": "Property value.",
 "type": "string"
 }
 },

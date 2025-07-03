@@ -24,12 +24,11 @@ common = gcp.CommonTemplates()
 # Add templated files
 # ----------------------------------------------------------------------------
 templated_files = common.py_library(
-    unit_test_python_versions=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"],
+    unit_test_python_versions=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"],
 )
 
 # Copy kokoro configs.
-# Docs are excluded as repo docs cannot currently be generated using sphinx.
-s.move(templated_files / ".kokoro", excludes=["**/docs/*", "publish-docs.sh"])
+s.move(templated_files / ".kokoro")
 s.move(templated_files / ".trampolinerc")  # config file for trampoline_v2
 
 # Also move issue templates

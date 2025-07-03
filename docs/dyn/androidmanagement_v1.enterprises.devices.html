@@ -84,7 +84,7 @@ h1, h2, h3 {
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
   <code><a href="#delete">delete(name, wipeDataFlags=None, wipeReasonMessage=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Deletes a device. This operation wipes the device. Deleted devices do not show up in enterprises.devices.list calls and a 404 is returned from enterprises.devices.get.</p>
+<p class="firstline">Deletes a device. This operation attempts to wipe the device but this is not guaranteed to succeed if the device is offline for an extended period. Deleted devices do not show up in enterprises.devices.list calls and a 404 is returned from enterprises.devices.get.</p>
 <p class="toc_element">
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets a device. Deleted devices will respond with a 404 error.</p>
@@ -108,7 +108,7 @@ h1, h2, h3 {
 
 <div class="method">
     <code class="details" id="delete">delete(name, wipeDataFlags=None, wipeReasonMessage=None, x__xgafv=None)</code>
-  <pre>Deletes a device. This operation wipes the device. Deleted devices do not show up in enterprises.devices.list calls and a 404 is returned from enterprises.devices.get.
+  <pre>Deletes a device. This operation attempts to wipe the device but this is not guaranteed to succeed if the device is offline for an extended period. Deleted devices do not show up in enterprises.devices.list calls and a 404 is returned from enterprises.devices.get.
 
 Args:
   name: string, The name of the device in the form enterprises/{enterpriseId}/devices/{deviceId}. (required)
@@ -117,6 +117,7 @@ Args:
       WIPE_DATA_FLAG_UNSPECIFIED - This value is ignored.
       PRESERVE_RESET_PROTECTION_DATA - Preserve the factory reset protection data on the device.
       WIPE_EXTERNAL_STORAGE - Additionally wipe the device&#x27;s external storage (such as SD cards).
+      WIPE_ESIMS - For company-owned devices, this removes all eSIMs from the device when the device is wiped. In personally-owned devices, this will remove managed eSIMs (eSIMs which are added via the ADD_ESIM command) on the devices and no personally owned eSIMs will be removed.
   wipeReasonMessage: string, Optional. A short message displayed to the user before wiping the work profile on personal devices. This has no effect on company owned devices. The maximum message length is 200 characters.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -252,6 +253,11 @@ Returns:
     ],
     &quot;deviceBasebandVersion&quot;: &quot;A String&quot;, # Baseband version. For example, MDM9625_104662.22.05.34p.
     &quot;enterpriseSpecificId&quot;: &quot;A String&quot;, # Output only. ID that uniquely identifies a personally-owned device in a particular organization. On the same physical device when enrolled with the same organization, this ID persists across setups and even factory resets. This ID is available on personally-owned devices with a work profile on devices running Android 12 and above.
+    &quot;euiccChipInfo&quot;: [ # Output only. Information related to the eUICC chip.
+      { # Information related to the eUICC chip.
+        &quot;eid&quot;: &quot;A String&quot;, # Output only. The Embedded Identity Document (EID) that identifies the eUICC chip for each eUICC chip on the device. This is available on company owned devices running Android 13 and above.
+      },
+    ],
     &quot;gpuShutdownTemperatures&quot;: [ # GPU shutdown temperature thresholds in Celsius for each GPU on the device.
       3.14,
     ],
@@ -314,7 +320,9 @@ Returns:
     &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
     &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
       { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+        &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below API level 35.
         &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+        &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below API level 35.
         &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
         &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
       },
@@ -406,6 +414,10 @@ Args:
     The object takes the form of:
 
 { # A command.
+  &quot;addEsimParams&quot;: { # Parameters associated with the ADD_ESIM command to add an eSIM profile to the device. # Optional. Parameters for the ADD_ESIM command to add an eSIM profile to the device. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to ADD_ESIM. It is also acceptable to explicitly set type to ADD_ESIM.
+    &quot;activationCode&quot;: &quot;A String&quot;, # Required. The activation code for the eSIM profile.
+    &quot;activationState&quot;: &quot;A String&quot;, # Required. The activation state of the eSIM profile once it is downloaded.
+  },
   &quot;clearAppsDataParams&quot;: { # Parameters associated with the CLEAR_APP_DATA command to clear the data of specified apps from the device. # Parameters for the CLEAR_APP_DATA command to clear the data of specified apps from the device. See ClearAppsDataParams. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to CLEAR_APP_DATA. It is also acceptable to explicitly set type to CLEAR_APP_DATA.
     &quot;packageNames&quot;: [ # The package names of the apps whose data will be cleared when the command is executed.
       &quot;A String&quot;,
@@ -420,8 +432,36 @@ Args:
   },
   &quot;createTime&quot;: &quot;A String&quot;, # The timestamp at which the command was created. The timestamp is automatically generated by the server.
   &quot;duration&quot;: &quot;A String&quot;, # The duration for which the command is valid. The command will expire if not executed by the device during this time. The default duration if unspecified is ten minutes. There is no maximum duration.
-  &quot;errorCode&quot;: &quot;A String&quot;, # If the command failed, an error code explaining the failure. This is not set when the command is cancelled by the caller.
+  &quot;errorCode&quot;: &quot;A String&quot;, # If the command failed, an error code explaining the failure. This is not set when the command is cancelled by the caller. For reasoning about command errors, prefer fields in the following order (most preferred first): 1. Command-specific fields like clearAppsDataStatus, startLostModeStatus, or similar, if they exist. 2. This field, if set. 3. The generic error field in the Operation that wraps the command.
+  &quot;esimStatus&quot;: { # Status and error details (if present) of an ADD_ESIM or REMOVE_ESIM command. # Output only. Status of an ADD_ESIM or REMOVE_ESIM command.
+    &quot;esimInfo&quot;: { # Details of the eSIM added or removed. # Output only. Information about the eSIM added or removed. This is populated only when the eSIM operation status is SUCCESS.
+      &quot;iccId&quot;: &quot;A String&quot;, # Output only. ICC ID of the eSIM.
+    },
+    &quot;internalErrorDetails&quot;: { # Internal error details if present for the ADD_ESIM or REMOVE_ESIM command. # Output only. Details of the error if the status is set to INTERNAL_ERROR.
+      &quot;errorCode&quot;: &quot;A String&quot;, # Output only. Integer representation of the error code as specified here (https://developer.android.com/reference/android/telephony/euicc/EuiccManager#EXTRA_EMBEDDED_SUBSCRIPTION_DETAILED_CODE). See also, OPERATION_SMDX_SUBJECT_REASON_CODE. See error_code_detail for more details.
+      &quot;errorCodeDetail&quot;: &quot;A String&quot;, # Output only. The error code detail corresponding to the error_code.
+      &quot;operationCode&quot;: &quot;A String&quot;, # Output only. Integer representation of the operation code as specified here (https://developer.android.com/reference/android/telephony/euicc/EuiccManager#EXTRA_EMBEDDED_SUBSCRIPTION_DETAILED_CODE). See operation_code_detail for more details.
+      &quot;operationCodeDetail&quot;: &quot;A String&quot;, # Output only. The operation code detail corresponding to the operation_code.
+    },
+    &quot;status&quot;: &quot;A String&quot;, # Output only. Status of an ADD_ESIM or REMOVE_ESIM command.
+  },
   &quot;newPassword&quot;: &quot;A String&quot;, # For commands of type RESET_PASSWORD, optionally specifies the new password. Note: The new password must be at least 6 characters long if it is numeric in case of Android 14 devices. Else the command will fail with INVALID_VALUE.
+  &quot;removeEsimParams&quot;: { # Parameters associated with the REMOVE_ESIM command to remove an eSIM profile from the device. # Optional. Parameters for the REMOVE_ESIM command to remove an eSIM profile from the device. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to REMOVE_ESIM. It is also acceptable to explicitly set type to REMOVE_ESIM.
+    &quot;iccId&quot;: &quot;A String&quot;, # Required. ICC ID of the eSIM profile to be deleted.
+  },
+  &quot;requestDeviceInfoParams&quot;: { # Parameters associated with the REQUEST_DEVICE_INFO command to get device related information. # Optional. Parameters for the REQUEST_DEVICE_INFO command to get device related information. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to REQUEST_DEVICE_INFO . It is also acceptable to explicitly set type to REQUEST_DEVICE_INFO.
+    &quot;deviceInfo&quot;: &quot;A String&quot;, # Required. Type of device information to be requested.
+  },
+  &quot;requestDeviceInfoStatus&quot;: { # Status of the REQUEST_DEVICE_INFO command. # Output only. Status of the REQUEST_DEVICE_INFO command.
+    &quot;eidInfo&quot;: { # Information related to the EIDs of the device. # Information related to the EIDs of the device.
+      &quot;eids&quot;: [ # Output only. EID information for each eUICC chip.
+        { # EID information for each eUICC chip.
+          &quot;eid&quot;: &quot;A String&quot;, # Output only. The EID
+        },
+      ],
+    },
+    &quot;status&quot;: &quot;A String&quot;, # Output only. Status of a REQUEST_DEVICE_INFO command.
+  },
   &quot;resetPasswordFlags&quot;: [ # For commands of type RESET_PASSWORD, optionally specifies flags.
     &quot;A String&quot;,
   ],
@@ -619,6 +659,11 @@ Returns:
         ],
         &quot;deviceBasebandVersion&quot;: &quot;A String&quot;, # Baseband version. For example, MDM9625_104662.22.05.34p.
         &quot;enterpriseSpecificId&quot;: &quot;A String&quot;, # Output only. ID that uniquely identifies a personally-owned device in a particular organization. On the same physical device when enrolled with the same organization, this ID persists across setups and even factory resets. This ID is available on personally-owned devices with a work profile on devices running Android 12 and above.
+        &quot;euiccChipInfo&quot;: [ # Output only. Information related to the eUICC chip.
+          { # Information related to the eUICC chip.
+            &quot;eid&quot;: &quot;A String&quot;, # Output only. The Embedded Identity Document (EID) that identifies the eUICC chip for each eUICC chip on the device. This is available on company owned devices running Android 13 and above.
+          },
+        ],
         &quot;gpuShutdownTemperatures&quot;: [ # GPU shutdown temperature thresholds in Celsius for each GPU on the device.
           3.14,
         ],
@@ -681,7 +726,9 @@ Returns:
         &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
         &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
           { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+            &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below API level 35.
             &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+            &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below API level 35.
             &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
             &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
           },
@@ -897,6 +944,11 @@ Args:
     ],
     &quot;deviceBasebandVersion&quot;: &quot;A String&quot;, # Baseband version. For example, MDM9625_104662.22.05.34p.
     &quot;enterpriseSpecificId&quot;: &quot;A String&quot;, # Output only. ID that uniquely identifies a personally-owned device in a particular organization. On the same physical device when enrolled with the same organization, this ID persists across setups and even factory resets. This ID is available on personally-owned devices with a work profile on devices running Android 12 and above.
+    &quot;euiccChipInfo&quot;: [ # Output only. Information related to the eUICC chip.
+      { # Information related to the eUICC chip.
+        &quot;eid&quot;: &quot;A String&quot;, # Output only. The Embedded Identity Document (EID) that identifies the eUICC chip for each eUICC chip on the device. This is available on company owned devices running Android 13 and above.
+      },
+    ],
     &quot;gpuShutdownTemperatures&quot;: [ # GPU shutdown temperature thresholds in Celsius for each GPU on the device.
       3.14,
     ],
@@ -959,7 +1011,9 @@ Args:
     &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
     &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
       { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+        &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below API level 35.
         &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+        &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below API level 35.
         &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
         &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
       },
@@ -1157,6 +1211,11 @@ Returns:
     ],
     &quot;deviceBasebandVersion&quot;: &quot;A String&quot;, # Baseband version. For example, MDM9625_104662.22.05.34p.
     &quot;enterpriseSpecificId&quot;: &quot;A String&quot;, # Output only. ID that uniquely identifies a personally-owned device in a particular organization. On the same physical device when enrolled with the same organization, this ID persists across setups and even factory resets. This ID is available on personally-owned devices with a work profile on devices running Android 12 and above.
+    &quot;euiccChipInfo&quot;: [ # Output only. Information related to the eUICC chip.
+      { # Information related to the eUICC chip.
+        &quot;eid&quot;: &quot;A String&quot;, # Output only. The Embedded Identity Document (EID) that identifies the eUICC chip for each eUICC chip on the device. This is available on company owned devices running Android 13 and above.
+      },
+    ],
     &quot;gpuShutdownTemperatures&quot;: [ # GPU shutdown temperature thresholds in Celsius for each GPU on the device.
       3.14,
     ],
@@ -1219,7 +1278,9 @@ Returns:
     &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
     &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
       { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+        &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below API level 35.
         &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+        &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for API level 35 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below API level 35.
         &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
         &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
       },

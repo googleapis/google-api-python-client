@@ -87,10 +87,6 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticshub_v1beta1.html)
 
 
-## analyticsreporting
-* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/analyticsreporting_v4.html)
-
-
 ## androiddeviceprovisioning
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/androiddeviceprovisioning_v1.html)
 
@@ -118,6 +114,10 @@
 
 ## apigeeregistry
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigeeregistry_v1.html)
+
+
+## apihub
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apihub_v1.html)
 
 
 ## apikeys
@@ -161,6 +161,7 @@
 ## authorizedbuyersmarketplace
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1beta.html)
 
 
 ## backupdr
@@ -606,11 +607,17 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseappdistribution_v1alpha.html)
 
 
+## firebaseapphosting
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseapphosting_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebaseapphosting_v1beta.html)
+
+
 ## firebasedatabase
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedatabase_v1beta.html)
 
 
 ## firebasedataconnect
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedataconnect_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/firebasedataconnect_v1beta.html)
 
 
@@ -794,6 +801,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedidentities_v1beta1.html)
 
 
+## managedkafka
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/managedkafka_v1.html)
+
+
 ## manufacturers
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/manufacturers_v1.html)
 
@@ -816,8 +827,10 @@
 * [conversions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_conversions_v1beta.html)
 * [datasources_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_datasources_v1beta.html)
 * [inventories_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_inventories_v1beta.html)
+* [issueresolution_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_issueresolution_v1beta.html)
 * [lfp_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_lfp_v1beta.html)
 * [notifications_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_notifications_v1beta.html)
+* [ordertracking_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_ordertracking_v1beta.html)
 * [products_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_products_v1beta.html)
 * [promotions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1beta.html)
 * [quota_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1beta.html)
@@ -910,6 +923,10 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/oauth2_v2.html)
 
 
+## observability
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/observability_v1.html)
+
+
 ## ondemandscanning
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/ondemandscanning_v1beta1.html)
@@ -927,6 +944,7 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v1beta.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v2.html)
 * [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/osconfig_v2beta.html)
 
 
@@ -1073,6 +1091,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/runtimeconfig_v1beta1.html)
 
 
+## saasservicemgmt
+* [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/saasservicemgmt_v1beta1.html)
+
+
 ## safebrowsing
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v4.html)
 * [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/safebrowsing_v5.html)
@@ -1175,6 +1197,10 @@
 
 ## storage
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/storage_v1.html)
+
+
+## storagebatchoperations
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/storagebatchoperations_v1.html)
 
 
 ## storagetransfer
