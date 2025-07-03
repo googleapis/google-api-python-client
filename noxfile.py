@@ -31,7 +31,7 @@ BLACK_PATHS = [
     "setup.py",
 ]
 
-DEFAULT_PYTHON_VERSION = "3.12"
+DEFAULT_PYTHON_VERSION = "3.10"
 
 test_dependencies = [
     "django>=2.0.0",
