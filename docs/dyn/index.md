@@ -324,6 +324,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudkms_v1.html)
 
 
+## cloudlocationfinder
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1alpha.html)
+
+
 ## cloudprofiler
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudprofiler_v2.html)
 
@@ -961,6 +965,10 @@
 ## parallelstore
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/parallelstore_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/parallelstore_v1beta.html)
+
+
+## parametermanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/parametermanager_v1.html)
 
 
 ## paymentsresellersubscription
