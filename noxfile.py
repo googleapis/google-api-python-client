@@ -78,7 +78,7 @@ def lint(session):
     )
 
 
-@nox.session(python=["3.10", DEFAULT_PYTHON_VERSION])
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def format(session):
     """
     Run isort to sort imports. Then run black
