@@ -160,7 +160,7 @@ def blacken(session: nox.sessions.Session) -> None:
 #
 
 
-@nox.session(python=["3.10"])
+@nox.session
 def format(session: nox.sessions.Session) -> None:
     """
     Run isort to sort imports. Then run black
