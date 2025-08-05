@@ -1130,6 +1130,10 @@
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1beta2.html)
 
 
+## securesourcemanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/securesourcemanager_v1.html)
+
+
 ## securitycenter
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/securitycenter_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/securitycenter_v1beta1.html)
