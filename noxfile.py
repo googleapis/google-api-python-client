@@ -20,7 +20,6 @@ import nox
 BLACK_VERSION = "black==22.3.0"
 ISORT_VERSION = "isort==5.10.1"
 BLACK_PATHS = [
-    "apiclient",
     "googleapiclient",
     "scripts",
     "tests",
