@@ -217,7 +217,7 @@ Args:
             ],
           },
           &quot;customSearchOperators&quot;: &quot;A String&quot;, # Optional. Custom search operators which if specified will be used to filter results from workspace data stores. For more information on custom search operators, see [SearchOperators](https://support.google.com/cloudsearch/answer/6172299).
-          &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
+          &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`. The path must include the project number, project id is not supported for this field.
           &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
         },
       ],
@@ -1084,7 +1084,7 @@ Args:
         ],
       },
       &quot;customSearchOperators&quot;: &quot;A String&quot;, # Optional. Custom search operators which if specified will be used to filter results from workspace data stores. For more information on custom search operators, see [SearchOperators](https://support.google.com/cloudsearch/answer/6172299).
-      &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
+      &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`. The path must include the project number, project id is not supported for this field.
       &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
     },
   ],
@@ -1140,6 +1140,8 @@ Args:
     &quot;condition&quot;: &quot;A String&quot;, # The condition under which query expansion should occur. Default to Condition.DISABLED.
     &quot;pinUnexpandedResults&quot;: True or False, # Whether to pin unexpanded results. If this field is set to true, unexpanded products are always at the top of the search results, followed by the expanded results.
   },
+  &quot;rankingExpression&quot;: &quot;A String&quot;, # Optional. The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The syntax and supported features depend on the `ranking_expression_backend` value. If `ranking_expression_backend` is not provided, it defaults to `RANK_BY_EMBEDDING`. If ranking_expression_backend is not provided or set to `RANK_BY_EMBEDDING`, it should be a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between `embedding_field_path` and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`. If ranking_expression_backend is set to `RANK_BY_FORMULA`, the following expression types (and combinations of those chained using + or * operators) are supported: * `double` * `signal` * `log(signal)` * `exp(signal)` * `rr(signal, double &gt; 0)` -- reciprocal rank transformation with second argument being a denominator constant. * `is_nan(signal)` -- returns 0 if signal is NaN, 1 otherwise. * `fill_nan(signal1, signal2 | double)` -- if signal1 is NaN, returns signal2 | double, else returns signal1. Here are a few examples of ranking formulas that use the supported ranking expression types: - `0.2 * semantic_similarity_score + 0.8 * log(keyword_similarity_score)` -- mostly rank by the logarithm of `keyword_similarity_score` with slight `semantic_smilarity_score` adjustment. - `0.2 * exp(fill_nan(semantic_similarity_score, 0)) + 0.3 * is_nan(keyword_similarity_score)` -- rank by the exponent of `semantic_similarity_score` filling the value with 0 if it&#x27;s NaN, also add constant 0.3 adjustment to the final score if `semantic_similarity_score` is NaN. - `0.2 * rr(semantic_similarity_score, 16) + 0.8 * rr(keyword_similarity_score, 16)` -- mostly rank by the reciprocal rank of `keyword_similarity_score` with slight adjustment of reciprocal rank of `semantic_smilarity_score`. The following signals are supported: * `semantic_similarity_score`: semantic similarity adjustment that is calculated using the embeddings generated by a proprietary Google model. This score determines how semantically similar a search query is to a document. * `keyword_similarity_score`: keyword match adjustment uses the Best Match 25 (BM25) ranking function. This score is calculated using a probabilistic model to estimate the probability that a document is relevant to a given query. * `relevance_score`: semantic relevance adjustment that uses a proprietary Google model to determine the meaning and intent behind a user&#x27;s query in context with the content in the documents. * `pctr_rank`: predicted conversion rate adjustment as a rank use predicted Click-through rate (pCTR) to gauge the relevance and attractiveness of a search result from a user&#x27;s perspective. A higher pCTR suggests that the result is more likely to satisfy the user&#x27;s query and intent, making it a valuable signal for ranking. * `freshness_rank`: freshness adjustment as a rank * `document_age`: The time in hours elapsed since the document was last updated, a floating-point number (e.g., 0.25 means 15 minutes). * `topicality_rank`: topicality adjustment as a rank. Uses proprietary Google model to determine the keyword-based overlap between the query and the document. * `base_rank`: the default rank of the result
+  &quot;rankingExpressionBackend&quot;: &quot;A String&quot;, # Optional. The backend to use for the ranking expression evaluation.
   &quot;relevanceScoreSpec&quot;: { # The specification for returning the document relevance score. # Optional. The specification for returning the relevance score.
     &quot;returnRelevanceScore&quot;: True or False, # Optional. Whether to return the relevance score for search results. The higher the score, the more relevant the document is to the query.
   },
@@ -1303,6 +1305,22 @@ Returns:
             3.14,
           ],
         },
+      },
+      &quot;rankSignals&quot;: { # A set of ranking signals. # Optional. A set of ranking signals associated with the result.
+        &quot;boostingFactor&quot;: 3.14, # Optional. Combined custom boosts for a doc.
+        &quot;customSignals&quot;: [ # Optional. A list of custom clearbox signals.
+          { # Custom clearbox signal represented by name and value pair.
+            &quot;name&quot;: &quot;A String&quot;, # Optional. Name of the signal.
+            &quot;value&quot;: 3.14, # Optional. Float value representing the ranking signal (e.g. 1.25 for BM25).
+          },
+        ],
+        &quot;defaultRank&quot;: 3.14, # Optional. The default rank of the result.
+        &quot;documentAge&quot;: 3.14, # Optional. Age of the document in hours.
+        &quot;keywordSimilarityScore&quot;: 3.14, # Optional. Keyword matching adjustment.
+        &quot;pctrRank&quot;: 3.14, # Optional. Predicted conversion rate adjustment as a rank.
+        &quot;relevanceScore&quot;: 3.14, # Optional. Semantic relevance adjustment.
+        &quot;semanticSimilarityScore&quot;: 3.14, # Optional. Semantic similarity adjustment.
+        &quot;topicalityRank&quot;: 3.14, # Optional. Topicality adjustment as a rank.
       },
     },
   ],
@@ -1455,7 +1473,7 @@ Args:
         ],
       },
       &quot;customSearchOperators&quot;: &quot;A String&quot;, # Optional. Custom search operators which if specified will be used to filter results from workspace data stores. For more information on custom search operators, see [SearchOperators](https://support.google.com/cloudsearch/answer/6172299).
-      &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
+      &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`. The path must include the project number, project id is not supported for this field.
       &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
     },
   ],
@@ -1511,6 +1529,8 @@ Args:
     &quot;condition&quot;: &quot;A String&quot;, # The condition under which query expansion should occur. Default to Condition.DISABLED.
     &quot;pinUnexpandedResults&quot;: True or False, # Whether to pin unexpanded results. If this field is set to true, unexpanded products are always at the top of the search results, followed by the expanded results.
   },
+  &quot;rankingExpression&quot;: &quot;A String&quot;, # Optional. The ranking expression controls the customized ranking on retrieval documents. This overrides ServingConfig.ranking_expression. The syntax and supported features depend on the `ranking_expression_backend` value. If `ranking_expression_backend` is not provided, it defaults to `RANK_BY_EMBEDDING`. If ranking_expression_backend is not provided or set to `RANK_BY_EMBEDDING`, it should be a single function or multiple functions that are joined by &quot;+&quot;. * ranking_expression = function, { &quot; + &quot;, function }; Supported functions: * double * relevance_score * double * dotProduct(embedding_field_path) Function variables: * `relevance_score`: pre-defined keywords, used for measure relevance between query and document. * `embedding_field_path`: the document embedding field used with query embedding vector. * `dotProduct`: embedding function between `embedding_field_path` and query embedding vector. Example ranking expression: If document has an embedding field doc_embedding, the ranking expression could be `0.5 * relevance_score + 0.3 * dotProduct(doc_embedding)`. If ranking_expression_backend is set to `RANK_BY_FORMULA`, the following expression types (and combinations of those chained using + or * operators) are supported: * `double` * `signal` * `log(signal)` * `exp(signal)` * `rr(signal, double &gt; 0)` -- reciprocal rank transformation with second argument being a denominator constant. * `is_nan(signal)` -- returns 0 if signal is NaN, 1 otherwise. * `fill_nan(signal1, signal2 | double)` -- if signal1 is NaN, returns signal2 | double, else returns signal1. Here are a few examples of ranking formulas that use the supported ranking expression types: - `0.2 * semantic_similarity_score + 0.8 * log(keyword_similarity_score)` -- mostly rank by the logarithm of `keyword_similarity_score` with slight `semantic_smilarity_score` adjustment. - `0.2 * exp(fill_nan(semantic_similarity_score, 0)) + 0.3 * is_nan(keyword_similarity_score)` -- rank by the exponent of `semantic_similarity_score` filling the value with 0 if it&#x27;s NaN, also add constant 0.3 adjustment to the final score if `semantic_similarity_score` is NaN. - `0.2 * rr(semantic_similarity_score, 16) + 0.8 * rr(keyword_similarity_score, 16)` -- mostly rank by the reciprocal rank of `keyword_similarity_score` with slight adjustment of reciprocal rank of `semantic_smilarity_score`. The following signals are supported: * `semantic_similarity_score`: semantic similarity adjustment that is calculated using the embeddings generated by a proprietary Google model. This score determines how semantically similar a search query is to a document. * `keyword_similarity_score`: keyword match adjustment uses the Best Match 25 (BM25) ranking function. This score is calculated using a probabilistic model to estimate the probability that a document is relevant to a given query. * `relevance_score`: semantic relevance adjustment that uses a proprietary Google model to determine the meaning and intent behind a user&#x27;s query in context with the content in the documents. * `pctr_rank`: predicted conversion rate adjustment as a rank use predicted Click-through rate (pCTR) to gauge the relevance and attractiveness of a search result from a user&#x27;s perspective. A higher pCTR suggests that the result is more likely to satisfy the user&#x27;s query and intent, making it a valuable signal for ranking. * `freshness_rank`: freshness adjustment as a rank * `document_age`: The time in hours elapsed since the document was last updated, a floating-point number (e.g., 0.25 means 15 minutes). * `topicality_rank`: topicality adjustment as a rank. Uses proprietary Google model to determine the keyword-based overlap between the query and the document. * `base_rank`: the default rank of the result
+  &quot;rankingExpressionBackend&quot;: &quot;A String&quot;, # Optional. The backend to use for the ranking expression evaluation.
   &quot;relevanceScoreSpec&quot;: { # The specification for returning the document relevance score. # Optional. The specification for returning the relevance score.
     &quot;returnRelevanceScore&quot;: True or False, # Optional. Whether to return the relevance score for search results. The higher the score, the more relevant the document is to the query.
   },
@@ -1674,6 +1694,22 @@ Returns:
             3.14,
           ],
         },
+      },
+      &quot;rankSignals&quot;: { # A set of ranking signals. # Optional. A set of ranking signals associated with the result.
+        &quot;boostingFactor&quot;: 3.14, # Optional. Combined custom boosts for a doc.
+        &quot;customSignals&quot;: [ # Optional. A list of custom clearbox signals.
+          { # Custom clearbox signal represented by name and value pair.
+            &quot;name&quot;: &quot;A String&quot;, # Optional. Name of the signal.
+            &quot;value&quot;: 3.14, # Optional. Float value representing the ranking signal (e.g. 1.25 for BM25).
+          },
+        ],
+        &quot;defaultRank&quot;: 3.14, # Optional. The default rank of the result.
+        &quot;documentAge&quot;: 3.14, # Optional. Age of the document in hours.
+        &quot;keywordSimilarityScore&quot;: 3.14, # Optional. Keyword matching adjustment.
+        &quot;pctrRank&quot;: 3.14, # Optional. Predicted conversion rate adjustment as a rank.
+        &quot;relevanceScore&quot;: 3.14, # Optional. Semantic relevance adjustment.
+        &quot;semanticSimilarityScore&quot;: 3.14, # Optional. Semantic similarity adjustment.
+        &quot;topicalityRank&quot;: 3.14, # Optional. Topicality adjustment as a rank.
       },
     },
   ],
@@ -1881,7 +1917,7 @@ Args:
             ],
           },
           &quot;customSearchOperators&quot;: &quot;A String&quot;, # Optional. Custom search operators which if specified will be used to filter results from workspace data stores. For more information on custom search operators, see [SearchOperators](https://support.google.com/cloudsearch/answer/6172299).
-          &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`.
+          &quot;dataStore&quot;: &quot;A String&quot;, # Required. Full resource name of DataStore, such as `projects/{project}/locations/{location}/collections/{collection_id}/dataStores/{data_store_id}`. The path must include the project number, project id is not supported for this field.
           &quot;filter&quot;: &quot;A String&quot;, # Optional. Filter specification to filter documents in the data store specified by data_store field. For more information on filtering, see [Filtering](https://cloud.google.com/generative-ai-app-builder/docs/filter-search-metadata)
         },
       ],
