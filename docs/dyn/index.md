@@ -225,7 +225,6 @@
 
 
 ## blogger
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/blogger_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/blogger_v3.html)
 
 
@@ -295,6 +294,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudchannel_v1.html)
 
 
+## cloudcommerceprocurement
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudcommerceprocurement_v1.html)
+
+
 ## cloudcontrolspartner
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudcontrolspartner_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudcontrolspartner_v1beta.html)
@@ -325,6 +328,7 @@
 
 
 ## cloudlocationfinder
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1alpha.html)
 
 
