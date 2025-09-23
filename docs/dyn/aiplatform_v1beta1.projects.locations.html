@@ -692,10 +692,28 @@ Args:
     },
   },
   &quot;endpointConfig&quot;: { # The endpoint config to use for the deployment. # Optional. The endpoint config to use for the deployment. If not specified, the default endpoint config will be used.
-    &quot;dedicatedEndpointDisabled&quot;: True or False, # Optional. By default, if dedicated endpoint is enabled, the endpoint will be exposed through a dedicated DNS [Endpoint.dedicated_endpoint_dns]. Your request to the dedicated DNS will be isolated from other users&#x27; traffic and will have better performance and reliability. Note: Once you enabled dedicated endpoint, you won&#x27;t be able to send request to the shared DNS {region}-aiplatform.googleapis.com. The limitations will be removed soon. If this field is set to true, the dedicated endpoint will be disabled and the deployed model will be exposed through the shared DNS {region}-aiplatform.googleapis.com.
+    &quot;dedicatedEndpointDisabled&quot;: True or False, # Optional. By default, if dedicated endpoint is enabled and private service connect config is not set, the endpoint will be exposed through a dedicated DNS [Endpoint.dedicated_endpoint_dns]. If private service connect config is set, the endpoint will be exposed through private service connect. Your request to the dedicated DNS will be isolated from other users&#x27; traffic and will have better performance and reliability. Note: Once you enabled dedicated endpoint, you won&#x27;t be able to send request to the shared DNS {region}-aiplatform.googleapis.com. The limitations will be removed soon. If this field is set to true, the dedicated endpoint will be disabled and the deployed model will be exposed through the shared DNS {region}-aiplatform.googleapis.com.
     &quot;dedicatedEndpointEnabled&quot;: True or False, # Optional. Deprecated. Use dedicated_endpoint_disabled instead. If true, the endpoint will be exposed through a dedicated DNS [Endpoint.dedicated_endpoint_dns]. Your request to the dedicated DNS will be isolated from other users&#x27; traffic and will have better performance and reliability. Note: Once you enabled dedicated endpoint, you won&#x27;t be able to send request to the shared DNS {region}-aiplatform.googleapis.com. The limitations will be removed soon.
     &quot;endpointDisplayName&quot;: &quot;A String&quot;, # Optional. The user-specified display name of the endpoint. If not set, a default name will be used.
     &quot;endpointUserId&quot;: &quot;A String&quot;, # Optional. Immutable. The ID to use for endpoint, which will become the final component of the endpoint resource name. If not provided, Vertex AI will generate a value for this ID. If the first character is a letter, this value may be up to 63 characters, and valid characters are `[a-z0-9-]`. The last character must be a letter or number. If the first character is a number, this value may be up to 9 characters, and valid characters are `[0-9]` with no leading zeros. When using HTTP/JSON, this field is populated based on a query string argument, such as `?endpoint_id=12345`. This is the fallback for fields that are not included in either the URI or the body.
+    &quot;privateServiceConnectConfig&quot;: { # Represents configuration for private service connect. # Optional. Configuration for private service connect. If set, the endpoint will be exposed through private service connect.
+      &quot;enablePrivateServiceConnect&quot;: True or False, # Required. If true, expose the IndexEndpoint via private service connect.
+      &quot;enableSecurePrivateServiceConnect&quot;: True or False, # Optional. If set to true, enable secure private service connect with IAM authorization. Otherwise, private service connect will be done without authorization. Note latency will be slightly increased if authorization is enabled.
+      &quot;projectAllowlist&quot;: [ # A list of Projects from which the forwarding rule will target the service attachment.
+        &quot;A String&quot;,
+      ],
+      &quot;pscAutomationConfigs&quot;: [ # Optional. List of projects and networks where the PSC endpoints will be created. This field is used by Online Inference(Prediction) only.
+        { # PSC config that is used to automatically create PSC endpoints in the user projects.
+          &quot;errorMessage&quot;: &quot;A String&quot;, # Output only. Error message if the PSC service automation failed.
+          &quot;forwardingRule&quot;: &quot;A String&quot;, # Output only. Forwarding rule created by the PSC service automation.
+          &quot;ipAddress&quot;: &quot;A String&quot;, # Output only. IP address rule created by the PSC service automation.
+          &quot;network&quot;: &quot;A String&quot;, # Required. The full name of the Google Compute Engine [network](https://cloud.google.com/compute/docs/networks-and-firewalls#networks). [Format](https://cloud.google.com/compute/docs/reference/rest/v1/networks/get): `projects/{project}/global/networks/{network}`.
+          &quot;projectId&quot;: &quot;A String&quot;, # Required. Project id used to create forwarding rule.
+          &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the PSC service automation.
+        },
+      ],
+      &quot;serviceAttachment&quot;: &quot;A String&quot;, # Output only. The name of the generated service attachment resource. This is only populated if the endpoint is deployed with PrivateServiceConnect.
+    },
   },
   &quot;huggingFaceModelId&quot;: &quot;A String&quot;, # The Hugging Face model to deploy. Format: Hugging Face model ID like `google/gemma-2-2b-it`.
   &quot;modelConfig&quot;: { # The model config to use for the deployment. # Optional. The model config to use for the deployment. If not specified, the default model config will be used.
@@ -976,6 +994,37 @@ Args:
         &quot;useEffectiveOrder&quot;: True or False, # Optional. Whether to use_effective_order to compute bleu score.
       },
       &quot;exactMatchSpec&quot;: { # Spec for exact match metric - returns 1 if prediction and reference exactly matches, otherwise 0. # Spec for exact match metric.
+      },
+      &quot;llmBasedMetricSpec&quot;: { # Specification for an LLM based metric. # Spec for an LLM based metric.
+        &quot;additionalConfig&quot;: { # Optional. Optional additional configuration for the metric.
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+        &quot;judgeAutoraterConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Optional. Optional configuration for the judge LLM (Autorater).
+          &quot;autoraterModel&quot;: &quot;A String&quot;, # Optional. The fully qualified name of the publisher model or tuned autorater endpoint to use. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Tuned model endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`
+          &quot;flipEnabled&quot;: True or False, # Optional. Default is true. Whether to flip the candidate and baseline responses. This is only applicable to the pairwise metric. If enabled, also provide PairwiseMetricSpec.candidate_response_field_name and PairwiseMetricSpec.baseline_response_field_name. When rendering PairwiseMetricSpec.metric_prompt_template, the candidate and baseline fields will be flipped for half of the samples to reduce bias.
+          &quot;samplingCount&quot;: 42, # Optional. Number of samples for each instance in the dataset. If not specified, the default is 4. Minimum value is 1, maximum value is 32.
+        },
+        &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Template for the prompt sent to the judge model.
+        &quot;predefinedRubricGenerationSpec&quot;: { # The spec for a pre-defined metric. # Dynamically generate rubrics using a predefined spec.
+          &quot;metricSpecName&quot;: &quot;A String&quot;, # Required. The name of a pre-defined metric, such as &quot;instruction_following_v1&quot; or &quot;text_quality_v1&quot;.
+          &quot;metricSpecParameters&quot;: { # Optional. The parameters needed to run the pre-defined metric.
+            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+          },
+        },
+        &quot;rubricGenerationSpec&quot;: { # Specification for how rubrics should be generated. # Dynamically generate rubrics using this specification.
+          &quot;modelConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Configuration for the model used in rubric generation. Configs including sampling count and base model can be specified here. Flipping is not supported for rubric generation.
+            &quot;autoraterModel&quot;: &quot;A String&quot;, # Optional. The fully qualified name of the publisher model or tuned autorater endpoint to use. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Tuned model endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`
+            &quot;flipEnabled&quot;: True or False, # Optional. Default is true. Whether to flip the candidate and baseline responses. This is only applicable to the pairwise metric. If enabled, also provide PairwiseMetricSpec.candidate_response_field_name and PairwiseMetricSpec.baseline_response_field_name. When rendering PairwiseMetricSpec.metric_prompt_template, the candidate and baseline fields will be flipped for half of the samples to reduce bias.
+            &quot;samplingCount&quot;: 42, # Optional. Number of samples for each instance in the dataset. If not specified, the default is 4. Minimum value is 1, maximum value is 32.
+          },
+          &quot;promptTemplate&quot;: &quot;A String&quot;, # Template for the prompt used to generate rubrics. The details should be updated based on the most-recent recipe requirements.
+          &quot;rubricContentType&quot;: &quot;A String&quot;, # The type of rubric content to be generated.
+          &quot;rubricTypeOntology&quot;: [ # Optional. An optional, pre-defined list of allowed types for generated rubrics. If this field is provided, it implies `include_rubric_type` should be true, and the generated rubric types should be chosen from this ontology.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;rubricGroupKey&quot;: &quot;A String&quot;, # Use a pre-defined group of rubrics associated with the input. Refers to a key in the rubric_groups map of EvaluationInstance.
+        &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for the judge model.
       },
       &quot;pairwiseMetricSpec&quot;: { # Spec for pairwise metric. # Spec for pairwise metric.
         &quot;baselineResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the baseline response.
@@ -1373,6 +1422,37 @@ Args:
         &quot;useEffectiveOrder&quot;: True or False, # Optional. Whether to use_effective_order to compute bleu score.
       },
       &quot;exactMatchSpec&quot;: { # Spec for exact match metric - returns 1 if prediction and reference exactly matches, otherwise 0. # Spec for exact match metric.
+      },
+      &quot;llmBasedMetricSpec&quot;: { # Specification for an LLM based metric. # Spec for an LLM based metric.
+        &quot;additionalConfig&quot;: { # Optional. Optional additional configuration for the metric.
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+        &quot;judgeAutoraterConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Optional. Optional configuration for the judge LLM (Autorater).
+          &quot;autoraterModel&quot;: &quot;A String&quot;, # Optional. The fully qualified name of the publisher model or tuned autorater endpoint to use. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Tuned model endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`
+          &quot;flipEnabled&quot;: True or False, # Optional. Default is true. Whether to flip the candidate and baseline responses. This is only applicable to the pairwise metric. If enabled, also provide PairwiseMetricSpec.candidate_response_field_name and PairwiseMetricSpec.baseline_response_field_name. When rendering PairwiseMetricSpec.metric_prompt_template, the candidate and baseline fields will be flipped for half of the samples to reduce bias.
+          &quot;samplingCount&quot;: 42, # Optional. Number of samples for each instance in the dataset. If not specified, the default is 4. Minimum value is 1, maximum value is 32.
+        },
+        &quot;metricPromptTemplate&quot;: &quot;A String&quot;, # Required. Template for the prompt sent to the judge model.
+        &quot;predefinedRubricGenerationSpec&quot;: { # The spec for a pre-defined metric. # Dynamically generate rubrics using a predefined spec.
+          &quot;metricSpecName&quot;: &quot;A String&quot;, # Required. The name of a pre-defined metric, such as &quot;instruction_following_v1&quot; or &quot;text_quality_v1&quot;.
+          &quot;metricSpecParameters&quot;: { # Optional. The parameters needed to run the pre-defined metric.
+            &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+          },
+        },
+        &quot;rubricGenerationSpec&quot;: { # Specification for how rubrics should be generated. # Dynamically generate rubrics using this specification.
+          &quot;modelConfig&quot;: { # The configs for autorater. This is applicable to both EvaluateInstances and EvaluateDataset. # Configuration for the model used in rubric generation. Configs including sampling count and base model can be specified here. Flipping is not supported for rubric generation.
+            &quot;autoraterModel&quot;: &quot;A String&quot;, # Optional. The fully qualified name of the publisher model or tuned autorater endpoint to use. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Tuned model endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`
+            &quot;flipEnabled&quot;: True or False, # Optional. Default is true. Whether to flip the candidate and baseline responses. This is only applicable to the pairwise metric. If enabled, also provide PairwiseMetricSpec.candidate_response_field_name and PairwiseMetricSpec.baseline_response_field_name. When rendering PairwiseMetricSpec.metric_prompt_template, the candidate and baseline fields will be flipped for half of the samples to reduce bias.
+            &quot;samplingCount&quot;: 42, # Optional. Number of samples for each instance in the dataset. If not specified, the default is 4. Minimum value is 1, maximum value is 32.
+          },
+          &quot;promptTemplate&quot;: &quot;A String&quot;, # Template for the prompt used to generate rubrics. The details should be updated based on the most-recent recipe requirements.
+          &quot;rubricContentType&quot;: &quot;A String&quot;, # The type of rubric content to be generated.
+          &quot;rubricTypeOntology&quot;: [ # Optional. An optional, pre-defined list of allowed types for generated rubrics. If this field is provided, it implies `include_rubric_type` should be true, and the generated rubric types should be chosen from this ontology.
+            &quot;A String&quot;,
+          ],
+        },
+        &quot;rubricGroupKey&quot;: &quot;A String&quot;, # Use a pre-defined group of rubrics associated with the input. Refers to a key in the rubric_groups map of EvaluationInstance.
+        &quot;systemInstruction&quot;: &quot;A String&quot;, # Optional. System instructions for the judge model.
       },
       &quot;pairwiseMetricSpec&quot;: { # Spec for pairwise metric. # Spec for pairwise metric.
         &quot;baselineResponseFieldName&quot;: &quot;A String&quot;, # Optional. The field name of the baseline response.
@@ -2422,7 +2502,7 @@ Returns:
 
 Args:
   name: string, The resource that owns the locations collection, if applicable. (required)
-  extraLocationTypes: string, Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage. (repeated)
+  extraLocationTypes: string, Optional. Unless explicitly documented otherwise, don&#x27;t use this unsupported field which is primarily intended for internal usage. (repeated)
   filter: string, A filter to narrow down results to a preferred subset. The filtering language accepts strings like `&quot;displayName=tokyo&quot;`, and is documented in more detail in [AIP-160](https://google.aip.dev/160).
   pageSize: integer, The maximum number of results to return. If not set, the service selects a default.
   pageToken: string, A page token received from the `next_page_token` field in the response. Send that page token to receive the subsequent page.
