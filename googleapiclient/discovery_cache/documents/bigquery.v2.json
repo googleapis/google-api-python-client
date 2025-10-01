@@ -2375,7 +2375,7 @@
 }
 }
 },
-"revision": "20250816",
+"revision": "20250919",
 "rootUrl": "https://bigquery.googleapis.com/",
 "schemas": {
 "AggregateClassificationMetrics": {
@@ -4692,7 +4692,7 @@
 "id": "ExternalServiceCost",
 "properties": {
 "billingMethod": {
-"description": "The billing method used for the external job. This field is only used when billed on the services sku, set to \"SERVICES_SKU\". Otherwise, it is unspecified for backward compatibility.",
+"description": "The billing method used for the external job. This field, set to `SERVICES_SKU`, is only used when billing under the services SKU. Otherwise, it is unspecified for backward compatibility.",
 "type": "string"
 },
 "bytesBilled": {
@@ -5140,6 +5140,56 @@
 },
 "type": "object"
 },
+"IncrementalResultStats": {
+"description": "Statistics related to Incremental Query Results. Populated as part of JobStatistics2. This feature is not yet available.",
+"id": "IncrementalResultStats",
+"properties": {
+"disabledReason": {
+"description": "Reason why incremental query results are/were not written by the query.",
+"enum": [
+"DISABLED_REASON_UNSPECIFIED",
+"OTHER"
+],
+"enumDescriptions": [
+"Disabled reason not specified.",
+"Some other reason."
+],
+"type": "string"
+},
+"resultSetLastModifyTime": {
+"description": "The time at which the result table's contents were modified. May be absent if no results have been written or the query has completed.",
+"format": "google-datetime",
+"type": "string"
+},
+"resultSetLastReplaceTime": {
+"description": "The time at which the result table's contents were completely replaced. May be absent if no results have been written or the query has completed.",
+"format": "google-datetime",
+"type": "string"
+}
+},
+"type": "object"
+},
+"IndexPruningStats": {
+"description": "Statistics for index pruning.",
+"id": "IndexPruningStats",
+"properties": {
+"baseTable": {
+"$ref": "TableReference",
+"description": "The base table reference."
+},
+"postIndexPruningParallelInputCount": {
+"description": "The number of parallel inputs after index pruning.",
+"format": "int64",
+"type": "string"
+},
+"preIndexPruningParallelInputCount": {
+"description": "The number of parallel inputs before index pruning.",
+"format": "int64",
+"type": "string"
+}
+},
+"type": "object"
+},
 "IndexUnusedReason": {
 "description": "Reason about why no search index was used in the search query (or sub-query).",
 "id": "IndexUnusedReason",
@@ -5442,7 +5492,7 @@
 "description": "[Pick one] Configures an extract job."
 },
 "jobTimeoutMs": {
-"description": "Optional. Job timeout in milliseconds. If this time limit is exceeded, BigQuery will attempt to stop a longer job, but may not always succeed in canceling it before the job completes. For example, a job that takes more than 60 seconds to complete has a better chance of being stopped than a job that takes 10 seconds to complete.",
+"description": "Optional. Job timeout in milliseconds relative to the job creation time. If this time limit is exceeded, BigQuery attempts to stop the job, but might not always succeed in canceling it before the job completes. For example, a job that takes more than 60 seconds to complete has a better chance of being stopped than a job that takes 10 seconds to complete.",
 "format": "int64",
 "type": "string"
 },
@@ -5720,7 +5770,7 @@
 "type": "string"
 },
 "schemaUpdateOptions": {
-"description": "Allows the schema of the destination table to be updated as a side effect of the load job if a schema is autodetected or supplied in the job configuration. Schema update options are supported in two cases: when writeDisposition is WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE and the destination table is a partition of a table, specified by partition decorators. For normal tables, WRITE_TRUNCATE will always overwrite the schema. One or more of the following values are specified: * ALLOW_FIELD_ADDITION: allow adding a nullable field to the schema. * ALLOW_FIELD_RELAXATION: allow relaxing a required field in the original schema to nullable.",
+"description": "Allows the schema of the destination table to be updated as a side effect of the load job if a schema is autodetected or supplied in the job configuration. Schema update options are supported in three cases: when writeDisposition is WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE_DATA; when writeDisposition is WRITE_TRUNCATE and the destination table is a partition of a table, specified by partition decorators. For normal tables, WRITE_TRUNCATE will always overwrite the schema. One or more of the following values are specified: * ALLOW_FIELD_ADDITION: allow adding a nullable field to the schema. * ALLOW_FIELD_RELAXATION: allow relaxing a required field in the original schema to nullable.",
 "items": {
 "type": "string"
 },
@@ -5871,7 +5921,7 @@
 "description": "Range partitioning specification for the destination table. Only one of timePartitioning and rangePartitioning should be specified."
 },
 "schemaUpdateOptions": {
-"description": "Allows the schema of the destination table to be updated as a side effect of the query job. Schema update options are supported in two cases: when writeDisposition is WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE and the destination table is a partition of a table, specified by partition decorators. For normal tables, WRITE_TRUNCATE will always overwrite the schema. One or more of the following values are specified: * ALLOW_FIELD_ADDITION: allow adding a nullable field to the schema. * ALLOW_FIELD_RELAXATION: allow relaxing a required field in the original schema to nullable.",
+"description": "Allows the schema of the destination table to be updated as a side effect of the query job. Schema update options are supported in three cases: when writeDisposition is WRITE_APPEND; when writeDisposition is WRITE_TRUNCATE_DATA; when writeDisposition is WRITE_TRUNCATE and the destination table is a partition of a table, specified by partition decorators. For normal tables, WRITE_TRUNCATE will always overwrite the schema. One or more of the following values are specified: * ALLOW_FIELD_ADDITION: allow adding a nullable field to the schema. * ALLOW_FIELD_RELAXATION: allow relaxing a required field in the original schema to nullable.",
 "items": {
 "type": "string"
 },
@@ -6356,6 +6406,11 @@
 "readOnly": true,
 "type": "array"
 },
+"incrementalResultStats": {
+"$ref": "IncrementalResultStats",
+"description": "Output only. Statistics related to incremental query results, if enabled for the query. This feature is not yet available.",
+"readOnly": true
+},
 "loadQueryStatistics": {
 "$ref": "LoadQueryStatistics",
 "description": "Output only. Statistics for a LOAD query.",
@@ -6503,7 +6558,7 @@
 "type": "string"
 },
 "totalServicesSkuSlotMs": {
-"description": "Output only. Total slot-milliseconds for the job that run on external services and billed on the service SKU. This field is only populated for jobs that have external service costs, and is the total of the usage for costs whose billing method is \"SERVICES_SKU\".",
+"description": "Output only. Total slot milliseconds for the job that ran on external services and billed on the services SKU. This field is only populated for jobs that have external service costs, and is the total of the usage for costs whose billing method is `\"SERVICES_SKU\"`.",
 "format": "int64",
 "readOnly": true,
 "type": "string"
@@ -7595,6 +7650,28 @@
 },
 "type": "object"
 },
+"PruningStats": {
+"description": "The column metadata index pruning statistics.",
+"id": "PruningStats",
+"properties": {
+"postCmetaPruningParallelInputCount": {
+"description": "The number of parallel inputs matched.",
+"format": "int64",
+"type": "string"
+},
+"postCmetaPruningPartitionCount": {
+"description": "The number of partitions matched.",
+"format": "int64",
+"type": "string"
+},
+"preCmetaPruningParallelInputCount": {
+"description": "The number of parallel inputs scanned.",
+"format": "int64",
+"type": "string"
+}
+},
+"type": "object"
+},
 "PythonOptions": {
 "description": "Options for a user-defined Python function.",
 "id": "PythonOptions",
@@ -8589,6 +8666,13 @@
 "description": "Statistics for a search query. Populated as part of JobStatistics2.",
 "id": "SearchStatistics",
 "properties": {
+"indexPruningStats": {
+"description": "Search index pruning statistics, one for each base table that has a search index. If a base table does not have a search index or the index does not help with pruning on the base table, then there is no pruning statistics for that table.",
+"items": {
+"$ref": "IndexPruningStats"
+},
+"type": "array"
+},
 "indexUnusedReasons": {
 "description": "When `indexUsageMode` is `UNUSED` or `PARTIALLY_USED`, this field explains why indexes were not used in all or part of the search query. If `indexUsageMode` is `FULLY_USED`, this field is not populated.",
 "items": {
@@ -9707,6 +9791,12 @@
 "format": "int64",
 "type": "string"
 },
+"timestampPrecision": {
+"default": "6",
+"description": "Optional. Precision (maximum number of total digits in base 10) for seconds of TIMESTAMP type. Possible values include: * 6 (Default, for TIMESTAMP type with microsecond precision) * 12 (For TIMESTAMP type with picosecond precision)",
+"format": "int64",
+"type": "string"
+},
 "type": {
 "description": "Required. The field data type. Possible values include: * STRING * BYTES * INTEGER (or INT64) * FLOAT (or FLOAT64) * BOOLEAN (or BOOL) * TIMESTAMP * DATE * TIME * DATETIME * GEOGRAPHY * NUMERIC * BIGNUMERIC * JSON * RECORD (or STRUCT) * RANGE Use of RECORD/STRUCT indicates that the field contains a nested schema.",
 "type": "string"
@@ -9824,6 +9914,10 @@
 "explanation": {
 "description": "Free form human-readable reason metadata caching was unused for the job.",
 "type": "string"
+},
+"pruningStats": {
+"$ref": "PruningStats",
+"description": "The column metadata index pruning statistics."
 },
 "staleness": {
 "description": "Duration since last refresh as of this job for managed tables (indicates metadata cache staleness as seen by this job).",
@@ -10233,6 +10327,11 @@
 "description": "If true, enable global explanation during training.",
 "type": "boolean"
 },
+"endpointIdleTtl": {
+"description": "The idle TTL of the endpoint before the resources get destroyed. The default value is 6.5 hours.",
+"format": "google-duration",
+"type": "string"
+},
 "feedbackType": {
 "description": "Feedback type that specifies which algorithm to run for matrix factorization.",
 "enum": [
@@ -10614,6 +10713,10 @@
 },
 "type": "array"
 },
+"huggingFaceModelId": {
+"description": "The id of a Hugging Face model. For example, `google/gemma-2-2b-it`.",
+"type": "string"
+},
 "includeDrift": {
 "description": "Include drift when fitting an ARIMA model.",
 "type": "boolean"
@@ -10723,6 +10826,10 @@
 ],
 "type": "string"
 },
+"machineType": {
+"description": "The type of the machine used to deploy and serve the model.",
+"type": "string"
+},
 "maxIterations": {
 "description": "The maximum number of iterations in training. Used only for iterative training algorithms.",
 "format": "int64",
@@ -10730,6 +10837,11 @@
 },
 "maxParallelTrials": {
 "description": "Maximum number of trials to run in parallel.",
+"format": "int64",
+"type": "string"
+},
+"maxReplicaCount": {
+"description": "The maximum number of machine replicas that will be deployed on an endpoint. The default value is equal to min_replica_count.",
 "format": "int64",
 "type": "string"
 },
@@ -10753,6 +10865,11 @@
 "format": "double",
 "type": "number"
 },
+"minReplicaCount": {
+"description": "The minimum number of machine replicas that will be always deployed on an endpoint. This value must be greater than or equal to 1. The default value is 1.",
+"format": "int64",
+"type": "string"
+},
 "minSplitLoss": {
 "description": "Minimum split loss for boosted tree models.",
 "format": "double",
@@ -10766,6 +10883,10 @@
 "minTreeChildWeight": {
 "description": "Minimum sum of instance weight needed in a child for boosted tree models.",
 "format": "int64",
+"type": "string"
+},
+"modelGardenModelName": {
+"description": "The name of a Vertex model garden publisher model. Format is `publishers/{publisher}/models/{model}@{optional_version_id}`.",
 "type": "string"
 },
 "modelRegistry": {
@@ -10851,6 +10972,33 @@
 "Auto."
 ],
 "type": "string"
+},
+"reservationAffinityKey": {
+"description": "Corresponds to the label key of a reservation resource used by Vertex AI. To target a SPECIFIC_RESERVATION by name, use `compute.googleapis.com/reservation-name` as the key and specify the name of your reservation as its value.",
+"type": "string"
+},
+"reservationAffinityType": {
+"description": "Specifies the reservation affinity type used to configure a Vertex AI resource. The default value is `NO_RESERVATION`.",
+"enum": [
+"RESERVATION_AFFINITY_TYPE_UNSPECIFIED",
+"NO_RESERVATION",
+"ANY_RESERVATION",
+"SPECIFIC_RESERVATION"
+],
+"enumDescriptions": [
+"Default value.",
+"No reservation.",
+"Any reservation.",
+"Specific reservation."
+],
+"type": "string"
+},
+"reservationAffinityValues": {
+"description": "Corresponds to the label values of a reservation resource used by Vertex AI. This must be the full resource name of the reservation or reservation block.",
+"items": {
+"type": "string"
+},
+"type": "array"
 },
 "sampledShapleyNumPaths": {
 "description": "Number of paths for the sampled Shapley explain method.",
