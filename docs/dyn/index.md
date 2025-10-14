@@ -264,6 +264,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/chromeuxreport_v1.html)
 
 
+## chromewebstore
+* [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/chromewebstore_v1_1.html)
+
+
 ## civicinfo
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/civicinfo_v2.html)
 
@@ -453,6 +457,10 @@
 
 ## datalineage
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datalineage_v1.html)
+
+
+## datamanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamanager_v1.html)
 
 
 ## datamigration
