@@ -97,7 +97,7 @@ virtualenv <your-env>
 
 ## Supported Python Versions
 
-Python 3.7, 3.8, 3.9, 3.10, 3.11, 3.12 and 3.13 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
+Python 3.7, 3.8, 3.9, 3.10, 3.11, 3.12 and 3.13, 3.14 are fully supported and tested. This library may work on later versions of 3, but we do not currently run tests against those versions.
 
 ## Unsupported Python Versions
 
