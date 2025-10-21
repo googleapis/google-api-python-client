@@ -196,6 +196,7 @@
 
 ## bigquerydatapolicy
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatapolicy_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatapolicy_v2.html)
 
 
 ## bigquerydatatransfer
@@ -443,6 +444,7 @@
 
 
 ## dataform
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataform_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataform_v1beta1.html)
 
 
