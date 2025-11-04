@@ -267,6 +267,7 @@
 
 ## chromewebstore
 * [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/chromewebstore_v1_1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/chromewebstore_v2.html)
 
 
 ## civicinfo
