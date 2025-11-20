@@ -778,7 +778,19 @@ class DiscoveryFromDocument(unittest.TestCase):
 
 REGULAR_ENDPOINT = "https://www.googleapis.com/plus/v1/"
 MTLS_ENDPOINT = "https://www.mtls.googleapis.com/plus/v1/"
-
+CONFIG_DATA_WITH_WORKLOAD = {
+    "version": 1,
+    "cert_configs": {
+        "workload": {
+            "cert_path": "path/to/cert/file",
+            "key_path": "path/to/key/file",
+        }
+    },
+}
+CONFIG_DATA_WITHOUT_WORKLOAD = {
+    "version": 1,
+    "cert_configs": {},
+}
 
 class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
@@ -886,6 +898,47 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
 
     @parameterized.expand(
         [
+            ("never", "", CONFIG_DATA_WITH_WORKLOAD , REGULAR_ENDPOINT),
+            ("auto", "", CONFIG_DATA_WITH_WORKLOAD, MTLS_ENDPOINT),
+            ("always", "", CONFIG_DATA_WITH_WORKLOAD, MTLS_ENDPOINT),
+            ("never", "", CONFIG_DATA_WITHOUT_WORKLOAD, REGULAR_ENDPOINT),
+            ("auto", "", CONFIG_DATA_WITHOUT_WORKLOAD, REGULAR_ENDPOINT),
+            ("always", "", CONFIG_DATA_WITHOUT_WORKLOAD, MTLS_ENDPOINT),
+        ]
+    )
+    def test_mtls_with_provided_client_cert_unset_environment_variable(
+        self, use_mtls_env, use_client_cert, config_data, base_url
+    ):
+        if not hasattr(google.auth.transport.mtls, "should_use_client_cert"):
+            self.skipTest(
+                "The should_use_client_cert function is not available in this "
+                "version of google-auth."
+            )
+        discovery = read_datafile("plus.json")
+        config_filename = "mock_certificate_config.json"
+        config_file_content = json.dumps(config_data)
+        m = mock.mock_open(read_data=config_file_content)
+
+        with mock.patch.dict(
+            "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
+        ):
+            with mock.patch.dict(
+                "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+            ):
+                with mock.patch("builtins.open", m):
+                    with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
+                        plus = build_from_document(
+                            discovery,
+                            credentials=self.MOCK_CREDENTIALS,
+                            client_options={
+                                "client_encrypted_cert_source": self.client_encrypted_cert_source
+                            },
+                        )
+                        self.assertIsNotNone(plus)
+                        self.assertEqual(plus._baseUrl, base_url)
+
+    @parameterized.expand(
+        [
             ("never", "true"),
             ("auto", "true"),
             ("always", "true"),
@@ -961,6 +1014,61 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
                 self.assertIsNotNone(plus)
                 self.check_http_client_cert(plus, has_client_cert=use_client_cert)
                 self.assertEqual(plus._baseUrl, base_url)
+    @parameterized.expand(
+        [
+            ("never", "", CONFIG_DATA_WITH_WORKLOAD, REGULAR_ENDPOINT),
+            ("auto", "", CONFIG_DATA_WITH_WORKLOAD, MTLS_ENDPOINT),
+            ("always", "", CONFIG_DATA_WITH_WORKLOAD, MTLS_ENDPOINT),
+            ("never", "", CONFIG_DATA_WITHOUT_WORKLOAD, REGULAR_ENDPOINT),
+            ("auto", "", CONFIG_DATA_WITHOUT_WORKLOAD, REGULAR_ENDPOINT),
+            ("always", "", CONFIG_DATA_WITHOUT_WORKLOAD, MTLS_ENDPOINT),
+        ]
+    )
+    @mock.patch(
+        "google.auth.transport.mtls.has_default_client_cert_source", autospec=True
+    )
+    @mock.patch(
+        "google.auth.transport.mtls.default_client_encrypted_cert_source", autospec=True
+    )
+    def test_mtls_with_default_client_cert_with_unset_environment_variable(
+        self,
+        use_mtls_env,
+        use_client_cert,
+        config_data,
+        base_url,
+        default_client_encrypted_cert_source,
+        has_default_client_cert_source,
+    ):
+        if not hasattr(google.auth.transport.mtls, "should_use_client_cert"):
+            self.skipTest(
+                "The should_use_client_cert function is not available in this "
+                "version of google-auth."
+            )
+        has_default_client_cert_source.return_value = True
+        default_client_encrypted_cert_source.return_value = (
+            self.client_encrypted_cert_source
+        )
+        discovery = read_datafile("plus.json")
+        config_filename = "mock_certificate_config.json"
+        config_file_content = json.dumps(config_data)
+        m = mock.mock_open(read_data=config_file_content)
+
+        with mock.patch.dict(
+            "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
+        ):
+            with mock.patch.dict(
+                "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+            ):
+                with mock.patch("builtins.open", m):
+                    with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
+                        plus = build_from_document(
+                        discovery,
+                        credentials=self.MOCK_CREDENTIALS,
+                        adc_cert_path=self.ADC_CERT_PATH,
+                        adc_key_path=self.ADC_KEY_PATH,
+                        )
+                        self.assertIsNotNone(plus)
+                        self.assertEqual(plus._baseUrl, base_url)
 
     @parameterized.expand(
         [
