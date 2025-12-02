@@ -62,46 +62,29 @@ except ImportError:
     HAS_UNIVERSE = False
 
 from googleapiclient import _helpers as util
-from googleapiclient.discovery import (
-    DISCOVERY_URI,
-    MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
-    MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE,
-    STACK_QUERY_PARAMETER_DEFAULT_VALUE,
-    STACK_QUERY_PARAMETERS,
-    V1_DISCOVERY_URI,
-    V2_DISCOVERY_URI,
-    APICoreVersionError,
-    ResourceMethodParameters,
-    _fix_up_media_path_base_url,
-    _fix_up_media_upload,
-    _fix_up_method_description,
-    _fix_up_parameters,
-    _urljoin,
-    build,
-    build_from_document,
-    key2param,
-)
+from googleapiclient.discovery import (DISCOVERY_URI,
+                                       MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
+                                       MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE,
+                                       STACK_QUERY_PARAMETER_DEFAULT_VALUE,
+                                       STACK_QUERY_PARAMETERS,
+                                       V1_DISCOVERY_URI, V2_DISCOVERY_URI,
+                                       APICoreVersionError,
+                                       ResourceMethodParameters,
+                                       _fix_up_media_path_base_url,
+                                       _fix_up_media_upload,
+                                       _fix_up_method_description,
+                                       _fix_up_parameters, _urljoin, build,
+                                       build_from_document, key2param)
 from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
 from googleapiclient.discovery_cache.base import Cache
-from googleapiclient.errors import (
-    HttpError,
-    InvalidJsonError,
-    MediaUploadSizeError,
-    ResumableUploadError,
-    UnacceptableMimeTypeError,
-    UnknownApiNameOrVersion,
-    UnknownFileType,
-)
-from googleapiclient.http import (
-    HttpMock,
-    HttpMockSequence,
-    MediaFileUpload,
-    MediaIoBaseUpload,
-    MediaUpload,
-    MediaUploadProgress,
-    build_http,
-    tunnel_patch,
-)
+from googleapiclient.errors import (HttpError, InvalidJsonError,
+                                    MediaUploadSizeError, ResumableUploadError,
+                                    UnacceptableMimeTypeError,
+                                    UnknownApiNameOrVersion, UnknownFileType)
+from googleapiclient.http import (HttpMock, HttpMockSequence, MediaFileUpload,
+                                  MediaIoBaseUpload, MediaUpload,
+                                  MediaUploadProgress, build_http,
+                                  tunnel_patch)
 from googleapiclient.model import JsonModel
 from googleapiclient.schema import Schemas
 
@@ -909,33 +892,36 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     def test_mtls_with_provided_client_cert_unset_environment_variable(
         self, use_mtls_env, use_client_cert, config_data, base_url
     ):
-        if not hasattr(google.auth.transport.mtls, "should_use_client_cert"):
-            self.skipTest(
-                "The should_use_client_cert function is not available in this "
-                "version of google-auth."
-            )
-        discovery = read_datafile("plus.json")
-        config_filename = "mock_certificate_config.json"
-        config_file_content = json.dumps(config_data)
-        m = mock.mock_open(read_data=config_file_content)
+        """Tests that mTLS is correctly handled when a client certificate is provided.
 
-        with mock.patch.dict(
-            "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
-        ):
+        This test case verifies that when a client certificate is explicitly provided
+        via `client_options` and GOOGLE_API_USE_CLIENT_CERTIFICATE is unset, the 
+        discovery document build process correctly configures the base URL for mTLS 
+        or regular endpoints based on the `GOOGLE_API_USE_MTLS_ENDPOINT` environment variable.
+        """
+        if hasattr(google.auth.transport.mtls, "should_use_client_cert"):
+            discovery = read_datafile("plus.json")
+            config_filename = "mock_certificate_config.json"
+            config_file_content = json.dumps(config_data)
+            m = mock.mock_open(read_data=config_file_content)
+
             with mock.patch.dict(
-                "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+                "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
             ):
-                with mock.patch("builtins.open", m):
-                    with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
-                        plus = build_from_document(
-                            discovery,
-                            credentials=self.MOCK_CREDENTIALS,
-                            client_options={
-                                "client_encrypted_cert_source": self.client_encrypted_cert_source
-                            },
-                        )
-                        self.assertIsNotNone(plus)
-                        self.assertEqual(plus._baseUrl, base_url)
+                with mock.patch.dict(
+                    "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+                ):
+                    with mock.patch("builtins.open", m):
+                        with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
+                            plus = build_from_document(
+                                discovery,
+                                credentials=self.MOCK_CREDENTIALS,
+                                client_options={
+                                    "client_encrypted_cert_source": self.client_encrypted_cert_source
+                                },
+                            )
+                            self.assertIsNotNone(plus)
+                            self.assertEqual(plus._baseUrl, base_url)
 
     @parameterized.expand(
         [
@@ -1039,36 +1025,41 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
         default_client_encrypted_cert_source,
         has_default_client_cert_source,
     ):
-        if not hasattr(google.auth.transport.mtls, "should_use_client_cert"):
-            self.skipTest(
-                "The should_use_client_cert function is not available in this "
-                "version of google-auth."
-            )
-        has_default_client_cert_source.return_value = True
-        default_client_encrypted_cert_source.return_value = (
-            self.client_encrypted_cert_source
-        )
-        discovery = read_datafile("plus.json")
-        config_filename = "mock_certificate_config.json"
-        config_file_content = json.dumps(config_data)
-        m = mock.mock_open(read_data=config_file_content)
+        """Tests mTLS handling when falling back to a default client certificate.
 
-        with mock.patch.dict(
-            "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
-        ):
+        This test simulates the scenario where no client certificate is explicitly
+        provided, and the library successfully finds and uses a default client
+        certificate when GOOGLE_API_USE_CLIENT_CERTIFICATE is unset. It mocks the
+        default certificate discovery process and checks that the base URL is
+        correctly set for mTLS or regular endpoints depending on the
+        `GOOGLE_API_USE_MTLS_ENDPOINT` environment variable.
+        """
+        if hasattr(google.auth.transport.mtls, "should_use_client_cert"):
+            has_default_client_cert_source.return_value = True
+            default_client_encrypted_cert_source.return_value = (
+                self.client_encrypted_cert_source
+            )
+            discovery = read_datafile("plus.json")
+            config_filename = "mock_certificate_config.json"
+            config_file_content = json.dumps(config_data)
+            m = mock.mock_open(read_data=config_file_content)
+
             with mock.patch.dict(
-                "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+                "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
             ):
-                with mock.patch("builtins.open", m):
-                    with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
-                        plus = build_from_document(
-                        discovery,
-                        credentials=self.MOCK_CREDENTIALS,
-                        adc_cert_path=self.ADC_CERT_PATH,
-                        adc_key_path=self.ADC_KEY_PATH,
-                        )
-                        self.assertIsNotNone(plus)
-                        self.assertEqual(plus._baseUrl, base_url)
+                with mock.patch.dict(
+                    "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+                ):
+                    with mock.patch("builtins.open", m):
+                        with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
+                            plus = build_from_document(
+                            discovery,
+                            credentials=self.MOCK_CREDENTIALS,
+                            adc_cert_path=self.ADC_CERT_PATH,
+                            adc_key_path=self.ADC_KEY_PATH,
+                            )
+                            self.assertIsNotNone(plus)
+                            self.assertEqual(plus._baseUrl, base_url)
 
     @parameterized.expand(
         [
