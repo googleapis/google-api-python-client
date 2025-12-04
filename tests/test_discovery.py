@@ -32,6 +32,7 @@ import itertools
 import json
 import os
 import pickle
+import pytest
 import re
 import sys
 import unittest
@@ -40,6 +41,7 @@ import urllib
 
 import google.api_core.exceptions
 import google.auth.credentials
+from google.auth import __version__ as auth_version
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 import httplib2
@@ -61,6 +63,7 @@ try:
 except ImportError:
     HAS_UNIVERSE = False
 
+from google.api_core import parse_version_to_tuple
 from googleapiclient import _helpers as util
 from googleapiclient.discovery import (DISCOVERY_URI,
                                        MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
@@ -889,6 +892,11 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
             ("always", "", CONFIG_DATA_WITHOUT_WORKLOAD, MTLS_ENDPOINT),
         ]
     )
+    @pytest.mark.skipif(
+        parse_version_to_tuple(auth_version) < (2,43,0),
+        reason="automatic mtls enablement when supported certs present only"
+        "enabled in google-auth<=2.43.0"
+    )
     def test_mtls_with_provided_client_cert_unset_environment_variable(
         self, use_mtls_env, use_client_cert, config_data, base_url
     ):
@@ -1015,6 +1023,11 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     )
     @mock.patch(
         "google.auth.transport.mtls.default_client_encrypted_cert_source", autospec=True
+    )
+    @pytest.mark.skipif(
+        parse_version_to_tuple(auth_version) < (2,43,0),
+        reason="automatic mtls enablement when supported certs present only"
+        "enabled in google-auth<=2.43.0"
     )
     def test_mtls_with_default_client_cert_with_unset_environment_variable(
         self,
