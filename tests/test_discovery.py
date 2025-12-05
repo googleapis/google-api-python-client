@@ -63,7 +63,6 @@ try:
 except ImportError:
     HAS_UNIVERSE = False
 
-from google.api_core._python_package_support import parse_version_to_tuple
 from googleapiclient import _helpers as util
 from googleapiclient.discovery import (DISCOVERY_URI,
                                        MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
@@ -142,6 +141,28 @@ def read_datafile(filename, mode="r"):
     with open(datafile(filename), mode=mode) as f:
         return f.read()
 
+def parse_version_to_tuple(version_string: str) -> ParsedVersion:
+    """Safely converts a semantic version string to a comparable tuple of integers.
+
+    Example: "4.25.8" -> (4, 25, 8)
+    Ignores non-numeric parts and handles common version formats.
+
+    Args:
+        version_string: Version string in the format "x.y.z" or "x.y.z<suffix>"
+
+    Returns:
+        Tuple of integers for the parsed version string.
+    """
+    parts = []
+    for part in version_string.split("."):
+        try:
+            parts.append(int(part))
+        except ValueError:
+            # If it's a non-numeric part (e.g., '1.0.0b1' -> 'b1'), stop here.
+            # This is a simplification compared to 'packaging.parse_version', but sufficient
+            # for comparing strictly numeric semantic versions.
+            break
+    return tuple(parts)
 
 class SetupHttplib2(unittest.TestCase):
     def test_retries(self):
