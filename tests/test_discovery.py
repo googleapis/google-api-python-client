@@ -63,7 +63,7 @@ try:
 except ImportError:
     HAS_UNIVERSE = False
 
-from google.api_core import parse_version_to_tuple
+from google.api_core._python_package_support import parse_version_to_tuple
 from googleapiclient import _helpers as util
 from googleapiclient.discovery import (DISCOVERY_URI,
                                        MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
