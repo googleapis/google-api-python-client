@@ -141,7 +141,7 @@ def read_datafile(filename, mode="r"):
     with open(datafile(filename), mode=mode) as f:
         return f.read()
 
-def parse_version_to_tuple(version_string: str) -> ParsedVersion:
+def parse_version_to_tuple(version_string):
     """Safely converts a semantic version string to a comparable tuple of integers.
 
     Example: "4.25.8" -> (4, 25, 8)
