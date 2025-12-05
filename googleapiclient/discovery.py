@@ -649,16 +649,23 @@ def build_from_document(
 
         # Obtain client cert and create mTLS http channel if cert exists.
         client_cert_to_use = None
-        use_client_cert = os.getenv(GOOGLE_API_USE_CLIENT_CERTIFICATE, "false")
-        if not use_client_cert in ("true", "false"):
-            raise MutualTLSChannelError(
-                "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
+        if hasattr(mtls, "should_use_client_cert"):
+            use_client_cert = mtls.should_use_client_cert()
+        else:
+            # if unsupported, fallback to reading from env var
+            use_client_cert_str = os.getenv(
+                "GOOGLE_API_USE_CLIENT_CERTIFICATE", "false"
+            ).lower()
+            use_client_cert = use_client_cert_str == "true"
+            if use_client_cert_str not in ("true", "false"):
+                raise MutualTLSChannelError(
+                    "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
             )
         if client_options and client_options.client_cert_source:
             raise MutualTLSChannelError(
                 "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
             )
-        if use_client_cert == "true":
+        if use_client_cert:
             if (
                 client_options
                 and hasattr(client_options, "client_encrypted_cert_source")
