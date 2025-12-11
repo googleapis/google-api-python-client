@@ -22,7 +22,7 @@ all the pieces of data returned by the Google Analytics Management API v3.
 
 The application manages autorization by saving an OAuth2.0 token in a local
 file and reusing the token for subsequent requests. It then traverses the
-Google Analytics Management hiearchy. It first retrieves and prints all the
+Google Analytics Management hierarchy. It first retrieves and prints all the
 authorized user's accounts, next it prints all the web properties for the
 first account, then all the profiles for the first web property and finally
 all the goals for the first profile. The sample then prints all the
@@ -72,9 +72,9 @@ def main(argv):
         scope="https://www.googleapis.com/auth/analytics.readonly",
     )
 
-    # Traverse the Management hiearchy and print results or handle errors.
+    # Traverse the Management hierarchy and print results or handle errors.
     try:
-        traverse_hiearchy(service)
+        traverse_hierarchy(service)
 
     except TypeError as error:
         # Handle errors in constructing a query.
@@ -96,8 +96,8 @@ def main(argv):
         )
 
 
-def traverse_hiearchy(service):
-    """Traverses the management API hiearchy and prints results.
+def traverse_hierarchy(service):
+    """Traverses the management API hierarchy and prints results.
 
     This retrieves and prints the authorized user's accounts. It then
     retrieves and prints all the web properties for the first account,

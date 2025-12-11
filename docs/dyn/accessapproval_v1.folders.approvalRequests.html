@@ -82,10 +82,13 @@ h1, h2, h3 {
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
   <code><a href="#dismiss">dismiss(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Dismisses a request. Returns the updated ApprovalRequest. NOTE: This does not deny access to the resource if another request has been made and approved. It is equivalent in effect to ignoring the request altogether. Returns NOT_FOUND if the request does not exist. Returns FAILED_PRECONDITION if the request exists but is not in a pending state.</p>
+<p class="firstline">Dismisses a request. Returns the updated ApprovalRequest. NOTE: When a request is dismissed, it is considered ignored. Dismissing a request does not prevent access granted by other Access Approval requests. Returns NOT_FOUND if the request does not exist. Returns FAILED_PRECONDITION if the request exists but is not in a pending state.</p>
 <p class="toc_element">
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets an approval request. Returns NOT_FOUND if the request does not exist.</p>
+<p class="toc_element">
+  <code><a href="#invalidate">invalidate(name, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Invalidates an existing ApprovalRequest. Returns the updated ApprovalRequest. NOTE: This action revokes Google access based on this approval request. If the resource has other active approvals, access will remain granted. Returns FAILED_PRECONDITION if the request exists but is not in an approved state.</p>
 <p class="toc_element">
   <code><a href="#list">list(parent, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists approval requests associated with a project, folder, or organization. Approval requests can be filtered by state (pending, active, dismissed). The order is reverse chronological.</p>
@@ -119,9 +122,13 @@ Returns:
     &quot;approveTime&quot;: &quot;A String&quot;, # The time at which approval was granted.
     &quot;autoApproved&quot;: True or False, # True when the request has been auto-approved.
     &quot;expireTime&quot;: &quot;A String&quot;, # The time at which the approval expires.
+    &quot;invalidateTime&quot;: &quot;A String&quot;, # If set, denotes the timestamp at which the approval is invalidated.
+    &quot;policyApproved&quot;: True or False, # True when the request has been approved by the customer&#x27;s defined policy.
     &quot;signatureInfo&quot;: { # Information about the digital signature of the resource. # The signature for the ApprovalRequest and details on how it was signed.
       &quot;customerKmsKeyVersion&quot;: &quot;A String&quot;, # The resource name of the customer CryptoKeyVersion used for signing.
+      &quot;googleKeyAlgorithm&quot;: &quot;A String&quot;, # The hashing algorithm used for signature verification. It will only be present in the case of Google managed keys.
       &quot;googlePublicKeyPem&quot;: &quot;A String&quot;, # The public key for the Google default signing, encoded in PEM format. The signature was created using a private key which may be verified using this public key.
+      &quot;serializedApprovalRequest&quot;: &quot;A String&quot;, # The ApprovalRequest that is serialized without the SignatureInfo message field. This data is used with the hashing algorithm to generate the digital signature, and it can be used for signature verification.
       &quot;signature&quot;: &quot;A String&quot;, # The digital signature.
     },
   },
@@ -131,14 +138,18 @@ Returns:
   },
   &quot;name&quot;: &quot;A String&quot;, # The resource name of the request. Format is &quot;{projects|folders|organizations}/{id}/approvalRequests/{approval_request}&quot;.
   &quot;requestTime&quot;: &quot;A String&quot;, # The time at which approval was requested.
-  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The requested expiration for the approval. If the request is approved, access will be granted from the time of approval until the expiration time.
-  &quot;requestedLocations&quot;: { # Home office and physical location of the principal. # The locations for which approval is being requested.
-    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the principal. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
-    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the principal at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  &quot;requestedAugmentedInfo&quot;: { # This field contains the augmented information of the request. Requires augmented administrative access to be enabled. # This field contains the augmented information of the request.
+    &quot;command&quot;: &quot;A String&quot;, # For command-line tools, the full command-line exactly as entered by the actor without adding any additional characters (such as quotation marks).
   },
-  &quot;requestedReason&quot;: { # The justification for which approval is being requested.
+  &quot;requestedDuration&quot;: &quot;A String&quot;, # The requested access duration.
+  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The original requested expiration for the approval. Calculated by adding the requested_duration to the request_time.
+  &quot;requestedLocations&quot;: { # Physical assigned office and physical location of the Google administrator performing the access. # The locations for which approval is being requested.
+    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the Google administrator. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the Google administrator at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  },
+  &quot;requestedReason&quot;: { # The access reason for which approval is being requested.
     &quot;detail&quot;: &quot;A String&quot;, # More detail about certain reason types. See comments for each type above.
-    &quot;type&quot;: &quot;A String&quot;, # Type of access justification.
+    &quot;type&quot;: &quot;A String&quot;, # Type of access reason.
   },
   &quot;requestedResourceName&quot;: &quot;A String&quot;, # The resource for which approval is being requested. The format of the resource name is defined at https://cloud.google.com/apis/design/resource_names. The resource name here may either be a &quot;full&quot; resource name (e.g. &quot;//library.googleapis.com/shelves/shelf1/books/book2&quot;) or a &quot;relative&quot; resource name (e.g. &quot;shelves/shelf1/books/book2&quot;) as described in the resource name specification.
   &quot;requestedResourceProperties&quot;: { # The properties associated with the resource of the request. # Properties related to the resource represented by requested_resource_name.
@@ -154,7 +165,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="dismiss">dismiss(name, body=None, x__xgafv=None)</code>
-  <pre>Dismisses a request. Returns the updated ApprovalRequest. NOTE: This does not deny access to the resource if another request has been made and approved. It is equivalent in effect to ignoring the request altogether. Returns NOT_FOUND if the request does not exist. Returns FAILED_PRECONDITION if the request exists but is not in a pending state.
+  <pre>Dismisses a request. Returns the updated ApprovalRequest. NOTE: When a request is dismissed, it is considered ignored. Dismissing a request does not prevent access granted by other Access Approval requests. Returns NOT_FOUND if the request does not exist. Returns FAILED_PRECONDITION if the request exists but is not in a pending state.
 
 Args:
   name: string, Name of the ApprovalRequest to dismiss. (required)
@@ -177,9 +188,13 @@ Returns:
     &quot;approveTime&quot;: &quot;A String&quot;, # The time at which approval was granted.
     &quot;autoApproved&quot;: True or False, # True when the request has been auto-approved.
     &quot;expireTime&quot;: &quot;A String&quot;, # The time at which the approval expires.
+    &quot;invalidateTime&quot;: &quot;A String&quot;, # If set, denotes the timestamp at which the approval is invalidated.
+    &quot;policyApproved&quot;: True or False, # True when the request has been approved by the customer&#x27;s defined policy.
     &quot;signatureInfo&quot;: { # Information about the digital signature of the resource. # The signature for the ApprovalRequest and details on how it was signed.
       &quot;customerKmsKeyVersion&quot;: &quot;A String&quot;, # The resource name of the customer CryptoKeyVersion used for signing.
+      &quot;googleKeyAlgorithm&quot;: &quot;A String&quot;, # The hashing algorithm used for signature verification. It will only be present in the case of Google managed keys.
       &quot;googlePublicKeyPem&quot;: &quot;A String&quot;, # The public key for the Google default signing, encoded in PEM format. The signature was created using a private key which may be verified using this public key.
+      &quot;serializedApprovalRequest&quot;: &quot;A String&quot;, # The ApprovalRequest that is serialized without the SignatureInfo message field. This data is used with the hashing algorithm to generate the digital signature, and it can be used for signature verification.
       &quot;signature&quot;: &quot;A String&quot;, # The digital signature.
     },
   },
@@ -189,14 +204,18 @@ Returns:
   },
   &quot;name&quot;: &quot;A String&quot;, # The resource name of the request. Format is &quot;{projects|folders|organizations}/{id}/approvalRequests/{approval_request}&quot;.
   &quot;requestTime&quot;: &quot;A String&quot;, # The time at which approval was requested.
-  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The requested expiration for the approval. If the request is approved, access will be granted from the time of approval until the expiration time.
-  &quot;requestedLocations&quot;: { # Home office and physical location of the principal. # The locations for which approval is being requested.
-    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the principal. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
-    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the principal at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  &quot;requestedAugmentedInfo&quot;: { # This field contains the augmented information of the request. Requires augmented administrative access to be enabled. # This field contains the augmented information of the request.
+    &quot;command&quot;: &quot;A String&quot;, # For command-line tools, the full command-line exactly as entered by the actor without adding any additional characters (such as quotation marks).
   },
-  &quot;requestedReason&quot;: { # The justification for which approval is being requested.
+  &quot;requestedDuration&quot;: &quot;A String&quot;, # The requested access duration.
+  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The original requested expiration for the approval. Calculated by adding the requested_duration to the request_time.
+  &quot;requestedLocations&quot;: { # Physical assigned office and physical location of the Google administrator performing the access. # The locations for which approval is being requested.
+    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the Google administrator. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the Google administrator at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  },
+  &quot;requestedReason&quot;: { # The access reason for which approval is being requested.
     &quot;detail&quot;: &quot;A String&quot;, # More detail about certain reason types. See comments for each type above.
-    &quot;type&quot;: &quot;A String&quot;, # Type of access justification.
+    &quot;type&quot;: &quot;A String&quot;, # Type of access reason.
   },
   &quot;requestedResourceName&quot;: &quot;A String&quot;, # The resource for which approval is being requested. The format of the resource name is defined at https://cloud.google.com/apis/design/resource_names. The resource name here may either be a &quot;full&quot; resource name (e.g. &quot;//library.googleapis.com/shelves/shelf1/books/book2&quot;) or a &quot;relative&quot; resource name (e.g. &quot;shelves/shelf1/books/book2&quot;) as described in the resource name specification.
   &quot;requestedResourceProperties&quot;: { # The properties associated with the resource of the request. # Properties related to the resource represented by requested_resource_name.
@@ -224,9 +243,13 @@ Returns:
     &quot;approveTime&quot;: &quot;A String&quot;, # The time at which approval was granted.
     &quot;autoApproved&quot;: True or False, # True when the request has been auto-approved.
     &quot;expireTime&quot;: &quot;A String&quot;, # The time at which the approval expires.
+    &quot;invalidateTime&quot;: &quot;A String&quot;, # If set, denotes the timestamp at which the approval is invalidated.
+    &quot;policyApproved&quot;: True or False, # True when the request has been approved by the customer&#x27;s defined policy.
     &quot;signatureInfo&quot;: { # Information about the digital signature of the resource. # The signature for the ApprovalRequest and details on how it was signed.
       &quot;customerKmsKeyVersion&quot;: &quot;A String&quot;, # The resource name of the customer CryptoKeyVersion used for signing.
+      &quot;googleKeyAlgorithm&quot;: &quot;A String&quot;, # The hashing algorithm used for signature verification. It will only be present in the case of Google managed keys.
       &quot;googlePublicKeyPem&quot;: &quot;A String&quot;, # The public key for the Google default signing, encoded in PEM format. The signature was created using a private key which may be verified using this public key.
+      &quot;serializedApprovalRequest&quot;: &quot;A String&quot;, # The ApprovalRequest that is serialized without the SignatureInfo message field. This data is used with the hashing algorithm to generate the digital signature, and it can be used for signature verification.
       &quot;signature&quot;: &quot;A String&quot;, # The digital signature.
     },
   },
@@ -236,14 +259,79 @@ Returns:
   },
   &quot;name&quot;: &quot;A String&quot;, # The resource name of the request. Format is &quot;{projects|folders|organizations}/{id}/approvalRequests/{approval_request}&quot;.
   &quot;requestTime&quot;: &quot;A String&quot;, # The time at which approval was requested.
-  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The requested expiration for the approval. If the request is approved, access will be granted from the time of approval until the expiration time.
-  &quot;requestedLocations&quot;: { # Home office and physical location of the principal. # The locations for which approval is being requested.
-    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the principal. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
-    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the principal at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  &quot;requestedAugmentedInfo&quot;: { # This field contains the augmented information of the request. Requires augmented administrative access to be enabled. # This field contains the augmented information of the request.
+    &quot;command&quot;: &quot;A String&quot;, # For command-line tools, the full command-line exactly as entered by the actor without adding any additional characters (such as quotation marks).
   },
-  &quot;requestedReason&quot;: { # The justification for which approval is being requested.
+  &quot;requestedDuration&quot;: &quot;A String&quot;, # The requested access duration.
+  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The original requested expiration for the approval. Calculated by adding the requested_duration to the request_time.
+  &quot;requestedLocations&quot;: { # Physical assigned office and physical location of the Google administrator performing the access. # The locations for which approval is being requested.
+    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the Google administrator. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the Google administrator at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  },
+  &quot;requestedReason&quot;: { # The access reason for which approval is being requested.
     &quot;detail&quot;: &quot;A String&quot;, # More detail about certain reason types. See comments for each type above.
-    &quot;type&quot;: &quot;A String&quot;, # Type of access justification.
+    &quot;type&quot;: &quot;A String&quot;, # Type of access reason.
+  },
+  &quot;requestedResourceName&quot;: &quot;A String&quot;, # The resource for which approval is being requested. The format of the resource name is defined at https://cloud.google.com/apis/design/resource_names. The resource name here may either be a &quot;full&quot; resource name (e.g. &quot;//library.googleapis.com/shelves/shelf1/books/book2&quot;) or a &quot;relative&quot; resource name (e.g. &quot;shelves/shelf1/books/book2&quot;) as described in the resource name specification.
+  &quot;requestedResourceProperties&quot;: { # The properties associated with the resource of the request. # Properties related to the resource represented by requested_resource_name.
+    &quot;excludesDescendants&quot;: True or False, # Whether an approval will exclude the descendants of the resource being requested.
+  },
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="invalidate">invalidate(name, body=None, x__xgafv=None)</code>
+  <pre>Invalidates an existing ApprovalRequest. Returns the updated ApprovalRequest. NOTE: This action revokes Google access based on this approval request. If the resource has other active approvals, access will remain granted. Returns FAILED_PRECONDITION if the request exists but is not in an approved state.
+
+Args:
+  name: string, Name of the ApprovalRequest to invalidate. (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request to invalidate an existing approval.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # A request for the customer to approve access to a resource.
+  &quot;approve&quot;: { # A decision that has been made to approve access to a resource. # Access was approved.
+    &quot;approveTime&quot;: &quot;A String&quot;, # The time at which approval was granted.
+    &quot;autoApproved&quot;: True or False, # True when the request has been auto-approved.
+    &quot;expireTime&quot;: &quot;A String&quot;, # The time at which the approval expires.
+    &quot;invalidateTime&quot;: &quot;A String&quot;, # If set, denotes the timestamp at which the approval is invalidated.
+    &quot;policyApproved&quot;: True or False, # True when the request has been approved by the customer&#x27;s defined policy.
+    &quot;signatureInfo&quot;: { # Information about the digital signature of the resource. # The signature for the ApprovalRequest and details on how it was signed.
+      &quot;customerKmsKeyVersion&quot;: &quot;A String&quot;, # The resource name of the customer CryptoKeyVersion used for signing.
+      &quot;googleKeyAlgorithm&quot;: &quot;A String&quot;, # The hashing algorithm used for signature verification. It will only be present in the case of Google managed keys.
+      &quot;googlePublicKeyPem&quot;: &quot;A String&quot;, # The public key for the Google default signing, encoded in PEM format. The signature was created using a private key which may be verified using this public key.
+      &quot;serializedApprovalRequest&quot;: &quot;A String&quot;, # The ApprovalRequest that is serialized without the SignatureInfo message field. This data is used with the hashing algorithm to generate the digital signature, and it can be used for signature verification.
+      &quot;signature&quot;: &quot;A String&quot;, # The digital signature.
+    },
+  },
+  &quot;dismiss&quot;: { # A decision that has been made to dismiss an approval request. # The request was dismissed.
+    &quot;dismissTime&quot;: &quot;A String&quot;, # The time at which the approval request was dismissed.
+    &quot;implicit&quot;: True or False, # This field will be true if the ApprovalRequest was implicitly dismissed due to inaction by the access approval approvers (the request is not acted on by the approvers before the exiration time).
+  },
+  &quot;name&quot;: &quot;A String&quot;, # The resource name of the request. Format is &quot;{projects|folders|organizations}/{id}/approvalRequests/{approval_request}&quot;.
+  &quot;requestTime&quot;: &quot;A String&quot;, # The time at which approval was requested.
+  &quot;requestedAugmentedInfo&quot;: { # This field contains the augmented information of the request. Requires augmented administrative access to be enabled. # This field contains the augmented information of the request.
+    &quot;command&quot;: &quot;A String&quot;, # For command-line tools, the full command-line exactly as entered by the actor without adding any additional characters (such as quotation marks).
+  },
+  &quot;requestedDuration&quot;: &quot;A String&quot;, # The requested access duration.
+  &quot;requestedExpiration&quot;: &quot;A String&quot;, # The original requested expiration for the approval. Calculated by adding the requested_duration to the request_time.
+  &quot;requestedLocations&quot;: { # Physical assigned office and physical location of the Google administrator performing the access. # The locations for which approval is being requested.
+    &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the Google administrator. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+    &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the Google administrator at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+  },
+  &quot;requestedReason&quot;: { # The access reason for which approval is being requested.
+    &quot;detail&quot;: &quot;A String&quot;, # More detail about certain reason types. See comments for each type above.
+    &quot;type&quot;: &quot;A String&quot;, # Type of access reason.
   },
   &quot;requestedResourceName&quot;: &quot;A String&quot;, # The resource for which approval is being requested. The format of the resource name is defined at https://cloud.google.com/apis/design/resource_names. The resource name here may either be a &quot;full&quot; resource name (e.g. &quot;//library.googleapis.com/shelves/shelf1/books/book2&quot;) or a &quot;relative&quot; resource name (e.g. &quot;shelves/shelf1/books/book2&quot;) as described in the resource name specification.
   &quot;requestedResourceProperties&quot;: { # The properties associated with the resource of the request. # Properties related to the resource represented by requested_resource_name.
@@ -276,9 +364,13 @@ Returns:
         &quot;approveTime&quot;: &quot;A String&quot;, # The time at which approval was granted.
         &quot;autoApproved&quot;: True or False, # True when the request has been auto-approved.
         &quot;expireTime&quot;: &quot;A String&quot;, # The time at which the approval expires.
+        &quot;invalidateTime&quot;: &quot;A String&quot;, # If set, denotes the timestamp at which the approval is invalidated.
+        &quot;policyApproved&quot;: True or False, # True when the request has been approved by the customer&#x27;s defined policy.
         &quot;signatureInfo&quot;: { # Information about the digital signature of the resource. # The signature for the ApprovalRequest and details on how it was signed.
           &quot;customerKmsKeyVersion&quot;: &quot;A String&quot;, # The resource name of the customer CryptoKeyVersion used for signing.
+          &quot;googleKeyAlgorithm&quot;: &quot;A String&quot;, # The hashing algorithm used for signature verification. It will only be present in the case of Google managed keys.
           &quot;googlePublicKeyPem&quot;: &quot;A String&quot;, # The public key for the Google default signing, encoded in PEM format. The signature was created using a private key which may be verified using this public key.
+          &quot;serializedApprovalRequest&quot;: &quot;A String&quot;, # The ApprovalRequest that is serialized without the SignatureInfo message field. This data is used with the hashing algorithm to generate the digital signature, and it can be used for signature verification.
           &quot;signature&quot;: &quot;A String&quot;, # The digital signature.
         },
       },
@@ -288,14 +380,18 @@ Returns:
       },
       &quot;name&quot;: &quot;A String&quot;, # The resource name of the request. Format is &quot;{projects|folders|organizations}/{id}/approvalRequests/{approval_request}&quot;.
       &quot;requestTime&quot;: &quot;A String&quot;, # The time at which approval was requested.
-      &quot;requestedExpiration&quot;: &quot;A String&quot;, # The requested expiration for the approval. If the request is approved, access will be granted from the time of approval until the expiration time.
-      &quot;requestedLocations&quot;: { # Home office and physical location of the principal. # The locations for which approval is being requested.
-        &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the principal. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
-        &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the principal at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+      &quot;requestedAugmentedInfo&quot;: { # This field contains the augmented information of the request. Requires augmented administrative access to be enabled. # This field contains the augmented information of the request.
+        &quot;command&quot;: &quot;A String&quot;, # For command-line tools, the full command-line exactly as entered by the actor without adding any additional characters (such as quotation marks).
       },
-      &quot;requestedReason&quot;: { # The justification for which approval is being requested.
+      &quot;requestedDuration&quot;: &quot;A String&quot;, # The requested access duration.
+      &quot;requestedExpiration&quot;: &quot;A String&quot;, # The original requested expiration for the approval. Calculated by adding the requested_duration to the request_time.
+      &quot;requestedLocations&quot;: { # Physical assigned office and physical location of the Google administrator performing the access. # The locations for which approval is being requested.
+        &quot;principalOfficeCountry&quot;: &quot;A String&quot;, # The &quot;home office&quot; location of the Google administrator. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+        &quot;principalPhysicalLocationCountry&quot;: &quot;A String&quot;, # Physical location of the Google administrator at the time of the access. A two-letter country code (ISO 3166-1 alpha-2), such as &quot;US&quot;, &quot;DE&quot; or &quot;GB&quot; or a region code. In some limited situations Google systems may refer refer to a region code instead of a country code. Possible Region Codes: * ASI: Asia * EUR: Europe * OCE: Oceania * AFR: Africa * NAM: North America * SAM: South America * ANT: Antarctica * ANY: Any location
+      },
+      &quot;requestedReason&quot;: { # The access reason for which approval is being requested.
         &quot;detail&quot;: &quot;A String&quot;, # More detail about certain reason types. See comments for each type above.
-        &quot;type&quot;: &quot;A String&quot;, # Type of access justification.
+        &quot;type&quot;: &quot;A String&quot;, # Type of access reason.
       },
       &quot;requestedResourceName&quot;: &quot;A String&quot;, # The resource for which approval is being requested. The format of the resource name is defined at https://cloud.google.com/apis/design/resource_names. The resource name here may either be a &quot;full&quot; resource name (e.g. &quot;//library.googleapis.com/shelves/shelf1/books/book2&quot;) or a &quot;relative&quot; resource name (e.g. &quot;shelves/shelf1/books/book2&quot;) as described in the resource name specification.
       &quot;requestedResourceProperties&quot;: { # The properties associated with the resource of the request. # Properties related to the resource represented by requested_resource_name.

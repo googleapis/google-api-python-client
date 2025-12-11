@@ -134,7 +134,7 @@ def positional(max_positional_args):
     if isinstance(max_positional_args, int):
         return positional_decorator
     else:
-        args, _, _, defaults = inspect.getargspec(max_positional_args)
+        args, _, _, defaults, _, _, _ = inspect.getfullargspec(max_positional_args)
         return positional(len(args) - len(defaults))(max_positional_args)
 
 

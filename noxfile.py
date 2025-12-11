@@ -31,6 +31,8 @@ BLACK_PATHS = [
     "setup.py",
 ]
 
+DEFAULT_PYTHON_VERSION = "3.10"
+
 test_dependencies = [
     "django>=2.0.0",
     "google-auth",
@@ -38,15 +40,32 @@ test_dependencies = [
     "mox",
     "parameterized",
     "pyopenssl",
+    "cryptography>=38.0.3",
     "pytest",
     "pytest-cov",
     "webtest",
     "coverage",
-    "mock",
 ]
 
+nox.options.sessions = [
+    # TODO(https://github.com/googleapis/google-api-python-client/issues/2622):
+    # Remove or restore testing for Python 3.7/3.8
+    "unit-3.9",
+    "unit-3.10",
+    "unit-3.11",
+    "unit-3.12",
+    "unit-3.13",
+    "unit-3.14",
+    "lint",
+    "format",
+    "scripts",
+]
 
-@nox.session(python=["3.7"])
+# Error if a python version is missing
+nox.options.error_on_missing_interpreters = True
+
+
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def lint(session):
     session.install("flake8")
     session.run(
@@ -60,7 +79,7 @@ def lint(session):
     )
 
 
-@nox.session(python="3.8")
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def format(session):
     """
     Run isort to sort imports. Then run black
@@ -80,10 +99,11 @@ def format(session):
     )
 
 
-@nox.session(python=["3.6", "3.7", "3.8", "3.9", "3.10"])
+@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
 @nox.parametrize(
     "oauth2client",
     [
+        None,
         "oauth2client<2dev",
         "oauth2client>=2,<=3dev",
         "oauth2client>=3,<=4dev",
@@ -96,14 +116,18 @@ def unit(session, oauth2client):
     shutil.rmtree("build", ignore_errors=True)
 
     session.install(*test_dependencies)
-    session.install(oauth2client)
+    if oauth2client is not None:
+        session.install(oauth2client)
 
     # Create and install wheels
+    session.install("setuptools", "wheel")
     session.run("python3", "setup.py", "bdist_wheel")
     session.install(os.path.join("dist", os.listdir("dist").pop()))
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    constraints_path = str(f"{root_dir}/testing/constraints-{session.python}.txt")
+    session.install("-r", constraints_path)
 
     # Run tests from a different directory to test the package artifacts
-    root_dir = os.path.dirname(os.path.realpath(__file__))
     temp_dir = session.create_tmp()
     session.chdir(temp_dir)
     shutil.copytree(os.path.join(root_dir, "tests"), "tests")
@@ -123,20 +147,21 @@ def unit(session, oauth2client):
     )
 
 
-@nox.session(python=["3.9"])
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def scripts(session):
     session.install(*test_dependencies)
     session.install("-e", ".")
     session.install("-r", "scripts/requirements.txt")
 
     # Run py.test against the unit tests.
+    # TODO(https://github.com/googleapis/google-api-python-client/issues/2132): Add tests for describe.py
     session.run(
         "py.test",
         "--quiet",
         "--cov=scripts",
         "--cov-config=.coveragerc",
         "--cov-report=",
-        "--cov-fail-under=91",
+        "--cov-fail-under=90",
         "scripts",
         *session.posargs,
     )

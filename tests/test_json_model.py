@@ -35,6 +35,13 @@ from googleapiclient.errors import HttpError
 import googleapiclient.model
 from googleapiclient.model import JsonModel
 
+try:
+    from google.api_core.version_header import API_VERSION_METADATA_KEY
+
+    HAS_API_VERSION = True
+except ImportError:
+    HAS_API_VERSION = False
+
 _LIBRARY_VERSION = googleapiclient_version.__version__
 CSV_TEXT_MOCK = "column1,column2,column3\nstring1,1.2,string2"
 
@@ -170,6 +177,29 @@ class Model(unittest.TestCase):
             + _LIBRARY_VERSION
             + " gl-python/"
             + platform.python_version(),
+        )
+
+    @unittest.skipIf(
+        not HAS_API_VERSION,
+        "Skip this test when an older version of google-api-core is used",
+    )
+    def test_x_goog_api_version(self):
+        model = JsonModel(data_wrapper=False)
+
+        # test header composition for clients that wrap discovery
+        headers = {}
+        path_params = {}
+        query_params = {}
+        body = {}
+        api_version = "20240401"
+
+        headers, _, _, body = model.request(
+            headers, path_params, query_params, body, api_version
+        )
+
+        self.assertEqual(
+            headers[API_VERSION_METADATA_KEY],
+            api_version,
         )
 
     def test_bad_response(self):

@@ -75,8 +75,13 @@ h1, h2, h3 {
 <h1><a href="paymentsresellersubscription_v1.html">Payments Reseller Subscription API</a> . <a href="paymentsresellersubscription_v1.partners.html">partners</a> . <a href="paymentsresellersubscription_v1.partners.subscriptions.html">subscriptions</a></h1>
 <h2>Instance Methods</h2>
 <p class="toc_element">
+  <code><a href="paymentsresellersubscription_v1.partners.subscriptions.lineItems.html">lineItems()</a></code>
+</p>
+<p class="firstline">Returns the lineItems Resource.</p>
+
+<p class="toc_element">
   <code><a href="#cancel">cancel(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Used by partners to cancel a subscription service either immediately or by the end of the current billing cycle for their customers. It should be called directly by the partner using service accounts.</p>
+<p class="firstline">Cancels a subscription service either immediately or by the end of the current billing cycle for their customers. It should be called directly by the partner using service accounts.</p>
 <p class="toc_element">
   <code><a href="#close">close()</a></code></p>
 <p class="firstline">Close httplib2 connections.</p>
@@ -85,31 +90,37 @@ h1, h2, h3 {
 <p class="firstline">Used by partners to create a subscription for their customers. The created subscription is associated with the end user inferred from the end user credentials. This API must be authorized by the end user using OAuth.</p>
 <p class="toc_element">
   <code><a href="#entitle">entitle(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Used by partners to entitle a previously provisioned subscription to the current end user. The end user identity is inferred from the authorized credential of the request. This API must be authorized by the end user using OAuth.</p>
+<p class="firstline">Entitles a previously provisioned subscription to the current end user. The end user identity is inferred from the authorized credential of the request. This API must be authorized by the end user using OAuth.</p>
 <p class="toc_element">
   <code><a href="#extend">extend(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Used by partners to extend a subscription service for their customers on an ongoing basis for the subscription to remain active and renewable. It should be called directly by the partner using service accounts.</p>
+<p class="firstline">[Opt-in only] Most partners should be on auto-extend by default. Extends a subscription service for their customers on an ongoing basis for the subscription to remain active and renewable. It should be called directly by the partner using service accounts.</p>
 <p class="toc_element">
   <code><a href="#get">get(name, x__xgafv=None)</a></code></p>
-<p class="firstline">Used by partners to get a subscription by id. It should be called directly by the partner using service accounts.</p>
+<p class="firstline">Gets a subscription by id. It should be called directly by the partner using service accounts.</p>
 <p class="toc_element">
-  <code><a href="#provision">provision(parent, body=None, subscriptionId=None, x__xgafv=None)</a></code></p>
+  <code><a href="#provision">provision(parent, body=None, cycleOptions_initialCycleDuration_count=None, cycleOptions_initialCycleDuration_unit=None, subscriptionId=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Used by partners to provision a subscription for their customers. This creates a subscription without associating it with the end user account. EntitleSubscription must be called separately using OAuth in order for the end user account to be associated with the subscription. It should be called directly by the partner using service accounts.</p>
 <p class="toc_element">
+  <code><a href="#resume">resume(name, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Resumes a suspended subscription. The new billing cycle will start at the time of the request. It should be called directly by the partner using service accounts.</p>
+<p class="toc_element">
+  <code><a href="#suspend">suspend(name, body=None, x__xgafv=None)</a></code></p>
+<p class="firstline">Suspends a subscription. Contract terms may dictate if a prorated refund will be issued upon suspension. It should be called directly by the partner using service accounts.</p>
+<p class="toc_element">
   <code><a href="#undoCancel">undoCancel(name, body=None, x__xgafv=None)</a></code></p>
-<p class="firstline">Used by partners to revoke the pending cancellation of a subscription, which is currently in `STATE_CANCEL_AT_END_OF_CYCLE` state. If the subscription is already cancelled, the request will fail. It should be called directly by the partner using service accounts.</p>
+<p class="firstline">Currently, it is used by **Google One, Play Pass** partners. Revokes the pending cancellation of a subscription, which is currently in `STATE_CANCEL_AT_END_OF_CYCLE` state. If the subscription is already cancelled, the request will fail. It should be called directly by the partner using service accounts.</p>
 <h3>Method Details</h3>
 <div class="method">
     <code class="details" id="cancel">cancel(name, body=None, x__xgafv=None)</code>
-  <pre>Used by partners to cancel a subscription service either immediately or by the end of the current billing cycle for their customers. It should be called directly by the partner using service accounts.
+  <pre>Cancels a subscription service either immediately or by the end of the current billing cycle for their customers. It should be called directly by the partner using service accounts.
 
 Args:
   name: string, Required. The name of the subscription resource to be cancelled. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot; (required)
   body: object, The request body.
     The object takes the form of:
 
-{
-  &quot;cancelImmediately&quot;: True or False, # Optional. If true, the subscription will be cancelled immediately. Otherwise, the subscription will be cancelled at renewal_time, and therefore no prorated refund will be issued for the rest of the cycle.
+{ # Request to cancel a subscription.
+  &quot;cancelImmediately&quot;: True or False, # Optional. If true, Google will cancel the subscription immediately, and may or may not (based on the contract) issue a prorated refund for the remainder of the billing cycle. Otherwise, Google defers the cancelation at renewal_time, and will not issue a refund. - YouTube subscriptions must use this option currently. However, the user will still have access to the subscription until the end of the billing cycle.
   &quot;cancellationReason&quot;: &quot;A String&quot;, # Specifies the reason for the cancellation.
 }
 
@@ -121,28 +132,51 @@ Args:
 Returns:
   An object of the form:
 
-    {
-  &quot;subscription&quot;: { # A Subscription resource managed by 3P Partners. # The cancelled subscription resource.
+    { # Response that contains the cancelled subscription resource.
+  &quot;subscription&quot;: { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy. # The cancelled subscription resource.
     &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-      &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+      &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
     },
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
     &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
     &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
     &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
     &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-      { # Individual line item definition of a subscription. Next id: 5
-        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+      { # Individual line item definition of a subscription.
+        &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+          &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+          &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+        },
+        &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+          &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+            { # The details for an element in the hard bundle.
+              &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+              &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+            },
+          ],
+        },
+        &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+        &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+          &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+        },
+        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+        &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
           { # Describes the spec for one promotion.
             &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
               &quot;count&quot;: 42, # number of duration units to be included.
               &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
             },
             &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-              &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+              &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
                 { # The duration of an introductory pricing promotion.
-                  &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                  &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                    &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                    &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                  },
+                  &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                  &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                  &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
                 },
               ],
             },
@@ -150,14 +184,47 @@ Returns:
             &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
           },
         ],
+        &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+        &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+          &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+            &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+            &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+          },
+        },
         &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+        &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+          &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+            &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+            &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+            &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+          },
+          &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+            &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+              &quot;A String&quot;,
+            ],
+            &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+            &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+            &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+          },
+          &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+            &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+            &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+              &quot;A String&quot;,
+            ],
+            &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+          },
+        },
+        &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
         &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
       },
     ],
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+    &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+      &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
     &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
     &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-    &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+    &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
       &quot;A String&quot;,
     ],
     &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -167,9 +234,15 @@ Returns:
           &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
         },
         &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-          &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+          &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
             { # The duration of an introductory pricing promotion.
-              &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+              &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+              },
+              &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+              &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+              &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
             },
           ],
         },
@@ -180,6 +253,7 @@ Returns:
     &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
       &quot;A String&quot;,
     ],
+    &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
     &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
     &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
     &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -190,7 +264,7 @@ Returns:
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
     &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
       &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
     },
   },
 }</pre>
@@ -210,27 +284,50 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # A Subscription resource managed by 3P Partners.
+{ # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy.
   &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-    &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+    &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
   },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
   &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
   &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
   &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-    { # Individual line item definition of a subscription. Next id: 5
-      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+    { # Individual line item definition of a subscription.
+      &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+        &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+        &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+      },
+      &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+        &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+          { # The details for an element in the hard bundle.
+            &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+            &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+          },
+        ],
+      },
+      &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+      &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+        &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+      },
+      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+      &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
         { # Describes the spec for one promotion.
           &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
             &quot;count&quot;: 42, # number of duration units to be included.
             &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
           },
           &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-            &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+            &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
               { # The duration of an introductory pricing promotion.
-                &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                  &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                  &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                },
+                &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
               },
             ],
           },
@@ -238,14 +335,47 @@ Args:
           &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
         },
       ],
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+      &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+        &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+          &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+          &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+        },
+      },
       &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+        &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+          &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+          &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+          &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+        },
+        &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+          &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+            &quot;A String&quot;,
+          ],
+          &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+          &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+          &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+        },
+        &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+          &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+          &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+            &quot;A String&quot;,
+          ],
+          &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+        },
+      },
+      &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
     },
   ],
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+  &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+    &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
   &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
   &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-  &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+  &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
     &quot;A String&quot;,
   ],
   &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -255,9 +385,15 @@ Args:
         &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
       },
       &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-        &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+        &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
           { # The duration of an introductory pricing promotion.
-            &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+            &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+              &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+              &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+            },
+            &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+            &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+            &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
           },
         ],
       },
@@ -268,6 +404,7 @@ Args:
   &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
     &quot;A String&quot;,
   ],
+  &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
   &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
   &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -278,7 +415,7 @@ Args:
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
   &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
     &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
   },
 }
 
@@ -291,27 +428,50 @@ Args:
 Returns:
   An object of the form:
 
-    { # A Subscription resource managed by 3P Partners.
+    { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy.
   &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-    &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+    &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
   },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
   &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
   &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
   &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-    { # Individual line item definition of a subscription. Next id: 5
-      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+    { # Individual line item definition of a subscription.
+      &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+        &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+        &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+      },
+      &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+        &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+          { # The details for an element in the hard bundle.
+            &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+            &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+          },
+        ],
+      },
+      &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+      &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+        &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+      },
+      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+      &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
         { # Describes the spec for one promotion.
           &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
             &quot;count&quot;: 42, # number of duration units to be included.
             &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
           },
           &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-            &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+            &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
               { # The duration of an introductory pricing promotion.
-                &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                  &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                  &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                },
+                &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
               },
             ],
           },
@@ -319,14 +479,47 @@ Returns:
           &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
         },
       ],
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+      &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+        &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+          &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+          &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+        },
+      },
       &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+        &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+          &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+          &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+          &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+        },
+        &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+          &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+            &quot;A String&quot;,
+          ],
+          &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+          &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+          &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+        },
+        &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+          &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+          &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+            &quot;A String&quot;,
+          ],
+          &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+        },
+      },
+      &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
     },
   ],
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+  &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+    &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
   &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
   &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-  &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+  &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
     &quot;A String&quot;,
   ],
   &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -336,9 +529,15 @@ Returns:
         &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
       },
       &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-        &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+        &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
           { # The duration of an introductory pricing promotion.
-            &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+            &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+              &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+              &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+            },
+            &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+            &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+            &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
           },
         ],
       },
@@ -349,6 +548,7 @@ Returns:
   &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
     &quot;A String&quot;,
   ],
+  &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
   &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
   &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -359,14 +559,14 @@ Returns:
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
   &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
     &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
   },
 }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="entitle">entitle(name, body=None, x__xgafv=None)</code>
-  <pre>Used by partners to entitle a previously provisioned subscription to the current end user. The end user identity is inferred from the authorized credential of the request. This API must be authorized by the end user using OAuth.
+  <pre>Entitles a previously provisioned subscription to the current end user. The end user identity is inferred from the authorized credential of the request. This API must be authorized by the end user using OAuth.
 
 Args:
   name: string, Required. The name of the subscription resource that is entitled to the current end user. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot; (required)
@@ -374,6 +574,14 @@ Args:
     The object takes the form of:
 
 { # Partner request for entitling the previously provisioned subscription to an end user. The end user identity is inferred from the request OAuth context.
+  &quot;lineItemEntitlementDetails&quot;: [ # Optional. The line items to be entitled. If unspecified, all line items will be entitled.
+    { # The details of the line item to be entitled.
+      &quot;lineItemIndex&quot;: 42, # Required. The index of the line item to be entitled.
+      &quot;products&quot;: [ # Optional. Only applicable if the line item corresponds to a hard bundle. Product resource names that identify the bundle elements to be entitled in the line item. If unspecified, all bundle elements will be entitled. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+        &quot;A String&quot;,
+      ],
+    },
+  ],
 }
 
   x__xgafv: string, V1 error format.
@@ -384,28 +592,51 @@ Args:
 Returns:
   An object of the form:
 
-    {
-  &quot;subscription&quot;: { # A Subscription resource managed by 3P Partners. # The subscription that has user linked to it.
+    { # Response that contains the entitled subscription resource.
+  &quot;subscription&quot;: { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy. # The subscription that has user linked to it.
     &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-      &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+      &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
     },
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
     &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
     &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
     &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
     &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-      { # Individual line item definition of a subscription. Next id: 5
-        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+      { # Individual line item definition of a subscription.
+        &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+          &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+          &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+        },
+        &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+          &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+            { # The details for an element in the hard bundle.
+              &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+              &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+            },
+          ],
+        },
+        &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+        &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+          &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+        },
+        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+        &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
           { # Describes the spec for one promotion.
             &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
               &quot;count&quot;: 42, # number of duration units to be included.
               &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
             },
             &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-              &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+              &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
                 { # The duration of an introductory pricing promotion.
-                  &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                  &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                    &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                    &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                  },
+                  &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                  &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                  &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
                 },
               ],
             },
@@ -413,14 +644,47 @@ Returns:
             &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
           },
         ],
+        &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+        &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+          &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+            &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+            &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+          },
+        },
         &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+        &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+          &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+            &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+            &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+            &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+          },
+          &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+            &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+              &quot;A String&quot;,
+            ],
+            &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+            &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+            &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+          },
+          &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+            &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+            &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+              &quot;A String&quot;,
+            ],
+            &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+          },
+        },
+        &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
         &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
       },
     ],
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+    &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+      &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
     &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
     &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-    &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+    &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
       &quot;A String&quot;,
     ],
     &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -430,9 +694,15 @@ Returns:
           &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
         },
         &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-          &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+          &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
             { # The duration of an introductory pricing promotion.
-              &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+              &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+              },
+              &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+              &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+              &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
             },
           ],
         },
@@ -443,6 +713,7 @@ Returns:
     &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
       &quot;A String&quot;,
     ],
+    &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
     &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
     &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
     &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -453,7 +724,7 @@ Returns:
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
     &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
       &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
     },
   },
 }</pre>
@@ -461,7 +732,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="extend">extend(name, body=None, x__xgafv=None)</code>
-  <pre>Used by partners to extend a subscription service for their customers on an ongoing basis for the subscription to remain active and renewable. It should be called directly by the partner using service accounts.
+  <pre>[Opt-in only] Most partners should be on auto-extend by default. Extends a subscription service for their customers on an ongoing basis for the subscription to remain active and renewable. It should be called directly by the partner using service accounts.
 
 Args:
   name: string, Required. The name of the subscription resource to be extended. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. (required)
@@ -470,13 +741,13 @@ Args:
 
 { # Request message for extending a Subscription resource. A new recurrence will be made based on the subscription schedule defined by the original product.
   &quot;extension&quot;: { # Describes the details of an extension request. # Required. Specifies details of the extension. Currently, the duration of the extension must be exactly one billing cycle of the original subscription.
-    &quot;duration&quot;: { # Describes the length of a period of a time. # Specifies the period of access the subscription should grant.
+    &quot;duration&quot;: { # Describes the length of a period of a time. # Required. Specifies the period of access the subscription should grant.
       &quot;count&quot;: 42, # number of duration units to be included.
       &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
     },
     &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system.
   },
-  &quot;requestId&quot;: &quot;A String&quot;, # Required. Restricted to 36 ASCII characters. A random UUID is recommended. The idempotency key for the request. The ID generation logic is controlled by the partner. request_id should be the same as on retries of the same request. A different request_id must be used for a extension of a different cycle. A random UUID is recommended.
+  &quot;requestId&quot;: &quot;A String&quot;, # Required. Restricted to 36 ASCII characters. A random UUID is recommended. The idempotency key for the request. The ID generation logic is controlled by the partner. request_id should be the same as on retries of the same request. A different request_id must be used for a extension of a different cycle.
 }
 
   x__xgafv: string, V1 error format.
@@ -487,7 +758,7 @@ Args:
 Returns:
   An object of the form:
 
-    {
+    { # Response that contains the timestamps after the extension.
   &quot;cycleEndTime&quot;: &quot;A String&quot;, # The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. Example, &quot;cycleEndTime&quot;:&quot;2019-08-31T17:28:54.564Z&quot;
   &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # End of the free trial period, in ISO 8061 format. UTC timezone. Example, &quot;freeTrialEndTime&quot;:&quot;2019-08-31T17:28:54.564Z&quot; This time will be set the same as initial subscription creation time if no free trial period is offered to the partner.
   &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
@@ -496,7 +767,7 @@ Returns:
 
 <div class="method">
     <code class="details" id="get">get(name, x__xgafv=None)</code>
-  <pre>Used by partners to get a subscription by id. It should be called directly by the partner using service accounts.
+  <pre>Gets a subscription by id. It should be called directly by the partner using service accounts.
 
 Args:
   name: string, Required. The name of the subscription resource to retrieve. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot; (required)
@@ -508,27 +779,50 @@ Args:
 Returns:
   An object of the form:
 
-    { # A Subscription resource managed by 3P Partners.
+    { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy.
   &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-    &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+    &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
   },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
   &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
   &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
   &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-    { # Individual line item definition of a subscription. Next id: 5
-      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+    { # Individual line item definition of a subscription.
+      &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+        &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+        &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+      },
+      &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+        &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+          { # The details for an element in the hard bundle.
+            &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+            &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+          },
+        ],
+      },
+      &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+      &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+        &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+      },
+      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+      &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
         { # Describes the spec for one promotion.
           &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
             &quot;count&quot;: 42, # number of duration units to be included.
             &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
           },
           &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-            &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+            &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
               { # The duration of an introductory pricing promotion.
-                &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                  &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                  &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                },
+                &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
               },
             ],
           },
@@ -536,14 +830,47 @@ Returns:
           &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
         },
       ],
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+      &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+        &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+          &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+          &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+        },
+      },
       &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+        &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+          &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+          &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+          &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+        },
+        &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+          &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+            &quot;A String&quot;,
+          ],
+          &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+          &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+          &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+        },
+        &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+          &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+          &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+            &quot;A String&quot;,
+          ],
+          &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+        },
+      },
+      &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
     },
   ],
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+  &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+    &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
   &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
   &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-  &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+  &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
     &quot;A String&quot;,
   ],
   &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -553,9 +880,15 @@ Returns:
         &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
       },
       &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-        &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+        &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
           { # The duration of an introductory pricing promotion.
-            &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+            &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+              &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+              &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+            },
+            &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+            &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+            &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
           },
         ],
       },
@@ -566,6 +899,7 @@ Returns:
   &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
     &quot;A String&quot;,
   ],
+  &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
   &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
   &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -576,13 +910,13 @@ Returns:
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
   &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
     &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
   },
 }</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="provision">provision(parent, body=None, subscriptionId=None, x__xgafv=None)</code>
+    <code class="details" id="provision">provision(parent, body=None, cycleOptions_initialCycleDuration_count=None, cycleOptions_initialCycleDuration_unit=None, subscriptionId=None, x__xgafv=None)</code>
   <pre>Used by partners to provision a subscription for their customers. This creates a subscription without associating it with the end user account. EntitleSubscription must be called separately using OAuth in order for the end user account to be associated with the subscription. It should be called directly by the partner using service accounts.
 
 Args:
@@ -590,27 +924,50 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # A Subscription resource managed by 3P Partners.
+{ # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy.
   &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-    &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+    &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
   },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
   &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
   &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
   &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-    { # Individual line item definition of a subscription. Next id: 5
-      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+    { # Individual line item definition of a subscription.
+      &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+        &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+        &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+      },
+      &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+        &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+          { # The details for an element in the hard bundle.
+            &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+            &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+          },
+        ],
+      },
+      &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+      &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+        &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+      },
+      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+      &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
         { # Describes the spec for one promotion.
           &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
             &quot;count&quot;: 42, # number of duration units to be included.
             &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
           },
           &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-            &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+            &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
               { # The duration of an introductory pricing promotion.
-                &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                  &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                  &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                },
+                &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
               },
             ],
           },
@@ -618,14 +975,47 @@ Args:
           &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
         },
       ],
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+      &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+        &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+          &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+          &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+        },
+      },
       &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+        &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+          &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+          &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+          &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+        },
+        &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+          &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+            &quot;A String&quot;,
+          ],
+          &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+          &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+          &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+        },
+        &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+          &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+          &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+            &quot;A String&quot;,
+          ],
+          &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+        },
+      },
+      &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
     },
   ],
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+  &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+    &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
   &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
   &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-  &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+  &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
     &quot;A String&quot;,
   ],
   &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -635,9 +1025,15 @@ Args:
         &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
       },
       &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-        &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+        &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
           { # The duration of an introductory pricing promotion.
-            &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+            &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+              &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+              &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+            },
+            &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+            &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+            &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
           },
         ],
       },
@@ -648,6 +1044,7 @@ Args:
   &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
     &quot;A String&quot;,
   ],
+  &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
   &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
   &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -658,10 +1055,17 @@ Args:
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
   &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
     &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
   },
 }
 
+  cycleOptions_initialCycleDuration_count: integer, number of duration units to be included.
+  cycleOptions_initialCycleDuration_unit: string, The unit used for the duration
+    Allowed values
+      UNIT_UNSPECIFIED - Default value, reserved as an invalid or an unexpected value.
+      MONTH - Unit of a calendar month.
+      DAY - Unit of a day.
+      HOUR - Unit of an hour. It is used for testing.
   subscriptionId: string, Required. Identifies the subscription resource on the Partner side. The value is restricted to 63 ASCII characters at the maximum. If a subscription was previously created with the same subscription_id, we will directly return that one.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -671,27 +1075,50 @@ Args:
 Returns:
   An object of the form:
 
-    { # A Subscription resource managed by 3P Partners.
+    { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy.
   &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-    &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+    &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
   },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
   &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
   &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
   &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-    { # Individual line item definition of a subscription. Next id: 5
-      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+    { # Individual line item definition of a subscription.
+      &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+        &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+        &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+      },
+      &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+        &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+          { # The details for an element in the hard bundle.
+            &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+            &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+          },
+        ],
+      },
+      &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+      &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+        &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+      },
+      &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+      &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+      &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
         { # Describes the spec for one promotion.
           &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
             &quot;count&quot;: 42, # number of duration units to be included.
             &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
           },
           &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-            &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+            &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
               { # The duration of an introductory pricing promotion.
-                &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                  &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                  &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                },
+                &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
               },
             ],
           },
@@ -699,14 +1126,47 @@ Returns:
           &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
         },
       ],
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+      &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+        &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+          &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+          &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+        },
+      },
       &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+        &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+          &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+          &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+          &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+        },
+        &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+          &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+            &quot;A String&quot;,
+          ],
+          &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+          &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+          &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+        },
+        &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+          &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+          &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+            &quot;A String&quot;,
+          ],
+          &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+        },
+      },
+      &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
     },
   ],
-  &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+  &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+    &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+  },
+  &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
   &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
   &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-  &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+  &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
     &quot;A String&quot;,
   ],
   &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -716,9 +1176,15 @@ Returns:
         &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
       },
       &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-        &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+        &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
           { # The duration of an introductory pricing promotion.
-            &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+            &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+              &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+              &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+            },
+            &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+            &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+            &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
           },
         ],
       },
@@ -729,6 +1195,7 @@ Returns:
   &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
     &quot;A String&quot;,
   ],
+  &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
   &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
   &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
   &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -739,14 +1206,336 @@ Returns:
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
   &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
     &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+    &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
+  },
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="resume">resume(name, body=None, x__xgafv=None)</code>
+  <pre>Resumes a suspended subscription. The new billing cycle will start at the time of the request. It should be called directly by the partner using service accounts.
+
+Args:
+  name: string, Required. The name of the subscription resource to be resumed. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot; (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request to resume a suspended subscription.
+  &quot;cycleOptions&quot;: { # The cycle options when starting and resuming a subscription. # Optional. The cycle options for the subscription.
+    &quot;initialCycleDuration&quot;: { # Describes the length of a period of a time. # Optional. The duration of the initial cycle. Only `DAY` is supported. If set, Google will start the subscription with this initial cycle duration starting at the request time (see available methods below). A prorated charge will be applied. This option is available to the following methods: - partners.subscriptions.provision - partners.subscriptions.resume - partners.userSessions.generate
+      &quot;count&quot;: 42, # number of duration units to be included.
+      &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
+    },
+  },
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Response that contains the resumed subscription.
+  &quot;subscription&quot;: { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy. # The resumed subscription resource.
+    &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
+      &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
+    },
+    &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
+    &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
+    &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
+    &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+    &quot;lineItems&quot;: [ # Required. The line items of the subscription.
+      { # Individual line item definition of a subscription.
+        &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+          &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+          &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+        },
+        &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+          &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+            { # The details for an element in the hard bundle.
+              &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+              &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+            },
+          ],
+        },
+        &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+        &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+          &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+        },
+        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+        &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
+          { # Describes the spec for one promotion.
+            &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
+              &quot;count&quot;: 42, # number of duration units to be included.
+              &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
+            },
+            &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
+              &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
+                { # The duration of an introductory pricing promotion.
+                  &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                    &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                    &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                  },
+                  &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                  &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                  &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
+                },
+              ],
+            },
+            &quot;promotion&quot;: &quot;A String&quot;, # Required. Promotion resource name that identifies a promotion. The format is &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
+            &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
+          },
+        ],
+        &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+        &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+          &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+            &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+            &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+          },
+        },
+        &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+        &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+          &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+            &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+            &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+            &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+          },
+          &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+            &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+              &quot;A String&quot;,
+            ],
+            &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+            &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+            &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+          },
+          &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+            &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+            &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+              &quot;A String&quot;,
+            ],
+            &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+          },
+        },
+        &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
+        &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
+      },
+    ],
+    &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+      &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
+    &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
+    &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
+    &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;A String&quot;,
+    ],
+    &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
+      { # Describes the spec for one promotion.
+        &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
+          &quot;count&quot;: 42, # number of duration units to be included.
+          &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
+        },
+        &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
+          &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
+            { # The duration of an introductory pricing promotion.
+              &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+              },
+              &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+              &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+              &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
+            },
+          ],
+        },
+        &quot;promotion&quot;: &quot;A String&quot;, # Required. Promotion resource name that identifies a promotion. The format is &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
+        &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
+      },
+    ],
+    &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
+      &quot;A String&quot;,
+    ],
+    &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
+    &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
+    &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
+    &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
+      &quot;postalCode&quot;: &quot;A String&quot;, # The postal code this location refers to. Ex. &quot;94043&quot;
+      &quot;regionCode&quot;: &quot;A String&quot;, # 2-letter ISO region code for current content region. Ex. “US” Please refers to: https://en.wikipedia.org/wiki/ISO_3166-1
+    },
+    &quot;state&quot;: &quot;A String&quot;, # Output only. Describes the state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
+    &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
+    &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
+      &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
+      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
+    },
+  },
+}</pre>
+</div>
+
+<div class="method">
+    <code class="details" id="suspend">suspend(name, body=None, x__xgafv=None)</code>
+  <pre>Suspends a subscription. Contract terms may dictate if a prorated refund will be issued upon suspension. It should be called directly by the partner using service accounts.
+
+Args:
+  name: string, Required. The name of the subscription resource to be suspended. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot; (required)
+  body: object, The request body.
+    The object takes the form of:
+
+{ # Request to suspend a subscription.
+}
+
+  x__xgafv: string, V1 error format.
+    Allowed values
+      1 - v1 error format
+      2 - v2 error format
+
+Returns:
+  An object of the form:
+
+    { # Response that contains the suspended subscription.
+  &quot;subscription&quot;: { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy. # The suspended subscription resource.
+    &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
+      &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
+    },
+    &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
+    &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
+    &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
+    &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+    &quot;lineItems&quot;: [ # Required. The line items of the subscription.
+      { # Individual line item definition of a subscription.
+        &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+          &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+          &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+        },
+        &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+          &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+            { # The details for an element in the hard bundle.
+              &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+              &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+            },
+          ],
+        },
+        &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+        &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+          &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+        },
+        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+        &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
+          { # Describes the spec for one promotion.
+            &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
+              &quot;count&quot;: 42, # number of duration units to be included.
+              &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
+            },
+            &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
+              &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
+                { # The duration of an introductory pricing promotion.
+                  &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                    &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                    &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                  },
+                  &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                  &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                  &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
+                },
+              ],
+            },
+            &quot;promotion&quot;: &quot;A String&quot;, # Required. Promotion resource name that identifies a promotion. The format is &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
+            &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
+          },
+        ],
+        &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+        &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+          &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+            &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+            &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+          },
+        },
+        &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+        &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+          &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+            &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+            &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+            &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+          },
+          &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+            &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+              &quot;A String&quot;,
+            ],
+            &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+            &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+            &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+          },
+          &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+            &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+            &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+              &quot;A String&quot;,
+            ],
+            &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+          },
+        },
+        &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
+        &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
+      },
+    ],
+    &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+      &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
+    &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
+    &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
+    &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+      &quot;A String&quot;,
+    ],
+    &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
+      { # Describes the spec for one promotion.
+        &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
+          &quot;count&quot;: 42, # number of duration units to be included.
+          &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
+        },
+        &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
+          &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
+            { # The duration of an introductory pricing promotion.
+              &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+              },
+              &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+              &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+              &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
+            },
+          ],
+        },
+        &quot;promotion&quot;: &quot;A String&quot;, # Required. Promotion resource name that identifies a promotion. The format is &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
+        &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
+      },
+    ],
+    &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
+      &quot;A String&quot;,
+    ],
+    &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
+    &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
+    &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
+    &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
+      &quot;postalCode&quot;: &quot;A String&quot;, # The postal code this location refers to. Ex. &quot;94043&quot;
+      &quot;regionCode&quot;: &quot;A String&quot;, # 2-letter ISO region code for current content region. Ex. “US” Please refers to: https://en.wikipedia.org/wiki/ISO_3166-1
+    },
+    &quot;state&quot;: &quot;A String&quot;, # Output only. Describes the state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
+    &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
+    &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
+      &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
+      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
+    },
   },
 }</pre>
 </div>
 
 <div class="method">
     <code class="details" id="undoCancel">undoCancel(name, body=None, x__xgafv=None)</code>
-  <pre>Used by partners to revoke the pending cancellation of a subscription, which is currently in `STATE_CANCEL_AT_END_OF_CYCLE` state. If the subscription is already cancelled, the request will fail. It should be called directly by the partner using service accounts.
+  <pre>Currently, it is used by **Google One, Play Pass** partners. Revokes the pending cancellation of a subscription, which is currently in `STATE_CANCEL_AT_END_OF_CYCLE` state. If the subscription is already cancelled, the request will fail. It should be called directly by the partner using service accounts.
 
 Args:
   name: string, Required. The name of the subscription resource whose pending cancellation needs to be undone. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot; (required)
@@ -765,27 +1554,50 @@ Returns:
   An object of the form:
 
     { # Response that contains the updated subscription resource.
-  &quot;subscription&quot;: { # A Subscription resource managed by 3P Partners. # The updated subscription resource.
+  &quot;subscription&quot;: { # A subscription serves as a central billing entity between an external partner and Google. The underlying Google services rely on the subscription state to grant or revoke the user&#x27;s service entitlement. It&#x27;s important to note that the subscription state may not always perfectly align with the user&#x27;s service entitlement. For example, some Google services may continue providing access to the user until the current billing cycle ends, even if the subscription has been immediately canceled. However, other services may not do the same. To fully understand the specific details, please consult the relevant contract or product policy. # The updated subscription resource.
     &quot;cancellationDetails&quot;: { # Describes the details of a cancelled or cancelling subscription. # Output only. Describes the details of a cancelled subscription. Only applicable to subscription of state `STATE_CANCELLED`.
-      &quot;reason&quot;: &quot;A String&quot;, # The reason of the cancellation.
+      &quot;reason&quot;: &quot;A String&quot;, # Output only. The reason of the cancellation.
     },
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is created. UTC timezone.
     &quot;cycleEndTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be extended, in ISO 8061 format. UTC timezone. For example: &quot;2019-08-31T17:28:54.564Z&quot;
     &quot;endUserEntitled&quot;: True or False, # Output only. Indicates if the subscription is entitled to the end user.
     &quot;freeTrialEndTime&quot;: &quot;A String&quot;, # Output only. End of the free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
     &quot;lineItems&quot;: [ # Required. The line items of the subscription.
-      { # Individual line item definition of a subscription. Next id: 5
-        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. It is set only if the line item has its own free trial applied. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
-        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - a free trial promotion, which overrides the subscription-level free trial promotion. - an introductory pricing promotion. When used as input in Create or Provision API, specify its resource name only.
+      { # Individual line item definition of a subscription.
+        &quot;amount&quot;: { # Describes the amount unit including the currency code. # Output only. The price of the product/service in this line item. The amount could be the wholesale price, or it can include a cost of sale based on the contract.
+          &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+          &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+        },
+        &quot;bundleDetails&quot;: { # The bundle details for a line item corresponding to a hard bundle. # Output only. The bundle details for the line item. Only populated if the line item corresponds to a hard bundle.
+          &quot;bundleElementDetails&quot;: [ # Output only. The details for each element in the hard bundle.
+            { # The details for an element in the hard bundle.
+              &quot;product&quot;: &quot;A String&quot;, # Output only. Product resource name that identifies the bundle element. The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+              &quot;userAccountLinkedTime&quot;: &quot;A String&quot;, # Output only. The time when this product is linked to an end user.
+            },
+          ],
+        },
+        &quot;description&quot;: &quot;A String&quot;, # Output only. Description of this line item.
+        &quot;finiteBillingCycleDetails&quot;: { # Details for a subscriptiin line item with finite billing cycles. # Optional. Details for a subscription line item with finite billing cycles. If unset, the line item will be charged indefinitely. Used only with LINE_ITEM_RECURRENCE_TYPE_PERIODIC.
+          &quot;billingCycleCountLimit&quot;: &quot;A String&quot;, # Required. The number of a subscription line item billing cycles after which billing will stop automatically.
+        },
+        &quot;lineItemFreeTrialEndTime&quot;: &quot;A String&quot;, # Output only. The free trial end time will be populated after the line item is successfully processed. End time of the line item free trial period, in ISO 8061 format. For example, &quot;2019-08-31T17:28:54.564Z&quot;. It will be set the same as createTime if no free trial promotion is specified.
+        &quot;lineItemIndex&quot;: 42, # Output only. A unique index of the subscription line item.
+        &quot;lineItemPromotionSpecs&quot;: [ # Optional. The promotions applied on the line item. It can be: - an introductory pricing promotion. - a free trial promotion. This feature is not enabled. If used, the request will be rejected. When used as input in Create or Provision API, specify its resource name only.
           { # Describes the spec for one promotion.
             &quot;freeTrialDuration&quot;: { # Describes the length of a period of a time. # Output only. The duration of the free trial if the promotion is of type FREE_TRIAL.
               &quot;count&quot;: 42, # number of duration units to be included.
               &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
             },
             &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-              &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+              &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
                 { # The duration of an introductory pricing promotion.
-                  &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+                  &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                    &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                    &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+                  },
+                  &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+                  &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+                  &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
                 },
               ],
             },
@@ -793,14 +1605,47 @@ Returns:
             &quot;type&quot;: &quot;A String&quot;, # Output only. The type of the promotion for the spec.
           },
         ],
+        &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the line item. Format: partners/{partner}/subscriptions/{subscription}/lineItems/{lineItem}
+        &quot;oneTimeRecurrenceDetails&quot;: { # Details for a ONE_TIME recurrence line item. # Output only. Details only set for a ONE_TIME recurrence line item.
+          &quot;servicePeriod&quot;: { # A description of what time period or moment in time the product or service is being delivered over. # Output only. The service period of the ONE_TIME line item.
+            &quot;endTime&quot;: &quot;A String&quot;, # Optional. The end time of the service period. Time is exclusive.
+            &quot;startTime&quot;: &quot;A String&quot;, # Required. The start time of the service period. Time is inclusive.
+          },
+        },
         &quot;product&quot;: &quot;A String&quot;, # Required. Product resource name that identifies one the line item The format is &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+        &quot;productPayload&quot;: { # Specifies product specific payload. # Optional. Product specific payload for this line item.
+          &quot;googleHomePayload&quot;: { # Payload specific for Google Home products. # Payload specific to Google Home products.
+            &quot;attachedToGoogleStructure&quot;: True or False, # Output only. This identifies whether the subscription is attached to a Google Home structure.
+            &quot;googleStructureId&quot;: &quot;A String&quot;, # Optional. Structure identifier on Google side.
+            &quot;partnerStructureId&quot;: &quot;A String&quot;, # Optional. This identifies the structure ID on partner side that the subscription should be applied to. Only required when the partner requires structure mapping.
+          },
+          &quot;googleOnePayload&quot;: { # Payload specific to Google One products. # Product-specific payloads. Payload specific to Google One products.
+            &quot;campaigns&quot;: [ # Campaign attributed to sales of this subscription.
+              &quot;A String&quot;,
+            ],
+            &quot;offering&quot;: &quot;A String&quot;, # The type of offering the subscription was sold by the partner. e.g. VAS.
+            &quot;salesChannel&quot;: &quot;A String&quot;, # The type of sales channel through which the subscription was sold.
+            &quot;storeId&quot;: &quot;A String&quot;, # The identifier for the partner store where the subscription was sold.
+          },
+          &quot;youtubePayload&quot;: { # Payload specific to Youtube products. # Payload specific to Youtube products.
+            &quot;accessEndTime&quot;: &quot;A String&quot;, # Output only. The access expiration time for this line item.
+            &quot;partnerEligibilityIds&quot;: [ # The list of eligibility_ids which are applicable for the line item.
+              &quot;A String&quot;,
+            ],
+            &quot;partnerPlanType&quot;: &quot;A String&quot;, # Optional. Specifies the plan type offered to the end user by the partner.
+          },
+        },
+        &quot;recurrenceType&quot;: &quot;A String&quot;, # Output only. The recurrence type of the line item.
         &quot;state&quot;: &quot;A String&quot;, # Output only. The state of the line item.
       },
     ],
-    &quot;name&quot;: &quot;A String&quot;, # Output only. Response only. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;
+    &quot;migrationDetails&quot;: { # Describes the details of the migrated subscription. # Output only. Describes the details of the migrated subscription. Only populated if this subscription is migrated from another system.
+      &quot;migratedSubscriptionId&quot;: &quot;A String&quot;, # Output only. The migrated subscription id in the legacy system.
+    },
+    &quot;name&quot;: &quot;A String&quot;, # Identifier. Resource name of the subscription. It will have the format of &quot;partners/{partner_id}/subscriptions/{subscription_id}&quot;. This is available for authorizeAddon, but otherwise is response only.
     &quot;partnerUserToken&quot;: &quot;A String&quot;, # Required. Identifier of the end-user in partner’s system. The value is restricted to 63 ASCII characters at the maximum.
     &quot;processingState&quot;: &quot;A String&quot;, # Output only. Describes the processing state of the subscription. See more details at [the lifecycle of a subscription](/payments/reseller/subscription/reference/index/Receive.Notifications#payments-subscription-lifecycle).
-    &quot;products&quot;: [ # Required. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
+    &quot;products&quot;: [ # Optional. Deprecated: consider using `line_items` as the input. Required. Resource name that identifies the purchased products. The format will be &#x27;partners/{partner_id}/products/{product_id}&#x27;.
       &quot;A String&quot;,
     ],
     &quot;promotionSpecs&quot;: [ # Optional. Subscription-level promotions. Only free trial is supported on this level. It determines the first renewal time of the subscription to be the end of the free trial period. Specify the promotion resource name only when used as input.
@@ -810,9 +1655,15 @@ Returns:
           &quot;unit&quot;: &quot;A String&quot;, # The unit used for the duration
         },
         &quot;introductoryPricingDetails&quot;: { # The details of a introductory pricing promotion. # Output only. The details of the introductory pricing spec if the promotion is of type INTRODUCTORY_PRICING.
-          &quot;introductoryPricingSpecs&quot;: [ # Specifies the introductory pricing periods.
+          &quot;introductoryPricingSpecs&quot;: [ # Output only. Specifies the introductory pricing periods.
             { # The duration of an introductory pricing promotion.
-              &quot;recurrenceCount&quot;: 42, # Output only. Output Only. The duration of an introductory offer in billing cycles.
+              &quot;discountAmount&quot;: { # Describes the amount unit including the currency code. # Output only. The discount amount. The value is positive.
+                &quot;amountMicros&quot;: &quot;A String&quot;, # Required. Amount in micros (1_000_000 micros = 1 currency unit)
+                &quot;currencyCode&quot;: &quot;A String&quot;, # Required. Currency codes in accordance with [ISO-4217 Currency Codes] (https://en.wikipedia.org/wiki/ISO_4217). For example, USD.
+              },
+              &quot;discountRatioMicros&quot;: &quot;A String&quot;, # Output only. The discount percentage in micros. For example, 50,000 represents 5%.
+              &quot;recurrenceCount&quot;: 42, # Output only. The duration of an introductory offer in billing cycles.
+              &quot;regionCode&quot;: &quot;A String&quot;, # Output only. 2-letter ISO region code where the product is available in. Ex. &quot;US&quot;.
             },
           ],
         },
@@ -823,6 +1674,7 @@ Returns:
     &quot;promotions&quot;: [ # Optional. Deprecated: consider using the top-level `promotion_specs` as the input. Optional. Resource name that identifies one or more promotions that can be applied on the product. A typical promotion for a subscription is Free trial. The format will be &#x27;partners/{partner_id}/promotions/{promotion_id}&#x27;.
       &quot;A String&quot;,
     ],
+    &quot;purchaseTime&quot;: &quot;A String&quot;, # Optional. The timestamp when the user transaction was made with the Partner. Specify for the case of &quot;bundle with choice&quot;, and it must be before the provision_time (when the user makes a selection).
     &quot;redirectUri&quot;: &quot;A String&quot;, # Output only. The place where partners should redirect the end-user to after creation. This field might also be populated when creation failed. However, Partners should always prepare a default URL to redirect the user in case this field is empty.
     &quot;renewalTime&quot;: &quot;A String&quot;, # Output only. The time at which the subscription is expected to be renewed by Google - a new charge will be incurred and the service entitlement will be renewed. A non-immediate cancellation will take place at this time too, before which, the service entitlement for the end user will remain valid. UTC timezone in ISO 8061 format. For example: &quot;2019-08-31T17:28:54.564Z&quot;
     &quot;serviceLocation&quot;: { # Describes a location of an end user. # Required. The location that the service is provided as indicated by the partner.
@@ -833,7 +1685,7 @@ Returns:
     &quot;updateTime&quot;: &quot;A String&quot;, # Output only. System generated timestamp when the subscription is most recently updated. UTC timezone.
     &quot;upgradeDowngradeDetails&quot;: { # Details about the previous subscription that this new subscription upgrades/downgrades from. # Optional. Details about the previous subscription that this new subscription upgrades/downgrades from. Only populated if this subscription is an upgrade/downgrade from another subscription.
       &quot;billingCycleSpec&quot;: &quot;A String&quot;, # Required. Specifies the billing cycle spec for the new upgraded/downgraded subscription.
-      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. This is not the full resource name, use the subscription_id segment only.
+      &quot;previousSubscriptionId&quot;: &quot;A String&quot;, # Required. The previous subscription id to be replaced. The format can be one of the following: 1. `subscription_id`: the old subscription id under the same partner_id. 2. `partners/{partner_id}/subscriptions/{subscription_id}`. A different partner_id is allowed. But they must be under the same partner group.
     },
   },
 }</pre>

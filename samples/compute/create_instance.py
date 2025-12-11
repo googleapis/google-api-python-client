@@ -32,7 +32,7 @@ import googleapiclient.discovery
 # [START compute_apiary_list_instances]
 def list_instances(compute, project, zone):
     result = compute.instances().list(project=project, zone=zone).execute()
-    return result["items"] if "items" in result else None
+    return result.get("items")
 
 
 # [END compute_apiary_list_instances]
@@ -43,7 +43,7 @@ def create_instance(compute, project, zone, name, bucket):
     # Get the latest Debian Jessie image.
     image_response = (
         compute.images()
-        .getFromFamily(project="debian-cloud", family="debian-9")
+        .getFromFamily(project="debian-cloud", family="debian-11")
         .execute()
     )
     source_disk_image = image_response["selfLink"]

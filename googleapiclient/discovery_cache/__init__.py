@@ -34,7 +34,7 @@ def autodetect():
       googleapiclient.discovery_cache.base.Cache, a cache object which
       is auto detected, or None if no cache object is available.
     """
-    if "APPENGINE_RUNTIME" in os.environ:
+    if "GAE_ENV" in os.environ:
         try:
             from . import appengine_memcache
 
