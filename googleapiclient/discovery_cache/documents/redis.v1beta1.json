@@ -144,7 +144,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"description": "Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -1056,6 +1056,11 @@
 "description": "The standard list page token.",
 "location": "query",
 "type": "string"
+},
+"returnPartialSuccess": {
+"description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the [ListOperationsResponse.unreachable] field. This can only be `true` when reading across collections e.g. when `parent` is set to `\"projects/example/locations/-\"`. This field is not by default supported and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+"location": "query",
+"type": "boolean"
 }
 },
 "path": "v1beta1/{+name}/operations",
@@ -1073,7 +1078,7 @@
 }
 }
 },
-"revision": "20250718",
+"revision": "20251021",
 "rootUrl": "https://redis.googleapis.com/",
 "schemas": {
 "AOFConfig": {
@@ -1336,8 +1341,26 @@
 "readOnly": true,
 "type": "string"
 },
+"lastBackupTime": {
+"description": "Output only. The last time a backup was created in the backup collection.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
 "name": {
 "description": "Identifier. Full resource path of the backup collection.",
+"type": "string"
+},
+"totalBackupCount": {
+"description": "Output only. Total number of backups in the backup collection.",
+"format": "int64",
+"readOnly": true,
+"type": "string"
+},
+"totalBackupSizeBytes": {
+"description": "Output only. Total size of all backups in the backup collection.",
+"format": "int64",
+"readOnly": true,
 "type": "string"
 },
 "uid": {
@@ -1374,6 +1397,38 @@
 "backupdrManaged": {
 "description": "Indicates if the resource is managed by BackupDR.",
 "type": "boolean"
+}
+},
+"type": "object"
+},
+"BackupDRMetadata": {
+"description": "BackupDRMetadata contains information about the backup and disaster recovery metadata of a database resource.",
+"id": "BackupDRMetadata",
+"properties": {
+"backupConfiguration": {
+"$ref": "BackupConfiguration",
+"description": "Backup configuration for this instance."
+},
+"backupRun": {
+"$ref": "BackupRun",
+"description": "Latest backup run information for this instance."
+},
+"backupdrConfiguration": {
+"$ref": "BackupDRConfiguration",
+"description": "BackupDR configuration for this instance."
+},
+"fullResourceName": {
+"description": "Required. Full resource name of this instance.",
+"type": "string"
+},
+"lastRefreshTime": {
+"description": "Required. Last time backup configuration was refreshed.",
+"format": "google-datetime",
+"type": "string"
+},
+"resourceId": {
+"$ref": "DatabaseResourceId",
+"description": "Required. Database resource id."
 }
 },
 "type": "object"
@@ -1469,7 +1524,8 @@
 "id": "Cluster",
 "properties": {
 "allowFewerZonesDeployment": {
-"description": "Optional. Immutable. Allows customers to specify if they are okay with deploying a multi-zone cluster in less than 3 zones. Once set, if there is a zonal outage during the cluster creation, the cluster will only be deployed in 2 zones, and stay within the 2 zones for its lifecycle.",
+"deprecated": true,
+"description": "Optional. Immutable. Deprecated, do not use.",
 "type": "boolean"
 },
 "asyncClusterEndpointsDeletionEnabled": {
@@ -1493,6 +1549,14 @@
 "automatedBackupConfig": {
 "$ref": "AutomatedBackupConfig",
 "description": "Optional. The automated backup config for the cluster."
+},
+"availableMaintenanceVersions": {
+"description": "Output only. This field is used to determine the available maintenance versions for the self service update.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
 },
 "backupCollection": {
 "description": "Optional. Output only. The backup collection full resource name. Example: projects/{project}/locations/{location}/backupCollections/{collection}",
@@ -1528,6 +1592,11 @@
 "readOnly": true,
 "type": "array"
 },
+"effectiveMaintenanceVersion": {
+"description": "Output only. This field represents the actual maintenance version of the cluster.",
+"readOnly": true,
+"type": "string"
+},
 "encryptionInfo": {
 "$ref": "EncryptionInfo",
 "description": "Output only. Encryption information of the data at rest of the cluster.",
@@ -1541,6 +1610,13 @@
 "description": "Optional. The KMS key used to encrypt the at-rest data of the cluster.",
 "type": "string"
 },
+"labels": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "Optional. Labels to represent user-provided metadata.",
+"type": "object"
+},
 "maintenancePolicy": {
 "$ref": "ClusterMaintenancePolicy",
 "description": "Optional. ClusterMaintenancePolicy determines when to allow or deny updates."
@@ -1549,6 +1625,10 @@
 "$ref": "ClusterMaintenanceSchedule",
 "description": "Output only. ClusterMaintenanceSchedule Output only Published maintenance schedule.",
 "readOnly": true
+},
+"maintenanceVersion": {
+"description": "Optional. This field can be used to trigger self service update to indicate the desired maintenance version. The input to this field can be determined by the available_maintenance_versions field.",
+"type": "string"
 },
 "managedBackupSource": {
 "$ref": "ManagedBackupSource",
@@ -1870,7 +1950,8 @@
 "SIGNAL_TYPE_DATABASE_AUDITING_DISABLED",
 "SIGNAL_TYPE_NO_ROOT_PASSWORD",
 "SIGNAL_TYPE_EXPOSED_TO_PUBLIC_ACCESS",
-"SIGNAL_TYPE_UNENCRYPTED_CONNECTIONS"
+"SIGNAL_TYPE_UNENCRYPTED_CONNECTIONS",
+"SIGNAL_TYPE_EXTENDED_SUPPORT"
 ],
 "enumDescriptions": [
 "Unspecified signal type.",
@@ -1878,7 +1959,8 @@
 "Represents database auditing is disabled.",
 "Represents if a database has a password configured for the root account or not.",
 "Represents if a resource is exposed to public access.",
-"Represents if a resources requires all incoming connections to use SSL or not."
+"Represents if a resources requires all incoming connections to use SSL or not.",
+"Represents if a resource version is in extended support."
 ],
 "type": "string"
 }
@@ -1961,12 +2043,20 @@
 "type": "object"
 },
 "DatabaseResourceFeed": {
-"description": "DatabaseResourceFeed is the top level proto to be used to ingest different database resource level events into Condor platform. Next ID: 9",
+"description": "DatabaseResourceFeed is the top level proto to be used to ingest different database resource level events into Condor platform. Next ID: 13",
 "id": "DatabaseResourceFeed",
 "properties": {
+"backupdrMetadata": {
+"$ref": "BackupDRMetadata",
+"description": "BackupDR metadata is used to ingest metadata from BackupDR."
+},
 "configBasedSignalData": {
 "$ref": "ConfigBasedSignalData",
 "description": "Config based signal data is used to ingest signals that are generated based on the configuration of the database resource."
+},
+"databaseResourceSignalData": {
+"$ref": "DatabaseResourceSignalData",
+"description": "Database resource signal data is used to ingest signals from database resource signal feeds."
 },
 "feedTimestamp": {
 "description": "Required. Timestamp when feed is generated.",
@@ -1981,7 +2071,9 @@
 "OBSERVABILITY_DATA",
 "SECURITY_FINDING_DATA",
 "RECOMMENDATION_SIGNAL_DATA",
-"CONFIG_BASED_SIGNAL_DATA"
+"CONFIG_BASED_SIGNAL_DATA",
+"BACKUPDR_METADATA",
+"DATABASE_RESOURCE_SIGNAL_DATA"
 ],
 "enumDescriptions": [
 "",
@@ -1989,7 +2081,9 @@
 "Database resource monitoring data",
 "Database resource security health signal data",
 "Database resource recommendation signal data",
-"Database config based signal data"
+"Database config based signal data",
+"Database resource metadata from BackupDR",
+"Database resource signal data"
 ],
 "type": "string"
 },
@@ -2009,6 +2103,10 @@
 },
 "resourceMetadata": {
 "$ref": "DatabaseResourceMetadata"
+},
+"skipIngestion": {
+"description": "Optional. If true, the feed won't be ingested by DB Center. This indicates that the feed is intentionally skipped. For example, BackupDR feeds are only needed for resources integrated with DB Center (e.g., CloudSQL, AlloyDB). Feeds for non-integrated resources (e.g., Compute Engine, Persistent Disk) can be skipped.",
+"type": "boolean"
 }
 },
 "type": "object"
@@ -2226,7 +2324,13 @@
 "SIGNAL_TYPE_LOCATION_ORG_POLICY_NOT_SATISFIED",
 "SIGNAL_TYPE_OUTDATED_MINOR_VERSION",
 "SIGNAL_TYPE_SCHEMA_NOT_OPTIMIZED",
-"SIGNAL_TYPE_MANY_IDLE_CONNECTIONS"
+"SIGNAL_TYPE_MANY_IDLE_CONNECTIONS",
+"SIGNAL_TYPE_REPLICATION_LAG",
+"SIGNAL_TYPE_OUTDATED_VERSION",
+"SIGNAL_TYPE_OUTDATED_CLIENT",
+"SIGNAL_TYPE_DATABOOST_DISABLED",
+"SIGNAL_TYPE_RECOMMENDED_MAINTENANCE_POLICIES",
+"SIGNAL_TYPE_EXTENDED_SUPPORT"
 ],
 "enumDeprecated": [
 false,
@@ -2235,6 +2339,12 @@ false,
 true,
 true,
 true,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,
@@ -2428,7 +2538,13 @@ false
 "Location org policy not satisfied.",
 "Outdated DB minor version.",
 "Schema not optimized.",
-"High number of idle connections."
+"High number of idle connections.",
+"Replication delay.",
+"Outdated version.",
+"Outdated client.",
+"Databoost is disabled.",
+"Recommended maintenance policy.",
+"Resource version is in extended support."
 ],
 "type": "string"
 },
@@ -2492,7 +2608,7 @@ false
 "type": "object"
 },
 "DatabaseResourceMetadata": {
-"description": "Common model for database resource instance metadata. Next ID: 26",
+"description": "Common model for database resource instance metadata. Next ID: 29",
 "id": "DatabaseResourceMetadata",
 "properties": {
 "availabilityConfiguration": {
@@ -2545,12 +2661,14 @@ false
 "enum": [
 "EDITION_UNSPECIFIED",
 "EDITION_ENTERPRISE",
-"EDITION_ENTERPRISE_PLUS"
+"EDITION_ENTERPRISE_PLUS",
+"EDITION_STANDARD"
 ],
 "enumDescriptions": [
 "Default, to make it consistent with instance edition enum.",
 "Represents the enterprise edition.",
-"Represents the enterprise plus edition."
+"Represents the enterprise plus edition.",
+"Represents the standard edition."
 ],
 "type": "string"
 },
@@ -2641,6 +2759,10 @@ false
 "$ref": "MachineConfiguration",
 "description": "Machine configuration for this resource."
 },
+"maintenanceInfo": {
+"$ref": "ResourceMaintenanceInfo",
+"description": "Optional. Maintenance info for the resource."
+},
 "primaryResourceId": {
 "$ref": "DatabaseResourceId",
 "description": "Identifier for this resource's immediate parent/primary resource if the current resource is a replica or derived form of another Database resource. Else it would be NULL. REQUIRED if the immediate parent exists when first time resource is getting ingested, otherwise optional."
@@ -2695,6 +2817,10 @@ false
 "userLabelSet": {
 "$ref": "UserLabels",
 "description": "User-provided labels associated with the resource"
+},
+"zone": {
+"description": "The resource zone. This is only applicable for zonal resources and will be empty for regional and multi-regional resources.",
+"type": "string"
 }
 },
 "type": "object"
@@ -2853,7 +2979,13 @@ false
 "SIGNAL_TYPE_LOCATION_ORG_POLICY_NOT_SATISFIED",
 "SIGNAL_TYPE_OUTDATED_MINOR_VERSION",
 "SIGNAL_TYPE_SCHEMA_NOT_OPTIMIZED",
-"SIGNAL_TYPE_MANY_IDLE_CONNECTIONS"
+"SIGNAL_TYPE_MANY_IDLE_CONNECTIONS",
+"SIGNAL_TYPE_REPLICATION_LAG",
+"SIGNAL_TYPE_OUTDATED_VERSION",
+"SIGNAL_TYPE_OUTDATED_CLIENT",
+"SIGNAL_TYPE_DATABOOST_DISABLED",
+"SIGNAL_TYPE_RECOMMENDED_MAINTENANCE_POLICIES",
+"SIGNAL_TYPE_EXTENDED_SUPPORT"
 ],
 "enumDeprecated": [
 false,
@@ -2862,6 +2994,12 @@ false,
 true,
 true,
 true,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,
@@ -3055,9 +3193,100 @@ false
 "Location org policy not satisfied.",
 "Outdated DB minor version.",
 "Schema not optimized.",
-"High number of idle connections."
+"High number of idle connections.",
+"Replication delay.",
+"Outdated version.",
+"Outdated client.",
+"Databoost is disabled.",
+"Recommended maintenance policy.",
+"Resource version is in extended support."
 ],
 "type": "string"
+}
+},
+"type": "object"
+},
+"DatabaseResourceSignalData": {
+"description": "Database resource signal data. This is used to send signals to Condor which are based on the DB/Instance/Fleet level configurations. These will be used to send signals for all inventory types. Next ID: 7",
+"id": "DatabaseResourceSignalData",
+"properties": {
+"fullResourceName": {
+"description": "Required. Full Resource name of the source resource.",
+"type": "string"
+},
+"lastRefreshTime": {
+"description": "Required. Last time signal was refreshed",
+"format": "google-datetime",
+"type": "string"
+},
+"resourceId": {
+"$ref": "DatabaseResourceId",
+"description": "Database resource id."
+},
+"signalBoolValue": {
+"description": "Signal data for boolean signals.",
+"type": "boolean"
+},
+"signalState": {
+"description": "Required. Output only. Signal state of the signal",
+"enum": [
+"SIGNAL_STATE_UNSPECIFIED",
+"ACTIVE",
+"INACTIVE",
+"DISMISSED"
+],
+"enumDescriptions": [
+"Unspecified signal state.",
+"Signal is active and requires attention.",
+"Signal is inactive and does not require attention.",
+"Signal is dismissed by the user and should not be shown to the user again."
+],
+"readOnly": true,
+"type": "string"
+},
+"signalType": {
+"description": "Required. Signal type of the signal",
+"enum": [
+"SIGNAL_TYPE_UNSPECIFIED",
+"SIGNAL_TYPE_OUTDATED_MINOR_VERSION",
+"SIGNAL_TYPE_DATABASE_AUDITING_DISABLED",
+"SIGNAL_TYPE_NO_ROOT_PASSWORD",
+"SIGNAL_TYPE_EXPOSED_TO_PUBLIC_ACCESS",
+"SIGNAL_TYPE_UNENCRYPTED_CONNECTIONS",
+"SIGNAL_TYPE_EXTENDED_SUPPORT"
+],
+"enumDescriptions": [
+"Unspecified signal type.",
+"Outdated Minor Version",
+"Represents database auditing is disabled.",
+"Represents if a database has a password configured for the root account or not.",
+"Represents if a resource is exposed to public access.",
+"Represents if a resources requires all incoming connections to use SSL or not.",
+"Represents if a resource version is in extended support."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"Date": {
+"description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values. * A month and day, with a zero year (for example, an anniversary). * A year on its own, with a zero month and a zero day. * A year and month, with a zero day (for example, a credit card expiration date). Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
+"id": "Date",
+"properties": {
+"day": {
+"description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+"format": "int32",
+"type": "integer"
+},
+"month": {
+"description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+"format": "int32",
+"type": "integer"
+},
+"year": {
+"description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -3826,6 +4055,13 @@ false
 "$ref": "Operation"
 },
 "type": "array"
+},
+"unreachable": {
+"description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections e.g. when attempting to list all resources across all supported locations.",
+"items": {
+"type": "string"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -4343,6 +4579,7 @@ false
 "PRODUCT_TYPE_FIRESTORE",
 "PRODUCT_TYPE_COMPUTE_ENGINE",
 "PRODUCT_TYPE_ORACLE_ON_GCP",
+"PRODUCT_TYPE_BIGQUERY",
 "PRODUCT_TYPE_OTHER"
 ],
 "enumDeprecated": [
@@ -4354,6 +4591,7 @@ true,
 false,
 false,
 true,
+false,
 false,
 false,
 false,
@@ -4375,6 +4613,7 @@ false
 "Firestore product area in GCP.",
 "Compute Engine self managed databases",
 "Oracle product area in GCP",
+"BigQuery product area in GCP",
 "Other refers to rest of other product type. This is to be when product type is known, but it is not present in this enum."
 ],
 "type": "string"
@@ -4689,6 +4928,100 @@ false
 "description": "Optional. Timestamp when the maintenance shall be rescheduled to if reschedule_type=SPECIFIC_TIME, in RFC 3339 format, for example `2012-11-15T16:19:00.094Z`.",
 "format": "google-datetime",
 "type": "string"
+}
+},
+"type": "object"
+},
+"ResourceMaintenanceDenySchedule": {
+"description": "Deny maintenance period for the database resource. It specifies the time range during which the maintenance cannot start. This is configured by the customer.",
+"id": "ResourceMaintenanceDenySchedule",
+"properties": {
+"endDate": {
+"$ref": "Date",
+"description": "Optional. Deny period end date."
+},
+"startDate": {
+"$ref": "Date",
+"description": "Optional. The start date of the deny maintenance period."
+},
+"time": {
+"$ref": "TimeOfDay",
+"description": "Optional. Time in UTC when the deny period starts on start_date and ends on end_date."
+}
+},
+"type": "object"
+},
+"ResourceMaintenanceInfo": {
+"description": "MaintenanceInfo to capture the maintenance details of database resource.",
+"id": "ResourceMaintenanceInfo",
+"properties": {
+"denyMaintenanceSchedules": {
+"description": "Optional. List of Deny maintenance period for the database resource.",
+"items": {
+"$ref": "ResourceMaintenanceDenySchedule"
+},
+"type": "array"
+},
+"maintenanceSchedule": {
+"$ref": "ResourceMaintenanceSchedule",
+"description": "Optional. Maintenance window for the database resource."
+},
+"maintenanceVersion": {
+"description": "Optional. Current Maintenance version of the database resource. Example: \"MYSQL_8_0_41.R20250531.01_15\"",
+"type": "string"
+}
+},
+"type": "object"
+},
+"ResourceMaintenanceSchedule": {
+"description": "Maintenance window for the database resource. It specifies preferred time and day of the week and phase in some cases, when the maintenance can start. This is configured by the customer.",
+"id": "ResourceMaintenanceSchedule",
+"properties": {
+"day": {
+"description": "Optional. Preferred day of the week for maintenance, e.g. MONDAY, TUESDAY, etc.",
+"enum": [
+"DAY_OF_WEEK_UNSPECIFIED",
+"MONDAY",
+"TUESDAY",
+"WEDNESDAY",
+"THURSDAY",
+"FRIDAY",
+"SATURDAY",
+"SUNDAY"
+],
+"enumDescriptions": [
+"The day of the week is unspecified.",
+"Monday",
+"Tuesday",
+"Wednesday",
+"Thursday",
+"Friday",
+"Saturday",
+"Sunday"
+],
+"type": "string"
+},
+"phase": {
+"description": "Optional. Phase of the maintenance window. This is to capture order of maintenance. For example, for Cloud SQL resources, this can be used to capture if the maintenance window is in Week1, Week2, Week5, etc. Non production resources are usually part of early phase. For more details, refer to Cloud SQL resources - https://cloud.google.com/sql/docs/mysql/maintenance",
+"enum": [
+"PHASE_UNSPECIFIED",
+"ANY",
+"WEEK1",
+"WEEK2",
+"WEEK5"
+],
+"enumDescriptions": [
+"Phase is unspecified.",
+"Any phase.",
+"Week 1.",
+"Week 2.",
+"Week 5."
+],
+"type": "string"
+},
+"time": {
+"$ref": "TimeOfDay",
+"description": "Optional. Preferred time to start the maintenance operation on the specified day."
 }
 },
 "type": "object"

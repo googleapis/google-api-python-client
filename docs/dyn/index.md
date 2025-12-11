@@ -196,6 +196,7 @@
 
 ## bigquerydatapolicy
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatapolicy_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/bigquerydatapolicy_v2.html)
 
 
 ## bigquerydatatransfer
@@ -225,7 +226,6 @@
 
 
 ## blogger
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/blogger_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/blogger_v3.html)
 
 
@@ -265,6 +265,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/chromeuxreport_v1.html)
 
 
+## chromewebstore
+* [v1.1](http://googleapis.github.io/google-api-python-client/docs/dyn/chromewebstore_v1_1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/chromewebstore_v2.html)
+
+
 ## civicinfo
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/civicinfo_v2.html)
 
@@ -293,6 +298,10 @@
 
 ## cloudchannel
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudchannel_v1.html)
+
+
+## cloudcommerceprocurement
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudcommerceprocurement_v1.html)
 
 
 ## cloudcontrolspartner
@@ -325,6 +334,7 @@
 
 
 ## cloudlocationfinder
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1alpha.html)
 
 
@@ -435,6 +445,7 @@
 
 
 ## dataform
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataform_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataform_v1beta1.html)
 
 
@@ -449,6 +460,10 @@
 
 ## datalineage
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datalineage_v1.html)
+
+
+## datamanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/datamanager_v1.html)
 
 
 ## datamigration
@@ -497,6 +512,7 @@
 ## dfareporting
 * [v3.5](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_5.html)
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v4.html)
+* [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v5.html)
 
 
 ## dialogflow
@@ -827,17 +843,29 @@
 
 
 ## merchantapi
+* [accounts_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_accounts_v1.html)
 * [accounts_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_accounts_v1beta.html)
+* [conversions_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_conversions_v1.html)
 * [conversions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_conversions_v1beta.html)
+* [datasources_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_datasources_v1.html)
 * [datasources_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_datasources_v1beta.html)
+* [inventories_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_inventories_v1.html)
 * [inventories_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_inventories_v1beta.html)
+* [issueresolution_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_issueresolution_v1.html)
 * [issueresolution_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_issueresolution_v1beta.html)
+* [lfp_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_lfp_v1.html)
 * [lfp_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_lfp_v1beta.html)
+* [notifications_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_notifications_v1.html)
 * [notifications_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_notifications_v1beta.html)
+* [ordertracking_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_ordertracking_v1.html)
 * [ordertracking_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_ordertracking_v1beta.html)
+* [products_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_products_v1.html)
 * [products_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_products_v1beta.html)
+* [promotions_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1.html)
 * [promotions_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_promotions_v1beta.html)
+* [quota_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1.html)
 * [quota_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_quota_v1beta.html)
+* [reports_v1](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reports_v1.html)
 * [reports_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reports_v1beta.html)
 * [reviews_v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/merchantapi_reviews_v1beta.html)
 
@@ -1128,6 +1156,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1beta1.html)
 * [v1beta2](http://googleapis.github.io/google-api-python-client/docs/dyn/secretmanager_v1beta2.html)
+
+
+## securesourcemanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/securesourcemanager_v1.html)
 
 
 ## securitycenter

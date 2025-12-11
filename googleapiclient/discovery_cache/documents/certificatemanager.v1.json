@@ -144,7 +144,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"description": "Optional. Unless explicitly documented otherwise, don't use this unsupported field which is primarily intended for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -1131,6 +1131,11 @@
 "description": "The standard list page token.",
 "location": "query",
 "type": "string"
+},
+"returnPartialSuccess": {
+"description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the [ListOperationsResponse.unreachable] field. This can only be `true` when reading across collections e.g. when `parent` is set to `\"projects/example/locations/-\"`. This field is not by default supported and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+"location": "query",
+"type": "boolean"
 }
 },
 "path": "v1/{+name}/operations",
@@ -1320,7 +1325,7 @@
 }
 }
 },
-"revision": "20250423",
+"revision": "20250924",
 "rootUrl": "https://certificatemanager.googleapis.com/",
 "schemas": {
 "AllowlistedCertificate": {
@@ -1338,6 +1343,12 @@
 "description": "State of the latest attempt to authorize a domain for certificate issuance.",
 "id": "AuthorizationAttemptInfo",
 "properties": {
+"attemptTime": {
+"description": "Output only. The timestamp, when the authorization attempt was made.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
 "details": {
 "description": "Output only. Human readable explanation for reaching the state. Provided to help address the configuration issues. Not guaranteed to be stable. For programmatic access use FailureReason enum.",
 "readOnly": true,
@@ -1381,6 +1392,36 @@
 ],
 "readOnly": true,
 "type": "string"
+},
+"troubleshooting": {
+"$ref": "Troubleshooting",
+"description": "Output only. Troubleshooting information for the authorization attempt. This field is only populated if the authorization attempt failed.",
+"readOnly": true
+}
+},
+"type": "object"
+},
+"CNAME": {
+"description": "CNAME troubleshooting information.",
+"id": "CNAME",
+"properties": {
+"expectedData": {
+"description": "Output only. The expected value of the CNAME record for the domain, equals to `dns_resource_record.data` in the corresponding `DnsAuthorization`.",
+"readOnly": true,
+"type": "string"
+},
+"name": {
+"description": "Output only. The name of the CNAME record for the domain, equals to `dns_resource_record.name` in the corresponding `DnsAuthorization`.",
+"readOnly": true,
+"type": "string"
+},
+"resolvedData": {
+"description": "Output only. The resolved CNAME chain. Empty list if the CNAME record for `CNAME.name` is not found. Otherwise the first item is the value of the CNAME record for `CNAME.name`. If the CNAME chain is longer, the second item is the value of the CNAME record for the first item, and so on.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
 }
 },
 "type": "object"
@@ -1784,6 +1825,37 @@
 },
 "type": "object"
 },
+"IPs": {
+"description": "IPs troubleshooting information.",
+"id": "IPs",
+"properties": {
+"resolved": {
+"description": "Output only. The list of IP addresses resolved from the domain's A/AAAA records. Can contain both ipv4 and ipv6 addresses.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
+},
+"serving": {
+"description": "Output only. The list of IP addresses, where the certificate is attached and port 443 is open.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
+},
+"servingOnAltPorts": {
+"description": "Output only. The list of IP addresses, where the certificate is attached, but port 443 is not open.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
+}
+},
+"type": "object"
+},
 "IntermediateCA": {
 "description": "Defines an intermediate CA.",
 "id": "IntermediateCA",
@@ -1971,6 +2043,13 @@
 "description": "A list of operations that matches the specified filter in the request.",
 "items": {
 "$ref": "Operation"
+},
+"type": "array"
+},
+"unreachable": {
+"description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections e.g. when attempting to list all resources across all supported locations.",
+"items": {
+"type": "string"
 },
 "type": "array"
 }
@@ -2228,6 +2307,47 @@
 "message": {
 "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"Troubleshooting": {
+"description": "Troubleshooting information for the authorization attempt.",
+"id": "Troubleshooting",
+"properties": {
+"cname": {
+"$ref": "CNAME",
+"description": "Output only. CNAME troubleshooting information.",
+"readOnly": true
+},
+"ips": {
+"$ref": "IPs",
+"description": "Output only. IPs troubleshooting information.",
+"readOnly": true
+},
+"issues": {
+"description": "Output only. The list of issues discovered during the authorization attempt.",
+"items": {
+"enum": [
+"ISSUE_UNSPECIFIED",
+"CNAME_MISMATCH",
+"RESOLVED_TO_NOT_SERVING",
+"RESOLVED_TO_SERVING_ON_ALT_PORTS",
+"NO_RESOLVED_IPS",
+"CERTIFICATE_NOT_ATTACHED"
+],
+"enumDescriptions": [
+"Issue is unspecified.",
+"The resolved CNAME value doesn't match the expected CNAME.",
+"Domain has A/AAAA records that point to IPs, where the certificate is not attached.",
+"Domain has A/AAAA records that point to IPs, where the certificate is attached, but port 443 is not open.",
+"Domain doesn't have any A/AAAA records.",
+"Certificate is not configured to be served from any IPs (e.g. Certificate is not attached to any load balancer)."
+],
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
 }
 },
 "type": "object"
