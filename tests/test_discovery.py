@@ -32,7 +32,6 @@ import itertools
 import json
 import os
 import pickle
-import pytest
 import re
 import sys
 import unittest
@@ -40,12 +39,13 @@ from unittest import mock
 import urllib
 
 import google.api_core.exceptions
-import google.auth.credentials
 from google.auth import __version__ as auth_version
+import google.auth.credentials
 from google.auth.exceptions import MutualTLSChannelError
 import google_auth_httplib2
 import httplib2
 from parameterized import parameterized
+import pytest
 import uritemplate
 
 try:
@@ -64,29 +64,46 @@ except ImportError:
     HAS_UNIVERSE = False
 
 from googleapiclient import _helpers as util
-from googleapiclient.discovery import (DISCOVERY_URI,
-                                       MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
-                                       MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE,
-                                       STACK_QUERY_PARAMETER_DEFAULT_VALUE,
-                                       STACK_QUERY_PARAMETERS,
-                                       V1_DISCOVERY_URI, V2_DISCOVERY_URI,
-                                       APICoreVersionError,
-                                       ResourceMethodParameters,
-                                       _fix_up_media_path_base_url,
-                                       _fix_up_media_upload,
-                                       _fix_up_method_description,
-                                       _fix_up_parameters, _urljoin, build,
-                                       build_from_document, key2param)
+from googleapiclient.discovery import (
+    DISCOVERY_URI,
+    MEDIA_BODY_PARAMETER_DEFAULT_VALUE,
+    MEDIA_MIME_TYPE_PARAMETER_DEFAULT_VALUE,
+    STACK_QUERY_PARAMETER_DEFAULT_VALUE,
+    STACK_QUERY_PARAMETERS,
+    V1_DISCOVERY_URI,
+    V2_DISCOVERY_URI,
+    APICoreVersionError,
+    ResourceMethodParameters,
+    _fix_up_media_path_base_url,
+    _fix_up_media_upload,
+    _fix_up_method_description,
+    _fix_up_parameters,
+    _urljoin,
+    build,
+    build_from_document,
+    key2param,
+)
 from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
 from googleapiclient.discovery_cache.base import Cache
-from googleapiclient.errors import (HttpError, InvalidJsonError,
-                                    MediaUploadSizeError, ResumableUploadError,
-                                    UnacceptableMimeTypeError,
-                                    UnknownApiNameOrVersion, UnknownFileType)
-from googleapiclient.http import (HttpMock, HttpMockSequence, MediaFileUpload,
-                                  MediaIoBaseUpload, MediaUpload,
-                                  MediaUploadProgress, build_http,
-                                  tunnel_patch)
+from googleapiclient.errors import (
+    HttpError,
+    InvalidJsonError,
+    MediaUploadSizeError,
+    ResumableUploadError,
+    UnacceptableMimeTypeError,
+    UnknownApiNameOrVersion,
+    UnknownFileType,
+)
+from googleapiclient.http import (
+    HttpMock,
+    HttpMockSequence,
+    MediaFileUpload,
+    MediaIoBaseUpload,
+    MediaUpload,
+    MediaUploadProgress,
+    build_http,
+    tunnel_patch,
+)
 from googleapiclient.model import JsonModel
 from googleapiclient.schema import Schemas
 
@@ -141,6 +158,7 @@ def read_datafile(filename, mode="r"):
     with open(datafile(filename), mode=mode) as f:
         return f.read()
 
+
 def parse_version_to_tuple(version_string):
     """Safely converts a semantic version string to a comparable tuple of integers.
 
@@ -163,6 +181,7 @@ def parse_version_to_tuple(version_string):
             # for comparing strictly numeric semantic versions.
             break
     return tuple(parts)
+
 
 class SetupHttplib2(unittest.TestCase):
     def test_retries(self):
@@ -799,6 +818,7 @@ CONFIG_DATA_WITHOUT_WORKLOAD = {
     "cert_configs": {},
 }
 
+
 class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
     MOCK_CREDENTIALS = mock.Mock(spec=google.auth.credentials.Credentials)
     _reset_universe_domain(MOCK_CREDENTIALS)
@@ -905,7 +925,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("never", "", CONFIG_DATA_WITH_WORKLOAD , REGULAR_ENDPOINT),
+            ("never", "", CONFIG_DATA_WITH_WORKLOAD, REGULAR_ENDPOINT),
             ("auto", "", CONFIG_DATA_WITH_WORKLOAD, MTLS_ENDPOINT),
             ("always", "", CONFIG_DATA_WITH_WORKLOAD, MTLS_ENDPOINT),
             ("never", "", CONFIG_DATA_WITHOUT_WORKLOAD, REGULAR_ENDPOINT),
@@ -914,9 +934,9 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
         ]
     )
     @pytest.mark.skipif(
-        parse_version_to_tuple(auth_version) < (2,43,0),
+        parse_version_to_tuple(auth_version) < (2, 43, 0),
         reason="automatic mtls enablement when supported certs present only"
-        "enabled in google-auth<=2.43.0"
+        "enabled in google-auth<=2.43.0",
     )
     def test_mtls_with_provided_client_cert_unset_environment_variable(
         self, use_mtls_env, use_client_cert, config_data, base_url
@@ -924,8 +944,8 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
         """Tests that mTLS is correctly handled when a client certificate is provided.
 
         This test case verifies that when a client certificate is explicitly provided
-        via `client_options` and GOOGLE_API_USE_CLIENT_CERTIFICATE is unset, the 
-        discovery document build process correctly configures the base URL for mTLS 
+        via `client_options` and GOOGLE_API_USE_CLIENT_CERTIFICATE is unset, the
+        discovery document build process correctly configures the base URL for mTLS
         or regular endpoints based on the `GOOGLE_API_USE_MTLS_ENDPOINT` environment variable.
         """
         if hasattr(google.auth.transport.mtls, "should_use_client_cert"):
@@ -941,7 +961,10 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
                     "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
                 ):
                     with mock.patch("builtins.open", m):
-                        with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
+                        with mock.patch.dict(
+                            "os.environ",
+                            {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename},
+                        ):
                             plus = build_from_document(
                                 discovery,
                                 credentials=self.MOCK_CREDENTIALS,
@@ -1029,6 +1052,7 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
                 self.assertIsNotNone(plus)
                 self.check_http_client_cert(plus, has_client_cert=use_client_cert)
                 self.assertEqual(plus._baseUrl, base_url)
+
     @parameterized.expand(
         [
             ("never", "", CONFIG_DATA_WITH_WORKLOAD, REGULAR_ENDPOINT),
@@ -1046,9 +1070,9 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
         "google.auth.transport.mtls.default_client_encrypted_cert_source", autospec=True
     )
     @pytest.mark.skipif(
-        parse_version_to_tuple(auth_version) < (2,43,0),
+        parse_version_to_tuple(auth_version) < (2, 43, 0),
         reason="automatic mtls enablement when supported certs present only"
-        "enabled in google-auth<=2.43.0"
+        "enabled in google-auth<=2.43.0",
     )
     def test_mtls_with_default_client_cert_with_unset_environment_variable(
         self,
@@ -1085,12 +1109,15 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
                     "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
                 ):
                     with mock.patch("builtins.open", m):
-                        with mock.patch.dict("os.environ", {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename}):
+                        with mock.patch.dict(
+                            "os.environ",
+                            {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename},
+                        ):
                             plus = build_from_document(
-                            discovery,
-                            credentials=self.MOCK_CREDENTIALS,
-                            adc_cert_path=self.ADC_CERT_PATH,
-                            adc_key_path=self.ADC_KEY_PATH,
+                                discovery,
+                                credentials=self.MOCK_CREDENTIALS,
+                                adc_cert_path=self.ADC_CERT_PATH,
+                                adc_key_path=self.ADC_KEY_PATH,
                             )
                             self.assertIsNotNone(plus)
                             self.assertEqual(plus._baseUrl, base_url)
