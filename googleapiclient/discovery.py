@@ -660,7 +660,7 @@ def build_from_document(
             if use_client_cert_str not in ("true", "false"):
                 raise MutualTLSChannelError(
                     "Unsupported GOOGLE_API_USE_CLIENT_CERTIFICATE value. Accepted values: true, false"
-            )
+                )
         if client_options and client_options.client_cert_source:
             raise MutualTLSChannelError(
                 "ClientOptions.client_cert_source is not supported, please use ClientOptions.client_encrypted_cert_source."
