@@ -2660,7 +2660,7 @@
 }
 }
 },
-"revision": "20251021",
+"revision": "20251216",
 "rootUrl": "https://container.googleapis.com/",
 "schemas": {
 "AcceleratorConfig": {
@@ -3325,7 +3325,33 @@
 },
 "gcpSecretManagerCertificateConfig": {
 "$ref": "GCPSecretManagerCertificateConfig",
-"description": "Google Secret Manager (GCP) certificate configuration."
+"description": "Secret Manager certificate configuration."
+}
+},
+"type": "object"
+},
+"CertificateConfig": {
+"description": "CertificateConfig configures certificate for the registry.",
+"id": "CertificateConfig",
+"properties": {
+"gcpSecretManagerSecretUri": {
+"description": "The URI configures a secret from [Secret Manager](https://cloud.google.com/secret-manager) in the format \"projects/$PROJECT_ID/secrets/$SECRET_NAME/versions/$VERSION\" for global secret or \"projects/$PROJECT_ID/locations/$REGION/secrets/$SECRET_NAME/versions/$VERSION\" for regional secret. Version can be fixed (e.g. \"2\") or \"latest\"",
+"type": "string"
+}
+},
+"type": "object"
+},
+"CertificateConfigPair": {
+"description": "CertificateConfigPair configures pairs of certificates, which is used for client certificate and key pairs under a registry.",
+"id": "CertificateConfigPair",
+"properties": {
+"cert": {
+"$ref": "CertificateConfig",
+"description": "Cert configures the client certificate."
+},
+"key": {
+"$ref": "CertificateConfig",
+"description": "Key configures the client private key. Optional."
 }
 },
 "type": "object"
@@ -3599,6 +3625,10 @@
 "maintenancePolicy": {
 "$ref": "MaintenancePolicy",
 "description": "Configure the maintenance policy for this cluster."
+},
+"managedOpentelemetryConfig": {
+"$ref": "ManagedOpenTelemetryConfig",
+"description": "Configuration for Managed OpenTelemetry pipeline."
 },
 "masterAuth": {
 "$ref": "MasterAuth",
@@ -4029,6 +4059,10 @@
 "description": "The logging service the cluster should use to write logs. Currently available options: * `logging.googleapis.com/kubernetes` - The Cloud Logging service with a Kubernetes-native resource model * `logging.googleapis.com` - The legacy Cloud Logging service (no longer available as of GKE 1.15). * `none` - no logs will be exported from the cluster. If left as an empty string,`logging.googleapis.com/kubernetes` will be used for GKE 1.14+ or `logging.googleapis.com` for earlier versions.",
 "type": "string"
 },
+"desiredManagedOpentelemetryConfig": {
+"$ref": "ManagedOpenTelemetryConfig",
+"description": "The desired managed open telemetry configuration."
+},
 "desiredMasterAuthorizedNetworksConfig": {
 "$ref": "MasterAuthorizedNetworksConfig",
 "deprecated": true,
@@ -4126,6 +4160,10 @@
 "Enables private IPv6 access to and from Google Services"
 ],
 "type": "string"
+},
+"desiredPrivilegedAdmissionConfig": {
+"$ref": "PrivilegedAdmissionConfig",
+"description": "The desired privileged admission config for the cluster."
 },
 "desiredRbacBindingConfig": {
 "$ref": "RBACBindingConfig",
@@ -4406,6 +4444,13 @@
 "privateRegistryAccessConfig": {
 "$ref": "PrivateRegistryAccessConfig",
 "description": "PrivateRegistryAccessConfig is used to configure access configuration for private container registries."
+},
+"registryHosts": {
+"description": "RegistryHostConfig configures containerd registry host configuration. Each registry_hosts represents a hosts.toml file. At most 25 registry_hosts are allowed.",
+"items": {
+"$ref": "RegistryHostConfig"
+},
+"type": "array"
 },
 "writableCgroups": {
 "$ref": "WritableCgroups",
@@ -4697,6 +4742,43 @@
 "STANDARD indicates a standard GKE cluster.",
 "ENTERPRISE indicates a GKE Enterprise cluster."
 ],
+"type": "string"
+}
+},
+"type": "object"
+},
+"DisruptionEvent": {
+"description": "DisruptionEvent is a notification sent to customers about the disruption event of a resource.",
+"id": "DisruptionEvent",
+"properties": {
+"disruptionType": {
+"description": "The type of the disruption event.",
+"enum": [
+"DISRUPTION_TYPE_UNSPECIFIED",
+"POD_NOT_ENOUGH_PDB",
+"POD_PDB_VIOLATION"
+],
+"enumDescriptions": [
+"DISRUPTION_TYPE_UNSPECIFIED indicates the disruption type is unspecified.",
+"POD_NOT_ENOUGH_PDB indicates there are still running pods on the node during node drain because their evictions are blocked by PDB.",
+"POD_PDB_VIOLATION indicates that there are force pod evictions during node drain which violate the PDB."
+],
+"type": "string"
+},
+"pdbBlockedNode": {
+"description": "The node whose drain is blocked by PDB. This field is set for both POD_PDB_VIOLATION and POD_NOT_ENOUGH_PDB event.",
+"type": "string"
+},
+"pdbBlockedPod": {
+"description": "The pods whose evictions are blocked by PDB. This field is set for both POD_PDB_VIOLATION and POD_NOT_ENOUGH_PDB event.",
+"items": {
+"$ref": "PdbBlockedPod"
+},
+"type": "array"
+},
+"pdbViolationTimeout": {
+"description": "The timeout in seconds for which the node drain is blocked by PDB. After this timeout, pods are forcefully evicted. This field is only populated when event_type is POD_PDB_VIOLATION.",
+"format": "google-duration",
 "type": "string"
 }
 },
@@ -5195,6 +5277,66 @@ false
 },
 "type": "object"
 },
+"HostConfig": {
+"description": "HostConfig configures the registry host under a given Server.",
+"id": "HostConfig",
+"properties": {
+"ca": {
+"description": "CA configures the registry host certificate.",
+"items": {
+"$ref": "CertificateConfig"
+},
+"type": "array"
+},
+"capabilities": {
+"description": "Capabilities represent the capabilities of the registry host, specifying what operations a host is capable of performing. If not set, containerd enables all capabilities by default.",
+"items": {
+"enum": [
+"HOST_CAPABILITY_UNSPECIFIED",
+"HOST_CAPABILITY_PULL",
+"HOST_CAPABILITY_RESOLVE",
+"HOST_CAPABILITY_PUSH"
+],
+"enumDescriptions": [
+"UNKNOWN should never be set.",
+"Pull represents the capability to fetch manifests and blobs by digest.",
+"Resolve represents the capability to fetch manifests by name.",
+"Push represents the capability to push blobs and manifests."
+],
+"type": "string"
+},
+"type": "array"
+},
+"client": {
+"description": "Client configures the registry host client certificate and key.",
+"items": {
+"$ref": "CertificateConfigPair"
+},
+"type": "array"
+},
+"dialTimeout": {
+"description": "Specifies the maximum duration allowed for a connection attempt to complete. A shorter timeout helps reduce delays when falling back to the original registry if the mirror is unreachable. Maximum allowed value is 180s. If not set, containerd sets default 30s. The value should be a decimal number of seconds with an `s` suffix.",
+"format": "google-duration",
+"type": "string"
+},
+"header": {
+"description": "Header configures the registry host headers.",
+"items": {
+"$ref": "RegistryHeader"
+},
+"type": "array"
+},
+"host": {
+"description": "Host configures the registry host/mirror. It supports fully qualified domain names (FQDN) and IP addresses: Specifying port is supported. Wildcards are NOT supported. Examples: - my.customdomain.com - 10.0.1.2:5000",
+"type": "string"
+},
+"overridePath": {
+"description": "OverridePath is used to indicate the host's API root endpoint is defined in the URL path rather than by the API specification. This may be used with non-compliant OCI registries which are missing the /v2 prefix. If not set, containerd sets default false.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
 "HttpCacheControlResponseHeader": {
 "description": "RFC-2616: cache control support",
 "id": "HttpCacheControlResponseHeader",
@@ -5554,7 +5696,7 @@ false
 "additionalProperties": {
 "type": "string"
 },
-"description": "The Linux kernel parameters to be applied to the nodes and all pods running on the nodes. The following parameters are supported. net.core.busy_poll net.core.busy_read net.core.netdev_max_backlog net.core.rmem_max net.core.rmem_default net.core.wmem_default net.core.wmem_max net.core.optmem_max net.core.somaxconn net.ipv4.tcp_rmem net.ipv4.tcp_wmem net.ipv4.tcp_tw_reuse net.ipv4.tcp_max_orphans net.netfilter.nf_conntrack_max net.netfilter.nf_conntrack_buckets net.netfilter.nf_conntrack_tcp_timeout_close_wait net.netfilter.nf_conntrack_tcp_timeout_time_wait net.netfilter.nf_conntrack_tcp_timeout_established net.netfilter.nf_conntrack_acct kernel.shmmni kernel.shmmax kernel.shmall fs.aio-max-nr fs.file-max fs.inotify.max_user_instances fs.inotify.max_user_watches fs.nr_open vm.dirty_background_ratio vm.dirty_expire_centisecs vm.dirty_ratio vm.dirty_writeback_centisecs vm.max_map_count vm.overcommit_memory vm.overcommit_ratio vm.vfs_cache_pressure vm.swappiness vm.watermark_scale_factor vm.min_free_kbytes",
+"description": "The Linux kernel parameters to be applied to the nodes and all pods running on the nodes. The following parameters are supported. net.core.busy_poll net.core.busy_read net.core.netdev_max_backlog net.core.rmem_max net.core.rmem_default net.core.wmem_default net.core.wmem_max net.core.optmem_max net.core.somaxconn net.ipv4.tcp_rmem net.ipv4.tcp_wmem net.ipv4.tcp_tw_reuse net.ipv4.tcp_mtu_probing net.ipv4.tcp_max_orphans net.ipv4.tcp_max_tw_buckets net.ipv4.tcp_syn_retries net.ipv4.tcp_ecn net.ipv4.tcp_congestion_control net.netfilter.nf_conntrack_max net.netfilter.nf_conntrack_buckets net.netfilter.nf_conntrack_tcp_timeout_close_wait net.netfilter.nf_conntrack_tcp_timeout_time_wait net.netfilter.nf_conntrack_tcp_timeout_established net.netfilter.nf_conntrack_acct kernel.shmmni kernel.shmmax kernel.shmall kernel.perf_event_paranoid kernel.sched_rt_runtime_us kernel.softlockup_panic kernel.yama.ptrace_scope kernel.kptr_restrict kernel.dmesg_restrict kernel.sysrq fs.aio-max-nr fs.file-max fs.inotify.max_user_instances fs.inotify.max_user_watches fs.nr_open vm.dirty_background_ratio vm.dirty_background_bytes vm.dirty_expire_centisecs vm.dirty_ratio vm.dirty_bytes vm.dirty_writeback_centisecs vm.max_map_count vm.overcommit_memory vm.overcommit_ratio vm.vfs_cache_pressure vm.swappiness vm.watermark_scale_factor vm.min_free_kbytes",
 "type": "object"
 },
 "transparentHugepageDefrag": {
@@ -5756,7 +5898,7 @@ false
 "properties": {
 "enableLegacyLustrePort": {
 "deprecated": true,
-"description": "If set to true, the Lustre CSI driver will install Lustre kernel modules using port 6988. This serves as a workaround for a port conflict with the gke-metadata-server. This field is required ONLY under the following conditions: 1. The GKE node version is older than 1.33.2-gke.4655000. 2. You're connecting to a Lustre instance that has the 'gke-support-enabled' flag.",
+"description": "If set to true, the Lustre CSI driver will install Lustre kernel modules using port 6988. This serves as a workaround for a port conflict with the gke-metadata-server. This field is required ONLY under the following conditions: 1. The GKE node version is older than 1.33.2-gke.4655000. 2. You're connecting to a Lustre instance that has the 'gke-support-enabled' flag. Deprecated: This flag is no longer required as of GKE node version 1.33.2-gke.4655000, unless you are connecting to a Lustre instance that has the `gke-support-enabled` flag.",
 "type": "boolean"
 },
 "enabled": {
@@ -5832,6 +5974,27 @@ false
 "recurringWindow": {
 "$ref": "RecurringTimeWindow",
 "description": "RecurringWindow specifies some number of recurring time periods for maintenance to occur. The time windows may be overlapping. If no maintenance windows are set, maintenance can occur at any time."
+}
+},
+"type": "object"
+},
+"ManagedOpenTelemetryConfig": {
+"description": "ManagedOpenTelemetryConfig is the configuration for the GKE Managed OpenTelemetry pipeline.",
+"id": "ManagedOpenTelemetryConfig",
+"properties": {
+"scope": {
+"description": "Scope of the Managed OpenTelemetry pipeline.",
+"enum": [
+"SCOPE_UNSPECIFIED",
+"NONE",
+"COLLECTION_AND_INSTRUMENTATION_COMPONENTS"
+],
+"enumDescriptions": [
+"SCOPE_UNSPECIFIED is when the scope is not set.",
+"NONE is used to disable the Managed OpenTelemetry pipeline.",
+"COLLECTION_AND_INSTRUMENTATION_COMPONENTS is used to enable the Managed OpenTelemetry pipeline for collection and instrumentation components."
+],
+"type": "string"
 }
 },
 "type": "object"
@@ -6531,6 +6694,17 @@ false
 },
 "type": "object"
 },
+"NodeDrainConfig": {
+"description": "NodeDrainConfig contains the node drain related configurations for this nodepool.",
+"id": "NodeDrainConfig",
+"properties": {
+"respectPdbDuringNodePoolDeletion": {
+"description": "Whether to respect PDB during node pool deletion.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
 "NodeKernelModuleLoading": {
 "description": "Configuration for kernel module loading on nodes.",
 "id": "NodeKernelModuleLoading",
@@ -6735,8 +6909,7 @@ false
 "type": "string"
 },
 "subnetwork": {
-"description": "Output only. The subnetwork path for the node pool. Format: projects/{project}/regions/{region}/subnetworks/{subnetwork} If the cluster is associated with multiple subnetworks, the subnetwork for the node pool is picked based on the IP utilization during node pool creation and is immutable.",
-"readOnly": true,
+"description": "The subnetwork path for the node pool. Format: projects/{project}/regions/{region}/subnetworks/{subnetwork} If the cluster is associated with multiple subnetworks, the subnetwork for the node pool is picked based on the IP utilization during node pool creation and is immutable.",
 "type": "string"
 }
 },
@@ -6808,6 +6981,10 @@ false
 "networkConfig": {
 "$ref": "NodeNetworkConfig",
 "description": "Networking configuration for this NodePool. If specified, it overrides the cluster-level defaults."
+},
+"nodeDrainConfig": {
+"$ref": "NodeDrainConfig",
+"description": "Specifies the node drain configuration for this node pool."
 },
 "placementPolicy": {
 "$ref": "PlacementPolicy",
@@ -7352,6 +7529,21 @@ false
 },
 "type": "object"
 },
+"PdbBlockedPod": {
+"description": "The namespace/name of the pod whose eviction is blocked by PDB.",
+"id": "PdbBlockedPod",
+"properties": {
+"name": {
+"description": "The name of the pod.",
+"type": "string"
+},
+"namespace": {
+"description": "The namespace of the pod.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "PlacementPolicy": {
 "description": "PlacementPolicy defines the placement policy used by the node pool.",
 "id": "PlacementPolicy",
@@ -7611,12 +7803,48 @@ false
 "id": "RecurringTimeWindow",
 "properties": {
 "recurrence": {
-"description": "An RRULE (https://tools.ietf.org/html/rfc5545#section-3.8.5.3) for how this window reccurs. They go on for the span of time between the start and end time. For example, to have something repeat every weekday, you'd use: `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` To repeat some window daily (equivalent to the DailyMaintenanceWindow): `FREQ=DAILY` For the first weekend of every month: `FREQ=MONTHLY;BYSETPOS=1;BYDAY=SA,SU` This specifies how frequently the window starts. Eg, if you wanted to have a 9-5 UTC-4 window every weekday, you'd use something like: ``` start time = 2019-01-01T09:00:00-0400 end time = 2019-01-01T17:00:00-0400 recurrence = FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR ``` Windows can span multiple days. Eg, to make the window encompass every weekend from midnight Saturday till the last minute of Sunday UTC: ``` start time = 2019-01-05T00:00:00Z end time = 2019-01-07T23:59:00Z recurrence = FREQ=WEEKLY;BYDAY=SA ``` Note the start and end time's specific dates are largely arbitrary except to specify duration of the window and when it first starts. The FREQ values of HOURLY, MINUTELY, and SECONDLY are not supported.",
+"description": "An RRULE (https://tools.ietf.org/html/rfc5545#section-3.8.5.3) for how this window recurs. They go on for the span of time between the start and end time. For example, to have something repeat every weekday, you'd use: `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` To repeat some window daily (equivalent to the DailyMaintenanceWindow): `FREQ=DAILY` For the first weekend of every month: `FREQ=MONTHLY;BYSETPOS=1;BYDAY=SA,SU` This specifies how frequently the window starts. Eg, if you wanted to have a 9-5 UTC-4 window every weekday, you'd use something like: ``` start time = 2019-01-01T09:00:00-0400 end time = 2019-01-01T17:00:00-0400 recurrence = FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR ``` Windows can span multiple days. Eg, to make the window encompass every weekend from midnight Saturday till the last minute of Sunday UTC: ``` start time = 2019-01-05T00:00:00Z end time = 2019-01-07T23:59:00Z recurrence = FREQ=WEEKLY;BYDAY=SA ``` Note the start and end time's specific dates are largely arbitrary except to specify duration of the window and when it first starts. The FREQ values of HOURLY, MINUTELY, and SECONDLY are not supported.",
 "type": "string"
 },
 "window": {
 "$ref": "TimeWindow",
 "description": "The window of the first recurrence."
+}
+},
+"type": "object"
+},
+"RegistryHeader": {
+"description": "RegistryHeader configures headers for the registry.",
+"id": "RegistryHeader",
+"properties": {
+"key": {
+"description": "Key configures the header key.",
+"type": "string"
+},
+"value": {
+"description": "Value configures the header value.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"RegistryHostConfig": {
+"description": "RegistryHostConfig configures the top-level structure for a single containerd registry server's configuration, which represents one hosts.toml file on the node. It will override the same fqdns in PrivateRegistryAccessConfig.",
+"id": "RegistryHostConfig",
+"properties": {
+"hosts": {
+"description": "HostConfig configures a list of host-specific configurations for the server. Each server can have at most 10 host configurations.",
+"items": {
+"$ref": "HostConfig"
+},
+"type": "array"
+},
+"server": {
+"description": "Defines the host name of the registry server, which will be used to create configuration file as /etc/containerd/hosts.d//hosts.toml. It supports fully qualified domain names (FQDN) and IP addresses: Specifying port is supported. Wildcards are NOT supported. Examples: - my.customdomain.com - 10.0.1.2:5000",
+"type": "string"
 }
 },
 "type": "object"
@@ -8876,6 +9104,10 @@ false
 "description": "The name (project, location, cluster, node pool) of the node pool to update. Specified in the format `projects/*/locations/*/clusters/*/nodePools/*`.",
 "type": "string"
 },
+"nodeDrainConfig": {
+"$ref": "NodeDrainConfig",
+"description": "The desired node drain configuration for nodes in the node pool."
+},
 "nodeNetworkConfig": {
 "$ref": "NodeNetworkConfig",
 "description": "Node network config."
@@ -9086,6 +9318,10 @@ false
 "description": "A brief description of the event.",
 "type": "string"
 },
+"disruptionEvent": {
+"$ref": "DisruptionEvent",
+"description": "The information about the disruption event. This field is only populated when event_type is DISRUPTION_EVENT."
+},
 "endTime": {
 "description": "The time when the operation ended.",
 "format": "google-datetime",
@@ -9097,13 +9333,15 @@ false
 "EVENT_TYPE_UNSPECIFIED",
 "END_OF_SUPPORT",
 "COS_MILESTONE_VERSION_UPDATE",
-"UPGRADE_LIFECYCLE"
+"UPGRADE_LIFECYCLE",
+"DISRUPTION_EVENT"
 ],
 "enumDescriptions": [
 "EVENT_TYPE_UNSPECIFIED indicates the event type is unspecified.",
 "END_OF_SUPPORT indicates GKE version reaches end of support, check standard_support_end_time and extended_support_end_time for more details.",
 "COS_MILESTONE_VERSION_UPDATE indicates that the COS node image will update COS milestone version for new patch versions starting with the one in the description.",
-"UPGRADE_LIFECYCLE indicates the event is about the upgrade lifecycle."
+"UPGRADE_LIFECYCLE indicates the event is about the upgrade lifecycle.",
+"DISRUPTION_EVENT indicates the event is about the disruption."
 ],
 "type": "string"
 },
@@ -9283,6 +9521,14 @@ false
 "controlPlaneDiskEncryptionKey": {
 "description": "The Cloud KMS cryptoKey to use for Confidential Hyperdisk on the control plane nodes.",
 "type": "string"
+},
+"controlPlaneDiskEncryptionKeyVersions": {
+"description": "Output only. All of the versions of the Cloud KMS cryptoKey that are used by Confidential Hyperdisks on the control plane nodes.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
 },
 "etcdApiCa": {
 "description": "Resource path of the Certificate Authority Service caPool to use for the etcd API CA in this cluster.",
