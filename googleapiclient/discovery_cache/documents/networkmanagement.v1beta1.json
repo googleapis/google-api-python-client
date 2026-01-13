@@ -1237,7 +1237,7 @@
 }
 }
 },
-"revision": "20251203",
+"revision": "20251229",
 "rootUrl": "https://networkmanagement.googleapis.com/",
 "schemas": {
 "AbortInfo": {
@@ -1285,7 +1285,8 @@
 "UNKNOWN_ISSUE_IN_GOOGLE_MANAGED_PROJECT",
 "UNSUPPORTED_GOOGLE_MANAGED_PROJECT_CONFIG",
 "NO_SERVERLESS_IP_RANGES",
-"IP_VERSION_PROTOCOL_MISMATCH"
+"IP_VERSION_PROTOCOL_MISMATCH",
+"GKE_POD_UNKNOWN_ENDPOINT_LOCATION"
 ],
 "enumDeprecated": [
 false,
@@ -1297,6 +1298,7 @@ true,
 true,
 true,
 true,
+false,
 false,
 false,
 false,
@@ -1367,7 +1369,8 @@ false
 "Aborted due to an unknown issue in the Google-managed project.",
 "Aborted due to an unsupported configuration of the Google-managed project.",
 "Aborted because the source endpoint is a Cloud Run revision with direct VPC access enabled, but there are no reserved serverless IP ranges.",
-"Aborted because the used protocol is not supported for the used IP version."
+"Aborted because the used protocol is not supported for the used IP version.",
+"Aborted because selected GKE Pod endpoint location is unknown. This is often the case for \"Pending\" Pods, which don't have assigned IP addresses yet."
 ],
 "type": "string"
 },
@@ -1745,7 +1748,8 @@ false
 "CLOUD_RUN_REVISION",
 "GOOGLE_MANAGED_SERVICE",
 "REDIS_INSTANCE",
-"REDIS_CLUSTER"
+"REDIS_CLUSTER",
+"GKE_POD"
 ],
 "enumDescriptions": [
 "Target not specified.",
@@ -1765,7 +1769,8 @@ false
 "Target is a Cloud Run revision. Used only for return traces.",
 "Target is a Google-managed service. Used only for return traces.",
 "Target is a Redis Instance.",
-"Target is a Redis Cluster."
+"Target is a Redis Cluster.",
+"Target is a GKE Pod."
 ],
 "type": "string"
 }
@@ -1835,6 +1840,7 @@ false
 "INGRESS_FIREWALL_TAGS_UNSUPPORTED_BY_DIRECT_VPC_EGRESS",
 "INSTANCE_NOT_RUNNING",
 "GKE_CLUSTER_NOT_RUNNING",
+"GKE_POD_NOT_RUNNING",
 "CLOUD_SQL_INSTANCE_NOT_RUNNING",
 "REDIS_INSTANCE_NOT_RUNNING",
 "REDIS_CLUSTER_NOT_RUNNING",
@@ -1897,6 +1903,7 @@ false
 "UNSUPPORTED_ROUTE_MATCHED_FOR_NAT64_DESTINATION",
 "TRAFFIC_FROM_HYBRID_ENDPOINT_TO_INTERNET_DISALLOWED",
 "NO_MATCHING_NAT64_GATEWAY",
+"NO_CONFIGURED_PRIVATE_NAT64_RULE",
 "LOAD_BALANCER_BACKEND_IP_VERSION_MISMATCH",
 "NO_KNOWN_ROUTE_FROM_NCC_NETWORK_TO_DESTINATION",
 "CLOUD_NAT_PROTOCOL_UNSUPPORTED",
@@ -1937,6 +1944,7 @@ false
 "Matching ingress firewall rules by network tags for packets sent via serverless VPC direct egress is unsupported. Behavior is undefined. https://cloud.google.com/run/docs/configuring/vpc-direct-vpc#limitations",
 "Packet is sent from or to a Compute Engine instance that is not in a running state.",
 "Packet sent from or to a GKE cluster that is not in running state.",
+"Packet sent from or to a GKE Pod that is not in running state.",
 "Packet sent from or to a Cloud SQL instance that is not in running state.",
 "Packet sent from or to a Redis Instance that is not in running state.",
 "Packet sent from or to a Redis Cluster that is not in running state.",
@@ -1999,6 +2007,7 @@ false
 "Packet with destination IP address within the reserved NAT64 range is dropped due to matching a route of an unsupported type.",
 "Packet could be dropped because hybrid endpoint like a VPN gateway or Interconnect is not allowed to send traffic to the Internet.",
 "Packet with destination IP address within the reserved NAT64 range is dropped due to no matching NAT gateway in the subnet.",
+"Packet is dropped due to matching a Private NAT64 gateway with no rules for source IPv6 addresses.",
 "Packet is dropped due to being sent to a backend of a passthrough load balancer that doesn't use the same IP version as the frontend.",
 "Packet from the unknown NCC network is dropped due to no known route from the source network to the destination IP address.",
 "Packet is dropped by Cloud NAT due to using an unsupported protocol.",
@@ -2632,6 +2641,25 @@ false
 },
 "type": "object"
 },
+"GkePodInfo": {
+"description": "For display only. Metadata associated with a Google Kubernetes Engine (GKE) Pod.",
+"id": "GkePodInfo",
+"properties": {
+"ipAddress": {
+"description": "IP address of a GKE Pod. If the Pod is dual-stack, this is the IP address relevant to the trace.",
+"type": "string"
+},
+"networkUri": {
+"description": "URI of the network containing the GKE Pod.",
+"type": "string"
+},
+"podUri": {
+"description": "URI of a GKE Pod. For Pods in regional Clusters, the URI format is: `projects/{project}/locations/{location}/clusters/{cluster}/k8s/namespaces/{namespace}/pods/{pod}` For Pods in zonal Clusters, the URI format is: `projects/{project}/zones/{zone}/clusters/{cluster}/k8s/namespaces/{namespace}/pods/{pod}`",
+"type": "string"
+}
+},
+"type": "object"
+},
 "GoogleServiceInfo": {
 "description": "For display only. Details of a Google Service sending packets to a VPC network. Although the source IP might be a publicly routable address, some Google Services use special routes within Google production infrastructure to reach Compute Engine Instances. https://cloud.google.com/vpc/docs/routes#special_return_paths",
 "id": "GoogleServiceInfo",
@@ -2796,6 +2824,41 @@ false
 },
 "uri": {
 "description": "URI of an Interconnect attachment.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"IpMasqueradingSkippedInfo": {
+"description": "For display only. Contains information about why IP masquerading was skipped for the packet.",
+"id": "IpMasqueradingSkippedInfo",
+"properties": {
+"nonMasqueradeRange": {
+"description": "The matched non-masquerade IP range. Only set if reason is DESTINATION_IP_IN_CONFIGURED_NON_MASQUERADE_RANGE or DESTINATION_IP_IN_DEFAULT_NON_MASQUERADE_RANGE.",
+"type": "string"
+},
+"reason": {
+"description": "Reason why IP masquerading was not applied.",
+"enum": [
+"REASON_UNSPECIFIED",
+"DESTINATION_IP_IN_CONFIGURED_NON_MASQUERADE_RANGE",
+"DESTINATION_IP_IN_DEFAULT_NON_MASQUERADE_RANGE",
+"DESTINATION_ON_SAME_NODE",
+"DEFAULT_SNAT_DISABLED",
+"NO_MASQUERADING_FOR_IPV6",
+"POD_USES_NODE_NETWORK_NAMESPACE",
+"NO_MASQUERADING_FOR_RETURN_PACKET"
+],
+"enumDescriptions": [
+"Unused default value.",
+"Masquerading not applied because destination IP is in one of configured non-masquerade ranges.",
+"Masquerading not applied because destination IP is in one of default non-masquerade ranges.",
+"Masquerading not applied because destination is on the same Node.",
+"Masquerading not applied because ip-masq-agent doesn't exist and default SNAT is disabled.",
+"Masquerading not applied because the packet's IP version is IPv6.",
+"Masquerading not applied because the source Pod uses the host Node's network namespace, including the Node's IP address.",
+"Masquerading not applied because the packet is a return packet."
+],
 "type": "string"
 }
 },
@@ -4006,6 +4069,10 @@ false
 "$ref": "GKEMasterInfo",
 "description": "Display information of a Google Kubernetes Engine cluster master."
 },
+"gkePod": {
+"$ref": "GkePodInfo",
+"description": "Display information of a Google Kubernetes Engine Pod."
+},
 "googleService": {
 "$ref": "GoogleServiceInfo",
 "description": "Display information of a Google service"
@@ -4021,6 +4088,10 @@ false
 "interconnectAttachment": {
 "$ref": "InterconnectAttachmentInfo",
 "description": "Display information of an interconnect attachment."
+},
+"ipMasqueradingSkipped": {
+"$ref": "IpMasqueradingSkippedInfo",
+"description": "Display information of the reason why GKE Pod IP masquerading was skipped."
 },
 "loadBalancer": {
 "$ref": "LoadBalancerInfo",
@@ -4077,6 +4148,7 @@ false
 "START_FROM_PRIVATE_NETWORK",
 "START_FROM_GKE_MASTER",
 "START_FROM_CLOUD_SQL_INSTANCE",
+"START_FROM_GKE_POD",
 "START_FROM_REDIS_INSTANCE",
 "START_FROM_REDIS_CLUSTER",
 "START_FROM_CLOUD_FUNCTION",
@@ -4102,6 +4174,7 @@ false
 "DIRECT_VPC_EGRESS_CONNECTION",
 "SERVERLESS_EXTERNAL_CONNECTION",
 "NAT",
+"SKIP_GKE_POD_IP_MASQUERADING",
 "PROXY_CONNECTION",
 "DELIVER",
 "DROP",
@@ -4132,8 +4205,10 @@ false,
 false,
 false,
 false,
+false,
 true,
 true,
+false,
 false,
 false,
 false,
@@ -4157,6 +4232,7 @@ false
 "Initial state: packet originating from a VPC or on-premises network with internal source IP. If the source is a VPC network visible to the user, a NetworkInfo is populated with details of the network.",
 "Initial state: packet originating from a Google Kubernetes Engine cluster master. A GKEMasterInfo is populated with starting instance information.",
 "Initial state: packet originating from a Cloud SQL instance. A CloudSQLInstanceInfo is populated with starting instance information.",
+"Initial state: packet originating from a Google Kubernetes Engine Pod. A GkePodInfo is populated with starting Pod information.",
 "Initial state: packet originating from a Redis instance. A RedisInstanceInfo is populated with starting instance information.",
 "Initial state: packet originating from a Redis Cluster. A RedisClusterInfo is populated with starting Cluster information.",
 "Initial state: packet originating from a Cloud Function. A CloudFunctionInfo is populated with starting function information.",
@@ -4182,6 +4258,7 @@ false
 "Forwarding state: for packets originating from a serverless endpoint forwarded through Direct VPC egress.",
 "Forwarding state: for packets originating from a serverless endpoint forwarded through public (external) connectivity.",
 "Transition state: packet header translated. The `nat` field is populated with the translation information.",
+"Transition state: GKE Pod IP masquerading is skipped. The `ip_masquerading_skipped` field is populated with the reason.",
 "Transition state: original connection is terminated and a new proxied connection is initiated.",
 "Final state: packet could be delivered.",
 "Final state: packet could be dropped.",
