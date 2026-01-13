@@ -139,6 +139,10 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/apphub_v1alpha.html)
 
 
+## appsmarket
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/appsmarket_v2.html)
+
+
 ## area120tables
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/area120tables_v1alpha1.html)
 
