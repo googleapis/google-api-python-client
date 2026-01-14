@@ -77,6 +77,6 @@ with build('drive', 'v3') as service:
     # ...
 
 # Retrieve discovery artifacts from the internet for a private API
-with build('drive', 'v3', static_discovery=False, developerKey='YOUR_API_KEY') as service:
+with build('my_api', 'v1', static_discovery=False, developerKey='YOUR_API_KEY') as service:
     # ...
 ```
