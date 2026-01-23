@@ -14,4 +14,4 @@
 #     can be downloaded from https://code.google.com/apis/storage/docs/gsutil.html
 FILE_NAME=$1
 OBJECT_NAME=$2
-gsutil cp $FILE_NAME gs://$OBJECT_NAME
+gcloud storage cp $FILE_NAME gs://$OBJECT_NAME
