@@ -1237,7 +1237,7 @@
 }
 }
 },
-"revision": "20260110",
+"revision": "20260114",
 "rootUrl": "https://networkmanagement.googleapis.com/",
 "schemas": {
 "AbortInfo": {
@@ -1264,6 +1264,9 @@
 "PERMISSION_DENIED_NO_NEG_ENDPOINT_CONFIGS",
 "PERMISSION_DENIED_NO_CLOUD_ROUTER_CONFIGS",
 "NO_SOURCE_LOCATION",
+"NO_SOURCE_GCP_NETWORK_LOCATION",
+"NO_SOURCE_NON_GCP_NETWORK_LOCATION",
+"NO_SOURCE_INTERNET_LOCATION",
 "INVALID_ARGUMENT",
 "TRACE_TOO_LONG",
 "INTERNAL_ERROR",
@@ -1278,6 +1281,7 @@
 "GOOGLE_MANAGED_SERVICE_AMBIGUOUS_PSC_ENDPOINT",
 "GOOGLE_MANAGED_SERVICE_AMBIGUOUS_ENDPOINT",
 "SOURCE_PSC_CLOUD_SQL_UNSUPPORTED",
+"SOURCE_EXTERNAL_CLOUD_SQL_UNSUPPORTED",
 "SOURCE_REDIS_CLUSTER_UNSUPPORTED",
 "SOURCE_REDIS_INSTANCE_UNSUPPORTED",
 "SOURCE_FORWARDING_RULE_UNSUPPORTED",
@@ -1328,6 +1332,10 @@ false,
 false,
 false,
 false,
+false,
+false,
+false,
+false,
 false
 ],
 "enumDescriptions": [
@@ -1347,7 +1355,10 @@ false
 "Aborted because user lacks permission to access Cloud NAT configs required to run the test.",
 "Aborted because user lacks permission to access Network endpoint group endpoint configs required to run the test.",
 "Aborted because user lacks permission to access Cloud Router configs required to run the test.",
-"Aborted because no valid source or destination endpoint is derived from the input test request.",
+"Aborted because no valid source or destination endpoint can be derived from the test request.",
+"Aborted because the source IP address is not contained within the subnet ranges of the provided VPC network.",
+"Aborted because the source IP address is not contained within the destination ranges of the routes towards non-GCP networks in the provided VPC network.",
+"Aborted because the source IP address can't be resolved as an Internet IP address.",
 "Aborted because the source or destination endpoint specified in the request is invalid. Some examples: - The request might contain malformed resource URI, project ID, or IP address. - The request might contain inconsistent information (for example, the request might include both the instance and the network, but the instance might not have a NIC in that network).",
 "Aborted because the number of steps in the trace exceeds a certain limit. It might be caused by a routing loop.",
 "Aborted due to internal server error.",
@@ -1362,6 +1373,7 @@ false
 "Aborted because PSC endpoint selection for the Google-managed service is ambiguous (several PSC endpoints satisfy test input).",
 "Aborted because endpoint selection for the Google-managed service is ambiguous (several endpoints satisfy test input).",
 "Aborted because tests with a PSC-based Cloud SQL instance as a source are not supported.",
+"Aborted because tests with the external database as a source are not supported. In such replication scenarios, the connection is initiated by the Cloud SQL replica instance.",
 "Aborted because tests with a Redis Cluster as a source are not supported.",
 "Aborted because tests with a Redis Instance as a source are not supported.",
 "Aborted because tests with a forwarding rule as a source are not supported.",
@@ -2299,20 +2311,22 @@ false
 "type": "string"
 },
 "network": {
-"description": "A VPC network URI.",
+"description": "A VPC network URI. Used according to the `network_type`. Relevant only for the source endpoints.",
 "type": "string"
 },
 "networkType": {
-"description": "Type of the network where the endpoint is located. Applicable only to source endpoint, as destination network type can be inferred from the source.",
+"description": "Type of the network where the endpoint is located. Relevant only for the source endpoints.",
 "enum": [
 "NETWORK_TYPE_UNSPECIFIED",
 "GCP_NETWORK",
-"NON_GCP_NETWORK"
+"NON_GCP_NETWORK",
+"INTERNET"
 ],
 "enumDescriptions": [
-"Default type if unspecified.",
-"A network hosted within Google Cloud. To receive more detailed output, specify the URI for the source or destination network.",
-"A network hosted outside of Google Cloud. This can be an on-premises network, an internet resource or a network hosted by another cloud provider."
+"Unspecified. The `project_id` field should be set to the project where the GCP endpoint is located, or where the non-GCP endpoint should be reachable from (via routes to non-GCP networks). The test will analyze all possible IP address locations. This might take longer and produce inaccurate or ambiguous results, so prefer specifying an explicit network type.",
+"A VPC network. The `network` field should be set to the URI of this network. Only endpoints within this network will be considered.",
+"A non-GCP network (for example, an on-premises network or network in another Cloud). The `network` field should be set to the URI of the VPC network containing a corresponding VPN tunnel, Interconnect attachment, or router appliance instance. Only endpoints reachable from the provided VPC network via the routes to non-GCP networks will be considered.",
+"Internet. Only endpoints reachable over public Internet and endpoints within Google API and service ranges will be considered."
 ],
 "type": "string"
 },
@@ -2322,7 +2336,7 @@ false
 "type": "integer"
 },
 "projectId": {
-"description": "Project ID where the endpoint is located. The project ID can be derived from the URI if you provide a endpoint or network URI. The following are two cases where you may need to provide the project ID: 1. Only the IP address is specified, and the IP address is within a Google Cloud project. 2. When you are using Shared VPC and the IP address that you provide is from the service project. In this case, the network that the IP address resides in is defined in the host project.",
+"description": "Endpoint project ID. Used according to the `network_type`. Relevant only for the source endpoints.",
 "type": "string"
 },
 "redisCluster": {
