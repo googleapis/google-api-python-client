@@ -738,6 +738,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/homegraph_v1.html)
 
 
+## hypercomputecluster
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/hypercomputecluster_v1.html)
+
+
 ## iam
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/iam_v2.html)
@@ -878,9 +882,6 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1alpha.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v1beta.html)
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v2.html)
-* [v2alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v2alpha.html)
-* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/metastore_v2beta.html)
 
 
 ## migrationcenter
@@ -1046,6 +1047,8 @@
 ## policytroubleshooter
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/policytroubleshooter_v1.html)
 * [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/policytroubleshooter_v1beta.html)
+* [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/policytroubleshooter_v3.html)
+* [v3beta](http://googleapis.github.io/google-api-python-client/docs/dyn/policytroubleshooter_v3beta.html)
 
 
 ## pollen
@@ -1276,6 +1279,10 @@
 ## texttospeech
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/texttospeech_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/texttospeech_v1beta1.html)
+
+
+## threatintelligence
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/threatintelligence_v1beta.html)
 
 
 ## toolresults
