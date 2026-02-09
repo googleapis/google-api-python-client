@@ -152,3 +152,6 @@ enforcement ladder.
 For answers to common questions about this code of conduct, see:
 
 https://www.contributor-covenant.org/faq
+
+
+git remote add upstream https://github.com/original-owner/repo-name.git
