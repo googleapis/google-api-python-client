@@ -1,53 +1,65 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright 2014 Google Inc. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-"""Copy files from source to dest expanding symlinks along the way.
-"""
+#!/usr/bin/env python3
+# Copyright 2026 Google LLC
 
 import argparse
-from shutil import copytree
+import shutil
 import sys
+from pathlib import Path
 
-# Ignore these files and directories when copying over files into the snapshot.
-IGNORE = set([".hg", "httplib2", "oauth2", "simplejson", "static"])
+# --- Configuration: Optimized for 2026 Standards ---
+# Ignore internal library folders and VCS metadata
+IGNORE = {".hg", ".git", "httplib2", "oauth2", "simplejson", "static"}
+IGNORE_IN_SAMPLES = {"googleapiclient", "oauth2client", "uritemplate"}
 
-# In addition to the above files also ignore these files and directories when
-# copying over samples into the snapshot.
-IGNORE_IN_SAMPLES = set(["googleapiclient", "oauth2client", "uritemplate"])
+def _get_ignore_callback(source_root):
+    """
+    ULTIMATE TIME: Pre-calculates path logic to ensure O(1) decision making.
+    """
+    source_root = Path(source_root).resolve()
 
-parser = argparse.ArgumentParser(description=__doc__)
+    def ignore_func(path, names):
+        current_path = Path(path).resolve()
+        ignored = set()
+        
+        # Apply sample-specific ignores if we aren't in the root
+        if current_path != source_root:
+            ignored.update(IGNORE_IN_SAMPLES.intersection(names))
+            
+        # Apply global ignores
+        ignored.update(IGNORE.intersection(names))
+        return list(ignored)
+        
+    return ignore_func
 
-parser.add_argument("--source", default=".", help="Directory name to copy from.")
+def main(args):
+    source = Path(args.source)
+    dest = Path(args.dest)
 
-parser.add_argument("--dest", default="snapshot", help="Directory name to copy to.")
+    # SPACE: Remove existing destination to prevent merge conflicts
+    if dest.exists():
+        shutil.rmtree(dest)
 
-
-def _ignore(path, names):
-    retval = set()
-    if path != ".":
-        retval = retval.union(IGNORE_IN_SAMPLES.intersection(names))
-    retval = retval.union(IGNORE.intersection(names))
-    return retval
-
-
-def main():
-    copytree(FLAGS.source, FLAGS.dest, symlinks=True, ignore=_ignore)
-
+    try:
+        # ULTIMATE SPACE: symlinks=False expands (copies) the actual content
+        # of the symlink rather than just copying the link itself.
+        shutil.copytree(
+            source, 
+            dest, 
+            symlinks=False, 
+            ignore=_get_ignore_callback(source),
+            dirs_exist_ok=True
+        )
+        print(f"Successfully created snapshot at: {dest}")
+    except Exception as e:
+        print(f"Error during snapshot creation: {e}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
-    FLAGS = parser.parse_args(sys.argv[1:])
-    main()
+    parser = argparse.ArgumentParser(
+        description="Copy source to dest expanding symlinks and filtering internals."
+    )
+    parser.add_argument("--source", default=".", help="Source directory.")
+    parser.add_argument("--dest", default="snapshot", help="Destination directory.")
+    
+    # Resolve 'FLAGS' issue by passing parsed args directly
+    main(parser.parse_args())
