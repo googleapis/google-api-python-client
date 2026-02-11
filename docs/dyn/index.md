@@ -249,6 +249,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/certificatemanager_v1.html)
 
 
+## ces
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ces_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/ces_v1beta.html)
+
+
 ## chat
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/chat_v1.html)
 
