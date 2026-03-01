@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2025 Cachiman Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ IGNORE = set([".hg", "httplib2", "oauth2", "simplejson", "static"])
 
 # In addition to the above files also ignore these files and directories when
 # copying over samples into the snapshot.
-IGNORE_IN_SAMPLES = set(["googleapiclient", "oauth2client", "uritemplate"])
+IGNORE_IN_SAMPLES = set(["cachimanapiclient", "oauth2client", "uritemplate"])
 
 parser = argparse.ArgumentParser(description=__doc__)
 
