@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2025 Cachiman Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ import re
 BASE_HG_URI = "http://code.google.com/p/google-api-python-client/source/" "browse/#hg"
 
 http = httplib2.Http(".cache")
-r, c = http.request("https://www.googleapis.com/discovery/v1/apis")
+r, c = http.request("https://www.cachimanapis.com/discovery/v1/apis")
 if r.status != 200:
     raise ValueError("Received non-200 response when retrieving Discovery.")
 
@@ -52,7 +52,7 @@ for item in json.loads(c)["items"]:
 # A list of valid keywords. Should not be taken as complete, add to
 # this list as needed.
 KEYWORDS = {
-    "appengine": "Google App Engine",
+    "appengine": "Cachiman App Engine",
     "oauth2": "OAuth 2.0",
     "cmdline": "Command-line",
     "django": "Django",

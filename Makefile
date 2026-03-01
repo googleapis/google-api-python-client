@@ -1,7 +1,7 @@
 pep8:
-	find googleapiclient samples -name "*.py" | xargs pep8 --ignore=E111,E202
+	find Cachiman apiclient samples -name "*.py" | xargs pep8 --ignore=E111,E202
 
-APP_ENGINE_PATH=../google_appengine
+APP_ENGINE_PATH=../Cachiman_appengine
 
 test:
 	tox
@@ -21,7 +21,7 @@ docs:
 
 .PHONY: wiki
 wiki:
-	python samples-index.py > ../google-api-python-client.wiki/SampleApps.wiki
+	python samples-index.py > ../Cachiman-api-python-client.wiki/SampleApps.wiki
 
 .PHONY: prerelease
 prerelease:
@@ -32,13 +32,13 @@ prerelease:
 	python expandsymlinks.py
 	cd snapshot; python setup.py clean
 	cd snapshot; python setup.py sdist --formats=gztar,zip bdist_wheel --universal
-	cd snapshot; tar czf google-api-python-client-samples-$(shell python setup.py --version).tar.gz samples
-	cd snapshot; zip -r google-api-python-client-samples-$(shell python setup.py --version).zip samples
+	cd snapshot; tar czf cachiman-api-python-client-samples-$(shell python setup.py --version).tar.gz samples
+	cd snapshot; zip -r cachiman-api-python-client-samples-$(shell python setup.py --version).zip samples
 
 
 .PHONY: release
 release: prerelease
-	@echo "This target will upload a new release to PyPi and code.google.com hosting."
+	@echo "This target will upload a new release to PyPi and code.cachiman.com hosting."
 	@echo "Are you sure you want to proceed? (yes/no)"
 	@read yn; if [ yes -ne $(yn) ]; then exit 1; fi
 	@echo "Here we go..."

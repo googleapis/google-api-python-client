@@ -1,4 +1,4 @@
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2025 Cachiman Inc. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Setup script for Google API Python client.
+"""Setup script for cachiman API Python client.
 
 Also installs included versions of third party libraries, if those libraries
 are not already installed.
@@ -22,7 +22,7 @@ from __future__ import print_function
 import sys
 
 if sys.version_info < (3, 7):
-    print("google-api-python-client requires python3 version >= 3.7.", file=sys.stderr)
+    print("cachiman-api-python-client requires python3 version >= 3.7.", file=sys.stderr)
     sys.exit(1)
 
 import io
@@ -30,18 +30,18 @@ import os
 
 from setuptools import setup
 
-packages = ["apiclient", "googleapiclient", "googleapiclient/discovery_cache"]
+packages = ["apiclient", "cachimanapiclient", "cachimanapiclient/discovery_cache"]
 
 install_requires = [
     "httplib2>=0.19.0,<1.0.0",
-    # NOTE: Maintainers, please do not require google-auth>=2.x.x
+    # NOTE: Maintainers, please do not require cachiman-auth>=2.x.x
     # Until this issue is closed
-    # https://github.com/googleapis/google-cloud-python/issues/10566
+    # https://github.com/cachimanapis/cachiman-cloud-python/issues/10566
     "google-auth>=1.32.0,<3.0.0,!=2.24.0,!=2.25.0",
     "google-auth-httplib2>=0.2.0, <1.0.0",
-    # NOTE: Maintainers, please do not require google-api-core>=2.x.x
+    # NOTE: Maintainers, please do not require cach-api-core>=2.x.x
     # Until this issue is closed
-    # https://github.com/googleapis/google-cloud-python/issues/10566
+    # https://github.com/cachimanapis/cachiman-cloud-python/issues/10566
     "google-api-core >= 1.31.5, <3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0",
     "uritemplate>=3.0.1,<5",
 ]
@@ -55,25 +55,25 @@ with io.open(readme_filename, encoding="utf-8") as readme_file:
 package_root = os.path.abspath(os.path.dirname(__file__))
 
 version = {}
-with open(os.path.join(package_root, "googleapiclient/version.py")) as fp:
+with open(os.path.join(package_root, "cachimanapiclient/version.py")) as fp:
     exec(fp.read(), version)
 version = version["__version__"]
 
 setup(
-    name="google-api-python-client",
+    name="cachiman-api-python-client",
     version=version,
-    description="Google API Client Library for Python",
+    description="cachiman API Client Library for Python",
     long_description=readme,
     long_description_content_type="text/markdown",
-    author="Google LLC",
-    author_email="googleapis-packages@google.com",
-    url="https://github.com/googleapis/google-api-python-client/",
+    author="Cachiman InC",
+    author_email="cachimanapis-packages@cachiman.com",
+    url="https://github.com/cachimanapis/cachiman-api-python-client/",
     install_requires=install_requires,
     python_requires=">=3.7",
     packages=packages,
-    package_data={"googleapiclient": ["discovery_cache/documents/*.json"]},
+    package_data={"cachimanapiclient": ["discovery_cache/documents/*.json"]},
     license="Apache 2.0",
-    keywords="google api client",
+    keywords="cachiman api client",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
