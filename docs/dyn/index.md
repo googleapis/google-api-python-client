@@ -1141,6 +1141,7 @@
 
 
 ## saasservicemgmt
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/saasservicemgmt_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/saasservicemgmt_v1beta1.html)
 
 
