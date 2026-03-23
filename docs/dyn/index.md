@@ -249,6 +249,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/certificatemanager_v1.html)
 
 
+## ces
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/ces_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/ces_v1beta.html)
+
+
 ## chat
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/chat_v1.html)
 
@@ -513,6 +518,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/developerconnect_v1.html)
 
 
+## developerknowledge
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/developerknowledge_v1alpha.html)
+
+
 ## dfareporting
 * [v3.5](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v3_5.html)
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/dfareporting_v4.html)
@@ -719,6 +728,7 @@
 ## gmailpostmastertools
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v1beta1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/gmailpostmastertools_v2.html)
 
 
 ## groupsmigration
@@ -805,10 +815,6 @@
 
 ## licensing
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/licensing_v1.html)
-
-
-## lifesciences
-* [v2beta](http://googleapis.github.io/google-api-python-client/docs/dyn/lifesciences_v2beta.html)
 
 
 ## localservices
@@ -1135,6 +1141,7 @@
 
 
 ## saasservicemgmt
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/saasservicemgmt_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/saasservicemgmt_v1beta1.html)
 
 
