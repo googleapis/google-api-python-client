@@ -6618,7 +6618,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service. This method can be called in two ways: * **List all public locations:** Use the path `GET /v1/locations`. * **List project-visible locations:** Use the path `GET /v1/projects/{project_id}/locations`. This may include public locations as well as private or other locations specifically visible to the project.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the [ListLocationsRequest.name] field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "aiplatform.projects.locations.list",
@@ -18179,7 +18179,7 @@
 ],
 "parameters": {
 "name": {
-"description": "The resource name of the Model.",
+"description": "Identifier. The resource name of the Model.",
 "location": "path",
 "pattern": "^projects/[^/]+/locations/[^/]+/models/[^/]+$",
 "required": true,
@@ -23492,7 +23492,7 @@
 "type": "string"
 },
 "sessionId": {
-"description": "Optional. The user defined ID to use for session, which will become the final component of the session resource name. If not provided, Vertex AI will generate a value for this ID. This value may be up to 63 characters, and valid characters are `[a-z0-9-]`. The first character must be a letter, and the last character must be a letter or number.",
+"description": "Optional. The user defined ID to use for session, which will become the final component of the session resource name. If not provided, Vertex AI will generate a value for this ID. This value may be up to 63 characters, and valid characters are `[a-z0-9-]`. The first and last characters must be a letter or number.",
 "location": "query",
 "type": "string"
 }
@@ -30865,7 +30865,7 @@
 }
 }
 },
-"revision": "20260309",
+"revision": "20260320",
 "rootUrl": "https://aiplatform.googleapis.com/",
 "schemas": {
 "CloudAiLargeModelsVisionGenerateVideoExperiments": {
@@ -35071,6 +35071,10 @@
 "description": "Defines a custom dataset-level aggregation.",
 "id": "GoogleCloudAiplatformV1DatasetCustomMetric",
 "properties": {
+"aggregationFunction": {
+"description": "Required. The Python code string containing the aggregation function. Expected function signature: `def aggregate(instances: list[dict[str, Any]]) -> dict[str, float]:` The `instances` argument is a list of dictionaries, where each dictionary represents a single evaluation result item. The structure of each dictionary corresponds to the fields in the `EvaluationResult` message. This includes: - `\"request\"`: Contains the original input data and model inputs (from `EvaluationResult.EvaluationRequest`). - `\"candidate_results\"`: Contains the results of any instance-level metrics (from `EvaluationResult.CandidateResults`). Example of a single item in the `instances` list: { \"request\": { \"prompt\": {\"text\": \"What is the capital of France?\"}, \"golden_response\": {\"text\": \"Paris\"}, \"candidate_responses\": [{\"candidate\": \"model-v1\", \"text\": \"Paris\"}] }, \"candidate_results\": [ {\"metric\": \"exact_match\", \"score\": 1.0}, {\"metric\": \"bleu\", \"score\": 0.9} ] }",
+"type": "string"
+},
 "displayName": {
 "description": "Optional. A display name for this custom summary metric. Used to prefix keys in the output summaryMetrics map. If not provided, a default name like \"dataset_custom_metric_1\", \"dataset_custom_metric_2\", etc., will be generated based on the order in the repeated field.",
 "type": "string"
@@ -36716,6 +36720,13 @@
 "description": "Required. The resource name of the Location to evaluate the instances. Format: `projects/{project}/locations/{location}`",
 "type": "string"
 },
+"metricSources": {
+"description": "Optional. The metrics (either inline or registered) used for evaluation. Currently, we only support evaluating a single metric. If multiple metrics are provided, only the first one will be evaluated.",
+"items": {
+"$ref": "GoogleCloudAiplatformV1MetricSource"
+},
+"type": "array"
+},
 "metrics": {
 "description": "The metrics used for evaluation. Currently, we only support evaluating a single metric. If multiple metrics are provided, only the first one will be evaluated.",
 "items": {
@@ -37054,6 +37065,13 @@
 "autoraterConfig": {
 "$ref": "GoogleCloudAiplatformV1AutoraterConfig",
 "description": "Optional. Autorater config for evaluation."
+},
+"datasetCustomMetrics": {
+"description": "Optional. Specifications for custom dataset-level aggregations.",
+"items": {
+"$ref": "GoogleCloudAiplatformV1DatasetCustomMetric"
+},
+"type": "array"
 },
 "inferenceGenerationConfig": {
 "$ref": "GoogleCloudAiplatformV1GenerationConfig",
@@ -37744,15 +37762,84 @@
 "type": "object"
 },
 "GoogleCloudAiplatformV1EvaluationRunInferenceConfig": {
-"description": "An inference config used for model inference during the evaluation run.",
+"description": "Defines the configuration for a candidate model or agent being evaluated. `InferenceConfig` encapsulates all the necessary information to invoke or scrape the candidate during the evaluation run. This includes direct model inference parameters, agent execution settings, and multi-turn scraping configurations (such as user simulators). It serves as the primary representation of the candidate across different stages of the evaluation process.",
 "id": "GoogleCloudAiplatformV1EvaluationRunInferenceConfig",
 "properties": {
+"agentRunConfig": {
+"$ref": "GoogleCloudAiplatformV1EvaluationRunInferenceConfigAgentRunConfig",
+"description": "Optional. Agent run config."
+},
 "generationConfig": {
 "$ref": "GoogleCloudAiplatformV1GenerationConfig",
 "description": "Optional. Generation config."
 },
 "model": {
-"description": "Optional. The fully qualified name of the publisher model or endpoint to use. Anthropic and Llama third-party models are also supported through Model Garden. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Third-party model format: `projects/{project}/locations/{location}/publishers/anthropic/models/{model}` `projects/{project}/locations/{location}/publishers/llama/models/{model}` Endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`",
+"description": "Optional. The fully qualified name of the publisher model or endpoint to use. Anthropic and Llama third-party models are also supported through Model Garden. Publisher model format: `projects/{project}/locations/{location}/publishers/*/models/*` Third-party model formats: `projects/{project}/locations/{location}/publishers/anthropic/models/{model}` or `projects/{project}/locations/{location}/publishers/llama/models/{model}` Endpoint format: `projects/{project}/locations/{location}/endpoints/{endpoint}`",
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1EvaluationRunInferenceConfigAgentRunConfig": {
+"description": "Configuration for Agent Run.",
+"id": "GoogleCloudAiplatformV1EvaluationRunInferenceConfigAgentRunConfig",
+"properties": {
+"agentEngine": {
+"description": "Optional. The resource name of the Agent Engine. Format: projects/{project}/locations/{location}/reasoningEngines/{reasoning_engine} For example: projects/123/locations/us-central1/reasoningEngines/456",
+"type": "string"
+},
+"sessionInput": {
+"$ref": "GoogleCloudAiplatformV1EvaluationRunInferenceConfigSessionInput",
+"description": "Optional. The session input to get agent running results."
+},
+"userSimulatorConfig": {
+"$ref": "GoogleCloudAiplatformV1EvaluationRunInferenceConfigAgentRunConfigUserSimulatorConfig",
+"description": "The configuration for a user simulator that uses an LLM to generate messages on behalf of the user."
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1EvaluationRunInferenceConfigAgentRunConfigUserSimulatorConfig": {
+"description": "Used for multi-turn agent scraping. Contains configuration for a user simulator that uses an LLM to generate messages on behalf of the user.",
+"id": "GoogleCloudAiplatformV1EvaluationRunInferenceConfigAgentRunConfigUserSimulatorConfig",
+"properties": {
+"maxTurn": {
+"description": "Maximum number of invocations allowed by the multi-turn agent scraping. This property allows us to stop a run-off conversation, where the agent and the user simulator get into a never ending loop. The initial fixed prompt is also counted as an invocation.",
+"format": "int32",
+"type": "integer"
+},
+"modelConfig": {
+"$ref": "GoogleCloudAiplatformV1GenerationConfig",
+"description": "The configuration for the model."
+},
+"modelName": {
+"description": "The model name to use for multi-turn agent scraping to get next user message, e.g. \"gemini-3-flash-preview\".",
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1EvaluationRunInferenceConfigSessionInput": {
+"description": "Session input to run an Agent.",
+"id": "GoogleCloudAiplatformV1EvaluationRunInferenceConfigSessionInput",
+"properties": {
+"parameters": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "Optional. Additional parameters for the session, like app_name, etc. For example, {\"app_name\": \"my-app\"}.",
+"type": "object"
+},
+"sessionState": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Optional. Session specific memory which stores key conversation points.",
+"type": "object"
+},
+"userId": {
+"description": "Optional. The user id for the agent session. The ID can be up to 128 characters long.",
 "type": "string"
 }
 },
@@ -37777,6 +37864,10 @@
 "metricConfig": {
 "$ref": "GoogleCloudAiplatformV1Metric",
 "description": "The metric config."
+},
+"metricResourceName": {
+"description": "Optional. The resource name of the metric definition.",
+"type": "string"
 },
 "predefinedMetricSpec": {
 "$ref": "GoogleCloudAiplatformV1EvaluationRunMetricPredefinedMetricSpec",
@@ -37923,6 +38014,10 @@
 "description": "Specification for how rubrics should be generated.",
 "id": "GoogleCloudAiplatformV1EvaluationRunMetricRubricGenerationSpec",
 "properties": {
+"metricResourceName": {
+"description": "Optional. Resource name of the metric definition.",
+"type": "string"
+},
 "modelConfig": {
 "$ref": "GoogleCloudAiplatformV1EvaluationRunEvaluationConfigAutoraterConfig",
 "description": "Optional. Configuration for the model used in rubric generation. Configs including sampling count and base model can be specified here. Flipping is not supported for rubric generation."
@@ -41036,7 +41131,7 @@
 "type": "string"
 },
 "name": {
-"description": "Required. The name of the function to call. Must start with a letter or an underscore. Must be a-z, A-Z, 0-9, or contain underscores, dots, colons and dashes, with a maximum length of 64.",
+"description": "Required. The name of the function to call. Must start with a letter or an underscore. Must be a-z, A-Z, 0-9, or contain underscores, dots, colons and dashes, with a maximum length of 128.",
 "type": "string"
 },
 "parameters": {
@@ -41521,6 +41616,10 @@
 "description": "Required. The resource name of the Location to generate rubrics from. Format: `projects/{project}/locations/{location}`",
 "type": "string"
 },
+"metricResourceName": {
+"description": "Optional. The resource name of a registered metric. Rubric generation using predefined metric spec or LLMBasedMetricSpec is supported. If this field is set, the configuration provided in this field is used for rubric generation. The `predefined_rubric_generation_spec` and `rubric_generation_spec` fields will be ignored.",
+"type": "string"
+},
 "predefinedRubricGenerationSpec": {
 "$ref": "GoogleCloudAiplatformV1PredefinedMetricSpec",
 "description": "Optional. Specification for using the rubric generation configs of a pre-defined metric, e.g. \"generic_quality_v1\" and \"instruction_following_v1\". Some of the configs may be only used in rubric generation and not supporting evaluation, e.g. \"fully_customized_generic_quality_v1\". If this field is set, the `rubric_generation_spec` field will be ignored."
@@ -41862,7 +41961,7 @@
 "type": "boolean"
 },
 "responseMimeType": {
-"description": "Optional. The IANA standard MIME type of the response. The model will generate output that conforms to this MIME type. Supported values include 'text/plain' (default) and 'application/json'. The model needs to be prompted to output the appropriate response type, otherwise the behavior is undefined. This is a preview feature.",
+"description": "Optional. The IANA standard MIME type of the response. The model will generate output that conforms to this MIME type. Supported values include 'text/plain' (default) and 'application/json'. The model needs to be prompted to output the appropriate response type, otherwise the behavior is undefined.",
 "type": "string"
 },
 "responseModalities": {
@@ -43499,6 +43598,38 @@
 "serverUri": {
 "description": "Required. The Jira server URI.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1KeepAliveProbe": {
+"description": "Represents the configuration for keep-alive probe. Contains configuration on a specified endpoint that a deployment host should use to keep the container alive based on the probe settings.",
+"id": "GoogleCloudAiplatformV1KeepAliveProbe",
+"properties": {
+"httpGet": {
+"$ref": "GoogleCloudAiplatformV1KeepAliveProbeHttpGet",
+"description": "Optional. Specifies the HTTP GET configuration for the probe."
+},
+"maxSeconds": {
+"description": "Optional. Specifies the maximum duration (in seconds) to keep the instance alive via this probe. Can be a maximum of 3600 seconds (1 hour).",
+"format": "int32",
+"type": "integer"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1KeepAliveProbeHttpGet": {
+"description": "Specifies the HTTP GET configuration for the probe.",
+"id": "GoogleCloudAiplatformV1KeepAliveProbeHttpGet",
+"properties": {
+"path": {
+"description": "Required. Specifies the path of the HTTP GET request (e.g., `\"/is_busy\"`).",
+"type": "string"
+},
+"port": {
+"description": "Optional. Specifies the port number on the container to which the request is sent.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -45516,6 +45647,10 @@ false
 "$ref": "GoogleCloudAiplatformV1LLMBasedMetricSpec",
 "description": "Spec for an LLM based metric."
 },
+"metadata": {
+"$ref": "GoogleCloudAiplatformV1MetricMetadata",
+"description": "Optional. Metadata about the metric, used for visualization and organization."
+},
 "pairwiseMetricSpec": {
 "$ref": "GoogleCloudAiplatformV1PairwiseMetricSpec",
 "description": "Spec for pairwise metric."
@@ -45531,6 +45666,55 @@ false
 "rougeSpec": {
 "$ref": "GoogleCloudAiplatformV1RougeSpec",
 "description": "Spec for rouge metric."
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1MetricMetadata": {
+"description": "Metadata about the metric, used for visualization and organization.",
+"id": "GoogleCloudAiplatformV1MetricMetadata",
+"properties": {
+"otherMetadata": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Optional. Flexible metadata for user-defined attributes.",
+"type": "object"
+},
+"scoreRange": {
+"$ref": "GoogleCloudAiplatformV1MetricMetadataScoreRange",
+"description": "Optional. The range of possible scores for this metric, used for plotting."
+},
+"title": {
+"description": "Optional. The user-friendly name for the metric. If not set for a registered metric, it will default to the metric's display name.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1MetricMetadataScoreRange": {
+"description": "The range of possible scores for this metric, used for plotting.",
+"id": "GoogleCloudAiplatformV1MetricMetadataScoreRange",
+"properties": {
+"description": {
+"description": "Optional. The description of the score explaining the directionality etc.",
+"type": "string"
+},
+"max": {
+"description": "Required. The maximum value of the score range (inclusive).",
+"format": "double",
+"type": "number"
+},
+"min": {
+"description": "Required. The minimum value of the score range (inclusive).",
+"format": "double",
+"type": "number"
+},
+"step": {
+"description": "Optional. The distance between discrete steps in the range. If unset, the range is assumed to be continuous.",
+"format": "double",
+"type": "number"
 }
 },
 "type": "object"
@@ -45562,6 +45746,21 @@ false
 "format": "float",
 "readOnly": true,
 "type": "number"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1MetricSource": {
+"description": "The metric source used for evaluation.",
+"id": "GoogleCloudAiplatformV1MetricSource",
+"properties": {
+"metric": {
+"$ref": "GoogleCloudAiplatformV1Metric",
+"description": "Inline metric config."
+},
+"metricResourceName": {
+"description": "Resource name for registered metric.",
+"type": "string"
 }
 },
 "type": "object"
@@ -46014,7 +46213,7 @@ false
 "readOnly": true
 },
 "name": {
-"description": "The resource name of the Model.",
+"description": "Identifier. The resource name of the Model.",
 "type": "string"
 },
 "originalModelInfo": {
@@ -49800,6 +49999,13 @@ false
 },
 "type": "array"
 },
+"labels": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "Optional. The labels with user-defined metadata for the request. It is used for billing and reporting only. Label keys and values can be no longer than 63 characters (Unicode codepoints) and can only contain lowercase letters, numeric characters, underscores, and dashes. International characters are allowed. Label values are optional. Label keys must start with a letter.",
+"type": "object"
+},
 "parameters": {
 "description": "Optional. The parameters that govern the prediction. The schema of the parameters may be specified via Endpoint's DeployedModels' Model's PredictSchemata's parameters_schema_uri.",
 "type": "any"
@@ -52317,6 +52523,10 @@ false
 },
 "type": "array"
 },
+"containerSpec": {
+"$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecContainerSpec",
+"description": "Deploy from a container image with a defined entrypoint and commands."
+},
 "deploymentSpec": {
 "$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecDeploymentSpec",
 "description": "Optional. The specification of a Reasoning Engine deployment."
@@ -52355,6 +52565,17 @@ false
 },
 "type": "object"
 },
+"GoogleCloudAiplatformV1ReasoningEngineSpecContainerSpec": {
+"description": "Specification for deploying from a container image.",
+"id": "GoogleCloudAiplatformV1ReasoningEngineSpecContainerSpec",
+"properties": {
+"imageUri": {
+"description": "Required. The Artifact Registry Docker image URI (e.g., us-central1-docker.pkg.dev/my-project/my-repo/my-image:tag) of the container image that is to be run on each worker replica.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "GoogleCloudAiplatformV1ReasoningEngineSpecDeploymentSpec": {
 "description": "The specification of a Reasoning Engine deployment.",
 "id": "GoogleCloudAiplatformV1ReasoningEngineSpecDeploymentSpec",
@@ -52370,6 +52591,10 @@ false
 "$ref": "GoogleCloudAiplatformV1EnvVar"
 },
 "type": "array"
+},
+"keepAliveProbe": {
+"$ref": "GoogleCloudAiplatformV1KeepAliveProbe",
+"description": "Optional. Specifies the configuration for keep-alive probe. Contains configuration on a specified endpoint that a deployment host should use to keep the container alive based on the probe settings."
 },
 "maxInstances": {
 "description": "Optional. The maximum number of application instances that can be launched to handle increased traffic. Defaults to 100. Range: [1, 1000]. If VPC-SC or PSC-I is enabled, the acceptable range is [1, 100].",
@@ -52429,6 +52654,10 @@ false
 "description": "Specification for deploying from source code.",
 "id": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpec",
 "properties": {
+"agentConfigSource": {
+"$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecAgentConfigSource",
+"description": "Source code is generated from the agent config."
+},
 "developerConnectSource": {
 "$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecDeveloperConnectSource",
 "description": "Source code is in a Git repository managed by Developer Connect."
@@ -52444,6 +52673,36 @@ false
 "pythonSpec": {
 "$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecPythonSpec",
 "description": "Configuration for a Python application."
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecAgentConfigSource": {
+"description": "Specification for the deploying from agent config.",
+"id": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecAgentConfigSource",
+"properties": {
+"adkConfig": {
+"$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecAgentConfigSourceAdkConfig",
+"description": "Required. The ADK configuration."
+},
+"inlineSource": {
+"$ref": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecInlineSource",
+"description": "Optional. Any additional files needed to interpret the config. If a `requirements.txt` file is present in the `inline_source`, the corresponding packages will be installed. If no `requirements.txt` file is present in `inline_source`, then the latest version of `google-adk` will be installed for interpreting the ADK config."
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecAgentConfigSourceAdkConfig": {
+"description": "Configuration for the Agent Development Kit (ADK).",
+"id": "GoogleCloudAiplatformV1ReasoningEngineSpecSourceCodeSpecAgentConfigSourceAdkConfig",
+"properties": {
+"jsonConfig": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Required. The value of the ADK config in JSON format.",
+"type": "object"
 }
 },
 "type": "object"
@@ -56074,6 +56333,20 @@ false
 },
 "type": "object"
 },
+"GoogleCloudAiplatformV1SchemaPromptSpecInteractionData": {
+"description": "Defines data for an interaction prompt.",
+"id": "GoogleCloudAiplatformV1SchemaPromptSpecInteractionData",
+"properties": {
+"interactionIds": {
+"description": "Optional. Lists interaction IDs associated with the prompt. This maps 1:1 to PromptMessage.contents. If InteractionData is present, every prompt message has an interaction ID.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "GoogleCloudAiplatformV1SchemaPromptSpecMultimodalPrompt": {
 "description": "Prompt variation that embeds preambles to prompt string.",
 "id": "GoogleCloudAiplatformV1SchemaPromptSpecMultimodalPrompt",
@@ -56205,6 +56478,10 @@ false
 "type": "string"
 },
 "type": "array"
+},
+"interactionData": {
+"$ref": "GoogleCloudAiplatformV1SchemaPromptSpecInteractionData",
+"description": "Data for interaction use case."
 },
 "outputPrefixes": {
 "description": "Preamble: The output prefixes before each example output.",

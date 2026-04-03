@@ -50,6 +50,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
 
 
+## agentregistry
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/agentregistry_v1alpha.html)
+
+
 ## aiplatform
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/aiplatform_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/aiplatform_v1beta1.html)
