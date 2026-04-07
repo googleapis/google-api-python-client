@@ -743,6 +743,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/groupssettings_v1.html)
 
 
+## health
+* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/health_v4.html)
+
+
 ## healthcare
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/healthcare_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/healthcare_v1beta1.html)

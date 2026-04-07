@@ -135,7 +135,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service. This method can be called in two ways: * **List all public locations:** Use the path `GET /v1/locations`. * **List project-visible locations:** Use the path `GET /v1/projects/{project_id}/locations`. This may include public locations as well as private or other locations specifically visible to the project.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the [ListLocationsRequest.name] field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1beta1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "saasservicemgmt.projects.locations.list",
@@ -1804,7 +1804,7 @@
 }
 }
 },
-"revision": "20260318",
+"revision": "20260325",
 "rootUrl": "https://saasservicemgmt.googleapis.com/",
 "schemas": {
 "Aggregate": {
@@ -1819,6 +1819,21 @@
 "group": {
 "description": "Required. Group by which to aggregate.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"AppParams": {
+"description": "AppParams contains the parameters for creating an AppHub Application.",
+"id": "AppParams",
+"properties": {
+"group": {
+"description": "Grouping used to construct the name of the AppHub Application. Multiple UnitKinds can specify the same group to use the same Application across their respective units. Corresponds to the app_boundary_id in the ADC composite ApplicationTemplate. Defaults to UnitKind.name",
+"type": "string"
+},
+"scope": {
+"$ref": "Scope",
+"description": "Corresponds to the scope in the ADC composite ApplicationTemplate. Defaults to REGIONAL."
 }
 },
 "type": "object"
@@ -1838,6 +1853,45 @@
 },
 "version": {
 "description": "Output only. Version metadata if present on the blueprint.",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"ComponentRef": {
+"description": "ComponentRef represents a reference to a component resource. Next ID: 4",
+"id": "ComponentRef",
+"properties": {
+"component": {
+"description": "Name of the component in composite.Components",
+"type": "string"
+},
+"compositeRef": {
+"$ref": "CompositeRef",
+"description": "Reference to the Composite ApplicationTemplate."
+},
+"revision": {
+"description": "Revision of the component. If the component does not have a revision, this field will be explicitly set to the revision of the composite ApplicationTemplate.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"CompositeRef": {
+"description": "CompositeRef represents a reference to a composite resource. Next ID: 4",
+"id": "CompositeRef",
+"properties": {
+"applicationTemplate": {
+"description": "Required. Reference to the ApplicationTemplate resource.",
+"type": "string"
+},
+"revision": {
+"description": "Revision of the ApplicationTemplate to use. Changes to revision will trigger manual resynchronization. If empty, ApplicationTemplate will be ignored.",
+"type": "string"
+},
+"syncOperation": {
+"description": "Output only. Reference to on-going AppTemplate import and replication operation (i.e. the operation_id for the long-running operation). This field is opaque for external usage.",
 "readOnly": true,
 "type": "string"
 }
@@ -2207,6 +2261,11 @@
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
 },
+"applicationTemplateComponent": {
+"$ref": "ComponentRef",
+"description": "Output only. Reference to component and revision in a composite ApplicationTemplate.",
+"readOnly": true
+},
 "blueprint": {
 "$ref": "Blueprint",
 "description": "Optional. Blueprints are OCI Images that contain all of the artifacts needed to provision a unit."
@@ -2356,7 +2415,7 @@
 "type": "string"
 },
 "rolloutKind": {
-"description": "Optional. Immutable. Name of the RolloutKind this rollout is stemming from and adhering to.",
+"description": "Required. Immutable. Name of the RolloutKind this rollout is stemming from and adhering to.",
 "type": "string"
 },
 "rolloutOrchestrationStrategy": {
@@ -2584,11 +2643,33 @@
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
 },
+"applicationTemplate": {
+"$ref": "CompositeRef",
+"description": "Reference to composite ApplicationTemplate. When specified, the template components will be imported into their equivalent UnitKind, Release and Blueprint resources. Deleted references will not delete imported resources. Should only be specified on source regions, and be unspecified on replica regions."
+},
+"blueprintRepo": {
+"description": "Output only. Name of repository in Artifact Registry for system-generated Blueprints, eg. Blueprints of imported ApplicationTemplates.",
+"readOnly": true,
+"type": "string"
+},
+"conditions": {
+"description": "Output only. A set of conditions which indicate the various conditions this resource can have.",
+"items": {
+"$ref": "SaasCondition"
+},
+"readOnly": true,
+"type": "array"
+},
 "createTime": {
 "description": "Output only. The timestamp when the resource was created.",
 "format": "google-datetime",
 "readOnly": true,
 "type": "string"
+},
+"error": {
+"$ref": "Status",
+"description": "Output only. If the state is FAILED, the corresponding error code and message. Defaults to code=OK for all other states.",
+"readOnly": true
 },
 "etag": {
 "description": "Output only. An opaque value that uniquely identifies a version or generation of a resource. It can be used to confirm that the client and server agree on the ordering of a resource being written.",
@@ -2613,6 +2694,38 @@
 "description": "Identifier. The resource name (full URI of the resource) following the standard naming scheme: \"projects/{project}/locations/{location}/saas/{saas}\"",
 "type": "string"
 },
+"state": {
+"description": "Output only. State of the Saas. It is always in ACTIVE state if the application_template is empty.",
+"enum": [
+"STATE_TYPE_UNSPECIFIED",
+"ACTIVE",
+"RUNNING",
+"FAILED",
+"STATE_ACTIVE",
+"STATE_RUNNING",
+"STATE_FAILED"
+],
+"enumDeprecated": [
+false,
+true,
+true,
+true,
+false,
+false,
+false
+],
+"enumDescriptions": [
+"State type is unspecified.",
+"Deprecated: Use STATE_ACTIVE.",
+"Deprecated: Use STATE_RUNNING.",
+"Deprecated: Use STATE_FAILED.",
+"The Saas is ready",
+"In the process of importing, synchronizing or replicating ApplicationTemplates",
+"Failure during process of importing, synchronizing or replicating ApplicationTemplate processing"
+],
+"readOnly": true,
+"type": "string"
+},
 "uid": {
 "description": "Output only. The unique identifier of the resource. UID is unique in the time and space for this resource within the scope of the service. It is typically generated by the server on successful creation of a resource and must not be changed. UID is used to uniquely identify resources with resource name reuses. This should be a UUID4.",
 "readOnly": true,
@@ -2627,6 +2740,56 @@
 },
 "type": "object"
 },
+"SaasCondition": {
+"description": "SaasCondition describes the status of a Saas.",
+"id": "SaasCondition",
+"properties": {
+"lastTransitionTime": {
+"description": "Required. Last time the condition transited from one status to another.",
+"format": "google-datetime",
+"type": "string"
+},
+"message": {
+"description": "Required. Human readable message indicating details about the last transition.",
+"type": "string"
+},
+"reason": {
+"description": "Required. Brief reason for the condition's last transition.",
+"type": "string"
+},
+"status": {
+"description": "Required. Status of the condition.",
+"enum": [
+"STATUS_UNSPECIFIED",
+"STATUS_UNKNOWN",
+"STATUS_TRUE",
+"STATUS_FALSE"
+],
+"enumDescriptions": [
+"Condition status is unspecified.",
+"Condition is unknown.",
+"Condition is true.",
+"Condition is false."
+],
+"type": "string"
+},
+"type": {
+"description": "Required. Type of the condition.",
+"enum": [
+"TYPE_UNSPECIFIED",
+"TYPE_READY",
+"TYPE_SYNCHRONIZED"
+],
+"enumDescriptions": [
+"Condition type is unspecified.",
+"Condition type is ready.",
+"Condition type is synchronized."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "Schedule": {
 "description": "A time specification to schedule the maintenance.",
 "id": "Schedule",
@@ -2634,6 +2797,65 @@
 "startTime": {
 "description": "Optional. Start of operation. If not set, will be set to the start of the next window. (optional)",
 "format": "google-datetime",
+"type": "string"
+}
+},
+"type": "object"
+},
+"Scope": {
+"description": "Scope of an application.",
+"id": "Scope",
+"properties": {
+"type": {
+"description": "Required. Scope Type.",
+"enum": [
+"TYPE_UNSPECIFIED",
+"REGIONAL",
+"GLOBAL",
+"TYPE_REGIONAL",
+"TYPE_GLOBAL"
+],
+"enumDeprecated": [
+false,
+true,
+true,
+false,
+false
+],
+"enumDescriptions": [
+"Unspecified type.",
+"Deprecated: Use TYPE_REGIONAL.",
+"Deprecated: Use TYPE_GLOBAL.",
+"Regional type.",
+"Global type."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"Status": {
+"description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+"id": "Status",
+"properties": {
+"code": {
+"description": "The status code, which should be an enum value of google.rpc.Code.",
+"format": "int32",
+"type": "integer"
+},
+"details": {
+"description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+"items": {
+"additionalProperties": {
+"description": "Properties of the object. Contains field @type with type URL.",
+"type": "any"
+},
+"type": "object"
+},
+"type": "array"
+},
+"message": {
+"description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
 "type": "string"
 }
 },
@@ -2723,6 +2945,10 @@
 },
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
+},
+"application": {
+"description": "Optional. Reference to the AppHub Application this unit belongs to. All resources deployed in this Unit will be associated with the specified Application.",
+"type": "string"
 },
 "conditions": {
 "description": "Optional. Output only. A set of conditions which indicate the various conditions this resource can have.",
@@ -2992,6 +3218,15 @@
 },
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
+},
+"appParams": {
+"$ref": "AppParams",
+"description": "AppParams contains the parameters for creating an AppHub Application."
+},
+"applicationTemplateComponent": {
+"$ref": "ComponentRef",
+"description": "Output only. Reference to component and revision in a composite ApplicationTemplate.",
+"readOnly": true
 },
 "createTime": {
 "description": "Output only. The timestamp when the resource was created.",
