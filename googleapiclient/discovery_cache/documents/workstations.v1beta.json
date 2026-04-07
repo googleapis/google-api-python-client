@@ -256,7 +256,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 },
@@ -304,7 +304,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not apply it.",
 "location": "query",
 "type": "boolean"
 }
@@ -411,7 +411,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 }
@@ -448,7 +448,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 },
@@ -496,7 +496,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 }
@@ -670,7 +670,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 }
@@ -763,7 +763,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 },
@@ -806,7 +806,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 }
@@ -990,7 +990,7 @@
 ],
 "parameters": {
 "allowMissing": {
-"description": "Optional. If set and the workstation configuration is not found, a new workstation configuration is created. In this situation, update_mask is ignored.",
+"description": "Optional. If set and the workstation is not found, a new workstation is created. In this situation, update_mask is ignored.",
 "location": "query",
 "type": "boolean"
 },
@@ -1002,13 +1002,13 @@
 "type": "string"
 },
 "updateMask": {
-"description": "Required. Mask specifying which fields in the workstation configuration should be updated.",
+"description": "Required. Mask specifying which fields in the workstation should be updated.",
 "format": "google-fieldmask",
 "location": "query",
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "location": "query",
 "type": "boolean"
 }
@@ -1147,7 +1147,7 @@
 }
 }
 },
-"revision": "20260113",
+"revision": "20260325",
 "rootUrl": "https://workstations.googleapis.com/",
 "schemas": {
 "Accelerator": {
@@ -2136,7 +2136,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "type": "boolean"
 }
 },
@@ -2178,7 +2178,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set, validate the request and preview the review, but do not actually apply it.",
+"description": "Optional. If set, validate the request and preview the result, but do not actually apply it.",
 "type": "boolean"
 }
 },
@@ -2329,14 +2329,18 @@
 "STATE_STARTING",
 "STATE_RUNNING",
 "STATE_STOPPING",
-"STATE_STOPPED"
+"STATE_STOPPED",
+"STATE_SUSPENDING",
+"STATE_SUSPENDED"
 ],
 "enumDescriptions": [
 "Do not use.",
 "The workstation is not yet ready to accept requests from users but will be soon.",
 "The workstation is ready to accept requests from users.",
 "The workstation is being stopped.",
-"The workstation is stopped and will not be able to receive requests until it is started."
+"The workstation is stopped and will not be able to receive requests until it is started.",
+"The workstation is being suspended.",
+"The workstation is suspended."
 ],
 "readOnly": true,
 "type": "string"
@@ -2484,6 +2488,14 @@
 "format": "google-datetime",
 "readOnly": true,
 "type": "string"
+},
+"workstationAuthorizationUrl": {
+"description": "Optional. Specifies the redirect URL for unauthorized requests received by workstation VMs in this cluster. Redirects to this endpoint will send a base64 encoded `state` query param containing the target workstation name and original request hostname. The endpoint is responsible for retrieving a token using `GenerateAccessToken` and redirecting back to the original hostname with the token.",
+"type": "string"
+},
+"workstationLaunchUrl": {
+"description": "Optional. Specifies the launch URL for workstations in this cluster. Requests sent to unstarted workstations will be redirected to this URL. Requests redirected to the launch endpoint will be sent with a `workstation` and `project` query parameter containing the full workstation resource name and project ID, respectively. The launch endpoint is responsible for starting the workstation, polling it until it reaches `STATE_RUNNING`, and then issuing a redirect to the workstation's host URL.",
+"type": "string"
 }
 },
 "type": "object"
@@ -2622,7 +2634,7 @@
 "type": "array"
 },
 "runningTimeout": {
-"description": "Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds\u2014for example, `\"54000s\"` (15 hours). Defaults to `\"43200s\"` (12 hours). A value of `\"0s\"` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `\"0s\"` and less than `\"86400s\"` (24 hours). Warning: A value of `\"0s\"` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.",
+"description": "Optional. Number of seconds that a workstation can run until it is automatically shut down. This field applies to workstations in both STATE_RUNNING and STATE_SUSPENDED. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds\u2014for example, `\"54000s\"` (15 hours). Defaults to `\"43200s\"` (12 hours). A value of `\"0s\"` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `\"0s\"` and less than `\"86400s\"` (24 hours). Warning: A value of `\"0s\"` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.",
 "format": "google-duration",
 "type": "string"
 },
