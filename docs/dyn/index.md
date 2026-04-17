@@ -1168,6 +1168,7 @@
 
 ## searchads360
 * [v0](http://googleapis.github.io/google-api-python-client/docs/dyn/searchads360_v0.html)
+* [v23](http://googleapis.github.io/google-api-python-client/docs/dyn/searchads360_v23.html)
 
 
 ## searchconsole
