@@ -2741,7 +2741,7 @@
 }
 }
 },
-"revision": "20260407",
+"revision": "20260421",
 "rootUrl": "https://container.googleapis.com/",
 "schemas": {
 "AcceleratorConfig": {
@@ -2951,6 +2951,10 @@
 "networkPolicyConfig": {
 "$ref": "NetworkPolicyConfig",
 "description": "Configuration for NetworkPolicy. This only tracks whether the addon is enabled or not on the Master, it does not track whether network policy is enabled for the nodes."
+},
+"nodeReadinessConfig": {
+"$ref": "NodeReadinessConfig",
+"description": "Optional. Configuration for NodeReadinessController add-on."
 },
 "parallelstoreCsiDriverConfig": {
 "$ref": "ParallelstoreCsiDriverConfig",
@@ -3937,6 +3941,10 @@
 "$ref": "NodePoolDefaults",
 "description": "Default NodePool settings for the entire cluster. These settings are overridden if specified on the specific NodePool object."
 },
+"nodePoolUpgradeConcurrencyConfig": {
+"$ref": "NodePoolUpgradeConcurrencyConfig",
+"description": "The node pool upgrade concurrency config of the cluster. This field is used for auto upgrade."
+},
 "nodePools": {
 "description": "The node pools associated with this cluster. This field should not be set if \"node_config\" or \"initial_node_count\" are specified.",
 "items": {
@@ -4499,6 +4507,10 @@
 "$ref": "NodePoolLoggingConfig",
 "description": "The desired node pool logging configuration defaults for the cluster."
 },
+"desiredNodePoolUpgradeConcurrencyConfig": {
+"$ref": "NodePoolUpgradeConcurrencyConfig",
+"description": "The desired node pool upgrade concurrency configuration."
+},
 "desiredNodeVersion": {
 "description": "The Kubernetes version to change the nodes to (typically an upgrade). Users may specify either explicit versions offered by Kubernetes Engine or version aliases, which have the following behavior: - \"latest\": picks the highest valid Kubernetes version - \"1.X\": picks the highest valid patch+gke.N patch in the 1.X version - \"1.X.Y\": picks the highest valid gke.N patch in the 1.X.Y version - \"1.X.Y-gke.N\": picks an explicit Kubernetes version - \"-\": picks the Kubernetes master version",
 "type": "string"
@@ -5016,6 +5028,17 @@
 "deprecated": true,
 "description": "Deprecated. The name of the Google Compute Engine [zone](https://cloud.google.com/compute/docs/zones#available) in which the cluster resides. This field has been deprecated and replaced by the parent field.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"CustomNodeInit": {
+"description": "Support for running custom init code while bootstrapping nodes.",
+"id": "CustomNodeInit",
+"properties": {
+"initScript": {
+"$ref": "InitScript",
+"description": "Optional. The init script to be executed on the node."
 }
 },
 "type": "object"
@@ -6215,6 +6238,33 @@ false
 },
 "type": "object"
 },
+"InitScript": {
+"description": "InitScript provide a simply bash script to be executed on the node.",
+"id": "InitScript",
+"properties": {
+"args": {
+"description": "Optional. The optional arguments line to be passed to the init script.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"gcpSecretManagerSecretUri": {
+"description": "The resource name of the secret manager secret hosting the init script. Both global and regional secrets are supported with format below: Global secret: projects/{project}/secrets/{secret}/versions/{version} Regional secret: projects/{project}/locations/{location}/secrets/{secret}/versions/{version} Example: projects/1234567890/secrets/script_1/versions/1. Accept version number only, not support version alias. User can't configure both gcp_secret_manager_secret_uri and gcs_uri.",
+"type": "string"
+},
+"gcsGeneration": {
+"description": "The generation of the init script stored in Gloud Storage. This is the required field to identify the version of the init script. User can get the genetaion from `gcloud storage objects describe gs://BUCKET_NAME/OBJECT_NAME --format=\"value(generation)\"` or from the \"Version history\" tab of the object in the Cloud Console UI.",
+"format": "int64",
+"type": "string"
+},
+"gcsUri": {
+"description": "The Cloud Storage URI for storing the init script. Format: gs://BUCKET_NAME/OBJECT_NAME The service account on the node pool must have read access to the object. User can't configure both gcs_uri and gcp_secret_manager_secret_uri.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "IntraNodeVisibilityConfig": {
 "description": "IntraNodeVisibilityConfig contains the desired config of the intra-node visibility on this cluster.",
 "id": "IntraNodeVisibilityConfig",
@@ -6363,6 +6413,10 @@ false
 "CGROUP_MODE_V2 specifies to use cgroupv2 for the cgroup configuration on the node image."
 ],
 "type": "string"
+},
+"customNodeInit": {
+"$ref": "CustomNodeInit",
+"description": "Optional. Allow users to run arbitrary bash script or container on the node."
 },
 "hugepages": {
 "$ref": "HugepagesConfig",
@@ -6709,6 +6763,10 @@ false
 },
 "description": "Exceptions to maintenance window. Non-emergency maintenance should not occur in these windows.",
 "type": "object"
+},
+"recurringMaintenanceWindow": {
+"$ref": "RecurringMaintenanceWindow",
+"description": "RecurringMaintenanceWindow specifies some number of recurring time periods for maintenance to occur. The time windows may be overlapping. If no maintenance windows are set, maintenance can occur at any time. Alternative to RecurringWindow, with renamed fields."
 },
 "recurringWindow": {
 "$ref": "RecurringTimeWindow",
@@ -7982,6 +8040,18 @@ false
 },
 "type": "object"
 },
+"NodePoolUpgradeConcurrencyConfig": {
+"description": "NodePoolUpgradeConcurrencyConfig is the configuration for the node pool auto upgrade concurrency.",
+"id": "NodePoolUpgradeConcurrencyConfig",
+"properties": {
+"maxCount": {
+"description": "If set, no more than max_count node pools can be upgraded concurrently.",
+"format": "int64",
+"type": "string"
+}
+},
+"type": "object"
+},
 "NodePoolUpgradeInfo": {
 "description": "NodePoolUpgradeInfo contains the upgrade information of a node pool.",
 "id": "NodePoolUpgradeInfo",
@@ -8048,6 +8118,17 @@ false
 "$ref": "UpgradeDetails"
 },
 "type": "array"
+}
+},
+"type": "object"
+},
+"NodeReadinessConfig": {
+"description": "Configuration for the GKE Node Readiness Controller.",
+"id": "NodeReadinessConfig",
+"properties": {
+"enabled": {
+"description": "Optional. Whether the GKE Node Readiness Controller is enabled for this cluster.",
+"type": "boolean"
 }
 },
 "type": "object"
@@ -8711,6 +8792,30 @@ false
 "rayClusterMonitoringConfig": {
 "$ref": "RayClusterMonitoringConfig",
 "description": "Optional. Monitoring configuration for Ray clusters."
+}
+},
+"type": "object"
+},
+"RecurringMaintenanceWindow": {
+"description": "Represents an arbitrary window of time that recurs. Alternative to RecurringTimeWindow, with renamed fields.",
+"id": "RecurringMaintenanceWindow",
+"properties": {
+"delayUntil": {
+"$ref": "Date",
+"description": "Optional. Windows will not be scheduled before that day. Depending on the recurrence, this may be the date the first window appears. Days are measured in the UTC timezone. This setting must be used when INTERVAL>1 or FREQ=WEEKLY/MONTHLY and no BYDAY specified."
+},
+"recurrence": {
+"description": "Required. An RRULE (https://tools.ietf.org/html/rfc5545#section-3.8.5.3) for how this window reccurs. For example, to have something repeat every weekday, you'd use: `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` To repeat some window daily (equivalent to the DailyMaintenanceWindow): `FREQ=DAILY` For the first weekend of every month: `FREQ=MONTHLY;BYSETPOS=1;BYDAY=SA,SU` The FREQ values of HOURLY, MINUTELY, and SECONDLY are not supported.",
+"type": "string"
+},
+"windowDuration": {
+"description": "Required. Duration of the window.",
+"format": "google-duration",
+"type": "string"
+},
+"windowStartTime": {
+"$ref": "TimeOfDay",
+"description": "Required. Start time of the window on days that it is scheduled, assuming UTC timezone."
 }
 },
 "type": "object"
@@ -10001,6 +10106,33 @@ false
 },
 "type": "object"
 },
+"TimeOfDay": {
+"description": "Represents a time of day. The date and time zone are either not significant or are specified elsewhere. An API may choose to allow leap seconds. Related types are google.type.Date and `google.protobuf.Timestamp`.",
+"id": "TimeOfDay",
+"properties": {
+"hours": {
+"description": "Hours of a day in 24 hour format. Must be greater than or equal to 0 and typically must be less than or equal to 23. An API may choose to allow the value \"24:00:00\" for scenarios like business closing time.",
+"format": "int32",
+"type": "integer"
+},
+"minutes": {
+"description": "Minutes of an hour. Must be greater than or equal to 0 and less than or equal to 59.",
+"format": "int32",
+"type": "integer"
+},
+"nanos": {
+"description": "Fractions of seconds, in nanoseconds. Must be greater than or equal to 0 and less than or equal to 999,999,999.",
+"format": "int32",
+"type": "integer"
+},
+"seconds": {
+"description": "Seconds of a minute. Must be greater than or equal to 0 and typically must be less than or equal to 59. An API may allow the value 60 if it allows leap-seconds.",
+"format": "int32",
+"type": "integer"
+}
+},
+"type": "object"
+},
 "TimeWindow": {
 "description": "Represents an arbitrary window of time.",
 "id": "TimeWindow",
@@ -10274,6 +10406,10 @@ false
 "tags": {
 "$ref": "NetworkTags",
 "description": "The desired network tags to be applied to all nodes in the node pool. If this field is not present, the tags will not be changed. Otherwise, the existing network tags will be *replaced* with the provided tags."
+},
+"taintConfig": {
+"$ref": "TaintConfig",
+"description": "The taint configuration for the node pool."
 },
 "taints": {
 "$ref": "NodeTaints",
