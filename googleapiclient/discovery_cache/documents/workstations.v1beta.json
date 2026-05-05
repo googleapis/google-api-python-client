@@ -1024,6 +1024,34 @@
 "https://www.googleapis.com/auth/cloud-platform"
 ]
 },
+"pushCredentials": {
+"description": "Pushes credentials to a running workstation on behalf of a user. Once complete, supported credential types (application_default_credentials) are made available to processes running in the user container.",
+"flatPath": "v1beta/projects/{projectsId}/locations/{locationsId}/workstationClusters/{workstationClustersId}/workstationConfigs/{workstationConfigsId}/workstations/{workstationsId}:pushCredentials",
+"httpMethod": "POST",
+"id": "workstations.projects.locations.workstationClusters.workstationConfigs.workstations.pushCredentials",
+"parameterOrder": [
+"workstation"
+],
+"parameters": {
+"workstation": {
+"description": "Required. Name of the workstation for which the credentials should be pushed.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/workstationClusters/[^/]+/workstationConfigs/[^/]+/workstations/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1beta/{+workstation}:pushCredentials",
+"request": {
+"$ref": "PushCredentialsRequest"
+},
+"response": {
+"$ref": "Operation"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+},
 "setIamPolicy": {
 "description": "Sets the access control policy on the specified resource. Replaces any existing policy. Can return `NOT_FOUND`, `INVALID_ARGUMENT`, and `PERMISSION_DENIED` errors.",
 "flatPath": "v1beta/projects/{projectsId}/locations/{locationsId}/workstationClusters/{workstationClustersId}/workstationConfigs/{workstationConfigsId}/workstations/{workstationsId}:setIamPolicy",
@@ -1147,7 +1175,7 @@
 }
 }
 },
-"revision": "20260325",
+"revision": "20260413",
 "rootUrl": "https://workstations.googleapis.com/",
 "schemas": {
 "Accelerator": {
@@ -1872,6 +1900,30 @@
 },
 "type": "object"
 },
+"OAuthToken": {
+"description": "OAuth token.",
+"id": "OAuthToken",
+"properties": {
+"accessToken": {
+"description": "Required. The OAuth token.",
+"type": "string"
+},
+"email": {
+"description": "Optional. The email address encapsulated in the OAuth token.",
+"type": "string"
+},
+"expireTime": {
+"description": "Optional. The time the OAuth access token will expire. This should be the time the access token was generated plus the expires_in offset returned from the Access Token Response.",
+"format": "google-datetime",
+"type": "string"
+},
+"scopes": {
+"description": "Optional. The scopes encapsulated in the OAuth token. See https://developers.google.com/identity/protocols/oauth2/scopes for more information.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "Operation": {
 "description": "This resource represents a long-running operation that is the result of a network API call.",
 "id": "Operation",
@@ -2042,6 +2094,17 @@
 "description": "Output only. Service attachment URI for the workstation cluster. The service attachment is created when private endpoint is enabled. To access workstations in the workstation cluster, configure access to the managed service using [Private Service Connect](https://cloud.google.com/vpc/docs/configure-private-service-connect-services).",
 "readOnly": true,
 "type": "string"
+}
+},
+"type": "object"
+},
+"PushCredentialsRequest": {
+"description": "Request message for PushCredentials.",
+"id": "PushCredentialsRequest",
+"properties": {
+"applicationDefaultCredentials": {
+"$ref": "OAuthToken",
+"description": "Optional. Credentials used by Cloud Client Libraries, Google API Client Libraries, and other tooling within the user conainer: https://cloud.google.com/docs/authentication/application-default-credentials"
 }
 },
 "type": "object"
@@ -2329,18 +2392,14 @@
 "STATE_STARTING",
 "STATE_RUNNING",
 "STATE_STOPPING",
-"STATE_STOPPED",
-"STATE_SUSPENDING",
-"STATE_SUSPENDED"
+"STATE_STOPPED"
 ],
 "enumDescriptions": [
 "Do not use.",
 "The workstation is not yet ready to accept requests from users but will be soon.",
 "The workstation is ready to accept requests from users.",
 "The workstation is being stopped.",
-"The workstation is stopped and will not be able to receive requests until it is started.",
-"The workstation is being suspended.",
-"The workstation is suspended."
+"The workstation is stopped and will not be able to receive requests until it is started."
 ],
 "readOnly": true,
 "type": "string"
@@ -2559,6 +2618,10 @@
 "description": "Optional. Whether to enable Linux `auditd` logging on the workstation. When enabled, a service_account must also be specified that has `roles/logging.logWriter` and `roles/monitoring.metricWriter` on the project. Operating system audit logging is distinct from [Cloud Audit Logs](https://cloud.google.com/workstations/docs/audit-logging) and [Container output logging](https://cloud.google.com/workstations/docs/container-output-logging#overview). Operating system audit logs are available in the [Cloud Logging](https://cloud.google.com/logging/docs) console by querying: resource.type=\"gce_instance\" log_name:\"/logs/linux-auditd\"",
 "type": "boolean"
 },
+"enablePushingCredentials": {
+"description": "Optional. Enables pushing user provided credentials to Workstations by calling workstations.pushCredentials. If application_default_credentials are supplied to pushCredentials, the provided token is returned when tools and applications running in the user container make a request for Default Application Credentials. Please note that any credentials supplied are made available to all users with access to the workstation.",
+"type": "boolean"
+},
 "encryptionKey": {
 "$ref": "CustomerEncryptionKey",
 "description": "Immutable. Encrypts resources of this workstation configuration using a customer-managed encryption key (CMEK). If specified, the boot disk of the Compute Engine instance and the persistent disk are encrypted using this encryption key. If this field is not set, the disks are encrypted using a generated key. Customer-managed encryption keys do not protect disk metadata. If the customer-managed encryption key is rotated, when the workstation instance is stopped, the system attempts to recreate the persistent disk with the new version of the key. Be sure to keep older versions of the key until the persistent disk is recreated. Otherwise, data on the persistent disk might be lost. If the encryption key is revoked, the workstation session automatically stops within 7 hours. Immutable after the workstation configuration is created."
@@ -2634,7 +2697,7 @@
 "type": "array"
 },
 "runningTimeout": {
-"description": "Optional. Number of seconds that a workstation can run until it is automatically shut down. This field applies to workstations in both STATE_RUNNING and STATE_SUSPENDED. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds\u2014for example, `\"54000s\"` (15 hours). Defaults to `\"43200s\"` (12 hours). A value of `\"0s\"` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `\"0s\"` and less than `\"86400s\"` (24 hours). Warning: A value of `\"0s\"` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.",
+"description": "Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds\u2014for example, `\"54000s\"` (15 hours). Defaults to `\"43200s\"` (12 hours). A value of `\"0s\"` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `\"0s\"` and less than `\"86400s\"` (24 hours). Warning: A value of `\"0s\"` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.",
 "format": "google-duration",
 "type": "string"
 },
