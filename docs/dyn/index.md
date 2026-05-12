@@ -351,6 +351,10 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1alpha.html)
 
 
+## cloudnumberregistry
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudnumberregistry_v1alpha.html)
+
+
 ## cloudprofiler
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudprofiler_v2.html)
 
