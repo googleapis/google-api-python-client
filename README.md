@@ -10,14 +10,15 @@ This library is considered complete and is in maintenance mode. This means
 that we will address critical bugs and security issues but will not add any
 new features.
 
-This library is officially supported by Google.  However, the maintainers of
+This library is officially supported by Google. However, the maintainers of
 this repository recommend using [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python),
 where possible, for new code development. For more information, please visit
 [Client Libraries Explained](https://cloud.google.com/apis/docs/client-libraries-explained).
 
 ## Version 2.0 Release
-The 2.0 release of `google-api-python-client` includes a substantial reliability 
-improvement, compared with 1.x, as discovery documents are now cached in the library 
+
+The 2.0 release of `google-api-python-client` includes a substantial reliability
+improvement, compared with 1.x, as discovery documents are now cached in the library
 rather than fetched dynamically. It is highly recommended to upgrade from v1.x to v2.x.
 
 Only python 3.7 and newer is supported. If you are not able to upgrade python, then
@@ -27,11 +28,21 @@ please continue to use version 1.x as we will continue supporting python 2.7+ in
 Discovery documents will no longer be retrieved dynamically when
 you call `discovery.build()`. The discovery documents will instead be retrieved
 from the client library directly. New versions of this library are released weekly.
-As a result of caching the discovery documents, the size of this package is at least 
-50 MB larger compared to the previous version. 
+As a result of caching the discovery documents, the size of this package is at least
+50 MB larger compared to the previous version.
 
 Please see the [Migration Guide](https://github.com/googleapis/google-api-python-client/blob/main/UPGRADING.md)
 for more information.
+
+### Note on Private APIs
+
+If you are using a private API (not listed in the [public directory](https://www.googleapis.com/discovery/v1/apis/)),
+you must set `static_discovery=False` to fetch the service definition dynamically:
+
+```python
+from googleapiclient.discovery import build
+service = build('my_api', 'v1', static_discovery=False, developerKey='YOUR_API_KEY')
+```
 
 ## Documentation
 
@@ -44,15 +55,16 @@ The maintainers of this repository recommend using
 where possible, for new code development due to the following reasons:
 
 With [Cloud Client Libraries for Python](https://github.com/googleapis/google-cloud-python):
+
 - There is a separate client library for each API, so you can choose
-which client libraries to download. Whereas, `google-api-python-client` is a
-single client library for all APIs. As a result, the total package size for
-`google-api-python-client` exceeds 50MB.
+  which client libraries to download. Whereas, `google-api-python-client` is a
+  single client library for all APIs. As a result, the total package size for
+  `google-api-python-client` exceeds 50MB.
 - There are stricter controls for breaking changes to the underlying APIs
-as each client library is focused on a specific API.
+  as each client library is focused on a specific API.
 - There are more features in these Cloud Client Libraries as each library is
-focused on a specific API, and in some cases, the libraries are owned by team
-who specialized in that API.
+  focused on a specific API, and in some cases, the libraries are owned by team
+  who specialized in that API.
 - Developers will benefit from intellisense.
 
 For more information, please visit
@@ -106,12 +118,14 @@ Python < 3.7
 ## Third Party Libraries and Dependencies
 
 The following libraries will be installed when you install the client library:
-* [httplib2](https://github.com/httplib2/httplib2)
-* [uritemplate](https://github.com/sigmavirus24/uritemplate)
+
+- [httplib2](https://github.com/httplib2/httplib2)
+- [uritemplate](https://github.com/sigmavirus24/uritemplate)
 
 For development you will also need the following libraries:
-* [WebTest](https://pypi.org/project/WebTest/)
-* [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
+
+- [WebTest](https://pypi.org/project/WebTest/)
+- [pyopenssl](https://pypi.python.org/pypi/pyOpenSSL)
 
 ## Contributing
 
