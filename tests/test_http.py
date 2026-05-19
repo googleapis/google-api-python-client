@@ -878,6 +878,20 @@ RATE_LIMIT_EXCEEDED_RESPONSE = """{
  }
 }"""
 
+FAILED_PRECONDITION_RESPONSE = """{
+ "error": {
+  "errors": [
+   {
+    "domain": "global",
+    "reason": "failedPrecondition",
+    "message": "Precondition Failed"
+   }
+  ],
+  "code": 400,
+  "message": "Precondition Failed"
+ }
+}"""
+
 
 NOT_CONFIGURED_RESPONSE = """{
  "error": {
@@ -1055,6 +1069,34 @@ class TestHttpRequest(unittest.TestCase):
         request.execute(num_retries=num_retries)
 
         self.assertEqual(0, len(sleeptimes))
+
+    def test_retry_400_failed_precondition(self):
+        num_retries = 2
+        resp_seq = [
+            ({"status": "400"}, FAILED_PRECONDITION_RESPONSE),
+            ({"status": "200"}, "{}")
+        ]
+        http = HttpMockSequence(resp_seq)
+        model = JsonModel()
+        uri = "https://www.googleapis.com/someapi/v1/collection/?foo=bar"
+        method = "POST"
+        request = HttpRequest(
+            http,
+            model.response,
+            uri,
+            method=method,
+            body="{}",
+            headers={"content-type": "application/json"},
+        )
+
+        sleeptimes = []
+        request._sleep = lambda x: sleeptimes.append(x)
+        request._rand = lambda: 10
+
+        request.execute(num_retries=num_retries)
+
+        self.assertEqual(1, len(sleeptimes))
+        self.assertEqual(10 * 2 ** 1, sleeptimes[0])
 
     def test_no_retry_fails_fast(self):
         http = HttpMockSequence([({"status": "500"}, ""), ({"status": "200"}, "{}")])

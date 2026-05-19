@@ -97,10 +97,10 @@ def _should_retry_response(resp_status, content):
     if resp_status == _TOO_MANY_REQUESTS:
         return True
 
-    # For 403 errors, we have to check for the `reason` in the response to
+    # For 403 and 400 errors, we have to check for the `reason` in the response to
     # determine if we should retry.
-    if resp_status == http_client.FORBIDDEN:
-        # If there's no details about the 403 type, don't retry.
+    if resp_status in [http_client.FORBIDDEN, http_client.BAD_REQUEST]:
+        # If there's no details about the error, don't retry.
         if not content:
             return False
 
@@ -137,11 +137,16 @@ def _should_retry_response(resp_status, content):
             LOGGER.warning("Invalid JSON content from response: %s", content)
             return False
 
-        LOGGER.warning('Encountered 403 Forbidden with reason "%s"', reason)
-
-        # Only retry on rate limit related failures.
-        if reason in ("userRateLimitExceeded", "rateLimitExceeded"):
-            return True
+        if resp_status == http_client.FORBIDDEN:
+            LOGGER.warning('Encountered 403 Forbidden with reason "%s"', reason)
+            # Only retry on rate limit related failures.
+            if reason in ("userRateLimitExceeded", "rateLimitExceeded"):
+                return True
+        elif resp_status == http_client.BAD_REQUEST:
+            LOGGER.warning('Encountered 400 Bad Request with reason "%s"', reason)
+            # Only retry on precondition failures.
+            if reason in ("failedPrecondition", "preconditionFailed"):
+                return True
 
     # Everything else is a success or non-retriable so break.
     return False
