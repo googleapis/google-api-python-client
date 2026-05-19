@@ -34,6 +34,7 @@ import socket
 import time
 import urllib
 import uuid
+from typing import Optional
 
 import httplib2
 
@@ -77,6 +78,44 @@ DEFAULT_HTTP_TIMEOUT_SEC = 60
 _LEGACY_BATCH_URI = "https://www.googleapis.com/batch"
 
 
+def _decode_reason_from_content(content) -> Optional[str]:
+    reason = None
+
+    if not content:
+        return None
+
+    # Content is in JSON format.
+    try:
+        data = json.loads(content.decode("utf-8"))
+        if isinstance(data, dict):
+            # There are many variations of the error json so we need
+            # to determine the keyword which has the error detail. Make sure
+            # that the order of the keywords below isn't changed as it can
+            # break user code. If the "errors" key exists, we must use that
+            # first.
+            # See Issue #1243
+            # https://github.com/googleapis/google-api-python-client/issues/1243
+            error_detail_keyword = next(
+                (kw for kw in ["errors", "status", "message"] if kw in data["error"]),
+                "",
+            )
+
+            if error_detail_keyword:
+                reason = data["error"][error_detail_keyword]
+
+                if isinstance(reason, list) and len(reason) > 0:
+                    reason = reason[0]
+                    if "reason" in reason:
+                        reason = reason["reason"]
+        else:
+            reason = data[0]["error"]["errors"]["reason"]
+    except (UnicodeDecodeError, ValueError, KeyError):
+        LOGGER.warning("Invalid JSON content from response: %s", content)
+        return None
+
+    return reason
+
+
 def _should_retry_response(resp_status, content):
     """Determines whether a response should be retried.
 
@@ -87,8 +126,6 @@ def _should_retry_response(resp_status, content):
     Returns:
       True if the response should be retried, otherwise False.
     """
-    reason = None
-
     # Retry on 5xx errors.
     if resp_status >= 500:
         return True
@@ -100,47 +137,21 @@ def _should_retry_response(resp_status, content):
     # For 403 errors, we have to check for the `reason` in the response to
     # determine if we should retry.
     if resp_status == http_client.FORBIDDEN:
-        # If there's no details about the 403 type, don't retry.
-        if not content:
-            return False
-
-        # Content is in JSON format.
-        try:
-            data = json.loads(content.decode("utf-8"))
-            if isinstance(data, dict):
-                # There are many variations of the error json so we need
-                # to determine the keyword which has the error detail. Make sure
-                # that the order of the keywords below isn't changed as it can
-                # break user code. If the "errors" key exists, we must use that
-                # first.
-                # See Issue #1243
-                # https://github.com/googleapis/google-api-python-client/issues/1243
-                error_detail_keyword = next(
-                    (
-                        kw
-                        for kw in ["errors", "status", "message"]
-                        if kw in data["error"]
-                    ),
-                    "",
-                )
-
-                if error_detail_keyword:
-                    reason = data["error"][error_detail_keyword]
-
-                    if isinstance(reason, list) and len(reason) > 0:
-                        reason = reason[0]
-                        if "reason" in reason:
-                            reason = reason["reason"]
-            else:
-                reason = data[0]["error"]["errors"]["reason"]
-        except (UnicodeDecodeError, ValueError, KeyError):
-            LOGGER.warning("Invalid JSON content from response: %s", content)
-            return False
+        reason = _decode_reason_from_content(content)
 
         LOGGER.warning('Encountered 403 Forbidden with reason "%s"', reason)
 
         # Only retry on rate limit related failures.
         if reason in ("userRateLimitExceeded", "rateLimitExceeded"):
+            return True
+
+    # We get 400 errors from gmail api with "Precondition check failed".  These should be retried.
+    if resp_status == http_client.BAD_REQUEST:
+        reason = _decode_reason_from_content(content)
+
+        LOGGER.warning('Encountered 400 Bad Request with reason "%s"', reason)
+
+        if reason == "failedPrecondition":
             return True
 
     # Everything else is a success or non-retriable so break.
