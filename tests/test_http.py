@@ -1732,3 +1732,56 @@ class TestHttpBuild(unittest.TestCase):
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.ERROR)
     unittest.main()
+
+
+class TestHttpMockSequenceClose(unittest.TestCase):
+    """Tests for HttpMockSequence.close() method (Issue #2359)."""
+
+    def test_http_mock_sequence_has_close_method(self):
+        """Verify HttpMockSequence has close() method."""
+        http = HttpMockSequence([({'status': '200'}, b'OK')])
+
+        # Should have close() method
+        self.assertTrue(hasattr(http, 'close'))
+        self.assertTrue(callable(http.close))
+
+    def test_http_mock_sequence_close_does_not_raise(self):
+        """Verify close() can be called without raising."""
+        http = HttpMockSequence([({'status': '200'}, b'OK')])
+
+        # Should not raise
+        http.close()
+
+    def test_http_mock_sequence_close_is_no_op(self):
+        """Verify close() is safe to call multiple times."""
+        http = HttpMockSequence([({'status': '200'}, b'OK')])
+
+        # Multiple calls should be safe
+        http.close()
+        http.close()
+        http.close()
+
+        # Mock should still be usable after close
+        resp, content = http.request('http://example.com')
+        self.assertEqual(resp.status, 200)
+        self.assertEqual(content, b'OK')
+
+    def test_http_mock_sequence_close_returns_none(self):
+        """Verify close() returns None like HttpMock."""
+        http = HttpMockSequence([({'status': '200'}, b'OK')])
+
+        result = http.close()
+        self.assertIsNone(result)
+
+    def test_http_mock_sequence_consistency_with_http_mock(self):
+        """Verify HttpMockSequence.close() behaves like HttpMock.close()."""
+        http_mock = HttpMock(headers={'status': '200'})
+        http_sequence = HttpMockSequence([({'status': '200'}, b'OK')])
+
+        # Both should have close()
+        self.assertTrue(hasattr(http_mock, 'close'))
+        self.assertTrue(hasattr(http_sequence, 'close'))
+
+        # Both should return None
+        self.assertIsNone(http_mock.close())
+        self.assertIsNone(http_sequence.close())

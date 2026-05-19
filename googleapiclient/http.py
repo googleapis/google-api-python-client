@@ -1825,6 +1825,33 @@ class HttpMockSequence(object):
             content = content.encode("utf-8")
         return httplib2.Response(resp), content
 
+    def close(self):
+        """Closes httplib2 connections.
+
+        This is a no-op for HttpMockSequence since it doesn't hold
+        real network connections, but is required for compatibility
+        with the context manager protocol used by discovery.build().
+
+        Example:
+            http = HttpMockSequence([({'status': '200'}, '{}')])
+
+            # Using context manager (recommended)
+            with build('drive', 'v3', http=http) as service:
+                service.files().list().execute()
+
+            # Or manual close
+            service = build('drive', 'v3', http=http)
+            # ... use service ...
+            service.close()
+
+        See Also:
+            - HttpMock.close() for the similar implementation
+            - https://github.com/googleapis/google-api-python-client/issues/2359
+        """
+        # No-op: HttpMockSequence doesn't hold real connections
+        pass
+
+
 
 def set_user_agent(http, user_agent):
     """Set the user-agent on every request.
