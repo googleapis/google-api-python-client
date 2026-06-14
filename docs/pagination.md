@@ -4,7 +4,7 @@ Some API methods may return very large lists of data. To reduce the response siz
 
 To process the first page of results, create a request object and call `execute()` as you normally would. For further pages, you call the corresponding `method_name_next()` method, and pass it the previous request and response. Continue paging until `method_name_next()` returns None.
 
-In the following code snippet, paginated results from an API `list()` method are processed:
+In the following code snippet, paginated results from the legacy Google+ activities API `list()` method are processed:
 
 ```python
 activities = service.activities()
