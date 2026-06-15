@@ -147,11 +147,10 @@ def _should_retry_response(resp_status, content):
                 "message": 'Encountered 400 Bad Request with reason "%s"',
             },
         }
-        if resp_status in RETRYABLE_INFO:
-            info = RETRYABLE_INFO[resp_status]
-            LOGGER.warning(info["message"], reason)
-            if reason in info["reasons"]:
-                return True
+        info = RETRYABLE_INFO[resp_status]
+        LOGGER.warning(info["message"], reason)
+        if reason in info["reasons"]:
+            return True
 
     # Everything else is a success or non-retriable so break.
     return False
