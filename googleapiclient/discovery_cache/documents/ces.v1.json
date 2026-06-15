@@ -151,7 +151,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service. This method can be called in two ways: * **List all public locations:** Use the path `GET /v1/locations`. * **List project-visible locations:** Use the path `GET /v1/projects/{project_id}/locations`. This may include public locations as well as private or other locations specifically visible to the project.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "ces.projects.locations.list",
@@ -160,7 +160,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage.",
+"description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -806,13 +806,15 @@
 "SOURCE_UNSPECIFIED",
 "LIVE",
 "SIMULATOR",
-"EVAL"
+"EVAL",
+"AGENT_TOOL"
 ],
 "enumDescriptions": [
 "Unspecified source.",
 "The conversation is from the live end user.",
 "The conversation is from the simulator.",
-"The conversation is from the evaluation."
+"The conversation is from the evaluation.",
+"The conversation is from an agent tool. Agent tool runs the agent in a separate session, which is persisted for testing and debugging purposes."
 ],
 "location": "query",
 "type": "string"
@@ -850,13 +852,15 @@
 "SOURCE_UNSPECIFIED",
 "LIVE",
 "SIMULATOR",
-"EVAL"
+"EVAL",
+"AGENT_TOOL"
 ],
 "enumDescriptions": [
 "Unspecified source.",
 "The conversation is from the live end user.",
 "The conversation is from the simulator.",
-"The conversation is from the evaluation."
+"The conversation is from the evaluation.",
+"The conversation is from an agent tool. Agent tool runs the agent in a separate session, which is persisted for testing and debugging purposes."
 ],
 "location": "query",
 "type": "string"
@@ -909,13 +913,15 @@
 "SOURCE_UNSPECIFIED",
 "LIVE",
 "SIMULATOR",
-"EVAL"
+"EVAL",
+"AGENT_TOOL"
 ],
 "enumDescriptions": [
 "Unspecified source.",
 "The conversation is from the live end user.",
 "The conversation is from the simulator.",
-"The conversation is from the evaluation."
+"The conversation is from the evaluation.",
+"The conversation is from an agent tool. Agent tool runs the agent in a separate session, which is persisted for testing and debugging purposes."
 ],
 "location": "query",
 "type": "string"
@@ -926,13 +932,15 @@
 "SOURCE_UNSPECIFIED",
 "LIVE",
 "SIMULATOR",
-"EVAL"
+"EVAL",
+"AGENT_TOOL"
 ],
 "enumDescriptions": [
 "Unspecified source.",
 "The conversation is from the live end user.",
 "The conversation is from the simulator.",
-"The conversation is from the evaluation."
+"The conversation is from the evaluation.",
+"The conversation is from an agent tool. Agent tool runs the agent in a separate session, which is persisted for testing and debugging purposes."
 ],
 "location": "query",
 "repeated": true,
@@ -2275,7 +2283,7 @@
 }
 }
 },
-"revision": "20260318",
+"revision": "20260506",
 "rootUrl": "https://ces.googleapis.com/",
 "schemas": {
 "Action": {
@@ -2467,6 +2475,14 @@
 "format": "google-datetime",
 "readOnly": true,
 "type": "string"
+},
+"validationErrors": {
+"description": "Output only. Misconfigurations or errors in the agent that may affect agent quality.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
 }
 },
 "type": "object"
@@ -2484,6 +2500,62 @@
 },
 "toolset": {
 "description": "Required. The resource name of the toolset. Format: `projects/{project}/locations/{location}/apps/{app}/toolsets/{toolset}`",
+"type": "string"
+}
+},
+"type": "object"
+},
+"AgentCard": {
+"description": "AgentCard conveys key information about a remote agent. It is a trimmed version of the AgentCard defined in the A2A protocol https://a2a-protocol.org/dev/specification/#441-agentcard",
+"id": "AgentCard",
+"properties": {
+"description": {
+"description": "Required. A description of the agent's domain of action/solution space.",
+"type": "string"
+},
+"name": {
+"description": "Required. A human-readable name for the agent.",
+"type": "string"
+},
+"skills": {
+"description": "Required. Skills represent a unit of ability an agent can perform. This may somewhat abstract but represents a more focused set of actions that the agent is highly likely to succeed at.",
+"items": {
+"$ref": "AgentSkill"
+},
+"type": "array"
+},
+"supportedInterfaces": {
+"description": "Required. Ordered list of supported interfaces. The first entry is preferred.",
+"items": {
+"$ref": "AgentInterface"
+},
+"type": "array"
+},
+"version": {
+"description": "Required. The version of the agent.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"AgentInterface": {
+"description": "Declares a combination of a target URL, transport and protocol version for interacting with the agent. This allows agents to expose the same functionality over multiple protocol binding mechanisms.",
+"id": "AgentInterface",
+"properties": {
+"protocolBinding": {
+"description": "Required. The protocol binding supported at this URL. This is an open form string, to be easily extended for other protocol bindings. The core ones officially supported are `JSONRPC`, `GRPC` and `HTTP+JSON`.",
+"type": "string"
+},
+"protocolVersion": {
+"description": "Required. The version of the A2A protocol this interface exposes. Use the latest supported minor version per major version. Examples: \"0.3\", \"1.0\"",
+"type": "string"
+},
+"tenant": {
+"description": "Tenant ID to be used in the request when calling the agent.",
+"type": "string"
+},
+"url": {
+"description": "Required. The URL where this interface is available. Must be a valid absolute HTTPS URL in production. Example: \"https://api.example.com/a2a/v1\", \"https://grpc.example.com/a2a\"",
 "type": "string"
 }
 },
@@ -2532,10 +2604,61 @@
 },
 "type": "object"
 },
+"AgentSkill": {
+"description": "Represents a distinct capability or function that an agent can perform.",
+"id": "AgentSkill",
+"properties": {
+"description": {
+"description": "Required. A detailed description of the skill.",
+"type": "string"
+},
+"examples": {
+"description": "Example prompts or scenarios that this skill can handle.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"id": {
+"description": "Required. A unique identifier for the agent's skill.",
+"type": "string"
+},
+"inputModes": {
+"description": "The set of supported input media types for this skill, overriding the agent's defaults.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"name": {
+"description": "Required. A human-readable name for the skill.",
+"type": "string"
+},
+"outputModes": {
+"description": "The set of supported output media types for this skill, overriding the agent's defaults.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"tags": {
+"description": "Required. A set of keywords describing the skill's capabilities.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "AgentTool": {
 "description": "Represents a tool that allows the agent to call another agent.",
 "id": "AgentTool",
 "properties": {
+"agent": {
+"description": "Optional. The resource name of the agent that is the entry point of the tool. Format: `projects/{project}/locations/{location}/agents/{agent}`",
+"type": "string"
+},
 "description": {
 "description": "Optional. Description of the tool's purpose.",
 "type": "string"
@@ -2545,7 +2668,8 @@
 "type": "string"
 },
 "rootAgent": {
-"description": "Optional. The resource name of the root agent that is the entry point of the tool. Format: `projects/{project}/locations/{location}/agents/{agent}`",
+"deprecated": true,
+"description": "Optional. Deprecated: Use `agent` instead. The resource name of the root agent that is the entry point of the tool. Format: `projects/{project}/locations/{location}/agents/{agent}`",
 "type": "string"
 }
 },
@@ -2791,12 +2915,24 @@
 "readOnly": true,
 "type": "string"
 },
+"validationErrors": {
+"description": "Output only. Misconfigurations or warnings in the app.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
+},
 "variableDeclarations": {
 "description": "Optional. The declarations of the variables.",
 "items": {
 "$ref": "AppVariableDeclaration"
 },
 "type": "array"
+},
+"vpcScSettings": {
+"$ref": "VpcScSettings",
+"description": "Optional. VPC-SC settings for the app."
 }
 },
 "type": "object"
@@ -3538,6 +3674,7 @@
 "enum": [
 "INPUT_TYPE_UNSPECIFIED",
 "INPUT_TYPE_TEXT",
+"INPUT_TYPE_EVENT",
 "INPUT_TYPE_AUDIO",
 "INPUT_TYPE_IMAGE",
 "INPUT_TYPE_BLOB",
@@ -3546,12 +3683,13 @@
 ],
 "enumDescriptions": [
 "Unspecified input type.",
-"The input message is text.",
-"The input message is audio.",
-"The input message is image.",
-"The input message is blob file.",
-"The input message is client function tool response.",
-"The input message are variables."
+"Text input.",
+"Event input.",
+"Audio input.",
+"Image input.",
+"Blob input.",
+"Client function tool response input.",
+"Variables input."
 ],
 "type": "string"
 },
@@ -3581,13 +3719,15 @@
 "SOURCE_UNSPECIFIED",
 "LIVE",
 "SIMULATOR",
-"EVAL"
+"EVAL",
+"AGENT_TOOL"
 ],
 "enumDescriptions": [
 "Unspecified source.",
 "The conversation is from the live end user.",
 "The conversation is from the simulator.",
-"The conversation is from the evaluation."
+"The conversation is from the evaluation.",
+"The conversation is from an agent tool. Agent tool runs the agent in a separate session, which is persisted for testing and debugging purposes."
 ],
 "readOnly": true,
 "type": "string"
@@ -3621,6 +3761,11 @@
 "disableConversationLogging": {
 "description": "Optional. Whether to disable conversation logging for the sessions.",
 "type": "boolean"
+},
+"retentionWindow": {
+"description": "Optional. Controls the retention window for the conversation. If not set, the conversation will be retained for 365 days.",
+"format": "google-duration",
+"type": "string"
 }
 },
 "type": "object"
@@ -4082,6 +4227,10 @@
 "readOnly": true,
 "type": "string"
 },
+"experimentConfig": {
+"$ref": "ExperimentConfig",
+"description": "Optional. Experiment configuration for the deployment."
+},
 "name": {
 "description": "Identifier. The resource name of the deployment. Format: `projects/{project}/locations/{location}/apps/{app}/deployments/{deployment}`",
 "type": "string"
@@ -4193,6 +4342,10 @@
 "description": "Settings to describe how errors should be handled in the app.",
 "id": "ErrorHandlingSettings",
 "properties": {
+"endSessionConfig": {
+"$ref": "ErrorHandlingSettingsEndSessionConfig",
+"description": "Optional. Configuration for ending the session in case of system errors (e.g. LLM errors)."
+},
 "errorHandlingStrategy": {
 "description": "Optional. The strategy to use for error handling.",
 "enum": [
@@ -4208,6 +4361,40 @@
 "An EndSession signal will be emitted in case of system errors (e.g. LLM errors)."
 ],
 "type": "string"
+},
+"fallbackResponseConfig": {
+"$ref": "ErrorHandlingSettingsFallbackResponseConfig",
+"description": "Optional. Configuration for handling fallback responses."
+}
+},
+"type": "object"
+},
+"ErrorHandlingSettingsEndSessionConfig": {
+"description": "Configuration for ending the session in case of system errors (e.g. LLM errors).",
+"id": "ErrorHandlingSettingsEndSessionConfig",
+"properties": {
+"escalateSession": {
+"description": "Optional. Whether to escalate the session in EndSession. If session is escalated, metadata in EndSession will contain `session_escalated = true`. See https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/deploy/google-telephony-platform#transfer_a_call_to_a_human_agent for details.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
+"ErrorHandlingSettingsFallbackResponseConfig": {
+"description": "Configuration for handling fallback responses.",
+"id": "ErrorHandlingSettingsFallbackResponseConfig",
+"properties": {
+"customFallbackMessages": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "Optional. The fallback messages in case of system errors (e.g. LLM errors), mapped by [supported language code](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).",
+"type": "object"
+},
+"maxFallbackAttempts": {
+"description": "Optional. The maximum number of fallback attempts to make before the agent emitting EndSession Signal.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -4431,6 +4618,10 @@
 "description": "Optional. The [ToolCallContext](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/tool/python#environment for details) to be passed to the Python tool.",
 "type": "object"
 },
+"mockConfig": {
+"$ref": "MockConfig",
+"description": "Optional. Mock configuration for the tool execution. If this field is set, tools that call other tools will be mocked based on the provided patterns and responses."
+},
 "tool": {
 "description": "Optional. The name of the tool to execute. Format: projects/{project}/locations/{location}/apps/{app}/tools/{tool}",
 "type": "string"
@@ -4477,6 +4668,69 @@
 },
 "description": "The variable values at the end of the tool execution.",
 "type": "object"
+}
+},
+"type": "object"
+},
+"ExperimentConfig": {
+"description": "Experiment for the deployment.",
+"id": "ExperimentConfig",
+"properties": {
+"versionRelease": {
+"$ref": "ExperimentConfigVersionRelease",
+"description": "Optional. Version release for the experiment."
+}
+},
+"type": "object"
+},
+"ExperimentConfigVersionRelease": {
+"description": "Version release for the experiment.",
+"id": "ExperimentConfigVersionRelease",
+"properties": {
+"state": {
+"description": "Optional. State of the version release.",
+"enum": [
+"STATE_UNSPECIFIED",
+"PENDING",
+"RUNNING",
+"DONE",
+"EXPIRED"
+],
+"enumDescriptions": [
+"Unspecified state.",
+"Pending state. Experiment is pending and not valid.",
+"Running state. Experiment is running and valid.",
+"Done state. Experiment is done and no longer valid.",
+"Expired state. Experiment is expired and no longer valid."
+],
+"type": "string"
+},
+"trafficAllocations": {
+"description": "Optional. Traffic allocations for the version release.",
+"items": {
+"$ref": "ExperimentConfigVersionReleaseTrafficAllocation"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"ExperimentConfigVersionReleaseTrafficAllocation": {
+"description": "Traffic allocation for the version release.",
+"id": "ExperimentConfigVersionReleaseTrafficAllocation",
+"properties": {
+"appVersion": {
+"description": "Optional. App version of the traffic allocation. Format: `projects/{project}/locations/{location}/apps/{app}/versions/{version}`",
+"type": "string"
+},
+"id": {
+"description": "Optional. Id of the traffic allocation. Free format string, up to 128 characters.",
+"type": "string"
+},
+"trafficPercentage": {
+"description": "Optional. Traffic percentage of the traffic allocation. Must be between 0 and 100.",
+"format": "int32",
+"type": "integer"
 }
 },
 "type": "object"
@@ -5081,7 +5335,8 @@
 "type": "boolean"
 },
 "fallbackAction": {
-"description": "Optional. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool's full resource name, which triggers a specific tool execution. - A predefined system action, such as \"escalate\" or \"exit\", which triggers an EndSession signal with corresponding metadata to terminate the conversation.",
+"deprecated": true,
+"description": "Optional. Deprecated: This feature is no longer supported. Use `enable_multilingual_support` instead to improve handling of multilingual input. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool's full resource name, which triggers a specific tool execution. - A predefined system action, such as \"escalate\" or \"exit\", which triggers an EndSession signal with corresponding metadata to terminate the conversation.",
 "type": "string"
 },
 "supportedLanguageCodes": {
@@ -5389,6 +5644,10 @@
 "redactionConfig": {
 "$ref": "RedactionConfig",
 "description": "Optional. Configuration for how sensitive data should be redacted."
+},
+"unredactedAudioRecordingConfig": {
+"$ref": "AudioRecordingConfig",
+"description": "Optional. Configures recording of unredacted audio. Use this to maintain a raw backup with restricted access when audio redaction is enabled, typically for auditing or monitoring purposes."
 }
 },
 "type": "object"
@@ -5503,6 +5762,70 @@
 },
 "type": "object"
 },
+"MockConfig": {
+"description": "Mock tool calls configuration for the session.",
+"id": "MockConfig",
+"properties": {
+"mockedToolCalls": {
+"description": "Optional. All tool calls to mock for the duration of the session.",
+"items": {
+"$ref": "MockedToolCall"
+},
+"type": "array"
+},
+"unmatchedToolCallBehavior": {
+"description": "Required. Beavhior for tool calls that don't match any args patterns in mocked_tool_calls.",
+"enum": [
+"UNMATCHED_TOOL_CALL_BEHAVIOR_UNSPECIFIED",
+"FAIL",
+"PASS_THROUGH"
+],
+"enumDescriptions": [
+"Default value. This value is unused.",
+"Throw an error for any tool calls that don't match a mock expected input pattern.",
+"For unmatched tool calls, pass the tool call through to real tool."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"MockedToolCall": {
+"description": "A mocked tool call. Expresses the target tool + a pattern to match against that tool's args / inputs. If the pattern matches, then the mock response will be returned.",
+"id": "MockedToolCall",
+"properties": {
+"expectedArgsPattern": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Required. A pattern to match against the args / inputs of all dispatched tool calls. If the tool call inputs match this pattern, then mock output will be returned.",
+"type": "object"
+},
+"mockResponse": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Optional. The mock response / output to return if the tool call args / inputs match the pattern.",
+"type": "object"
+},
+"tool": {
+"deprecated": true,
+"description": "Optional. Deprecated. Use tool_identifier instead.",
+"type": "string"
+},
+"toolId": {
+"description": "Optional. The name of the tool to mock. Format: `projects/{project}/locations/{location}/apps/{app}/tools/{tool}`",
+"type": "string"
+},
+"toolset": {
+"$ref": "ToolsetTool",
+"description": "Optional. The toolset to mock."
+}
+},
+"type": "object"
+},
 "ModelSettings": {
 "description": "Model settings contains various configurations for the LLM model.",
 "id": "ModelSettings",
@@ -5552,178 +5875,6 @@
 },
 "tokenEndpoint": {
 "description": "Required. The token endpoint in the OAuth provider to exchange for an access token.",
-"type": "string"
-}
-},
-"type": "object"
-},
-"Omnichannel": {
-"description": "Represents an Omnichannel resource.",
-"id": "Omnichannel",
-"properties": {
-"createTime": {
-"description": "Output only. Timestamp when the omnichannel resource was created.",
-"format": "google-datetime",
-"readOnly": true,
-"type": "string"
-},
-"description": {
-"description": "Optional. Human-readable description of the omnichannel resource.",
-"type": "string"
-},
-"displayName": {
-"description": "Required. Display name of the omnichannel resource.",
-"type": "string"
-},
-"etag": {
-"description": "Output only. Etag used to ensure the object hasn't changed during a read-modify-write operation.",
-"readOnly": true,
-"type": "string"
-},
-"integrationConfig": {
-"$ref": "OmnichannelIntegrationConfig",
-"description": "Optional. The integration config for the omnichannel resource."
-},
-"name": {
-"description": "Identifier. The unique identifier of the omnichannel resource. Format: `projects/{project}/locations/{location}/omnichannels/{omnichannel}`",
-"type": "string"
-},
-"updateTime": {
-"description": "Output only. Timestamp when the omnichannel resource was last updated.",
-"format": "google-datetime",
-"readOnly": true,
-"type": "string"
-}
-},
-"type": "object"
-},
-"OmnichannelIntegrationConfig": {
-"description": "OmnichannelIntegrationConfig contains all App integration configs.",
-"id": "OmnichannelIntegrationConfig",
-"properties": {
-"channelConfigs": {
-"additionalProperties": {
-"$ref": "OmnichannelIntegrationConfigChannelConfig"
-},
-"description": "Optional. Various of configuration for handling App events.",
-"type": "object"
-},
-"routingConfigs": {
-"additionalProperties": {
-"$ref": "OmnichannelIntegrationConfigRoutingConfig"
-},
-"description": "Optional. The key of routing_configs is a key of `app_configs`, value is a `RoutingConfig`, which contains subscriber's key.",
-"type": "object"
-},
-"subscriberConfigs": {
-"additionalProperties": {
-"$ref": "OmnichannelIntegrationConfigSubscriberConfig"
-},
-"description": "Optional. Various of subscribers configs.",
-"type": "object"
-}
-},
-"type": "object"
-},
-"OmnichannelIntegrationConfigCesAppConfig": {
-"description": "Configs for CES app.",
-"id": "OmnichannelIntegrationConfigCesAppConfig",
-"properties": {
-"app": {
-"description": "The unique identifier of the CES app. Format: `projects/{project}/locations/{location}/apps/{app}`",
-"type": "string"
-}
-},
-"type": "object"
-},
-"OmnichannelIntegrationConfigChannelConfig": {
-"description": "ChannelConfig contains config for various of app integration.",
-"id": "OmnichannelIntegrationConfigChannelConfig",
-"properties": {
-"whatsappConfig": {
-"$ref": "OmnichannelIntegrationConfigWhatsappConfig",
-"description": "WhatsApp config."
-}
-},
-"type": "object"
-},
-"OmnichannelIntegrationConfigRoutingConfig": {
-"description": "Routing config specify how/who to route app events to a subscriber.",
-"id": "OmnichannelIntegrationConfigRoutingConfig",
-"properties": {
-"subscriberKey": {
-"description": "The key of the subscriber.",
-"type": "string"
-}
-},
-"type": "object"
-},
-"OmnichannelIntegrationConfigSubscriberConfig": {
-"description": "Configs of subscribers.",
-"id": "OmnichannelIntegrationConfigSubscriberConfig",
-"properties": {
-"cesAppConfig": {
-"$ref": "OmnichannelIntegrationConfigCesAppConfig",
-"description": "Ces app config."
-}
-},
-"type": "object"
-},
-"OmnichannelIntegrationConfigWhatsappConfig": {
-"description": "How Omnichannel should receive/reply events from WhatsApp.",
-"id": "OmnichannelIntegrationConfigWhatsappConfig",
-"properties": {
-"metaBusinessPortfolioId": {
-"description": "The Meta Business Portfolio (MBP) ID. https://www.facebook.com/business/help/1710077379203657",
-"type": "string"
-},
-"phoneNumber": {
-"description": "The phone number used for sending/receiving messages.",
-"type": "string"
-},
-"phoneNumberId": {
-"description": "The Phone Number ID associated with the WhatsApp Business Account.",
-"type": "string"
-},
-"webhookVerifyToken": {
-"description": "The verify token configured in the Meta App Dashboard for webhook verification.",
-"type": "string"
-},
-"whatsappBusinessAccountId": {
-"description": "The customer's WhatsApp Business Account (WABA) ID.",
-"type": "string"
-},
-"whatsappBusinessToken": {
-"description": "The access token for authenticating API calls to the WhatsApp Cloud API. https://developers.facebook.com/docs/whatsapp/business-management-api/get-started/#business-integration-system-user-access-tokens",
-"type": "string"
-}
-},
-"type": "object"
-},
-"OmnichannelOperationMetadata": {
-"description": "Represents the metadata of the long-running operation.",
-"id": "OmnichannelOperationMetadata",
-"properties": {
-"createTime": {
-"description": "Output only. The time the operation was created.",
-"format": "google-datetime",
-"readOnly": true,
-"type": "string"
-},
-"endTime": {
-"description": "Output only. The time the operation finished running.",
-"format": "google-datetime",
-"readOnly": true,
-"type": "string"
-},
-"requestedCancellation": {
-"description": "Output only. Identifies whether the user has requested cancellation of the operation.",
-"readOnly": true,
-"type": "boolean"
-},
-"statusMessage": {
-"description": "Output only. Human-readable status of the operation, if any.",
-"readOnly": true,
 "type": "string"
 }
 },
@@ -5936,6 +6087,25 @@
 },
 "inspectTemplate": {
 "description": "Optional. [DLP](https://cloud.google.com/dlp/docs) inspect template name to configure detection of sensitive data types. Format: `projects/{project}/locations/{location}/inspectTemplates/{inspect_template}`",
+"type": "string"
+}
+},
+"type": "object"
+},
+"RemoteAgentTool": {
+"description": "Represents a tool that allows the agent to call another remote agent.",
+"id": "RemoteAgentTool",
+"properties": {
+"agentCard": {
+"$ref": "AgentCard",
+"description": "Required. The agent card of the remote agent that this tool invokes."
+},
+"description": {
+"description": "Required. The description of the tool.",
+"type": "string"
+},
+"name": {
+"description": "Required. The name of the tool.",
 "type": "string"
 }
 },
@@ -6655,9 +6825,18 @@
 "$ref": "PythonFunction",
 "description": "Optional. The python function tool."
 },
+"remoteAgentTool": {
+"$ref": "RemoteAgentTool",
+"description": "Optional. The remote agent tool."
+},
 "systemTool": {
 "$ref": "SystemTool",
 "description": "Optional. The system tool."
+},
+"timeout": {
+"description": "Optional. The timeout for the tool execution. If not set, the default timeout is 30 seconds for `SYNCHRONOUS` tools and 60 seconds for `ASYNCHRONOUS` tools.",
+"format": "google-duration",
+"type": "string"
 },
 "toolFakeConfig": {
 "$ref": "ToolFakeConfig",
@@ -6992,6 +7171,20 @@
 },
 "type": "object"
 },
+"VpcScSettings": {
+"description": "VPC-SC settings for the app.",
+"id": "VpcScSettings",
+"properties": {
+"allowedOrigins": {
+"description": "Optional. The allowed HTTP(s) origins that OpenAPI tools in the App are able to directly call when VPC Service Controls are enabled. These strings must match the origin exactly, including the port if specified. For example, \"https://example.com\" or \"https://example.com:443\". This list does not yet apply to Python tools that may make direct HTTP calls.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "WebSearchQuery": {
 "description": "Represents a single web search query and its associated search uri.",
 "id": "WebSearchQuery",
@@ -7026,6 +7219,10 @@
 "parameters": {
 "$ref": "Schema",
 "description": "Optional. The input parameters of the widget tool."
+},
+"textResponseConfig": {
+"$ref": "WidgetToolTextResponseConfig",
+"description": "Optional. Configuration for always-included text responses."
 },
 "uiConfig": {
 "additionalProperties": {
@@ -7108,6 +7305,37 @@
 },
 "sourceToolName": {
 "description": "Optional. The resource name of the tool that provides the data for the widget (e.g., a search tool or a custom function). Format: `projects/{project}/locations/{location}/agents/{agent}/tools/{tool}`",
+"type": "string"
+}
+},
+"type": "object"
+},
+"WidgetToolTextResponseConfig": {
+"description": "Configuration for the text response returned with the widget.",
+"id": "WidgetToolTextResponseConfig",
+"properties": {
+"staticText": {
+"description": "Optional. The static text response to return when type is STATIC.",
+"type": "string"
+},
+"textResponseInstruction": {
+"description": "Optional. Instruction for the LLM on how to generate the text response. Used as the description for the text response parameter if type is LLM_GENERATED.",
+"type": "string"
+},
+"type": {
+"description": "Optional. The strategy for providing the text response.",
+"enum": [
+"TYPE_UNSPECIFIED",
+"NONE",
+"LLM_GENERATED",
+"STATIC"
+],
+"enumDescriptions": [
+"Unspecified type.",
+"The LLM dynamically decides whether to generate a text response alongside the widget based on the conversation context.",
+"The LLM is explicitly required to generate a text response.",
+"A pre-defined static text response is always used."
+],
 "type": "string"
 }
 },

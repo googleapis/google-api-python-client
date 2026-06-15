@@ -135,7 +135,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service. This method can be called in two ways: * **List all public locations:** Use the path `GET /v1/locations`. * **List project-visible locations:** Use the path `GET /v1/projects/{project_id}/locations`. This may include public locations as well as private or other locations specifically visible to the project.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1beta1/organizations/{organizationsId}/locations",
 "httpMethod": "GET",
 "id": "networkmanagement.organizations.locations.list",
@@ -144,7 +144,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage.",
+"description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -516,7 +516,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service. This method can be called in two ways: * **List all public locations:** Use the path `GET /v1/locations`. * **List project-visible locations:** Use the path `GET /v1/projects/{project_id}/locations`. This may include public locations as well as private or other locations specifically visible to the project.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1beta1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "networkmanagement.projects.locations.list",
@@ -525,7 +525,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. Do not use this field. It is unsupported and is ignored unless explicitly documented otherwise. This is primarily for internal usage.",
+"description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -1237,7 +1237,7 @@
 }
 }
 },
-"revision": "20260225",
+"revision": "20260506",
 "rootUrl": "https://networkmanagement.googleapis.com/",
 "schemas": {
 "AbortInfo": {
@@ -1290,7 +1290,8 @@
 "UNSUPPORTED_GOOGLE_MANAGED_PROJECT_CONFIG",
 "NO_SERVERLESS_IP_RANGES",
 "IP_VERSION_PROTOCOL_MISMATCH",
-"GKE_POD_UNKNOWN_ENDPOINT_LOCATION"
+"GKE_POD_UNKNOWN_ENDPOINT_LOCATION",
+"RESPONSE_TOO_LARGE"
 ],
 "enumDeprecated": [
 false,
@@ -1302,6 +1303,7 @@ true,
 true,
 true,
 true,
+false,
 false,
 false,
 false,
@@ -1382,7 +1384,8 @@ false
 "Aborted due to an unsupported configuration of the Google-managed project.",
 "Aborted because the source endpoint is a Cloud Run revision with direct VPC access enabled, but there are no reserved serverless IP ranges.",
 "Aborted because the used protocol is not supported for the used IP version.",
-"Aborted because selected GKE Pod endpoint location is unknown. This is often the case for \"Pending\" Pods, which don't have assigned IP addresses yet."
+"Aborted because selected GKE Pod endpoint location is unknown. This is often the case for \"Pending\" Pods, which don't have assigned IP addresses yet.",
+"Aborted because the response size exceeds the limit."
 ],
 "type": "string"
 },
@@ -1850,6 +1853,7 @@ false
 "FORWARDING_RULE_MISMATCH",
 "FORWARDING_RULE_NO_INSTANCES",
 "FIREWALL_BLOCKING_LOAD_BALANCER_BACKEND_HEALTH_CHECK",
+"FIREWALL_BLOCKING_LOAD_BALANCER_ENVOY_PROXY_HEALTH_CHECK",
 "INGRESS_FIREWALL_TAGS_UNSUPPORTED_BY_DIRECT_VPC_EGRESS",
 "INSTANCE_NOT_RUNNING",
 "GKE_CLUSTER_NOT_RUNNING",
@@ -1927,7 +1931,8 @@ false
 "HYBRID_SUBNET_REGION_MISMATCH",
 "HYBRID_SUBNET_NO_ROUTE",
 "GKE_NETWORK_POLICY",
-"NO_VALID_ROUTE_FROM_GOOGLE_MANAGED_NETWORK_TO_DESTINATION"
+"NO_VALID_ROUTE_FROM_GOOGLE_MANAGED_NETWORK_TO_DESTINATION",
+"PRIVATE_CONNECTION_NO_RUNNING_INSTANCE"
 ],
 "enumDescriptions": [
 "Cause is unspecified.",
@@ -1957,6 +1962,7 @@ false
 "Forwarding rule's protocol and ports do not match the packet header.",
 "Forwarding rule does not have backends configured.",
 "Firewalls block the health check probes to the backends and cause the backends to be unavailable for traffic from the load balancer. For more details, see [Health check firewall rules](https://cloud.google.com/load-balancing/docs/health-checks#firewall_rules).",
+"Firewalls block health check probes to the Envoy proxies that power this load balancer.",
 "Matching ingress firewall rules by network tags for packets sent via serverless VPC direct egress is unsupported. Behavior is undefined. https://cloud.google.com/run/docs/configuring/vpc-direct-vpc#limitations",
 "Packet is sent from or to a Compute Engine instance that is not in a running state.",
 "Packet sent from or to a GKE cluster that is not in running state.",
@@ -2034,7 +2040,8 @@ false
 "Packet is dropped because the region of the hybrid subnet is different from the region of the next hop of the route matched within this hybrid subnet.",
 "Packet is dropped because no matching route was found in the hybrid subnet.",
 "Packet is dropped by GKE Network Policy.",
-"Packet is dropped because there is no valid matching route from the network of the Google-managed service to the destination."
+"Packet is dropped because there is no valid matching route from the network of the Google-managed service to the destination.",
+"Packet is dropped due to no running instance found for private connection."
 ],
 "type": "string"
 },
@@ -2225,12 +2232,24 @@ false
 "$ref": "CloudFunctionEndpoint",
 "description": "A [Cloud Function](https://cloud.google.com/functions). Applicable only to source endpoint."
 },
+"cloudRunJob": {
+"description": "A [Cloud Run](https://cloud.google.com/run) [job](https://docs.cloud.google.com/run/docs/reference/rest/v2/projects.locations.jobs#Job) URI. Applicable only to source endpoint. The format is: projects/{project}/locations/{location}/jobs/{job}",
+"type": "string"
+},
 "cloudRunRevision": {
 "$ref": "CloudRunRevisionEndpoint",
 "description": "A [Cloud Run](https://cloud.google.com/run) [revision](https://cloud.google.com/run/docs/reference/rest/v1/namespaces.revisions/get) Applicable only to source endpoint."
 },
 "cloudSqlInstance": {
 "description": "A [Cloud SQL](https://cloud.google.com/sql) instance URI.",
+"type": "string"
+},
+"datastreamPrivateConnection": {
+"description": "A [Datastream Private Connection](https://docs.cloud.google.com/datastream/docs/reference/rest/v1/projects.locations.privateConnections) name format: projects/{project}/locations/{location}/privateConnections/{privateConnection}.",
+"type": "string"
+},
+"dmsPrivateConnection": {
+"description": "A [DMS Private Connection](https://docs.cloud.google.com/database-migration/docs/reference/rest/v1/projects.locations.privateConnections) name format: projects/{project}/locations/{location}/privateConnections/{privateConnection}.",
 "type": "string"
 },
 "forwardingRule": {
@@ -3492,6 +3511,17 @@ false
 },
 "type": "object"
 },
+"PrivateConnectionInfo": {
+"description": "For display only. Metadata associated with a Private Connection.",
+"id": "PrivateConnectionInfo",
+"properties": {
+"uri": {
+"description": "URI of the Private Connection in format \"projects/{project_id}/locations/{location}/privateConnections/{private_connection_id}\"",
+"type": "string"
+}
+},
+"type": "object"
+},
 "ProbingDetails": {
 "description": "Results of active probing from the last run of the test.",
 "id": "ProbingDetails",
@@ -3883,7 +3913,7 @@ false
 "type": "array"
 },
 "region": {
-"description": "Region of the route. DYNAMIC, PEERING_DYNAMIC, POLICY_BASED and ADVERTISED routes only. If set for POLICY_BASED route, this is a region of VLAN attachments for Cloud Interconnect the route applies to.",
+"description": "Region of the route. DYNAMIC, PEERING_DYNAMIC, POLICY_BASED and ADVERTISED routes only. If set for POLICY_BASED route, this is a region of VLAN attachments for Cloud Interconnect the route applies to. If set to \"all\" for POLICY_BASED route, the route applies to VLAN attachments of Cloud Interconnect in all regions.",
 "type": "string"
 },
 "routeScope": {
@@ -4110,6 +4140,10 @@ false
 "$ref": "CloudSQLInstanceInfo",
 "description": "Display information of a Cloud SQL instance."
 },
+"datastreamPrivateConnection": {
+"$ref": "PrivateConnectionInfo",
+"description": "Display information of a Datastream Private Connection."
+},
 "deliver": {
 "$ref": "DeliverInfo",
 "description": "Display information of the final state \"deliver\" and reason."
@@ -4121,6 +4155,10 @@ false
 "directVpcEgressConnection": {
 "$ref": "DirectVpcEgressConnectionInfo",
 "description": "Display information of a serverless direct VPC egress connection."
+},
+"dmsPrivateConnection": {
+"$ref": "PrivateConnectionInfo",
+"description": "Display information of a DMS Private Connection."
 },
 "drop": {
 "$ref": "DropInfo",
@@ -4246,6 +4284,8 @@ false
 "START_FROM_STORAGE_BUCKET",
 "START_FROM_PSC_PUBLISHED_SERVICE",
 "START_FROM_SERVERLESS_NEG",
+"START_FROM_DMS_PRIVATE_CONNECTION",
+"START_FROM_DATASTREAM_PRIVATE_CONNECTION",
 "APPLY_INGRESS_FIREWALL_RULE",
 "APPLY_EGRESS_FIREWALL_RULE",
 "APPLY_ROUTE",
@@ -4278,6 +4318,8 @@ false
 "VIEWER_PERMISSION_MISSING"
 ],
 "enumDeprecated": [
+false,
+false,
 false,
 false,
 false,
@@ -4342,6 +4384,8 @@ false
 "Initial state: packet originating from a Storage Bucket. Used only for return traces. The storage_bucket information is populated.",
 "Initial state: packet originating from a published service that uses Private Service Connect. Used only for return traces.",
 "Initial state: packet originating from a serverless network endpoint group backend. Used only for return traces. The serverless_neg information is populated.",
+"Initial state: packet originating from a DMS Private Connection.",
+"Initial state: packet originating from a Datastream Private Connection.",
 "Config checking state: verify ingress firewall rule.",
 "Config checking state: verify egress firewall rule.",
 "Config checking state: verify route.",

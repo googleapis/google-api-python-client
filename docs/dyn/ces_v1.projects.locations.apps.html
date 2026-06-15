@@ -233,7 +233,16 @@ Args:
   &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the app.
   &quot;displayName&quot;: &quot;A String&quot;, # Required. Display name of the app.
   &quot;errorHandlingSettings&quot;: { # Settings to describe how errors should be handled in the app. # Optional. Error handling settings of the app.
+    &quot;endSessionConfig&quot;: { # Configuration for ending the session in case of system errors (e.g. LLM errors). # Optional. Configuration for ending the session in case of system errors (e.g. LLM errors).
+      &quot;escalateSession&quot;: True or False, # Optional. Whether to escalate the session in EndSession. If session is escalated, metadata in EndSession will contain `session_escalated = true`. See https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/deploy/google-telephony-platform#transfer_a_call_to_a_human_agent for details.
+    },
     &quot;errorHandlingStrategy&quot;: &quot;A String&quot;, # Optional. The strategy to use for error handling.
+    &quot;fallbackResponseConfig&quot;: { # Configuration for handling fallback responses. # Optional. Configuration for handling fallback responses.
+      &quot;customFallbackMessages&quot;: { # Optional. The fallback messages in case of system errors (e.g. LLM errors), mapped by [supported language code](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
+      &quot;maxFallbackAttempts&quot;: 42, # Optional. The maximum number of fallback attempts to make before the agent emitting EndSession Signal.
+    },
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. Etag used to ensure the object hasn&#x27;t changed during a read-modify-write operation. If the etag is empty, the update will overwrite any concurrent changes.
   &quot;evaluationMetricsThresholds&quot;: { # Threshold settings for metrics in an Evaluation. # Optional. The evaluation thresholds for the app.
@@ -261,7 +270,7 @@ Args:
   &quot;languageSettings&quot;: { # Language settings of the app. # Optional. Language settings of the app.
     &quot;defaultLanguageCode&quot;: &quot;A String&quot;, # Optional. The default language code of the app.
     &quot;enableMultilingualSupport&quot;: True or False, # Optional. Enables multilingual support. If true, agents in the app will use pre-built instructions to improve handling of multilingual input.
-    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
+    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. Deprecated: This feature is no longer supported. Use `enable_multilingual_support` instead to improve handling of multilingual input. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
     &quot;supportedLanguageCodes&quot;: [ # Optional. List of languages codes supported by the app, in addition to the `default_language_code`.
       &quot;A String&quot;,
     ],
@@ -282,6 +291,7 @@ Args:
     },
     &quot;conversationLoggingSettings&quot;: { # Settings to describe the conversation logging behaviors for the app. # Optional. Settings to describe the conversation logging behaviors for the app.
       &quot;disableConversationLogging&quot;: True or False, # Optional. Whether to disable conversation logging for the sessions.
+      &quot;retentionWindow&quot;: &quot;A String&quot;, # Optional. Controls the retention window for the conversation. If not set, the conversation will be retained for 365 days.
     },
     &quot;evaluationAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configuration for how audio interactions should be recorded for the evaluation. By default, audio recording is not enabled for evaluation sessions.
       &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
@@ -294,6 +304,10 @@ Args:
       &quot;deidentifyTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) deidentify template name to instruct on how to de-identify content. Format: `projects/{project}/locations/{location}/deidentifyTemplates/{deidentify_template}`
       &quot;enableRedaction&quot;: True or False, # Optional. If true, redaction will be applied in various logging scenarios, including conversation history, Cloud Logging and audio recording.
       &quot;inspectTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) inspect template name to configure detection of sensitive data types. Format: `projects/{project}/locations/{location}/inspectTemplates/{inspect_template}`
+    },
+    &quot;unredactedAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configures recording of unredacted audio. Use this to maintain a raw backup with restricted access when audio redaction is enabled, typically for auditing or monitoring purposes.
+      &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
+      &quot;gcsPathPrefix&quot;: &quot;A String&quot;, # Optional. The Cloud Storage path prefix for audio recordings. This prefix can include the following placeholders, which will be dynamically substituted at serving time: - $project: project ID - $location: app location - $app: app ID - $date: session date in YYYY-MM-DD format - $session: session ID If the path prefix is not specified, the default prefix `$project/$location/$app/$date/$session/` will be used.
     },
   },
   &quot;metadata&quot;: { # Optional. Metadata about the app. This field can be used to store additional information relevant to the app&#x27;s details or intended usages.
@@ -350,6 +364,9 @@ Args:
   },
   &quot;toolExecutionMode&quot;: &quot;A String&quot;, # Optional. The tool execution mode for the app. If not provided, will default to PARALLEL.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp when the app was last updated.
+  &quot;validationErrors&quot;: [ # Output only. Misconfigurations or warnings in the app.
+    &quot;A String&quot;,
+  ],
   &quot;variableDeclarations&quot;: [ # Optional. The declarations of the variables.
     { # Defines the structure and metadata for a variable.
       &quot;description&quot;: &quot;A String&quot;, # Required. The description of the variable.
@@ -389,6 +406,11 @@ Args:
       },
     },
   ],
+  &quot;vpcScSettings&quot;: { # VPC-SC settings for the app. # Optional. VPC-SC settings for the app.
+    &quot;allowedOrigins&quot;: [ # Optional. The allowed HTTP(s) origins that OpenAPI tools in the App are able to directly call when VPC Service Controls are enabled. These strings must match the origin exactly, including the port if specified. For example, &quot;https://example.com&quot; or &quot;https://example.com:443&quot;. This list does not yet apply to Python tools that may make direct HTTP calls.
+      &quot;A String&quot;,
+    ],
+  },
 }
 
   appId: string, Optional. The ID to use for the app, which will become the final component of the app&#x27;s resource name. If not provided, a unique ID will be automatically assigned for the app.
@@ -472,6 +494,25 @@ Args:
   },
   &quot;context&quot;: { # Optional. The [ToolCallContext](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/tool/python#environment for details) to be passed to the Python tool.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+  },
+  &quot;mockConfig&quot;: { # Mock tool calls configuration for the session. # Optional. Mock configuration for the tool execution. If this field is set, tools that call other tools will be mocked based on the provided patterns and responses.
+    &quot;mockedToolCalls&quot;: [ # Optional. All tool calls to mock for the duration of the session.
+      { # A mocked tool call. Expresses the target tool + a pattern to match against that tool&#x27;s args / inputs. If the pattern matches, then the mock response will be returned.
+        &quot;expectedArgsPattern&quot;: { # Required. A pattern to match against the args / inputs of all dispatched tool calls. If the tool call inputs match this pattern, then mock output will be returned.
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+        &quot;mockResponse&quot;: { # Optional. The mock response / output to return if the tool call args / inputs match the pattern.
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+        &quot;tool&quot;: &quot;A String&quot;, # Optional. Deprecated. Use tool_identifier instead.
+        &quot;toolId&quot;: &quot;A String&quot;, # Optional. The name of the tool to mock. Format: `projects/{project}/locations/{location}/apps/{app}/tools/{tool}`
+        &quot;toolset&quot;: { # A tool that is created from a toolset. # Optional. The toolset to mock.
+          &quot;toolId&quot;: &quot;A String&quot;, # Optional. The tool ID to filter the tools to retrieve the schema for.
+          &quot;toolset&quot;: &quot;A String&quot;, # Required. The resource name of the Toolset from which this tool is derived. Format: `projects/{project}/locations/{location}/apps/{app}/toolsets/{toolset}`
+        },
+      },
+    ],
+    &quot;unmatchedToolCallBehavior&quot;: &quot;A String&quot;, # Required. Beavhior for tool calls that don&#x27;t match any args patterns in mocked_tool_calls.
   },
   &quot;tool&quot;: &quot;A String&quot;, # Optional. The name of the tool to execute. Format: projects/{project}/locations/{location}/apps/{app}/tools/{tool}
   &quot;toolsetTool&quot;: { # A tool that is created from a toolset. # Optional. The toolset tool to execute. Only one tool should match the predicate from the toolset. Otherwise, an error will be returned.
@@ -625,7 +666,16 @@ Returns:
   &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the app.
   &quot;displayName&quot;: &quot;A String&quot;, # Required. Display name of the app.
   &quot;errorHandlingSettings&quot;: { # Settings to describe how errors should be handled in the app. # Optional. Error handling settings of the app.
+    &quot;endSessionConfig&quot;: { # Configuration for ending the session in case of system errors (e.g. LLM errors). # Optional. Configuration for ending the session in case of system errors (e.g. LLM errors).
+      &quot;escalateSession&quot;: True or False, # Optional. Whether to escalate the session in EndSession. If session is escalated, metadata in EndSession will contain `session_escalated = true`. See https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/deploy/google-telephony-platform#transfer_a_call_to_a_human_agent for details.
+    },
     &quot;errorHandlingStrategy&quot;: &quot;A String&quot;, # Optional. The strategy to use for error handling.
+    &quot;fallbackResponseConfig&quot;: { # Configuration for handling fallback responses. # Optional. Configuration for handling fallback responses.
+      &quot;customFallbackMessages&quot;: { # Optional. The fallback messages in case of system errors (e.g. LLM errors), mapped by [supported language code](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
+      &quot;maxFallbackAttempts&quot;: 42, # Optional. The maximum number of fallback attempts to make before the agent emitting EndSession Signal.
+    },
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. Etag used to ensure the object hasn&#x27;t changed during a read-modify-write operation. If the etag is empty, the update will overwrite any concurrent changes.
   &quot;evaluationMetricsThresholds&quot;: { # Threshold settings for metrics in an Evaluation. # Optional. The evaluation thresholds for the app.
@@ -653,7 +703,7 @@ Returns:
   &quot;languageSettings&quot;: { # Language settings of the app. # Optional. Language settings of the app.
     &quot;defaultLanguageCode&quot;: &quot;A String&quot;, # Optional. The default language code of the app.
     &quot;enableMultilingualSupport&quot;: True or False, # Optional. Enables multilingual support. If true, agents in the app will use pre-built instructions to improve handling of multilingual input.
-    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
+    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. Deprecated: This feature is no longer supported. Use `enable_multilingual_support` instead to improve handling of multilingual input. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
     &quot;supportedLanguageCodes&quot;: [ # Optional. List of languages codes supported by the app, in addition to the `default_language_code`.
       &quot;A String&quot;,
     ],
@@ -674,6 +724,7 @@ Returns:
     },
     &quot;conversationLoggingSettings&quot;: { # Settings to describe the conversation logging behaviors for the app. # Optional. Settings to describe the conversation logging behaviors for the app.
       &quot;disableConversationLogging&quot;: True or False, # Optional. Whether to disable conversation logging for the sessions.
+      &quot;retentionWindow&quot;: &quot;A String&quot;, # Optional. Controls the retention window for the conversation. If not set, the conversation will be retained for 365 days.
     },
     &quot;evaluationAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configuration for how audio interactions should be recorded for the evaluation. By default, audio recording is not enabled for evaluation sessions.
       &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
@@ -686,6 +737,10 @@ Returns:
       &quot;deidentifyTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) deidentify template name to instruct on how to de-identify content. Format: `projects/{project}/locations/{location}/deidentifyTemplates/{deidentify_template}`
       &quot;enableRedaction&quot;: True or False, # Optional. If true, redaction will be applied in various logging scenarios, including conversation history, Cloud Logging and audio recording.
       &quot;inspectTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) inspect template name to configure detection of sensitive data types. Format: `projects/{project}/locations/{location}/inspectTemplates/{inspect_template}`
+    },
+    &quot;unredactedAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configures recording of unredacted audio. Use this to maintain a raw backup with restricted access when audio redaction is enabled, typically for auditing or monitoring purposes.
+      &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
+      &quot;gcsPathPrefix&quot;: &quot;A String&quot;, # Optional. The Cloud Storage path prefix for audio recordings. This prefix can include the following placeholders, which will be dynamically substituted at serving time: - $project: project ID - $location: app location - $app: app ID - $date: session date in YYYY-MM-DD format - $session: session ID If the path prefix is not specified, the default prefix `$project/$location/$app/$date/$session/` will be used.
     },
   },
   &quot;metadata&quot;: { # Optional. Metadata about the app. This field can be used to store additional information relevant to the app&#x27;s details or intended usages.
@@ -742,6 +797,9 @@ Returns:
   },
   &quot;toolExecutionMode&quot;: &quot;A String&quot;, # Optional. The tool execution mode for the app. If not provided, will default to PARALLEL.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp when the app was last updated.
+  &quot;validationErrors&quot;: [ # Output only. Misconfigurations or warnings in the app.
+    &quot;A String&quot;,
+  ],
   &quot;variableDeclarations&quot;: [ # Optional. The declarations of the variables.
     { # Defines the structure and metadata for a variable.
       &quot;description&quot;: &quot;A String&quot;, # Required. The description of the variable.
@@ -781,6 +839,11 @@ Returns:
       },
     },
   ],
+  &quot;vpcScSettings&quot;: { # VPC-SC settings for the app. # Optional. VPC-SC settings for the app.
+    &quot;allowedOrigins&quot;: [ # Optional. The allowed HTTP(s) origins that OpenAPI tools in the App are able to directly call when VPC Service Controls are enabled. These strings must match the origin exactly, including the port if specified. For example, &quot;https://example.com&quot; or &quot;https://example.com:443&quot;. This list does not yet apply to Python tools that may make direct HTTP calls.
+      &quot;A String&quot;,
+    ],
+  },
 }</pre>
 </div>
 
@@ -914,7 +977,16 @@ Returns:
       &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the app.
       &quot;displayName&quot;: &quot;A String&quot;, # Required. Display name of the app.
       &quot;errorHandlingSettings&quot;: { # Settings to describe how errors should be handled in the app. # Optional. Error handling settings of the app.
+        &quot;endSessionConfig&quot;: { # Configuration for ending the session in case of system errors (e.g. LLM errors). # Optional. Configuration for ending the session in case of system errors (e.g. LLM errors).
+          &quot;escalateSession&quot;: True or False, # Optional. Whether to escalate the session in EndSession. If session is escalated, metadata in EndSession will contain `session_escalated = true`. See https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/deploy/google-telephony-platform#transfer_a_call_to_a_human_agent for details.
+        },
         &quot;errorHandlingStrategy&quot;: &quot;A String&quot;, # Optional. The strategy to use for error handling.
+        &quot;fallbackResponseConfig&quot;: { # Configuration for handling fallback responses. # Optional. Configuration for handling fallback responses.
+          &quot;customFallbackMessages&quot;: { # Optional. The fallback messages in case of system errors (e.g. LLM errors), mapped by [supported language code](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+          &quot;maxFallbackAttempts&quot;: 42, # Optional. The maximum number of fallback attempts to make before the agent emitting EndSession Signal.
+        },
       },
       &quot;etag&quot;: &quot;A String&quot;, # Output only. Etag used to ensure the object hasn&#x27;t changed during a read-modify-write operation. If the etag is empty, the update will overwrite any concurrent changes.
       &quot;evaluationMetricsThresholds&quot;: { # Threshold settings for metrics in an Evaluation. # Optional. The evaluation thresholds for the app.
@@ -942,7 +1014,7 @@ Returns:
       &quot;languageSettings&quot;: { # Language settings of the app. # Optional. Language settings of the app.
         &quot;defaultLanguageCode&quot;: &quot;A String&quot;, # Optional. The default language code of the app.
         &quot;enableMultilingualSupport&quot;: True or False, # Optional. Enables multilingual support. If true, agents in the app will use pre-built instructions to improve handling of multilingual input.
-        &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
+        &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. Deprecated: This feature is no longer supported. Use `enable_multilingual_support` instead to improve handling of multilingual input. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
         &quot;supportedLanguageCodes&quot;: [ # Optional. List of languages codes supported by the app, in addition to the `default_language_code`.
           &quot;A String&quot;,
         ],
@@ -963,6 +1035,7 @@ Returns:
         },
         &quot;conversationLoggingSettings&quot;: { # Settings to describe the conversation logging behaviors for the app. # Optional. Settings to describe the conversation logging behaviors for the app.
           &quot;disableConversationLogging&quot;: True or False, # Optional. Whether to disable conversation logging for the sessions.
+          &quot;retentionWindow&quot;: &quot;A String&quot;, # Optional. Controls the retention window for the conversation. If not set, the conversation will be retained for 365 days.
         },
         &quot;evaluationAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configuration for how audio interactions should be recorded for the evaluation. By default, audio recording is not enabled for evaluation sessions.
           &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
@@ -975,6 +1048,10 @@ Returns:
           &quot;deidentifyTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) deidentify template name to instruct on how to de-identify content. Format: `projects/{project}/locations/{location}/deidentifyTemplates/{deidentify_template}`
           &quot;enableRedaction&quot;: True or False, # Optional. If true, redaction will be applied in various logging scenarios, including conversation history, Cloud Logging and audio recording.
           &quot;inspectTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) inspect template name to configure detection of sensitive data types. Format: `projects/{project}/locations/{location}/inspectTemplates/{inspect_template}`
+        },
+        &quot;unredactedAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configures recording of unredacted audio. Use this to maintain a raw backup with restricted access when audio redaction is enabled, typically for auditing or monitoring purposes.
+          &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
+          &quot;gcsPathPrefix&quot;: &quot;A String&quot;, # Optional. The Cloud Storage path prefix for audio recordings. This prefix can include the following placeholders, which will be dynamically substituted at serving time: - $project: project ID - $location: app location - $app: app ID - $date: session date in YYYY-MM-DD format - $session: session ID If the path prefix is not specified, the default prefix `$project/$location/$app/$date/$session/` will be used.
         },
       },
       &quot;metadata&quot;: { # Optional. Metadata about the app. This field can be used to store additional information relevant to the app&#x27;s details or intended usages.
@@ -1031,6 +1108,9 @@ Returns:
       },
       &quot;toolExecutionMode&quot;: &quot;A String&quot;, # Optional. The tool execution mode for the app. If not provided, will default to PARALLEL.
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp when the app was last updated.
+      &quot;validationErrors&quot;: [ # Output only. Misconfigurations or warnings in the app.
+        &quot;A String&quot;,
+      ],
       &quot;variableDeclarations&quot;: [ # Optional. The declarations of the variables.
         { # Defines the structure and metadata for a variable.
           &quot;description&quot;: &quot;A String&quot;, # Required. The description of the variable.
@@ -1070,6 +1150,11 @@ Returns:
           },
         },
       ],
+      &quot;vpcScSettings&quot;: { # VPC-SC settings for the app. # Optional. VPC-SC settings for the app.
+        &quot;allowedOrigins&quot;: [ # Optional. The allowed HTTP(s) origins that OpenAPI tools in the App are able to directly call when VPC Service Controls are enabled. These strings must match the origin exactly, including the port if specified. For example, &quot;https://example.com&quot; or &quot;https://example.com:443&quot;. This list does not yet apply to Python tools that may make direct HTTP calls.
+          &quot;A String&quot;,
+        ],
+      },
     },
   ],
   &quot;nextPageToken&quot;: &quot;A String&quot;, # A token that can be sent as ListAppsRequest.page_token to retrieve the next page. Absence of this field indicates there are no subsequent pages.
@@ -1163,7 +1248,16 @@ Args:
   &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the app.
   &quot;displayName&quot;: &quot;A String&quot;, # Required. Display name of the app.
   &quot;errorHandlingSettings&quot;: { # Settings to describe how errors should be handled in the app. # Optional. Error handling settings of the app.
+    &quot;endSessionConfig&quot;: { # Configuration for ending the session in case of system errors (e.g. LLM errors). # Optional. Configuration for ending the session in case of system errors (e.g. LLM errors).
+      &quot;escalateSession&quot;: True or False, # Optional. Whether to escalate the session in EndSession. If session is escalated, metadata in EndSession will contain `session_escalated = true`. See https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/deploy/google-telephony-platform#transfer_a_call_to_a_human_agent for details.
+    },
     &quot;errorHandlingStrategy&quot;: &quot;A String&quot;, # Optional. The strategy to use for error handling.
+    &quot;fallbackResponseConfig&quot;: { # Configuration for handling fallback responses. # Optional. Configuration for handling fallback responses.
+      &quot;customFallbackMessages&quot;: { # Optional. The fallback messages in case of system errors (e.g. LLM errors), mapped by [supported language code](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
+      &quot;maxFallbackAttempts&quot;: 42, # Optional. The maximum number of fallback attempts to make before the agent emitting EndSession Signal.
+    },
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. Etag used to ensure the object hasn&#x27;t changed during a read-modify-write operation. If the etag is empty, the update will overwrite any concurrent changes.
   &quot;evaluationMetricsThresholds&quot;: { # Threshold settings for metrics in an Evaluation. # Optional. The evaluation thresholds for the app.
@@ -1191,7 +1285,7 @@ Args:
   &quot;languageSettings&quot;: { # Language settings of the app. # Optional. Language settings of the app.
     &quot;defaultLanguageCode&quot;: &quot;A String&quot;, # Optional. The default language code of the app.
     &quot;enableMultilingualSupport&quot;: True or False, # Optional. Enables multilingual support. If true, agents in the app will use pre-built instructions to improve handling of multilingual input.
-    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
+    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. Deprecated: This feature is no longer supported. Use `enable_multilingual_support` instead to improve handling of multilingual input. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
     &quot;supportedLanguageCodes&quot;: [ # Optional. List of languages codes supported by the app, in addition to the `default_language_code`.
       &quot;A String&quot;,
     ],
@@ -1212,6 +1306,7 @@ Args:
     },
     &quot;conversationLoggingSettings&quot;: { # Settings to describe the conversation logging behaviors for the app. # Optional. Settings to describe the conversation logging behaviors for the app.
       &quot;disableConversationLogging&quot;: True or False, # Optional. Whether to disable conversation logging for the sessions.
+      &quot;retentionWindow&quot;: &quot;A String&quot;, # Optional. Controls the retention window for the conversation. If not set, the conversation will be retained for 365 days.
     },
     &quot;evaluationAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configuration for how audio interactions should be recorded for the evaluation. By default, audio recording is not enabled for evaluation sessions.
       &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
@@ -1224,6 +1319,10 @@ Args:
       &quot;deidentifyTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) deidentify template name to instruct on how to de-identify content. Format: `projects/{project}/locations/{location}/deidentifyTemplates/{deidentify_template}`
       &quot;enableRedaction&quot;: True or False, # Optional. If true, redaction will be applied in various logging scenarios, including conversation history, Cloud Logging and audio recording.
       &quot;inspectTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) inspect template name to configure detection of sensitive data types. Format: `projects/{project}/locations/{location}/inspectTemplates/{inspect_template}`
+    },
+    &quot;unredactedAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configures recording of unredacted audio. Use this to maintain a raw backup with restricted access when audio redaction is enabled, typically for auditing or monitoring purposes.
+      &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
+      &quot;gcsPathPrefix&quot;: &quot;A String&quot;, # Optional. The Cloud Storage path prefix for audio recordings. This prefix can include the following placeholders, which will be dynamically substituted at serving time: - $project: project ID - $location: app location - $app: app ID - $date: session date in YYYY-MM-DD format - $session: session ID If the path prefix is not specified, the default prefix `$project/$location/$app/$date/$session/` will be used.
     },
   },
   &quot;metadata&quot;: { # Optional. Metadata about the app. This field can be used to store additional information relevant to the app&#x27;s details or intended usages.
@@ -1280,6 +1379,9 @@ Args:
   },
   &quot;toolExecutionMode&quot;: &quot;A String&quot;, # Optional. The tool execution mode for the app. If not provided, will default to PARALLEL.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp when the app was last updated.
+  &quot;validationErrors&quot;: [ # Output only. Misconfigurations or warnings in the app.
+    &quot;A String&quot;,
+  ],
   &quot;variableDeclarations&quot;: [ # Optional. The declarations of the variables.
     { # Defines the structure and metadata for a variable.
       &quot;description&quot;: &quot;A String&quot;, # Required. The description of the variable.
@@ -1319,6 +1421,11 @@ Args:
       },
     },
   ],
+  &quot;vpcScSettings&quot;: { # VPC-SC settings for the app. # Optional. VPC-SC settings for the app.
+    &quot;allowedOrigins&quot;: [ # Optional. The allowed HTTP(s) origins that OpenAPI tools in the App are able to directly call when VPC Service Controls are enabled. These strings must match the origin exactly, including the port if specified. For example, &quot;https://example.com&quot; or &quot;https://example.com:443&quot;. This list does not yet apply to Python tools that may make direct HTTP calls.
+      &quot;A String&quot;,
+    ],
+  },
 }
 
   updateMask: string, Optional. Field mask is used to control which fields get updated. If the mask is not present, all fields will be updated.
@@ -1391,7 +1498,16 @@ Returns:
   &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the app.
   &quot;displayName&quot;: &quot;A String&quot;, # Required. Display name of the app.
   &quot;errorHandlingSettings&quot;: { # Settings to describe how errors should be handled in the app. # Optional. Error handling settings of the app.
+    &quot;endSessionConfig&quot;: { # Configuration for ending the session in case of system errors (e.g. LLM errors). # Optional. Configuration for ending the session in case of system errors (e.g. LLM errors).
+      &quot;escalateSession&quot;: True or False, # Optional. Whether to escalate the session in EndSession. If session is escalated, metadata in EndSession will contain `session_escalated = true`. See https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/deploy/google-telephony-platform#transfer_a_call_to_a_human_agent for details.
+    },
     &quot;errorHandlingStrategy&quot;: &quot;A String&quot;, # Optional. The strategy to use for error handling.
+    &quot;fallbackResponseConfig&quot;: { # Configuration for handling fallback responses. # Optional. Configuration for handling fallback responses.
+      &quot;customFallbackMessages&quot;: { # Optional. The fallback messages in case of system errors (e.g. LLM errors), mapped by [supported language code](https://docs.cloud.google.com/customer-engagement-ai/conversational-agents/ps/reference/language).
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
+      &quot;maxFallbackAttempts&quot;: 42, # Optional. The maximum number of fallback attempts to make before the agent emitting EndSession Signal.
+    },
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. Etag used to ensure the object hasn&#x27;t changed during a read-modify-write operation. If the etag is empty, the update will overwrite any concurrent changes.
   &quot;evaluationMetricsThresholds&quot;: { # Threshold settings for metrics in an Evaluation. # Optional. The evaluation thresholds for the app.
@@ -1419,7 +1535,7 @@ Returns:
   &quot;languageSettings&quot;: { # Language settings of the app. # Optional. Language settings of the app.
     &quot;defaultLanguageCode&quot;: &quot;A String&quot;, # Optional. The default language code of the app.
     &quot;enableMultilingualSupport&quot;: True or False, # Optional. Enables multilingual support. If true, agents in the app will use pre-built instructions to improve handling of multilingual input.
-    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
+    &quot;fallbackAction&quot;: &quot;A String&quot;, # Optional. Deprecated: This feature is no longer supported. Use `enable_multilingual_support` instead to improve handling of multilingual input. The action to perform when an agent receives input in an unsupported language. This can be a predefined action or a custom tool call. Valid values are: - A tool&#x27;s full resource name, which triggers a specific tool execution. - A predefined system action, such as &quot;escalate&quot; or &quot;exit&quot;, which triggers an EndSession signal with corresponding metadata to terminate the conversation.
     &quot;supportedLanguageCodes&quot;: [ # Optional. List of languages codes supported by the app, in addition to the `default_language_code`.
       &quot;A String&quot;,
     ],
@@ -1440,6 +1556,7 @@ Returns:
     },
     &quot;conversationLoggingSettings&quot;: { # Settings to describe the conversation logging behaviors for the app. # Optional. Settings to describe the conversation logging behaviors for the app.
       &quot;disableConversationLogging&quot;: True or False, # Optional. Whether to disable conversation logging for the sessions.
+      &quot;retentionWindow&quot;: &quot;A String&quot;, # Optional. Controls the retention window for the conversation. If not set, the conversation will be retained for 365 days.
     },
     &quot;evaluationAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configuration for how audio interactions should be recorded for the evaluation. By default, audio recording is not enabled for evaluation sessions.
       &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
@@ -1452,6 +1569,10 @@ Returns:
       &quot;deidentifyTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) deidentify template name to instruct on how to de-identify content. Format: `projects/{project}/locations/{location}/deidentifyTemplates/{deidentify_template}`
       &quot;enableRedaction&quot;: True or False, # Optional. If true, redaction will be applied in various logging scenarios, including conversation history, Cloud Logging and audio recording.
       &quot;inspectTemplate&quot;: &quot;A String&quot;, # Optional. [DLP](https://cloud.google.com/dlp/docs) inspect template name to configure detection of sensitive data types. Format: `projects/{project}/locations/{location}/inspectTemplates/{inspect_template}`
+    },
+    &quot;unredactedAudioRecordingConfig&quot;: { # Configuration for how the audio interactions should be recorded. # Optional. Configures recording of unredacted audio. Use this to maintain a raw backup with restricted access when audio redaction is enabled, typically for auditing or monitoring purposes.
+      &quot;gcsBucket&quot;: &quot;A String&quot;, # Optional. The [Cloud Storage](https://cloud.google.com/storage) bucket to store the session audio recordings. The URI must start with &quot;gs://&quot;. Please choose a bucket location that meets your data residency requirements. Note: If the Cloud Storage bucket is in a different project from the app, you should grant `storage.objects.create` permission to the CES service agent `service-@gcp-sa-ces.iam.gserviceaccount.com`.
+      &quot;gcsPathPrefix&quot;: &quot;A String&quot;, # Optional. The Cloud Storage path prefix for audio recordings. This prefix can include the following placeholders, which will be dynamically substituted at serving time: - $project: project ID - $location: app location - $app: app ID - $date: session date in YYYY-MM-DD format - $session: session ID If the path prefix is not specified, the default prefix `$project/$location/$app/$date/$session/` will be used.
     },
   },
   &quot;metadata&quot;: { # Optional. Metadata about the app. This field can be used to store additional information relevant to the app&#x27;s details or intended usages.
@@ -1508,6 +1629,9 @@ Returns:
   },
   &quot;toolExecutionMode&quot;: &quot;A String&quot;, # Optional. The tool execution mode for the app. If not provided, will default to PARALLEL.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp when the app was last updated.
+  &quot;validationErrors&quot;: [ # Output only. Misconfigurations or warnings in the app.
+    &quot;A String&quot;,
+  ],
   &quot;variableDeclarations&quot;: [ # Optional. The declarations of the variables.
     { # Defines the structure and metadata for a variable.
       &quot;description&quot;: &quot;A String&quot;, # Required. The description of the variable.
@@ -1547,6 +1671,11 @@ Returns:
       },
     },
   ],
+  &quot;vpcScSettings&quot;: { # VPC-SC settings for the app. # Optional. VPC-SC settings for the app.
+    &quot;allowedOrigins&quot;: [ # Optional. The allowed HTTP(s) origins that OpenAPI tools in the App are able to directly call when VPC Service Controls are enabled. These strings must match the origin exactly, including the port if specified. For example, &quot;https://example.com&quot; or &quot;https://example.com:443&quot;. This list does not yet apply to Python tools that may make direct HTTP calls.
+      &quot;A String&quot;,
+    ],
+  },
 }</pre>
 </div>
 

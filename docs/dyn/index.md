@@ -351,6 +351,10 @@
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudlocationfinder_v1alpha.html)
 
 
+## cloudnumberregistry
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudnumberregistry_v1alpha.html)
+
+
 ## cloudprofiler
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudprofiler_v2.html)
 
@@ -523,6 +527,7 @@
 
 
 ## developerknowledge
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/developerknowledge_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/developerknowledge_v1alpha.html)
 
 
@@ -741,6 +746,10 @@
 
 ## groupssettings
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/groupssettings_v1.html)
+
+
+## health
+* [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/health_v4.html)
 
 
 ## healthcare
@@ -1164,6 +1173,7 @@
 
 ## searchads360
 * [v0](http://googleapis.github.io/google-api-python-client/docs/dyn/searchads360_v0.html)
+* [v23](http://googleapis.github.io/google-api-python-client/docs/dyn/searchads360_v23.html)
 
 
 ## searchconsole
