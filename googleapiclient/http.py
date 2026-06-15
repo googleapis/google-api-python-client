@@ -137,15 +137,20 @@ def _should_retry_response(resp_status, content):
             LOGGER.warning("Invalid JSON content from response: %s", content)
             return False
 
-        if resp_status == http_client.FORBIDDEN:
-            LOGGER.warning('Encountered 403 Forbidden with reason "%s"', reason)
-            # Only retry on rate limit related failures.
-            if reason in ("userRateLimitExceeded", "rateLimitExceeded"):
-                return True
-        elif resp_status == http_client.BAD_REQUEST:
-            LOGGER.warning('Encountered 400 Bad Request with reason "%s"', reason)
-            # Only retry on precondition failures.
-            if reason in ("failedPrecondition", "preconditionFailed"):
+        RETRYABLE_INFO = {
+            http_client.FORBIDDEN: {
+                "reasons": ("userRateLimitExceeded", "rateLimitExceeded"),
+                "message": 'Encountered 403 Forbidden with reason "%s"',
+            },
+            http_client.BAD_REQUEST: {
+                "reasons": ("failedPrecondition", "preconditionFailed"),
+                "message": 'Encountered 400 Bad Request with reason "%s"',
+            },
+        }
+        if resp_status in RETRYABLE_INFO:
+            info = RETRYABLE_INFO[resp_status]
+            LOGGER.warning(info["message"], reason)
+            if reason in info["reasons"]:
                 return True
 
     # Everything else is a success or non-retriable so break.
