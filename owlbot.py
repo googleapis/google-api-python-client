@@ -37,7 +37,7 @@ templated_files = common.py_library(
 )
 
 # Copy kokoro configs.
-s.move(templated_files / ".kokoro")
+s.move(templated_files / ".kokoro", excludes=["samples/**", "test-samples*.sh"])
 s.move(templated_files / ".trampolinerc")  # config file for trampoline_v2
 
 # Also move issue templates
