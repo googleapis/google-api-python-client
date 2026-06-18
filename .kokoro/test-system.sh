@@ -16,7 +16,7 @@
 # The default test runner for samples.
 #
 # For periodic builds, we rewinds the repo to the latest release, and
-# run test-samples-impl.sh.
+# run test-system-impl.sh.
 
 # `-e` enables the script to automatically fail when a command fails
 # `-o pipefail` sets the exit code to the rightmost comment to exit with a non-zero
@@ -27,7 +27,7 @@ shopt -s globstar
 # Run periodic samples tests at latest release
 if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
     # preserving the test runner implementation.
-    cp .kokoro/test-samples-impl.sh "${TMPDIR}/test-samples-impl.sh"
+    cp .kokoro/test-system-impl.sh "${TMPDIR}/test-system-impl.sh"
     echo "--- IMPORTANT IMPORTANT IMPORTANT ---"
     echo "Now we rewind the repo back to the latest release..."
     LATEST_RELEASE=$(git describe --abbrev=0 --tags)
@@ -36,9 +36,9 @@ if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
     echo $(git rev-parse --verify HEAD)
     echo "--- IMPORTANT IMPORTANT IMPORTANT ---"
     # move back the test runner implementation if there's no file.
-    if [ ! -f .kokoro/test-samples-impl.sh ]; then
-	cp "${TMPDIR}/test-samples-impl.sh" .kokoro/test-samples-impl.sh
+    if [ ! -f .kokoro/test-system-impl.sh ]; then
+	cp "${TMPDIR}/test-system-impl.sh" .kokoro/test-system-impl.sh
     fi
 fi
 
-exec .kokoro/test-samples-impl.sh
+exec .kokoro/test-system-impl.sh

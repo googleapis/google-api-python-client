@@ -23,4 +23,4 @@ set -eo pipefail
 # Enables `**` to include files nested inside sub-folders
 shopt -s globstar
 
-exec .kokoro/test-samples-impl.sh
+exec .kokoro/test-system-impl.sh

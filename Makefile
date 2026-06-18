@@ -1,5 +1,5 @@
 pep8:
-	find googleapiclient samples -name "*.py" | xargs pep8 --ignore=E111,E202
+	find googleapiclient tests/system -name "*.py" | xargs pep8 --ignore=E111,E202
 
 APP_ENGINE_PATH=../google_appengine
 
@@ -32,8 +32,8 @@ prerelease:
 	python expandsymlinks.py
 	cd snapshot; python setup.py clean
 	cd snapshot; python setup.py sdist --formats=gztar,zip bdist_wheel --universal
-	cd snapshot; tar czf google-api-python-client-samples-$(shell python setup.py --version).tar.gz samples
-	cd snapshot; zip -r google-api-python-client-samples-$(shell python setup.py --version).zip samples
+	cd snapshot; tar czf google-api-python-client-samples-$(shell python setup.py --version).tar.gz tests/system
+	cd snapshot; zip -r google-api-python-client-samples-$(shell python setup.py --version).zip tests/system
 
 
 .PHONY: release
