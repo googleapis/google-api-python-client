@@ -35,6 +35,10 @@ if [[ -f "${KOKORO_GFILE_DIR}/project-id.json" ]]; then
   export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
   export GOOGLE_CLOUD_PROJECT="${PROJECT_ID}"
   gcloud config set project "$PROJECT_ID"
+  
+  # Compute tests require CLOUD_STORAGE_BUCKET. We reuse a fixed bucket name
+  # within the project so it doesn't leak thousands of buckets over time.
+  export CLOUD_STORAGE_BUCKET="${PROJECT_ID}-api-client-compute"
 fi
 
 # Setup service account credentials.
