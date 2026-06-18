@@ -17,8 +17,8 @@ set -eo pipefail
 shopt -s globstar
 
 # Exit early if samples don't exist
-if ! find tests/system -name 'requirements.txt' | grep -q .; then
-  echo "No tests run. './tests/system/**/requirements.txt' not found"
+if ! find samples -name 'requirements.txt' | grep -q .; then
+  echo "No tests run. './samples/**/requirements.txt' not found"
   exit 0
 fi
 
@@ -52,7 +52,8 @@ echo -e "\n******************** TESTING PROJECTS ********************"
 set +e
 RTN=0
 ROOT=$(pwd)
-for file in tests/system/**/requirements.txt; do
+# Find all requirements.txt in the samples directory (may break on whitespace).
+for file in samples/**/requirements.txt; do
     cd "$ROOT"
     file=$(dirname "$file")
     cd "$file"

@@ -198,7 +198,7 @@ def scan_readme_files(dirname):
 
 def main():
     # Get all the information we need out of the README files in the samples.
-    samples, keyword_set = scan_readme_files("./tests/system")
+    samples, keyword_set = scan_readme_files("./samples")
 
     # Now build a wiki page with all that information. Accumulate all the
     # information as string to be concatenated when were done.
