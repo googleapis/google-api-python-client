@@ -29,7 +29,7 @@ export PYTHONUNBUFFERED=1
 env | grep KOKORO
 
 # Install nox
-python3.9 -m pip install --upgrade --quiet nox virtualenv==20.26.6
+python3 -m pip install --upgrade --quiet nox virtualenv==20.26.6
 
 # Setup project id.
 if [[ -f "${KOKORO_GFILE_DIR}/project-id.json" ]]; then
@@ -58,7 +58,7 @@ for file in tests/system/**/requirements.txt; do
     echo "- testing $file"
     echo "------------------------------------------------------------"
 
-    python3.9 -m nox -s "$RUN_TESTS_SESSION"
+    python3 -m nox -s "$RUN_TESTS_SESSION"
     EXIT=$?
 
     if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
