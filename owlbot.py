@@ -56,7 +56,9 @@ s.move(templated_files / "renovate.json")
 # Samples templates
 # ----------------------------------------------------------------------------
 
-python.py_samples(skip_readmes=True, files_to_exclude=["noxfile.py", "requirements-test.txt"])
+python.py_samples(
+    skip_readmes=True, files_to_exclude=["noxfile.py", "requirements-test.txt"]
+)
 
 for noxfile in Path(".").glob("**/noxfile.py"):
     s.shell.run(["nox", "-s", "format"], cwd=noxfile.parent, hide_output=False)
