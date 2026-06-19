@@ -12,7 +12,7 @@ Install Dependencies
    .. _Python Development Environment Setup Guide:
        https://cloud.google.com/python/setup
 
-#. Create a virtualenv. Samples are compatible with Python 3.7+.
+#. Create a virtualenv. Samples are compatible with Python 3.10+.
 
     .. code-block:: bash
 
