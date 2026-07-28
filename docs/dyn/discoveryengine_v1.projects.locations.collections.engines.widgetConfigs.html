@@ -78,7 +78,7 @@ h1, h2, h3 {
   <code><a href="#close">close()</a></code></p>
 <p class="firstline">Close httplib2 connections.</p>
 <p class="toc_element">
-  <code><a href="#get">get(name, acceptCache=None, getWidgetConfigRequestOption_turnOffCollectionComponents=None, languageCode=None, x__xgafv=None)</a></code></p>
+  <code><a href="#get">get(name, acceptCache=None, getWidgetConfigRequestOption_turnOffCollectionComponents=None, languageCode=None, modelInfoView=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Gets a WidgetConfig.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, body=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -90,7 +90,7 @@ h1, h2, h3 {
 </div>
 
 <div class="method">
-    <code class="details" id="get">get(name, acceptCache=None, getWidgetConfigRequestOption_turnOffCollectionComponents=None, languageCode=None, x__xgafv=None)</code>
+    <code class="details" id="get">get(name, acceptCache=None, getWidgetConfigRequestOption_turnOffCollectionComponents=None, languageCode=None, modelInfoView=None, x__xgafv=None)</code>
   <pre>Gets a WidgetConfig.
 
 Args:
@@ -98,6 +98,11 @@ Args:
   acceptCache: boolean, Optional. Whether it&#x27;s acceptable to load the widget config from cache. If set to true, recent changes on widget configs may take a few minutes to reflect on the end user&#x27;s view. It&#x27;s recommended to set to true for maturely developed widgets, as it improves widget performance. Set to false to see changes reflected in prod right away, if your widget is under development.
   getWidgetConfigRequestOption_turnOffCollectionComponents: boolean, Optional. Whether to turn off collection_components in WidgetConfig to reduce latency and data transmission.
   languageCode: string, Optional. BCP-47 language tag (e.g. &quot;en&quot;, &quot;fr-CA&quot;). Used to localize human-readable strings in the response, such as the model selector `display_name` / `description` on `WidgetConfig.UiSettings.ModelConfigInfo`. Empty / unset falls back to the default language (English).
+  modelInfoView: string, Optional. Selects which view of `WidgetConfig.UiSettings.ModelConfigInfo` the backend computes. `MODEL_INFO_VIEW_ADMIN` is set by the Cloud Console admin &quot;Feature Management&quot; page (screen/4Vn9gQKbN8tb7gm) to receive the admin-surfaced model set with `ResolvedModel.admin_view` populated; unset / `MODEL_INFO_VIEW_WEB` returns the end-user selector. The mobile surface is detected from the `X-Goog-Gemini-Enterprise-Mobile` header instead (see `ModelInfoView`).
+    Allowed values
+      MODEL_INFO_VIEW_UNSPECIFIED - Not specified.
+      END_USER_WEB - The end-user web model selector view.
+      ADMIN - The Cloud Console admin &quot;Feature Control&quot; view that displays model toggles. Returns admin-surfaced models with `ResolvedModel.admin_view` populated.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format
@@ -126,11 +131,22 @@ Returns:
     &quot;googleSearchGroundingEnabled&quot;: True or False, # Whether or not the Google search grounding toggle is shown. Deprecated. Use web_grounding_type instead.
     &quot;webGroundingType&quot;: &quot;A String&quot;, # Optional. The type of web grounding to use.
   },
-  &quot;collectionComponents&quot;: [ # Output only. Collection components that lists all collections and child data stores associated with the widget config, those data sources can be used for filtering in widget service APIs, users can return results that from selected data sources.
-    { # Read-only collection component that contains data store collections fields that may be used for filtering
+  &quot;batchAuthStatuses&quot;: [ # Output only. The batch authorization statuses for the widget&#x27;s connectors.
+    { # Describes the batch authorization status for a batch_authorization_group.
+      &quot;batchAuthorizationGroup&quot;: &quot;A String&quot;, # Output only. The batch authorization group the placeholder belongs to.
+      &quot;connectorAuthState&quot;: { # Read-only connector in CollectionComponent auth state. # Output only. The current authorization state for this connector.
+        &quot;authState&quot;: &quot;A String&quot;, # Output only. The authorization state of the data connector.
+        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector. For synthetic placeholder `CollectionComponent` entries (returned by `LookupWidgetConfig` with `view = WITH_AVAILABLE_CONNECTORS` on SaaS / Business engines), this field is left empty. The widget should call `WidgetService.WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click to obtain a freshly-built authorization URL.
+        &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The authorization state update timestamp.
+      },
+      &quot;placeholder&quot;: &quot;A String&quot;, # Output only. It is the batch authorization group placeholder full resource name. This is not a real data connector (not existed in DataConnector table in spanner). It&#x27;s a resource name existing only in the connector_authorization in the user table. E.g. projects/{project}/locations/{location}/collections/oauth_placeholder_google_workspace/dataStores/dataConnector.
+    },
+  ],
+  &quot;collectionComponents&quot;: [ # Output only. Collection components that lists all collections and child data stores associated with the widget config, those data sources can be used for filtering in widget service APIs, users can return results that from selected data sources. For SaaS / Business engines, when `LookupWidgetConfig` is called with `view = WITH_AVAILABLE_CONNECTORS`, this list is additionally augmented with synthetic placeholder entries for connectors the caller may attach but has not yet attached (see `CollectionComponent` for the placeholder contract). The frontend can therefore render a unified list of already-attached and available-to-attach sources by iterating this single field. For Enterprise engines and for the default `view`, only already-attached connectors are returned (today&#x27;s behavior).
+    { # Read-only collection component that contains data store collections fields that may be used for filtering. For SaaS / Business engines, when `LookupWidgetConfig` is called with `view = WITH_AVAILABLE_CONNECTORS`, instances of this message are also used to represent synthetic placeholder entries for connectors the caller may attach but has not yet attached. Placeholder entries have `connector_auth_state.auth_state == AUTH_STATE_UNSPECIFIED` (or `NO_AUTH`), an empty `connector_auth_state.authorization_uri` (the widget calls `WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click), and synthetic placeholder values in `name` / `id` (see field comments). Fields that only make sense for materialized connectors (`data_store_components`, `tenant`, `action_connector`) are left unset for placeholder entries.
       &quot;connectorAuthState&quot;: { # Read-only connector in CollectionComponent auth state. # Output only. The auth uri of the connector source.
         &quot;authState&quot;: &quot;A String&quot;, # Output only. The authorization state of the data connector.
-        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector.
+        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector. For synthetic placeholder `CollectionComponent` entries (returned by `LookupWidgetConfig` with `view = WITH_AVAILABLE_CONNECTORS` on SaaS / Business engines), this field is left empty. The widget should call `WidgetService.WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click to obtain a freshly-built authorization URL.
         &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The authorization state update timestamp.
       },
       &quot;connectorIconLink&quot;: &quot;A String&quot;, # Output only. The icon link of the connector source.
@@ -146,8 +162,8 @@ Returns:
         },
       ],
       &quot;displayName&quot;: &quot;A String&quot;, # The display name of the collection.
-      &quot;id&quot;: &quot;A String&quot;, # Output only. the identifier of the collection, used for widget service. For now it refers to collection_id, in the future we will migrate the field to encrypted collection name UUID.
-      &quot;name&quot;: &quot;A String&quot;, # The name of the collection. It should be collection resource name. Format: `projects/{project}/locations/{location}/collections/{collection_id}`. For APIs under WidgetService, such as WidgetService.LookupWidgetConfig, the project number and location part is erased in this field.
+      &quot;id&quot;: &quot;A String&quot;, # Output only. the identifier of the collection, used for widget service. For now it refers to collection_id, in the future we will migrate the field to encrypted collection name UUID. For synthetic placeholder entries (see message-level comment) this is a synthetic placeholder id, not a real collection_id.
+      &quot;name&quot;: &quot;A String&quot;, # The name of the collection. It should be collection resource name. Format: `projects/{project}/locations/{location}/collections/{collection_id}`. For APIs under WidgetService, such as WidgetService.LookupWidgetConfig, the project number and location part is erased in this field. For synthetic placeholder entries (see message-level comment) this carries a synthetic placeholder collection id that does not correspond to a real collection. Callers must not attempt to resolve / GET this resource until the user authorizes the connector.
     },
   ],
   &quot;configId&quot;: &quot;A String&quot;, # Output only. Unique obfuscated identifier of a WidgetConfig.
@@ -307,7 +323,7 @@ Returns:
     &quot;enableSafeSearch&quot;: True or False, # Whether to enable safe search.
     &quot;enableSearchAsYouType&quot;: True or False, # Whether to enable search-as-you-type behavior for the search widget.
     &quot;enableVisualContentSummary&quot;: True or False, # If set to true, the widget will enable visual content summary on applicable search requests. Only used by healthcare search.
-    &quot;features&quot;: { # Output only. Feature config for the engine to opt in or opt out of features. Supported keys: * `agent-gallery` * `no-code-agent-builder` * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-sharing` * `personalization-memory` * `personalization-suggested-highlights` * `mobile-app-access` * `disable-agent-sharing` * `disable-image-generation` * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-content` * `disable-google-drive-upload` * `disable-welcome-emails` * `disable-canvas` * `canvas-workspace` * `disable-skills` * `disable-projects` * `enable-end-user-sharing-with-groups` * `single-agent-orchestration` * `multi-agent-orchestration` * `cross-product-intelligence` * `deep-research`
+    &quot;features&quot;: { # Output only. Feature config for the engine to opt in or opt out of features. Supported keys: * `agent-gallery` * `no-code-agent-builder` * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-sharing` * `personalization-memory` * `personalization-suggested-highlights` * `mobile-app-access` * `disable-agent-sharing` * `disable-image-generation` * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-content` * `disable-google-drive-upload` * `disable-welcome-emails` * `disable-canvas` * `canvas-workspace` * `disable-skills` * `disable-projects` * `enable-end-user-sharing-with-groups` * `single-agent-orchestration` * `multi-agent-orchestration` * `cross-product-intelligence`
       &quot;a_key&quot;: &quot;A String&quot;,
     },
     &quot;generativeAnswerConfig&quot;: { # Describes configuration for generative answer. # Describes generative answer configuration.
@@ -382,11 +398,22 @@ Args:
     &quot;googleSearchGroundingEnabled&quot;: True or False, # Whether or not the Google search grounding toggle is shown. Deprecated. Use web_grounding_type instead.
     &quot;webGroundingType&quot;: &quot;A String&quot;, # Optional. The type of web grounding to use.
   },
-  &quot;collectionComponents&quot;: [ # Output only. Collection components that lists all collections and child data stores associated with the widget config, those data sources can be used for filtering in widget service APIs, users can return results that from selected data sources.
-    { # Read-only collection component that contains data store collections fields that may be used for filtering
+  &quot;batchAuthStatuses&quot;: [ # Output only. The batch authorization statuses for the widget&#x27;s connectors.
+    { # Describes the batch authorization status for a batch_authorization_group.
+      &quot;batchAuthorizationGroup&quot;: &quot;A String&quot;, # Output only. The batch authorization group the placeholder belongs to.
+      &quot;connectorAuthState&quot;: { # Read-only connector in CollectionComponent auth state. # Output only. The current authorization state for this connector.
+        &quot;authState&quot;: &quot;A String&quot;, # Output only. The authorization state of the data connector.
+        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector. For synthetic placeholder `CollectionComponent` entries (returned by `LookupWidgetConfig` with `view = WITH_AVAILABLE_CONNECTORS` on SaaS / Business engines), this field is left empty. The widget should call `WidgetService.WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click to obtain a freshly-built authorization URL.
+        &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The authorization state update timestamp.
+      },
+      &quot;placeholder&quot;: &quot;A String&quot;, # Output only. It is the batch authorization group placeholder full resource name. This is not a real data connector (not existed in DataConnector table in spanner). It&#x27;s a resource name existing only in the connector_authorization in the user table. E.g. projects/{project}/locations/{location}/collections/oauth_placeholder_google_workspace/dataStores/dataConnector.
+    },
+  ],
+  &quot;collectionComponents&quot;: [ # Output only. Collection components that lists all collections and child data stores associated with the widget config, those data sources can be used for filtering in widget service APIs, users can return results that from selected data sources. For SaaS / Business engines, when `LookupWidgetConfig` is called with `view = WITH_AVAILABLE_CONNECTORS`, this list is additionally augmented with synthetic placeholder entries for connectors the caller may attach but has not yet attached (see `CollectionComponent` for the placeholder contract). The frontend can therefore render a unified list of already-attached and available-to-attach sources by iterating this single field. For Enterprise engines and for the default `view`, only already-attached connectors are returned (today&#x27;s behavior).
+    { # Read-only collection component that contains data store collections fields that may be used for filtering. For SaaS / Business engines, when `LookupWidgetConfig` is called with `view = WITH_AVAILABLE_CONNECTORS`, instances of this message are also used to represent synthetic placeholder entries for connectors the caller may attach but has not yet attached. Placeholder entries have `connector_auth_state.auth_state == AUTH_STATE_UNSPECIFIED` (or `NO_AUTH`), an empty `connector_auth_state.authorization_uri` (the widget calls `WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click), and synthetic placeholder values in `name` / `id` (see field comments). Fields that only make sense for materialized connectors (`data_store_components`, `tenant`, `action_connector`) are left unset for placeholder entries.
       &quot;connectorAuthState&quot;: { # Read-only connector in CollectionComponent auth state. # Output only. The auth uri of the connector source.
         &quot;authState&quot;: &quot;A String&quot;, # Output only. The authorization state of the data connector.
-        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector.
+        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector. For synthetic placeholder `CollectionComponent` entries (returned by `LookupWidgetConfig` with `view = WITH_AVAILABLE_CONNECTORS` on SaaS / Business engines), this field is left empty. The widget should call `WidgetService.WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click to obtain a freshly-built authorization URL.
         &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The authorization state update timestamp.
       },
       &quot;connectorIconLink&quot;: &quot;A String&quot;, # Output only. The icon link of the connector source.
@@ -402,8 +429,8 @@ Args:
         },
       ],
       &quot;displayName&quot;: &quot;A String&quot;, # The display name of the collection.
-      &quot;id&quot;: &quot;A String&quot;, # Output only. the identifier of the collection, used for widget service. For now it refers to collection_id, in the future we will migrate the field to encrypted collection name UUID.
-      &quot;name&quot;: &quot;A String&quot;, # The name of the collection. It should be collection resource name. Format: `projects/{project}/locations/{location}/collections/{collection_id}`. For APIs under WidgetService, such as WidgetService.LookupWidgetConfig, the project number and location part is erased in this field.
+      &quot;id&quot;: &quot;A String&quot;, # Output only. the identifier of the collection, used for widget service. For now it refers to collection_id, in the future we will migrate the field to encrypted collection name UUID. For synthetic placeholder entries (see message-level comment) this is a synthetic placeholder id, not a real collection_id.
+      &quot;name&quot;: &quot;A String&quot;, # The name of the collection. It should be collection resource name. Format: `projects/{project}/locations/{location}/collections/{collection_id}`. For APIs under WidgetService, such as WidgetService.LookupWidgetConfig, the project number and location part is erased in this field. For synthetic placeholder entries (see message-level comment) this carries a synthetic placeholder collection id that does not correspond to a real collection. Callers must not attempt to resolve / GET this resource until the user authorizes the connector.
     },
   ],
   &quot;configId&quot;: &quot;A String&quot;, # Output only. Unique obfuscated identifier of a WidgetConfig.
@@ -563,7 +590,7 @@ Args:
     &quot;enableSafeSearch&quot;: True or False, # Whether to enable safe search.
     &quot;enableSearchAsYouType&quot;: True or False, # Whether to enable search-as-you-type behavior for the search widget.
     &quot;enableVisualContentSummary&quot;: True or False, # If set to true, the widget will enable visual content summary on applicable search requests. Only used by healthcare search.
-    &quot;features&quot;: { # Output only. Feature config for the engine to opt in or opt out of features. Supported keys: * `agent-gallery` * `no-code-agent-builder` * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-sharing` * `personalization-memory` * `personalization-suggested-highlights` * `mobile-app-access` * `disable-agent-sharing` * `disable-image-generation` * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-content` * `disable-google-drive-upload` * `disable-welcome-emails` * `disable-canvas` * `canvas-workspace` * `disable-skills` * `disable-projects` * `enable-end-user-sharing-with-groups` * `single-agent-orchestration` * `multi-agent-orchestration` * `cross-product-intelligence` * `deep-research`
+    &quot;features&quot;: { # Output only. Feature config for the engine to opt in or opt out of features. Supported keys: * `agent-gallery` * `no-code-agent-builder` * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-sharing` * `personalization-memory` * `personalization-suggested-highlights` * `mobile-app-access` * `disable-agent-sharing` * `disable-image-generation` * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-content` * `disable-google-drive-upload` * `disable-welcome-emails` * `disable-canvas` * `canvas-workspace` * `disable-skills` * `disable-projects` * `enable-end-user-sharing-with-groups` * `single-agent-orchestration` * `multi-agent-orchestration` * `cross-product-intelligence`
       &quot;a_key&quot;: &quot;A String&quot;,
     },
     &quot;generativeAnswerConfig&quot;: { # Describes configuration for generative answer. # Describes generative answer configuration.
@@ -637,11 +664,22 @@ Returns:
     &quot;googleSearchGroundingEnabled&quot;: True or False, # Whether or not the Google search grounding toggle is shown. Deprecated. Use web_grounding_type instead.
     &quot;webGroundingType&quot;: &quot;A String&quot;, # Optional. The type of web grounding to use.
   },
-  &quot;collectionComponents&quot;: [ # Output only. Collection components that lists all collections and child data stores associated with the widget config, those data sources can be used for filtering in widget service APIs, users can return results that from selected data sources.
-    { # Read-only collection component that contains data store collections fields that may be used for filtering
+  &quot;batchAuthStatuses&quot;: [ # Output only. The batch authorization statuses for the widget&#x27;s connectors.
+    { # Describes the batch authorization status for a batch_authorization_group.
+      &quot;batchAuthorizationGroup&quot;: &quot;A String&quot;, # Output only. The batch authorization group the placeholder belongs to.
+      &quot;connectorAuthState&quot;: { # Read-only connector in CollectionComponent auth state. # Output only. The current authorization state for this connector.
+        &quot;authState&quot;: &quot;A String&quot;, # Output only. The authorization state of the data connector.
+        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector. For synthetic placeholder `CollectionComponent` entries (returned by `LookupWidgetConfig` with `view = WITH_AVAILABLE_CONNECTORS` on SaaS / Business engines), this field is left empty. The widget should call `WidgetService.WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click to obtain a freshly-built authorization URL.
+        &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The authorization state update timestamp.
+      },
+      &quot;placeholder&quot;: &quot;A String&quot;, # Output only. It is the batch authorization group placeholder full resource name. This is not a real data connector (not existed in DataConnector table in spanner). It&#x27;s a resource name existing only in the connector_authorization in the user table. E.g. projects/{project}/locations/{location}/collections/oauth_placeholder_google_workspace/dataStores/dataConnector.
+    },
+  ],
+  &quot;collectionComponents&quot;: [ # Output only. Collection components that lists all collections and child data stores associated with the widget config, those data sources can be used for filtering in widget service APIs, users can return results that from selected data sources. For SaaS / Business engines, when `LookupWidgetConfig` is called with `view = WITH_AVAILABLE_CONNECTORS`, this list is additionally augmented with synthetic placeholder entries for connectors the caller may attach but has not yet attached (see `CollectionComponent` for the placeholder contract). The frontend can therefore render a unified list of already-attached and available-to-attach sources by iterating this single field. For Enterprise engines and for the default `view`, only already-attached connectors are returned (today&#x27;s behavior).
+    { # Read-only collection component that contains data store collections fields that may be used for filtering. For SaaS / Business engines, when `LookupWidgetConfig` is called with `view = WITH_AVAILABLE_CONNECTORS`, instances of this message are also used to represent synthetic placeholder entries for connectors the caller may attach but has not yet attached. Placeholder entries have `connector_auth_state.auth_state == AUTH_STATE_UNSPECIFIED` (or `NO_AUTH`), an empty `connector_auth_state.authorization_uri` (the widget calls `WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click), and synthetic placeholder values in `name` / `id` (see field comments). Fields that only make sense for materialized connectors (`data_store_components`, `tenant`, `action_connector`) are left unset for placeholder entries.
       &quot;connectorAuthState&quot;: { # Read-only connector in CollectionComponent auth state. # Output only. The auth uri of the connector source.
         &quot;authState&quot;: &quot;A String&quot;, # Output only. The authorization state of the data connector.
-        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector.
+        &quot;authorizationUri&quot;: &quot;A String&quot;, # Output only. The authorization uri for the data connector. For synthetic placeholder `CollectionComponent` entries (returned by `LookupWidgetConfig` with `view = WITH_AVAILABLE_CONNECTORS` on SaaS / Business engines), this field is left empty. The widget should call `WidgetService.WidgetBuildAuthorizationUrl` on the user&#x27;s &quot;Connect&quot; click to obtain a freshly-built authorization URL.
         &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The authorization state update timestamp.
       },
       &quot;connectorIconLink&quot;: &quot;A String&quot;, # Output only. The icon link of the connector source.
@@ -657,8 +695,8 @@ Returns:
         },
       ],
       &quot;displayName&quot;: &quot;A String&quot;, # The display name of the collection.
-      &quot;id&quot;: &quot;A String&quot;, # Output only. the identifier of the collection, used for widget service. For now it refers to collection_id, in the future we will migrate the field to encrypted collection name UUID.
-      &quot;name&quot;: &quot;A String&quot;, # The name of the collection. It should be collection resource name. Format: `projects/{project}/locations/{location}/collections/{collection_id}`. For APIs under WidgetService, such as WidgetService.LookupWidgetConfig, the project number and location part is erased in this field.
+      &quot;id&quot;: &quot;A String&quot;, # Output only. the identifier of the collection, used for widget service. For now it refers to collection_id, in the future we will migrate the field to encrypted collection name UUID. For synthetic placeholder entries (see message-level comment) this is a synthetic placeholder id, not a real collection_id.
+      &quot;name&quot;: &quot;A String&quot;, # The name of the collection. It should be collection resource name. Format: `projects/{project}/locations/{location}/collections/{collection_id}`. For APIs under WidgetService, such as WidgetService.LookupWidgetConfig, the project number and location part is erased in this field. For synthetic placeholder entries (see message-level comment) this carries a synthetic placeholder collection id that does not correspond to a real collection. Callers must not attempt to resolve / GET this resource until the user authorizes the connector.
     },
   ],
   &quot;configId&quot;: &quot;A String&quot;, # Output only. Unique obfuscated identifier of a WidgetConfig.
@@ -818,7 +856,7 @@ Returns:
     &quot;enableSafeSearch&quot;: True or False, # Whether to enable safe search.
     &quot;enableSearchAsYouType&quot;: True or False, # Whether to enable search-as-you-type behavior for the search widget.
     &quot;enableVisualContentSummary&quot;: True or False, # If set to true, the widget will enable visual content summary on applicable search requests. Only used by healthcare search.
-    &quot;features&quot;: { # Output only. Feature config for the engine to opt in or opt out of features. Supported keys: * `agent-gallery` * `no-code-agent-builder` * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-sharing` * `personalization-memory` * `personalization-suggested-highlights` * `mobile-app-access` * `disable-agent-sharing` * `disable-image-generation` * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-content` * `disable-google-drive-upload` * `disable-welcome-emails` * `disable-canvas` * `canvas-workspace` * `disable-skills` * `disable-projects` * `enable-end-user-sharing-with-groups` * `single-agent-orchestration` * `multi-agent-orchestration` * `cross-product-intelligence` * `deep-research`
+    &quot;features&quot;: { # Output only. Feature config for the engine to opt in or opt out of features. Supported keys: * `agent-gallery` * `no-code-agent-builder` * `prompt-gallery` * `model-selector` * `notebook-lm` * `people-search` * `people-search-org-chart` * `bi-directional-audio` * `feedback` * `session-sharing` * `personalization-memory` * `personalization-suggested-highlights` * `mobile-app-access` * `disable-agent-sharing` * `disable-image-generation` * `disable-video-generation` * `disable-onedrive-upload` * `disable-talk-to-content` * `disable-google-drive-upload` * `disable-welcome-emails` * `disable-canvas` * `canvas-workspace` * `disable-skills` * `disable-projects` * `enable-end-user-sharing-with-groups` * `single-agent-orchestration` * `multi-agent-orchestration` * `cross-product-intelligence`
       &quot;a_key&quot;: &quot;A String&quot;,
     },
     &quot;generativeAnswerConfig&quot;: { # Describes configuration for generative answer. # Describes generative answer configuration.
