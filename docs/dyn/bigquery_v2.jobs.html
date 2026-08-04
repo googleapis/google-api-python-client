@@ -624,7 +624,7 @@ Returns:
         &quot;writeDisposition&quot;: &quot;A String&quot;, # Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a &#x27;duplicate&#x27; error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
         &quot;writeIncrementalResults&quot;: True or False, # Optional. This is only supported for a SELECT query using a temporary table. If set, the query is allowed to write results incrementally to the temporary result table. This may incur a performance penalty. This option cannot be used with Legacy SQL. This feature is not yet available.
       },
-      &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.
+      &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`, which requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.
     },
     &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
     &quot;id&quot;: &quot;A String&quot;, # Output only. Opaque ID field of the job.
@@ -644,6 +644,7 @@ Returns:
       &quot;copy&quot;: { # Statistics for a copy job. # Output only. Statistics for a copy job.
         &quot;copiedLogicalBytes&quot;: &quot;A String&quot;, # Output only. Number of logical bytes copied to the destination table.
         &quot;copiedRows&quot;: &quot;A String&quot;, # Output only. Number of rows copied to the destination table.
+        &quot;remoteDestinationRegion&quot;: &quot;A String&quot;, # Output only. Destination region for a cross-region copy job. Not set for in-region copy jobs.
       },
       &quot;creationTime&quot;: &quot;A String&quot;, # Output only. Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
       &quot;dataMaskingStatistics&quot;: { # Statistics for data-masking. # Output only. Statistics for data-masking. Present only for query and extract jobs.
@@ -669,6 +670,9 @@ Returns:
         ],
       },
       &quot;finalExecutionDurationMs&quot;: &quot;A String&quot;, # Output only. The duration in milliseconds of the execution of the final attempt of this job, as BigQuery may internally re-attempt to execute the job.
+      &quot;globalQueryRemoteRegions&quot;: [ # Output only. Regions where the global query accesses data.
+        &quot;A String&quot;,
+      ],
       &quot;load&quot;: { # Statistics for a load job. # Output only. Statistics for a load job.
         &quot;badRecords&quot;: &quot;A String&quot;, # Output only. The number of bad records encountered. Note that if the job has failed because of more bad records encountered than the maximum allowed in the load job configuration, then this number can be less than the total number of bad records present in the input data.
         &quot;inputFileBytes&quot;: &quot;A String&quot;, # Output only. Number of bytes of source data in a load job.
@@ -688,6 +692,11 @@ Returns:
         ],
       },
       &quot;numChildJobs&quot;: &quot;A String&quot;, # Output only. Number of child jobs executed.
+      &quot;parentGlobalQueryJob&quot;: { # A job reference is a fully qualified identifier for referring to a job. # Output only. The global query that created this job.
+        &quot;jobId&quot;: &quot;A String&quot;, # Required. The ID of the job. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), or dashes (-). The maximum length is 1,024 characters.
+        &quot;location&quot;: &quot;A String&quot;, # Optional. The geographic location of the job. The default value is US. For more information about BigQuery locations, see: https://cloud.google.com/bigquery/docs/locations
+        &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this job.
+      },
       &quot;parentJobId&quot;: &quot;A String&quot;, # Output only. If this is a child job, specifies the job ID of the parent.
       &quot;query&quot;: { # Statistics for a query job. # Output only. Statistics for a query job.
         &quot;biEngineStatistics&quot;: { # Statistics for a BI Engine specific query. Populated as part of JobStatistics2 # Output only. BI Engine specific Statistics.
@@ -1344,6 +1353,13 @@ Returns:
         &quot;modelTrainingCurrentIteration&quot;: 42, # Deprecated.
         &quot;modelTrainingExpectedTotalIteration&quot;: &quot;A String&quot;, # Deprecated.
         &quot;numDmlAffectedRows&quot;: &quot;A String&quot;, # Output only. The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
+        &quot;objectStorageStats&quot;: [ # Output only. Storage and caching statistics per cloud provider for queries over object storage.
+          { # Storage and caching statistics for object storage.
+            &quot;cacheBytesRead&quot;: &quot;A String&quot;, # Total bytes read from the GCP Lakehouse-internal cache, avoiding an object storage read.
+            &quot;cloudProvider&quot;: &quot;A String&quot;, # The cloud provider for this block of statistics.
+            &quot;objectStorageBytesRead&quot;: &quot;A String&quot;, # Total bytes read directly from the cloud provider&#x27;s storage.
+          },
+        ],
         &quot;performanceInsights&quot;: { # Performance insights for the job. # Output only. Performance insights.
           &quot;avgPreviousExecutionMs&quot;: &quot;A String&quot;, # Output only. Average execution ms of previous runs. Indicates the job ran slow compared to previous executions. To find previous executions, use INFORMATION_SCHEMA tables and filter jobs with same query hash.
           &quot;stagePerformanceChangeInsights&quot;: [ # Output only. Query stage performance insights compared to previous runs, for diagnosing performance regression.
@@ -2260,7 +2276,7 @@ Returns:
       &quot;writeDisposition&quot;: &quot;A String&quot;, # Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a &#x27;duplicate&#x27; error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
       &quot;writeIncrementalResults&quot;: True or False, # Optional. This is only supported for a SELECT query using a temporary table. If set, the query is allowed to write results incrementally to the temporary result table. This may incur a performance penalty. This option cannot be used with Legacy SQL. This feature is not yet available.
     },
-    &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.
+    &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`, which requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
   &quot;id&quot;: &quot;A String&quot;, # Output only. Opaque ID field of the job.
@@ -2280,6 +2296,7 @@ Returns:
     &quot;copy&quot;: { # Statistics for a copy job. # Output only. Statistics for a copy job.
       &quot;copiedLogicalBytes&quot;: &quot;A String&quot;, # Output only. Number of logical bytes copied to the destination table.
       &quot;copiedRows&quot;: &quot;A String&quot;, # Output only. Number of rows copied to the destination table.
+      &quot;remoteDestinationRegion&quot;: &quot;A String&quot;, # Output only. Destination region for a cross-region copy job. Not set for in-region copy jobs.
     },
     &quot;creationTime&quot;: &quot;A String&quot;, # Output only. Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
     &quot;dataMaskingStatistics&quot;: { # Statistics for data-masking. # Output only. Statistics for data-masking. Present only for query and extract jobs.
@@ -2305,6 +2322,9 @@ Returns:
       ],
     },
     &quot;finalExecutionDurationMs&quot;: &quot;A String&quot;, # Output only. The duration in milliseconds of the execution of the final attempt of this job, as BigQuery may internally re-attempt to execute the job.
+    &quot;globalQueryRemoteRegions&quot;: [ # Output only. Regions where the global query accesses data.
+      &quot;A String&quot;,
+    ],
     &quot;load&quot;: { # Statistics for a load job. # Output only. Statistics for a load job.
       &quot;badRecords&quot;: &quot;A String&quot;, # Output only. The number of bad records encountered. Note that if the job has failed because of more bad records encountered than the maximum allowed in the load job configuration, then this number can be less than the total number of bad records present in the input data.
       &quot;inputFileBytes&quot;: &quot;A String&quot;, # Output only. Number of bytes of source data in a load job.
@@ -2324,6 +2344,11 @@ Returns:
       ],
     },
     &quot;numChildJobs&quot;: &quot;A String&quot;, # Output only. Number of child jobs executed.
+    &quot;parentGlobalQueryJob&quot;: { # A job reference is a fully qualified identifier for referring to a job. # Output only. The global query that created this job.
+      &quot;jobId&quot;: &quot;A String&quot;, # Required. The ID of the job. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), or dashes (-). The maximum length is 1,024 characters.
+      &quot;location&quot;: &quot;A String&quot;, # Optional. The geographic location of the job. The default value is US. For more information about BigQuery locations, see: https://cloud.google.com/bigquery/docs/locations
+      &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this job.
+    },
     &quot;parentJobId&quot;: &quot;A String&quot;, # Output only. If this is a child job, specifies the job ID of the parent.
     &quot;query&quot;: { # Statistics for a query job. # Output only. Statistics for a query job.
       &quot;biEngineStatistics&quot;: { # Statistics for a BI Engine specific query. Populated as part of JobStatistics2 # Output only. BI Engine specific Statistics.
@@ -2980,6 +3005,13 @@ Returns:
       &quot;modelTrainingCurrentIteration&quot;: 42, # Deprecated.
       &quot;modelTrainingExpectedTotalIteration&quot;: &quot;A String&quot;, # Deprecated.
       &quot;numDmlAffectedRows&quot;: &quot;A String&quot;, # Output only. The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
+      &quot;objectStorageStats&quot;: [ # Output only. Storage and caching statistics per cloud provider for queries over object storage.
+        { # Storage and caching statistics for object storage.
+          &quot;cacheBytesRead&quot;: &quot;A String&quot;, # Total bytes read from the GCP Lakehouse-internal cache, avoiding an object storage read.
+          &quot;cloudProvider&quot;: &quot;A String&quot;, # The cloud provider for this block of statistics.
+          &quot;objectStorageBytesRead&quot;: &quot;A String&quot;, # Total bytes read directly from the cloud provider&#x27;s storage.
+        },
+      ],
       &quot;performanceInsights&quot;: { # Performance insights for the job. # Output only. Performance insights.
         &quot;avgPreviousExecutionMs&quot;: &quot;A String&quot;, # Output only. Average execution ms of previous runs. Indicates the job ran slow compared to previous executions. To find previous executions, use INFORMATION_SCHEMA tables and filter jobs with same query hash.
         &quot;stagePerformanceChangeInsights&quot;: [ # Output only. Query stage performance insights compared to previous runs, for diagnosing performance regression.
@@ -4004,7 +4036,7 @@ Args:
       &quot;writeDisposition&quot;: &quot;A String&quot;, # Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a &#x27;duplicate&#x27; error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
       &quot;writeIncrementalResults&quot;: True or False, # Optional. This is only supported for a SELECT query using a temporary table. If set, the query is allowed to write results incrementally to the temporary result table. This may incur a performance penalty. This option cannot be used with Legacy SQL. This feature is not yet available.
     },
-    &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.
+    &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`, which requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
   &quot;id&quot;: &quot;A String&quot;, # Output only. Opaque ID field of the job.
@@ -4024,6 +4056,7 @@ Args:
     &quot;copy&quot;: { # Statistics for a copy job. # Output only. Statistics for a copy job.
       &quot;copiedLogicalBytes&quot;: &quot;A String&quot;, # Output only. Number of logical bytes copied to the destination table.
       &quot;copiedRows&quot;: &quot;A String&quot;, # Output only. Number of rows copied to the destination table.
+      &quot;remoteDestinationRegion&quot;: &quot;A String&quot;, # Output only. Destination region for a cross-region copy job. Not set for in-region copy jobs.
     },
     &quot;creationTime&quot;: &quot;A String&quot;, # Output only. Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
     &quot;dataMaskingStatistics&quot;: { # Statistics for data-masking. # Output only. Statistics for data-masking. Present only for query and extract jobs.
@@ -4049,6 +4082,9 @@ Args:
       ],
     },
     &quot;finalExecutionDurationMs&quot;: &quot;A String&quot;, # Output only. The duration in milliseconds of the execution of the final attempt of this job, as BigQuery may internally re-attempt to execute the job.
+    &quot;globalQueryRemoteRegions&quot;: [ # Output only. Regions where the global query accesses data.
+      &quot;A String&quot;,
+    ],
     &quot;load&quot;: { # Statistics for a load job. # Output only. Statistics for a load job.
       &quot;badRecords&quot;: &quot;A String&quot;, # Output only. The number of bad records encountered. Note that if the job has failed because of more bad records encountered than the maximum allowed in the load job configuration, then this number can be less than the total number of bad records present in the input data.
       &quot;inputFileBytes&quot;: &quot;A String&quot;, # Output only. Number of bytes of source data in a load job.
@@ -4068,6 +4104,11 @@ Args:
       ],
     },
     &quot;numChildJobs&quot;: &quot;A String&quot;, # Output only. Number of child jobs executed.
+    &quot;parentGlobalQueryJob&quot;: { # A job reference is a fully qualified identifier for referring to a job. # Output only. The global query that created this job.
+      &quot;jobId&quot;: &quot;A String&quot;, # Required. The ID of the job. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), or dashes (-). The maximum length is 1,024 characters.
+      &quot;location&quot;: &quot;A String&quot;, # Optional. The geographic location of the job. The default value is US. For more information about BigQuery locations, see: https://cloud.google.com/bigquery/docs/locations
+      &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this job.
+    },
     &quot;parentJobId&quot;: &quot;A String&quot;, # Output only. If this is a child job, specifies the job ID of the parent.
     &quot;query&quot;: { # Statistics for a query job. # Output only. Statistics for a query job.
       &quot;biEngineStatistics&quot;: { # Statistics for a BI Engine specific query. Populated as part of JobStatistics2 # Output only. BI Engine specific Statistics.
@@ -4724,6 +4765,13 @@ Args:
       &quot;modelTrainingCurrentIteration&quot;: 42, # Deprecated.
       &quot;modelTrainingExpectedTotalIteration&quot;: &quot;A String&quot;, # Deprecated.
       &quot;numDmlAffectedRows&quot;: &quot;A String&quot;, # Output only. The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
+      &quot;objectStorageStats&quot;: [ # Output only. Storage and caching statistics per cloud provider for queries over object storage.
+        { # Storage and caching statistics for object storage.
+          &quot;cacheBytesRead&quot;: &quot;A String&quot;, # Total bytes read from the GCP Lakehouse-internal cache, avoiding an object storage read.
+          &quot;cloudProvider&quot;: &quot;A String&quot;, # The cloud provider for this block of statistics.
+          &quot;objectStorageBytesRead&quot;: &quot;A String&quot;, # Total bytes read directly from the cloud provider&#x27;s storage.
+        },
+      ],
       &quot;performanceInsights&quot;: { # Performance insights for the job. # Output only. Performance insights.
         &quot;avgPreviousExecutionMs&quot;: &quot;A String&quot;, # Output only. Average execution ms of previous runs. Indicates the job ran slow compared to previous executions. To find previous executions, use INFORMATION_SCHEMA tables and filter jobs with same query hash.
         &quot;stagePerformanceChangeInsights&quot;: [ # Output only. Query stage performance insights compared to previous runs, for diagnosing performance regression.
@@ -5611,7 +5659,7 @@ Returns:
       &quot;writeDisposition&quot;: &quot;A String&quot;, # Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a &#x27;duplicate&#x27; error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
       &quot;writeIncrementalResults&quot;: True or False, # Optional. This is only supported for a SELECT query using a temporary table. If set, the query is allowed to write results incrementally to the temporary result table. This may incur a performance penalty. This option cannot be used with Legacy SQL. This feature is not yet available.
     },
-    &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.
+    &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`, which requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.
   },
   &quot;etag&quot;: &quot;A String&quot;, # Output only. A hash of this resource.
   &quot;id&quot;: &quot;A String&quot;, # Output only. Opaque ID field of the job.
@@ -5631,6 +5679,7 @@ Returns:
     &quot;copy&quot;: { # Statistics for a copy job. # Output only. Statistics for a copy job.
       &quot;copiedLogicalBytes&quot;: &quot;A String&quot;, # Output only. Number of logical bytes copied to the destination table.
       &quot;copiedRows&quot;: &quot;A String&quot;, # Output only. Number of rows copied to the destination table.
+      &quot;remoteDestinationRegion&quot;: &quot;A String&quot;, # Output only. Destination region for a cross-region copy job. Not set for in-region copy jobs.
     },
     &quot;creationTime&quot;: &quot;A String&quot;, # Output only. Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
     &quot;dataMaskingStatistics&quot;: { # Statistics for data-masking. # Output only. Statistics for data-masking. Present only for query and extract jobs.
@@ -5656,6 +5705,9 @@ Returns:
       ],
     },
     &quot;finalExecutionDurationMs&quot;: &quot;A String&quot;, # Output only. The duration in milliseconds of the execution of the final attempt of this job, as BigQuery may internally re-attempt to execute the job.
+    &quot;globalQueryRemoteRegions&quot;: [ # Output only. Regions where the global query accesses data.
+      &quot;A String&quot;,
+    ],
     &quot;load&quot;: { # Statistics for a load job. # Output only. Statistics for a load job.
       &quot;badRecords&quot;: &quot;A String&quot;, # Output only. The number of bad records encountered. Note that if the job has failed because of more bad records encountered than the maximum allowed in the load job configuration, then this number can be less than the total number of bad records present in the input data.
       &quot;inputFileBytes&quot;: &quot;A String&quot;, # Output only. Number of bytes of source data in a load job.
@@ -5675,6 +5727,11 @@ Returns:
       ],
     },
     &quot;numChildJobs&quot;: &quot;A String&quot;, # Output only. Number of child jobs executed.
+    &quot;parentGlobalQueryJob&quot;: { # A job reference is a fully qualified identifier for referring to a job. # Output only. The global query that created this job.
+      &quot;jobId&quot;: &quot;A String&quot;, # Required. The ID of the job. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), or dashes (-). The maximum length is 1,024 characters.
+      &quot;location&quot;: &quot;A String&quot;, # Optional. The geographic location of the job. The default value is US. For more information about BigQuery locations, see: https://cloud.google.com/bigquery/docs/locations
+      &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this job.
+    },
     &quot;parentJobId&quot;: &quot;A String&quot;, # Output only. If this is a child job, specifies the job ID of the parent.
     &quot;query&quot;: { # Statistics for a query job. # Output only. Statistics for a query job.
       &quot;biEngineStatistics&quot;: { # Statistics for a BI Engine specific query. Populated as part of JobStatistics2 # Output only. BI Engine specific Statistics.
@@ -6331,6 +6388,13 @@ Returns:
       &quot;modelTrainingCurrentIteration&quot;: 42, # Deprecated.
       &quot;modelTrainingExpectedTotalIteration&quot;: &quot;A String&quot;, # Deprecated.
       &quot;numDmlAffectedRows&quot;: &quot;A String&quot;, # Output only. The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
+      &quot;objectStorageStats&quot;: [ # Output only. Storage and caching statistics per cloud provider for queries over object storage.
+        { # Storage and caching statistics for object storage.
+          &quot;cacheBytesRead&quot;: &quot;A String&quot;, # Total bytes read from the GCP Lakehouse-internal cache, avoiding an object storage read.
+          &quot;cloudProvider&quot;: &quot;A String&quot;, # The cloud provider for this block of statistics.
+          &quot;objectStorageBytesRead&quot;: &quot;A String&quot;, # Total bytes read directly from the cloud provider&#x27;s storage.
+        },
+      ],
       &quot;performanceInsights&quot;: { # Performance insights for the job. # Output only. Performance insights.
         &quot;avgPreviousExecutionMs&quot;: &quot;A String&quot;, # Output only. Average execution ms of previous runs. Indicates the job ran slow compared to previous executions. To find previous executions, use INFORMATION_SCHEMA tables and filter jobs with same query hash.
         &quot;stagePerformanceChangeInsights&quot;: [ # Output only. Query stage performance insights compared to previous runs, for diagnosing performance regression.
@@ -7241,7 +7305,7 @@ Returns:
           &quot;writeDisposition&quot;: &quot;A String&quot;, # Optional. Specifies the action that occurs if the destination table already exists. The following values are supported: * WRITE_TRUNCATE: If the table already exists, BigQuery overwrites the data, removes the constraints, and uses the schema from the query result. * WRITE_TRUNCATE_DATA: If the table already exists, BigQuery overwrites the data, but keeps the constraints and schema of the existing table. * WRITE_APPEND: If the table already exists, BigQuery appends the data to the table. * WRITE_EMPTY: If the table already exists and contains data, a &#x27;duplicate&#x27; error is returned in the job result. The default value is WRITE_EMPTY. Each action is atomic and only occurs if BigQuery is able to complete the job successfully. Creation, truncation and append actions occur as one atomic update upon job completion.
           &quot;writeIncrementalResults&quot;: True or False, # Optional. This is only supported for a SELECT query using a temporary table. If set, the query is allowed to write results incrementally to the temporary result table. This may incur a performance penalty. This option cannot be used with Legacy SQL. This feature is not yet available.
         },
-        &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.
+        &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`, which requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.
       },
       &quot;errorResult&quot;: { # Error details. # A result object that will be present only if the job has failed.
         &quot;debugInfo&quot;: &quot;A String&quot;, # Debugging information. This property is internal to Google and should not be used.
@@ -7263,6 +7327,7 @@ Returns:
         &quot;copy&quot;: { # Statistics for a copy job. # Output only. Statistics for a copy job.
           &quot;copiedLogicalBytes&quot;: &quot;A String&quot;, # Output only. Number of logical bytes copied to the destination table.
           &quot;copiedRows&quot;: &quot;A String&quot;, # Output only. Number of rows copied to the destination table.
+          &quot;remoteDestinationRegion&quot;: &quot;A String&quot;, # Output only. Destination region for a cross-region copy job. Not set for in-region copy jobs.
         },
         &quot;creationTime&quot;: &quot;A String&quot;, # Output only. Creation time of this job, in milliseconds since the epoch. This field will be present on all jobs.
         &quot;dataMaskingStatistics&quot;: { # Statistics for data-masking. # Output only. Statistics for data-masking. Present only for query and extract jobs.
@@ -7288,6 +7353,9 @@ Returns:
           ],
         },
         &quot;finalExecutionDurationMs&quot;: &quot;A String&quot;, # Output only. The duration in milliseconds of the execution of the final attempt of this job, as BigQuery may internally re-attempt to execute the job.
+        &quot;globalQueryRemoteRegions&quot;: [ # Output only. Regions where the global query accesses data.
+          &quot;A String&quot;,
+        ],
         &quot;load&quot;: { # Statistics for a load job. # Output only. Statistics for a load job.
           &quot;badRecords&quot;: &quot;A String&quot;, # Output only. The number of bad records encountered. Note that if the job has failed because of more bad records encountered than the maximum allowed in the load job configuration, then this number can be less than the total number of bad records present in the input data.
           &quot;inputFileBytes&quot;: &quot;A String&quot;, # Output only. Number of bytes of source data in a load job.
@@ -7307,6 +7375,11 @@ Returns:
           ],
         },
         &quot;numChildJobs&quot;: &quot;A String&quot;, # Output only. Number of child jobs executed.
+        &quot;parentGlobalQueryJob&quot;: { # A job reference is a fully qualified identifier for referring to a job. # Output only. The global query that created this job.
+          &quot;jobId&quot;: &quot;A String&quot;, # Required. The ID of the job. The ID must contain only letters (a-z, A-Z), numbers (0-9), underscores (_), or dashes (-). The maximum length is 1,024 characters.
+          &quot;location&quot;: &quot;A String&quot;, # Optional. The geographic location of the job. The default value is US. For more information about BigQuery locations, see: https://cloud.google.com/bigquery/docs/locations
+          &quot;projectId&quot;: &quot;A String&quot;, # Required. The ID of the project containing this job.
+        },
         &quot;parentJobId&quot;: &quot;A String&quot;, # Output only. If this is a child job, specifies the job ID of the parent.
         &quot;query&quot;: { # Statistics for a query job. # Output only. Statistics for a query job.
           &quot;biEngineStatistics&quot;: { # Statistics for a BI Engine specific query. Populated as part of JobStatistics2 # Output only. BI Engine specific Statistics.
@@ -7963,6 +8036,13 @@ Returns:
           &quot;modelTrainingCurrentIteration&quot;: 42, # Deprecated.
           &quot;modelTrainingExpectedTotalIteration&quot;: &quot;A String&quot;, # Deprecated.
           &quot;numDmlAffectedRows&quot;: &quot;A String&quot;, # Output only. The number of rows affected by a DML statement. Present only for DML statements INSERT, UPDATE or DELETE.
+          &quot;objectStorageStats&quot;: [ # Output only. Storage and caching statistics per cloud provider for queries over object storage.
+            { # Storage and caching statistics for object storage.
+              &quot;cacheBytesRead&quot;: &quot;A String&quot;, # Total bytes read from the GCP Lakehouse-internal cache, avoiding an object storage read.
+              &quot;cloudProvider&quot;: &quot;A String&quot;, # The cloud provider for this block of statistics.
+              &quot;objectStorageBytesRead&quot;: &quot;A String&quot;, # Total bytes read directly from the cloud provider&#x27;s storage.
+            },
+          ],
           &quot;performanceInsights&quot;: { # Performance insights for the job. # Output only. Performance insights.
             &quot;avgPreviousExecutionMs&quot;: &quot;A String&quot;, # Output only. Average execution ms of previous runs. Indicates the job ran slow compared to previous executions. To find previous executions, use INFORMATION_SCHEMA tables and filter jobs with same query hash.
             &quot;stagePerformanceChangeInsights&quot;: [ # Output only. Query stage performance insights compared to previous runs, for diagnosing performance regression.
@@ -8440,7 +8520,7 @@ Args:
   ],
   &quot;queryResultsFormat&quot;: &quot;A String&quot;, # Optional. The query results format. If the value is anything other than `STRUCT_ENCODING` or unspecified: * The schema of the results will be provided in `QueryResponse.results_schema` field. * The results of the first page will be provided in `QueryResponse.results` field. * The `QueryResponse.rows` will not be populated. * The `QueryResponse.schema` for `QueryResponse.rows` will also not be populated since it is the schema of the `QueryResponse.rows`. This feature is not yet available.
   &quot;requestId&quot;: &quot;A String&quot;, # Optional. A unique user provided identifier to ensure idempotent behavior for queries. Note that this is different from the job_id. It has the following properties: 1. It is case-sensitive, limited to up to 36 ASCII characters. A UUID is recommended. 2. Read only queries can ignore this token since they are nullipotent by definition. 3. For the purposes of idempotency ensured by the request_id, a request is considered duplicate of another only if they have the same request_id and are actually duplicates. When determining whether a request is a duplicate of another request, all parameters in the request that may affect the result are considered. For example, query, connection_properties, query_parameters, use_legacy_sql are parameters that affect the result and are considered when determining whether a request is a duplicate, but properties like timeout_ms don&#x27;t affect the result and are thus not considered. Dry run query requests are never considered duplicate of another request. 4. When a duplicate mutating query request is detected, it returns: a. the results of the mutation if it completes successfully within the timeout. b. the running operation if it is still in progress at the end of the timeout. 5. Its lifetime is limited to 15 minutes. In other words, if two requests are sent with the same request_id, but more than 15 minutes apart, idempotency is not guaranteed.
-  &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that jobs.query request would use. User can specify a reservation to execute the job.query. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.
+  &quot;reservation&quot;: &quot;A String&quot;, # Optional. The reservation that jobs.query request would use. User can specify a reservation to execute the job.query. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`. This requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.
   &quot;timeoutMs&quot;: 42, # Optional. Optional: Specifies the maximum amount of time, in milliseconds, that the client is willing to wait for the query to complete. By default, this limit is 10 seconds (10,000 milliseconds). If the query is complete, the jobComplete field in the response is true. If the query has not yet completed, jobComplete is false. You can request a longer timeout period in the timeoutMs field. However, the call is not guaranteed to wait for the specified timeout; it typically returns after around 200 seconds (200,000 milliseconds), even if the query is not complete. If jobComplete is false, you can continue to wait for the query to complete by calling the getQueryResults method until the jobComplete field in the getQueryResults response is true.
   &quot;useLegacySql&quot;: true, # Specifies whether to use BigQuery&#x27;s legacy SQL dialect for this query. The default value is true. If set to false, the query uses BigQuery&#x27;s [GoogleSQL](https://docs.cloud.google.com/bigquery/docs/introduction-sql). When useLegacySql is set to false, the value of flattenResults is ignored; query will be run as if flattenResults is false.
   &quot;useQueryCache&quot;: true, # Optional. Whether to look for the result in the query cache. The query cache is a best-effort cache that will be flushed whenever tables in the query are modified. The default value is true.
