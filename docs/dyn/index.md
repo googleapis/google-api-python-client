@@ -50,6 +50,18 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
 
 
+## agentidentity
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentity_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentity_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentity_v1beta.html)
+
+
+## agentidentitycredentials
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentitycredentials_v1.html)
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentitycredentials_v1alpha.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentitycredentials_v1beta.html)
+
+
 ## agentregistry
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/agentregistry_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/agentregistry_v1alpha.html)
