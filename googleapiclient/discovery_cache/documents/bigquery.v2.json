@@ -2390,7 +2390,7 @@
 }
 }
 },
-"revision": "20260620",
+"revision": "20260707",
 "rootUrl": "https://bigquery.googleapis.com/",
 "schemas": {
 "AggregateClassificationMetrics": {
@@ -2463,12 +2463,16 @@
 "enum": [
 "ARGUMENT_KIND_UNSPECIFIED",
 "FIXED_TYPE",
-"ANY_TYPE"
+"ANY_TYPE",
+"FIXED_TABLE",
+"ANY_TABLE"
 ],
 "enumDescriptions": [
 "Default value.",
 "The argument is a variable with fully specified type, which can be a struct or an array, but not a table.",
-"The argument is any type, including struct or array, but not a table."
+"The argument is any type, including struct or array, but not a table.",
+"The argument is a table with fully specified column names and types.",
+"The argument is any table type."
 ],
 "type": "string"
 },
@@ -2499,6 +2503,10 @@
 "name": {
 "description": "Optional. The name of this argument. Can be absent for function return argument.",
 "type": "string"
+},
+"tableType": {
+"$ref": "StandardSqlTableType",
+"description": "Optional. Set if argument_kind == FIXED_TABLE."
 }
 },
 "type": "object"
@@ -5881,7 +5889,7 @@
 "description": "[Pick one] Configures a query job."
 },
 "reservation": {
-"description": "Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.",
+"description": "Optional. The reservation that job would use. User can specify a reservation to execute the job. If reservation is not set, reservation is determined based on the rules defined by the reservation assignments. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`, which requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.",
 "type": "string"
 }
 },
@@ -6583,6 +6591,14 @@
 "readOnly": true,
 "type": "string"
 },
+"globalQueryRemoteRegions": {
+"description": "Output only. Regions where the global query accesses data.",
+"items": {
+"type": "string"
+},
+"readOnly": true,
+"type": "array"
+},
 "load": {
 "$ref": "JobStatistics3",
 "description": "Output only. Statistics for a load job.",
@@ -6593,6 +6609,11 @@
 "format": "int64",
 "readOnly": true,
 "type": "string"
+},
+"parentGlobalQueryJob": {
+"$ref": "JobReference",
+"description": "Output only. The global query that created this job.",
+"readOnly": true
 },
 "parentJobId": {
 "description": "Output only. If this is a child job, specifies the job ID of the parent.",
@@ -6832,6 +6853,14 @@
 "readOnly": true,
 "type": "string"
 },
+"objectStorageStats": {
+"description": "Output only. Storage and caching statistics per cloud provider for queries over object storage.",
+"items": {
+"$ref": "ObjectStorageStats"
+},
+"readOnly": true,
+"type": "array"
+},
 "performanceInsights": {
 "$ref": "PerformanceInsights",
 "description": "Output only. Performance insights.",
@@ -7068,6 +7097,11 @@
 "copiedRows": {
 "description": "Output only. Number of rows copied to the destination table.",
 "format": "int64",
+"readOnly": true,
+"type": "string"
+},
+"remoteDestinationRegion": {
+"description": "Output only. Destination region for a cross-region copy job. Not set for in-region copy jobs.",
 "readOnly": true,
 "type": "string"
 }
@@ -7818,6 +7852,39 @@
 },
 "type": "object"
 },
+"ObjectStorageStats": {
+"description": "Storage and caching statistics for object storage.",
+"id": "ObjectStorageStats",
+"properties": {
+"cacheBytesRead": {
+"description": "Total bytes read from the GCP Lakehouse-internal cache, avoiding an object storage read.",
+"format": "int64",
+"type": "string"
+},
+"cloudProvider": {
+"description": "The cloud provider for this block of statistics.",
+"enum": [
+"CLOUD_PROVIDER_UNSPECIFIED",
+"GCP",
+"AWS",
+"AZURE"
+],
+"enumDescriptions": [
+"Unspecified cloud provider.",
+"Google Cloud Platform.",
+"Amazon Web Services.",
+"Microsoft Azure."
+],
+"type": "string"
+},
+"objectStorageBytesRead": {
+"description": "Total bytes read directly from the cloud provider's storage.",
+"format": "int64",
+"type": "string"
+}
+},
+"type": "object"
+},
 "ParquetOptions": {
 "description": "Parquet Options for load and make external tables.",
 "id": "ParquetOptions",
@@ -8364,7 +8431,7 @@
 "type": "string"
 },
 "reservation": {
-"description": "Optional. The reservation that jobs.query request would use. User can specify a reservation to execute the job.query. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`.",
+"description": "Optional. The reservation that jobs.query request would use. User can specify a reservation to execute the job.query. The expected format is `projects/{project}/locations/{location}/reservations/{reservation}`. Forces the query to use on-demand billing when set to `none`. This requires the project or organization to have `reservation_override_mode` set to `ALLOW_ANY_OVERRIDE`.",
 "type": "string"
 },
 "timeoutMs": {
