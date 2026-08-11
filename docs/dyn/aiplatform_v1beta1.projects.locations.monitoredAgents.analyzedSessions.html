@@ -104,7 +104,7 @@ h1, h2, h3 {
 
 Args:
   parent: string, Required. The parent MonitoredAgent resource. Use the `-` wildcard for the monitored_agent segment to aggregate across multiple agents in the location. Format: `projects/{project}/locations/{location}/monitoredAgents/{monitored_agent}` (required)
-  filter: string, Optional. Filter expression restricting which AnalyzedSessions are included in the aggregation. Uses a subset of the `ListAnalyzedSessionsRequest.filter` grammar: a closed `detection_time` window with both bounds required, e.g. detection_time &gt;= &quot;2024-01-01T00:00:00Z&quot; AND detection_time &lt;= &quot;2024-01-08T00:00:00Z&quot; The `severity` clause supported on ListAnalyzedSessions is intentionally rejected here: this response groups by severity (one entry per bucket per agent), so a severity filter would collapse the rollup to a single bucket and produce a misleading per-agent view. If empty, the aggregation covers the last 3 days.
+  filter: string, Optional. Filter expression restricting which AnalyzedSessions are included in the aggregation. Supports a subset of the `ListAnalyzedSessionsRequest.filter` grammar: a closed `detection_time` window with both bounds required. The `severity` clause is not supported here. If empty, the aggregation covers the last 3 days. Example: ``` detection_time &gt;= &quot;2024-01-01T00:00:00Z&quot; AND detection_time &lt;= &quot;2024-01-08T00:00:00Z&quot; ```
   pageSize: integer, Optional. The standard list page size. The maximum value is 100; values above 100 will be coerced to 100. If unspecified, at most 10 MonitoredAgents will be returned.
   pageToken: string, Optional. The standard list page token.
   x__xgafv: string, V1 error format.
@@ -115,22 +115,22 @@ Args:
 Returns:
   An object of the form:
 
-    { # Response containing aggregated AnalyzedSession statistics, grouped by MonitoredAgent.
+    { # Contains aggregated AnalyzedSession statistics, grouped by MonitoredAgent.
   &quot;agentAggregates&quot;: [ # Aggregated statistics — exactly one entry per unique MonitoredAgent matched by the request.
-    { # Aggregated statistics for one MonitoredAgent.
-      &quot;agentDisplayName&quot;: &quot;A String&quot;, # Output only. The human-readable display name of the MonitoredAgent, denormalized from `monitored_agents.display_name`.
+    { # Contains aggregated statistics for one MonitoredAgent.
+      &quot;agentDisplayName&quot;: &quot;A String&quot;, # Output only. The human-readable display name of the MonitoredAgent.
       &quot;agentResourceName&quot;: &quot;A String&quot;, # The agent resource name. Format: `projects/{project}/locations/{location}/reasoningEngines/{agent}`
-      &quot;agentStatus&quot;: &quot;A String&quot;, # Output only. The enablement state of the MonitoredAgent (e.g. ACTIVE, DISABLED, ENABLING, INELIGIBLE, NEEDS_ACTION), denormalized from `monitored_agents.state`.
+      &quot;agentStatus&quot;: &quot;A String&quot;, # Output only. The enablement state of the MonitoredAgent (for example, ACTIVE, DISABLED, or ENABLING).
       &quot;anomalousSessionsCount&quot;: 42, # The number of anomalous (SESSION_STATE_FLAGGED) sessions for this agent.
       &quot;latestSessionTime&quot;: &quot;A String&quot;, # The latest session update_time observed for this agent.
-      &quot;location&quot;: &quot;A String&quot;, # Output only. The GCP location (region) of the agent (e.g. `us-central1`). Denormalized from `monitored_agents.location`; empty when the agent is not enrolled or its location column is empty.
+      &quot;location&quot;: &quot;A String&quot;, # Output only. The Google Cloud location (region) of the agent (for example, `us-central1`). Empty when the agent is not enrolled or its location is unknown.
       &quot;monitoredAgent&quot;: &quot;A String&quot;, # The MonitoredAgent resource name. Format: `projects/{project}/locations/{location}/monitoredAgents/{monitored_agent}`
       &quot;severities&quot;: { # Map of severity level (string representation of Severity) to detector summaries aggregated across all sessions for this agent. The key is the string representation of Severity enum: &quot;SEVERITY_UNSPECIFIED&quot;, &quot;SEVERITY_CRITICAL&quot;, &quot;SEVERITY_HIGH&quot;, &quot;SEVERITY_MEDIUM&quot;, &quot;SEVERITY_LOW&quot;.
-        &quot;a_key&quot;: { # Breakdown of anomalies by severity.
+        &quot;a_key&quot;: { # Breaks down anomalies by severity.
           &quot;detectorIds&quot;: [ # The list of detectors summaries for this severity level.
             &quot;A String&quot;,
           ],
-          &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose MAX severity equals `severity_level`. Each session is counted in exactly one bucket -- the highest severity that any of its detectors reached -- so summing `sessions_count` across all populated entries in a `severities` map equals the total anomalous session count for that scope (per-agent or view summary). Distinct from `detector_ids.size`: a session whose detectors fire at LOW and CRITICAL contributes one entry to `sessions_count` (in CRITICAL only) but contributes detector IDs to BOTH the LOW and CRITICAL buckets&#x27; `detector_ids` lists. For AAD audit landing-page scorecards, prefer `sessions_count` -- &quot;Critical anomalies&quot; means sessions ranked critical, not distinct critical-firing detectors. On AggregateAnalyzedSessionsResponse.summary, this is a TRUE GLOBAL count across all anomalous active agents in scope (not page-scoped). On per-agent entries within `agent_aggregates`, it&#x27;s per-agent. On ListAnalyzedSessionsResponse, it is currently page-scoped to match the existing summary semantics on that API.
+          &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose maximum severity equals `severity_level`. Each session is counted in exactly one bucket (its highest severity). Scope depends on where this appears: a global count on `AggregateAnalyzedSessionsResponse.summary`, per-agent on `agent_aggregates` entries, and page-scoped on `ListAnalyzedSessionsResponse`.
           &quot;severityLevel&quot;: &quot;A String&quot;, # The severity level of the detector.
         },
       },
@@ -139,15 +139,15 @@ Returns:
   ],
   &quot;nextPageToken&quot;: &quot;A String&quot;, # A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages.
   &quot;summary&quot;: { # The view summary. # Overall summary across every MonitoredAgent included in the response.
-    &quot;anomalousAgentsCount&quot;: 42, # Output only. The number of distinct agents matching the request scope that have at least one anomalous session in the time window. On `AggregateAnalyzedSessionsResponse.summary` (wildcard parent), this is a true GLOBAL count across all anomalous active agents, NOT the page-row count. The denominator for an &quot;anomalous active agents&quot; scorecard pairs this with `ListMonitoredAgentsResponse.total_size` (filtered to `state = ACTIVE`). On `ListAnalyzedSessionsResponse.summary`, this field is not populated (the API is per-session, not per-agent).
+    &quot;anomalousAgentsCount&quot;: 42, # Output only. The number of distinct agents in the request scope with at least one anomalous session in the time window. On `AggregateAnalyzedSessionsResponse.summary` this is a global count; it is not populated on `ListAnalyzedSessionsResponse.summary`.
     &quot;anomalousSessionsCount&quot;: 42, # Number of anomalous sessions.
-    &quot;llmScannedSessionsCount&quot;: 42, # Output only. The number of distinct sessions in the time window that were scanned by Stage 2 LLM judges.
+    &quot;llmScannedSessionsCount&quot;: 42, # Output only. The number of distinct sessions in the time window that were scanned by the LLM judge.
     &quot;severities&quot;: { # The list of severity summaries for the analyzed sessions. The key is the string representation of Severity enum: &quot;SEVERITY_UNSPECIFIED&quot;, &quot;SEVERITY_CRITICAL&quot;, &quot;SEVERITY_HIGH&quot;, &quot;SEVERITY_MEDIUM&quot;, &quot;SEVERITY_LOW&quot;.
-      &quot;a_key&quot;: { # Breakdown of anomalies by severity.
+      &quot;a_key&quot;: { # Breaks down anomalies by severity.
         &quot;detectorIds&quot;: [ # The list of detectors summaries for this severity level.
           &quot;A String&quot;,
         ],
-        &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose MAX severity equals `severity_level`. Each session is counted in exactly one bucket -- the highest severity that any of its detectors reached -- so summing `sessions_count` across all populated entries in a `severities` map equals the total anomalous session count for that scope (per-agent or view summary). Distinct from `detector_ids.size`: a session whose detectors fire at LOW and CRITICAL contributes one entry to `sessions_count` (in CRITICAL only) but contributes detector IDs to BOTH the LOW and CRITICAL buckets&#x27; `detector_ids` lists. For AAD audit landing-page scorecards, prefer `sessions_count` -- &quot;Critical anomalies&quot; means sessions ranked critical, not distinct critical-firing detectors. On AggregateAnalyzedSessionsResponse.summary, this is a TRUE GLOBAL count across all anomalous active agents in scope (not page-scoped). On per-agent entries within `agent_aggregates`, it&#x27;s per-agent. On ListAnalyzedSessionsResponse, it is currently page-scoped to match the existing summary semantics on that API.
+        &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose maximum severity equals `severity_level`. Each session is counted in exactly one bucket (its highest severity). Scope depends on where this appears: a global count on `AggregateAnalyzedSessionsResponse.summary`, per-agent on `agent_aggregates` entries, and page-scoped on `ListAnalyzedSessionsResponse`.
         &quot;severityLevel&quot;: &quot;A String&quot;, # The severity level of the detector.
       },
     },
@@ -194,11 +194,11 @@ Args:
 Returns:
   An object of the form:
 
-    { # An analyzed session for a monitored agent.
-  &quot;agentDisplayName&quot;: &quot;A String&quot;, # Output only. The human-readable display name of the MonitoredAgent that owns this session, denormalized from `monitored_agents.display_name` so the UI can render an agent name in the per-session feed without an extra `getMonitoredAgent` round-trip. May be empty when the session&#x27;s agent_id is not enrolled as a MonitoredAgent (i.e. the JOIN missed); the `agent_resource_name` URN is always present and can be used as a fallback identifier.
+    { # Represents an analyzed session for a monitored agent.
+  &quot;agentDisplayName&quot;: &quot;A String&quot;, # Output only. The human-readable display name of the MonitoredAgent that owns this session. May be empty when the session&#x27;s agent is not enrolled as a MonitoredAgent; the `agent_resource_name` is always present and can be used as a fallback identifier.
   &quot;agentResourceName&quot;: &quot;A String&quot;, # Output only. The agent resource name. Format: `projects/{project}/locations/{location}/reasoningEngines/{agent}`
-  &quot;agentState&quot;: &quot;A String&quot;, # Output only. The current enablement state of the MonitoredAgent that owns this session (e.g. ACTIVE, DISABLED, ENABLING, INELIGIBLE, NEEDS_ACTION), denormalized from `monitored_agents.state`. Defaults to ENABLEMENT_STATE_UNSPECIFIED when the agent is not enrolled (the JOIN missed) or its state column is empty / unknown.
-  &quot;assessment&quot;: { # Detailed assessment for an analyzed session. # Output only. Overall security assessment. Populated only in FULL view.
+  &quot;agentState&quot;: &quot;A String&quot;, # Output only. The current enablement state of the MonitoredAgent that owns this session (for example, ACTIVE, DISABLED, or ENABLING). Defaults to ENABLEMENT_STATE_UNSPECIFIED when the agent is not enrolled or its state is unknown.
+  &quot;assessment&quot;: { # Contains the detailed assessment for an analyzed session. # Output only. Overall security assessment. Populated only in FULL view.
     &quot;detectorFindings&quot;: [ # The list of detector findings.
       { # The details of a detector&#x27;s assessment within an analyzed session.
         &quot;detectorId&quot;: &quot;A String&quot;, # The detector ID.
@@ -214,16 +214,16 @@ Returns:
   },
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation time of the session.
   &quot;latestAnalyzedTime&quot;: &quot;A String&quot;, # Output only. The latest analyzed time of the session.
-  &quot;location&quot;: &quot;A String&quot;, # Output only. The GCP location (region) of the agent that ran this session (e.g. `us-central1`). Denormalized from `monitored_agents.location`; empty when the agent is not enrolled or its location column is empty.
+  &quot;location&quot;: &quot;A String&quot;, # Output only. The Google Cloud location (region) of the agent that ran this session (for example, `us-central1`). Empty when the agent is not enrolled or its location is unknown.
   &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name of the AnalyzedSession.
   &quot;sessionId&quot;: &quot;A String&quot;, # Output only. The session ID.
   &quot;sessionState&quot;: &quot;A String&quot;, # Output only. The state of the session.
   &quot;severities&quot;: { # Output only. Map of severity counts for listing analyzed sessions. The key is the string representation of Severity. Populated in BASIC view only.
-    &quot;a_key&quot;: { # Breakdown of anomalies by severity.
+    &quot;a_key&quot;: { # Breaks down anomalies by severity.
       &quot;detectorIds&quot;: [ # The list of detectors summaries for this severity level.
         &quot;A String&quot;,
       ],
-      &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose MAX severity equals `severity_level`. Each session is counted in exactly one bucket -- the highest severity that any of its detectors reached -- so summing `sessions_count` across all populated entries in a `severities` map equals the total anomalous session count for that scope (per-agent or view summary). Distinct from `detector_ids.size`: a session whose detectors fire at LOW and CRITICAL contributes one entry to `sessions_count` (in CRITICAL only) but contributes detector IDs to BOTH the LOW and CRITICAL buckets&#x27; `detector_ids` lists. For AAD audit landing-page scorecards, prefer `sessions_count` -- &quot;Critical anomalies&quot; means sessions ranked critical, not distinct critical-firing detectors. On AggregateAnalyzedSessionsResponse.summary, this is a TRUE GLOBAL count across all anomalous active agents in scope (not page-scoped). On per-agent entries within `agent_aggregates`, it&#x27;s per-agent. On ListAnalyzedSessionsResponse, it is currently page-scoped to match the existing summary semantics on that API.
+      &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose maximum severity equals `severity_level`. Each session is counted in exactly one bucket (its highest severity). Scope depends on where this appears: a global count on `AggregateAnalyzedSessionsResponse.summary`, per-agent on `agent_aggregates` entries, and page-scoped on `ListAnalyzedSessionsResponse`.
       &quot;severityLevel&quot;: &quot;A String&quot;, # The severity level of the detector.
     },
   },
@@ -237,8 +237,8 @@ Returns:
 
 Args:
   parent: string, Required. The parent MonitoredAgent resource. Format: `projects/{project}/locations/{location}/monitoredAgents/{monitored_agent}` (required)
-  filter: string, Optional. Filter expression restricting which AnalyzedSessions are returned. A subset of AIP-160 supporting two clauses joined by AND: 1. A closed time window on `detection_time`. If included, both bounds are required: detection_time &gt;= &quot;&quot; AND detection_time &lt;= &quot;&quot; 2. An equality on `severity`, where the value is the string representation of a Severity enum value (e.g., &quot;CRITICAL&quot;, &quot;HIGH&quot;, &quot;MEDIUM&quot;, &quot;LOW&quot;). &quot;SEVERITY_UNSPECIFIED&quot; is not supported. The filter matches sessions whose maximum severity equals the requested bucket (a session whose detectors fire at LOW and CRITICAL is matched by `severity = &quot;CRITICAL&quot;`, not `severity = &quot;LOW&quot;`): severity = &quot;CRITICAL&quot; Both clauses are independently optional and may appear in either order. Each clause may appear at most once. Example (time window + severity): detection_time &gt;= &quot;2024-01-01T00:00:00Z&quot; AND detection_time &lt;= &quot;2024-01-08T00:00:00Z&quot; AND severity = &quot;CRITICAL&quot; If empty, results are restricted to the last 3 days with no severity restriction. Other fields, additional operators, set membership (IN), and boolean combinations (OR, NOT, parentheses) are not yet supported.
-  orderBy: string, Optional. Comma-separated list of fields to sort by, following AIP-132 syntax. The default sort direction is ascending; append &quot; desc&quot; to a field to sort descending. Subfields are not supported (no field listed below has any). Supported fields (any other field yields INVALID_ARGUMENT): * `latest_detection_time` - the session&#x27;s most-recent flagged detection time. This is the column the landing page&#x27;s &quot;Detection time&quot; header sorts on. Sorted by the underlying TIMESTAMP value (newer is &quot;greater&quot; so `latest_detection_time desc` puts the newest sessions first). * `max_severity_rank` - the session&#x27;s bucketed maximum severity, ranked LOW=1 &lt; MEDIUM=2 &lt; HIGH=3 &lt; CRITICAL=4 (matches `Severity` enum ordering). `max_severity_rank desc` puts the most-severe sessions first. The ranking is documented here per AIP-132 because the field is not a natural-comparator type. * `agent_display_name` - the MonitoredAgent&#x27;s display name as shown in the UI&#x27;s &quot;Agent name&quot; column. Sorted as a STRING using BigQuery default collation (case-sensitive, code-point order). The server always appends `session_id ASC` as a stable tiebreak so pagination remains consistent across pages when the primary sort field has duplicates (e.g. multiple sessions with the same latest_detection_time within a second). If empty, defaults to `latest_detection_time desc` (the prior implicit behavior). Multi-field sort (e.g. `max_severity_rank desc, latest_detection_time desc`) is supported. The `order_by` value MUST match the value used on the call that minted any supplied `page_token` (AIP-158). Mismatches yield INVALID_ARGUMENT.
+  filter: string, Optional. Filter expression restricting which AnalyzedSessions are returned. Supports a subset of AIP-160: a closed `detection_time` window (both bounds required) and/or an equality on `severity`, joined by `AND`. Each clause is optional, may appear at most once, and may appear in either order. The `severity` value is the string form of a `Severity` value (`CRITICAL`, `HIGH`, `MEDIUM`, or `LOW`; `SEVERITY_UNSPECIFIED` is not supported) and matches sessions whose maximum severity equals that bucket. For example, a session that fires at both LOW and CRITICAL matches `severity = &quot;CRITICAL&quot;`, not `severity = &quot;LOW&quot;`. Example (time window and severity): ``` detection_time &gt;= &quot;2024-01-01T00:00:00Z&quot; AND detection_time &lt;= &quot;2024-01-08T00:00:00Z&quot; AND severity = &quot;CRITICAL&quot; ``` If empty, results are restricted to the last 3 days with no severity restriction. Other fields, additional operators, set membership (`IN`), and boolean combinations (`OR`, `NOT`, parentheses) are not yet supported.
+  orderBy: string, Optional. Comma-separated list of fields to sort by, following AIP-132 syntax. The default sort direction is ascending; append &quot; desc&quot; to a field to sort descending. Supported fields (any other field yields INVALID_ARGUMENT): * `latest_detection_time` - the session&#x27;s most-recent flagged detection time. `latest_detection_time desc` puts the newest sessions first. * `max_severity_rank` - the session&#x27;s bucketed maximum severity, ranked LOW=1 &lt; MEDIUM=2 &lt; HIGH=3 &lt; CRITICAL=4. `max_severity_rank desc` puts the most-severe sessions first. * `agent_display_name` - the MonitoredAgent&#x27;s display name. Sorted as a STRING (case-sensitive, code-point order). If empty, defaults to `latest_detection_time desc`. Multi-field sort (for example, `max_severity_rank desc, latest_detection_time desc`) is supported. The `order_by` value MUST match the value used on the call that minted any supplied `page_token` (AIP-158). Mismatches yield INVALID_ARGUMENT.
   pageSize: integer, Optional. The maximum number of analyzed sessions to return.
   pageToken: string, Optional. A page token, received from a previous `ListAnalyzedSessions` call.
   view: string, Optional. Resource view to control which fields are returned.
@@ -256,11 +256,11 @@ Returns:
 
     { # Response to list analyzed sessions.
   &quot;analyzedSessions&quot;: [ # The list of analyzed sessions.
-    { # An analyzed session for a monitored agent.
-      &quot;agentDisplayName&quot;: &quot;A String&quot;, # Output only. The human-readable display name of the MonitoredAgent that owns this session, denormalized from `monitored_agents.display_name` so the UI can render an agent name in the per-session feed without an extra `getMonitoredAgent` round-trip. May be empty when the session&#x27;s agent_id is not enrolled as a MonitoredAgent (i.e. the JOIN missed); the `agent_resource_name` URN is always present and can be used as a fallback identifier.
+    { # Represents an analyzed session for a monitored agent.
+      &quot;agentDisplayName&quot;: &quot;A String&quot;, # Output only. The human-readable display name of the MonitoredAgent that owns this session. May be empty when the session&#x27;s agent is not enrolled as a MonitoredAgent; the `agent_resource_name` is always present and can be used as a fallback identifier.
       &quot;agentResourceName&quot;: &quot;A String&quot;, # Output only. The agent resource name. Format: `projects/{project}/locations/{location}/reasoningEngines/{agent}`
-      &quot;agentState&quot;: &quot;A String&quot;, # Output only. The current enablement state of the MonitoredAgent that owns this session (e.g. ACTIVE, DISABLED, ENABLING, INELIGIBLE, NEEDS_ACTION), denormalized from `monitored_agents.state`. Defaults to ENABLEMENT_STATE_UNSPECIFIED when the agent is not enrolled (the JOIN missed) or its state column is empty / unknown.
-      &quot;assessment&quot;: { # Detailed assessment for an analyzed session. # Output only. Overall security assessment. Populated only in FULL view.
+      &quot;agentState&quot;: &quot;A String&quot;, # Output only. The current enablement state of the MonitoredAgent that owns this session (for example, ACTIVE, DISABLED, or ENABLING). Defaults to ENABLEMENT_STATE_UNSPECIFIED when the agent is not enrolled or its state is unknown.
+      &quot;assessment&quot;: { # Contains the detailed assessment for an analyzed session. # Output only. Overall security assessment. Populated only in FULL view.
         &quot;detectorFindings&quot;: [ # The list of detector findings.
           { # The details of a detector&#x27;s assessment within an analyzed session.
             &quot;detectorId&quot;: &quot;A String&quot;, # The detector ID.
@@ -276,16 +276,16 @@ Returns:
       },
       &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation time of the session.
       &quot;latestAnalyzedTime&quot;: &quot;A String&quot;, # Output only. The latest analyzed time of the session.
-      &quot;location&quot;: &quot;A String&quot;, # Output only. The GCP location (region) of the agent that ran this session (e.g. `us-central1`). Denormalized from `monitored_agents.location`; empty when the agent is not enrolled or its location column is empty.
+      &quot;location&quot;: &quot;A String&quot;, # Output only. The Google Cloud location (region) of the agent that ran this session (for example, `us-central1`). Empty when the agent is not enrolled or its location is unknown.
       &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name of the AnalyzedSession.
       &quot;sessionId&quot;: &quot;A String&quot;, # Output only. The session ID.
       &quot;sessionState&quot;: &quot;A String&quot;, # Output only. The state of the session.
       &quot;severities&quot;: { # Output only. Map of severity counts for listing analyzed sessions. The key is the string representation of Severity. Populated in BASIC view only.
-        &quot;a_key&quot;: { # Breakdown of anomalies by severity.
+        &quot;a_key&quot;: { # Breaks down anomalies by severity.
           &quot;detectorIds&quot;: [ # The list of detectors summaries for this severity level.
             &quot;A String&quot;,
           ],
-          &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose MAX severity equals `severity_level`. Each session is counted in exactly one bucket -- the highest severity that any of its detectors reached -- so summing `sessions_count` across all populated entries in a `severities` map equals the total anomalous session count for that scope (per-agent or view summary). Distinct from `detector_ids.size`: a session whose detectors fire at LOW and CRITICAL contributes one entry to `sessions_count` (in CRITICAL only) but contributes detector IDs to BOTH the LOW and CRITICAL buckets&#x27; `detector_ids` lists. For AAD audit landing-page scorecards, prefer `sessions_count` -- &quot;Critical anomalies&quot; means sessions ranked critical, not distinct critical-firing detectors. On AggregateAnalyzedSessionsResponse.summary, this is a TRUE GLOBAL count across all anomalous active agents in scope (not page-scoped). On per-agent entries within `agent_aggregates`, it&#x27;s per-agent. On ListAnalyzedSessionsResponse, it is currently page-scoped to match the existing summary semantics on that API.
+          &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose maximum severity equals `severity_level`. Each session is counted in exactly one bucket (its highest severity). Scope depends on where this appears: a global count on `AggregateAnalyzedSessionsResponse.summary`, per-agent on `agent_aggregates` entries, and page-scoped on `ListAnalyzedSessionsResponse`.
           &quot;severityLevel&quot;: &quot;A String&quot;, # The severity level of the detector.
         },
       },
@@ -293,16 +293,16 @@ Returns:
     },
   ],
   &quot;nextPageToken&quot;: &quot;A String&quot;, # A token to retrieve the next page of results.
-  &quot;summary&quot;: { # The view summary. # Summary statistics for the sessions returned on the current page. This is computed across the current page only (not the full result set) and is populated on every page. Callers that need aggregate statistics across the entire result set should use AggregateAnalyzedSessions.
-    &quot;anomalousAgentsCount&quot;: 42, # Output only. The number of distinct agents matching the request scope that have at least one anomalous session in the time window. On `AggregateAnalyzedSessionsResponse.summary` (wildcard parent), this is a true GLOBAL count across all anomalous active agents, NOT the page-row count. The denominator for an &quot;anomalous active agents&quot; scorecard pairs this with `ListMonitoredAgentsResponse.total_size` (filtered to `state = ACTIVE`). On `ListAnalyzedSessionsResponse.summary`, this field is not populated (the API is per-session, not per-agent).
+  &quot;summary&quot;: { # The view summary. # Summary statistics computed across the sessions on the current page only. For statistics across the entire result set, use AggregateAnalyzedSessions.
+    &quot;anomalousAgentsCount&quot;: 42, # Output only. The number of distinct agents in the request scope with at least one anomalous session in the time window. On `AggregateAnalyzedSessionsResponse.summary` this is a global count; it is not populated on `ListAnalyzedSessionsResponse.summary`.
     &quot;anomalousSessionsCount&quot;: 42, # Number of anomalous sessions.
-    &quot;llmScannedSessionsCount&quot;: 42, # Output only. The number of distinct sessions in the time window that were scanned by Stage 2 LLM judges.
+    &quot;llmScannedSessionsCount&quot;: 42, # Output only. The number of distinct sessions in the time window that were scanned by the LLM judge.
     &quot;severities&quot;: { # The list of severity summaries for the analyzed sessions. The key is the string representation of Severity enum: &quot;SEVERITY_UNSPECIFIED&quot;, &quot;SEVERITY_CRITICAL&quot;, &quot;SEVERITY_HIGH&quot;, &quot;SEVERITY_MEDIUM&quot;, &quot;SEVERITY_LOW&quot;.
-      &quot;a_key&quot;: { # Breakdown of anomalies by severity.
+      &quot;a_key&quot;: { # Breaks down anomalies by severity.
         &quot;detectorIds&quot;: [ # The list of detectors summaries for this severity level.
           &quot;A String&quot;,
         ],
-        &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose MAX severity equals `severity_level`. Each session is counted in exactly one bucket -- the highest severity that any of its detectors reached -- so summing `sessions_count` across all populated entries in a `severities` map equals the total anomalous session count for that scope (per-agent or view summary). Distinct from `detector_ids.size`: a session whose detectors fire at LOW and CRITICAL contributes one entry to `sessions_count` (in CRITICAL only) but contributes detector IDs to BOTH the LOW and CRITICAL buckets&#x27; `detector_ids` lists. For AAD audit landing-page scorecards, prefer `sessions_count` -- &quot;Critical anomalies&quot; means sessions ranked critical, not distinct critical-firing detectors. On AggregateAnalyzedSessionsResponse.summary, this is a TRUE GLOBAL count across all anomalous active agents in scope (not page-scoped). On per-agent entries within `agent_aggregates`, it&#x27;s per-agent. On ListAnalyzedSessionsResponse, it is currently page-scoped to match the existing summary semantics on that API.
+        &quot;sessionsCount&quot;: 42, # Output only. The number of distinct sessions whose maximum severity equals `severity_level`. Each session is counted in exactly one bucket (its highest severity). Scope depends on where this appears: a global count on `AggregateAnalyzedSessionsResponse.summary`, per-agent on `agent_aggregates` entries, and page-scoped on `ListAnalyzedSessionsResponse`.
         &quot;severityLevel&quot;: &quot;A String&quot;, # The severity level of the detector.
       },
     },
