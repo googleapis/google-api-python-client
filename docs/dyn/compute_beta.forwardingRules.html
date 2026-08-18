@@ -272,6 +272,8 @@ Returns:
               #
               #
               #
+              # The IP address can only be set at creation. Once set, it cannot be updated.
+              #
               # The forwarding rule&#x27;s target or backendService,
               # and in most cases, also the loadBalancingScheme, determine the
               # type of IP address that you can use. For detailed information, see
@@ -280,7 +282,65 @@ Returns:
               #
               # When reading an IPAddress, the API always returns the IP
               # address number.
-          &quot;IPAddresses&quot;: [
+              #
+              # When creating a global external Passthrough Network Load Balancer
+              # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+              # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+          &quot;IPAddresses&quot;: [ # IP addresses for which this forwarding rule accepts traffic. All IP
+              # addresses must have the same IP version, IPv4 or IPv6. When a client sends
+              # traffic that matches one of the specified IP addresses, protocol and ports,
+              # the forwarding rule directs the traffic to the referencedbackendService. All IP addresses are served by the same set of
+              # backends, and they share the target capacities specified in the backend
+              # service fairly.
+              #
+              # Global external Passthrough Network Load Balancer requires two IP addresses
+              # for each forwarding rule to provide high availability when both IP
+              # addresses are used to serve client requests. The two IP addresses must come
+              # from global IP pools that belong to two distinct Availability
+              # Groups, represented by the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0 andPASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1. TheIPAddresses field specifies zero, one, or two IP addresses:
+              #
+              #    - If omitted, Google Cloud assigns two ephemeral IP addresses, one from
+              #    each Availability Group.
+              #    - If you specify one IP address that references an existing static IP
+              #    address resource from one Availability Group, Google Cloud assigns an
+              #    ephemeral IP address from the other Availability Group.
+              #    - If you specify two IP addresses that reference existing static IP
+              #    address resources, they are required to be from different Availability
+              #    Groups.
+              #
+              #
+              #
+              # For global external Passthrough Network Load Balancer, each IP address can be one of the following:
+              #
+              #    - A static or ephemeral IPv4 address from a Google-owned IP pool.
+              #    - A static IPv4 address from a global public delegated prefix.
+              #    - A static or ephemeral IPv6 /96 prefix from a Google-owned IP pool.
+              #
+              #
+              #
+              # For global external Passthrough Network Load Balancer, the two IP addresses
+              # can be of different types. One IP address can be from a BYOIP prefix while
+              # the other is from a Google-owned IP pool. One IP address can be static
+              # while the other is ephemeral. However, both IP addresses must have the same
+              # IP version, IPv4 or IPv6.
+              #
+              # The IP addresses can only be set at creation and cannot be updated.
+              #
+              # When creating a global external Passthrough Network Load Balancer
+              # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud-generated child
+              # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+              #
+              # Refer to the IPAddress field for the formats that can be used
+              # to specify IP addresses while creating a forwarding rule.
+              #
+              # Because Passthrough Network Load Balancers do not terminate or translate
+              # traffic, the backend stack types must be compatible with the forwarding
+              # rule IP version:
+              #
+              #    - If the forwarding rule IP version is IPv4, backends should be
+              #    configured as dual-stack or IPv4-only.
+              #    - If the forwarding rule IP version is IPv6, backends should be
+              #    configured as dual-stack or IPv6-only.
             &quot;A String&quot;,
           ],
           &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
@@ -320,24 +380,58 @@ Returns:
               &quot;reference&quot;: &quot;A String&quot;, # Output only. The resource name.
             },
           ],
-          &quot;availabilityGroup&quot;: &quot;A String&quot;, # [Output Only] Specifies the availability group of the forwarding rule. This
+          &quot;availabilityGroup&quot;: &quot;A String&quot;, # Output only. [Output Only] Specifies the load balancing availability group, one of the
+              # two that collectively provide high availability.
+              #
+              # Specifies the availability group of the forwarding rule. This
               # field is for use by global external passthrough load balancers (load
-              # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the child forwarding
-              # rules only.
+              # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the
+              # child forwarding rules only. The possible values are:
+              #
+              #    - AVAILABILITY_GROUP0: Set for the child forwarding rule
+              #    that is programmed on the AVAILABILITY_GROUP0 load balancing
+              #    stack. The child forwarding rule has the same IP protocol, port, and
+              #    backend service settings as the parent forwarding rule, but has only one of
+              #    the two IP addresses of the parent forwarding rule, the one with the
+              #    purpose PASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0.
+              #    - AVAILABILITY_GROUP1: Set for the child forwarding rule
+              #    that is programmed on the AVAILABILITY_GROUP1 load balancing
+              #    stack. The child forwarding rule has the same IP protocol, port and backend
+              #    service settings as the parent forwarding rule, but has only one of the two
+              #    IP addresses of the parent forwarding rule, the one with the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1.
+              #
+              #
+              #
+              # For each global external Passthrough Network Load Balancer forwarding rule
+              # (a parent forwarding rule) that you create, Google Cloud generates two
+              # output-only child forwarding rules, one forAVAILABILITY_GROUP0 and one forAVAILABILITY_GROUP1.
           &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-              # Required for internal and external passthrough Network Load Balancers;
-              # must be omitted for all other load balancer types.
+              #
+              # It is a required field for the following load balancers:
+              #
+              #    - Internal passthrough Network Load Balancers
+              #    - Backend service-based regional external passthrough Network Load
+              #    Balancers
+              #    - Global external passthrough Network Load Balancers
+              #
+              #
+              #
+              # It cannot be set by other load balancer types and protocol forwarding
+              # rules.
           &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
               # forwarding rule, we mean the forwarding rule that has the same IP address,
               # protocol, and port settings with the current forwarding rule, but without
               # sourceIPRanges specified.
               # Always empty if the current forwarding rule does not have sourceIPRanges
               # specified.
-          &quot;childForwardingRules&quot;: [ # Output only. [Output Only] Applicable only to the parent forwarding rule of global
+          &quot;childForwardingRules&quot;: [ # Output only. [Output Only] The resource URLs for the child forwarding rules.
+              #
+              # Applicable only to the parent forwarding rule of global
               # external passthrough load balancers. This field contains the list of child
               # forwarding rule URLs associated with the parent forwarding rule: one for
               # each availability group. AVAILABILITY_GROUP0 will be the first element, and
-              # AVAILABILITY_GROUP1 will be the second element.
+              # AVAILABILITY_GROUP1 will be the second element. Refer to theavailabilityGroup field for further details. It cannot be set
+              # by any other forwarding rules.
             &quot;A String&quot;,
           ],
           &quot;creationTimestamp&quot;: &quot;A String&quot;, # Output only. [Output Only] Creation timestamp inRFC3339
@@ -410,8 +504,8 @@ Returns:
           },
           &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
               #
-              # For more information about forwarding rules, refer to
-              # Forwarding rule concepts.
+              # For more information, refer to
+              # Forwarding rule product and scheme table.
           &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
               # configuration to a limited set of xDS
               # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -486,6 +580,13 @@ Returns:
               # For Private Service Connect forwarding rules that forward traffic to Google
               # APIs, the forwarding rule name must be a 1-20 characters string with
               # lowercase letters and numbers and must start with a letter.
+              #
+              # For global external Passthrough Network Load Balancer forwarding rules, the
+              # forwarding rule name must be 1-43 characters long. For each global external
+              # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+              # rule) that you create, Google Cloud generates two output-only child
+              # forwarding rules that are named by concatenating the parent forwarding rule
+              # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
           &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
               #
               # For internal passthrough Network Load Balancers, this field identifies the
@@ -508,7 +609,9 @@ Returns:
           &quot;noAutomateDnsZone&quot;: True or False, # This is used in PSC consumer ForwardingRule to control whether it should
               # try to auto-generate a DNS zone or not. Non-PSC forwarding rules do not use
               # this field. Once set, this field is not mutable.
-          &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] Applicable only to the child forwarding rules of global external
+          &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The resource URL for the parent forwarding rule.
+              #
+              # Applicable only to the child forwarding rules of global external
               # passthrough load balancers. This field contains the URL of the parent
               # forwarding rule.
           &quot;portRange&quot;: &quot;A String&quot;, # The ports, portRange, and allPorts
@@ -530,7 +633,8 @@ Returns:
               #
               #
               # For external forwarding rules, two or more forwarding rules cannot use the
-              # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+              # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+              # fields) if they have overlapping portRanges.
               #
               # For internal forwarding rules within the same VPC network, two or more
               # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -555,8 +659,8 @@ Returns:
               #
               #
               # For external forwarding rules, two or more forwarding rules cannot use the
-              # same [IPAddress, IPProtocol] pair if they share at least one
-              # port number.
+              # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+              # fields) if they share at least one port number.
               #
               # For internal forwarding rules within the same VPC network, two or more
               # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -634,6 +738,15 @@ Returns:
               #
               #
               #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+              #
+              #
+              #
+              # The following load balancers cannot set the target field (they should set the backendService field instead):
+              #
+              #    - Internal passthrough Network Load Balancers
+              #    - Backend service-based regional external passthrough Network Load
+              #    Balancers
+              #    - Global external passthrough Network Load Balancers
         },
       ],
       &quot;warning&quot;: { # Informational warning which replaces the list of forwarding rules when
@@ -648,7 +761,7 @@ Returns:
             #   {
             #    &quot;key&quot;: &quot;scope&quot;,
             #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-            #   }
+            #   }]
           {
             &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
                 # returned. For example, for warnings where there are no results in a list
@@ -685,7 +798,7 @@ Returns:
         #   {
         #    &quot;key&quot;: &quot;scope&quot;,
         #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-        #   }
+        #   }]
       {
         &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
             # returned. For example, for warnings where there are no results in a list
@@ -789,15 +902,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -844,7 +959,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -856,14 +971,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -994,7 +1109,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -1081,6 +1196,8 @@ Returns:
       #
       #
       #
+      # The IP address can only be set at creation. Once set, it cannot be updated.
+      #
       # The forwarding rule&#x27;s target or backendService,
       # and in most cases, also the loadBalancingScheme, determine the
       # type of IP address that you can use. For detailed information, see
@@ -1089,7 +1206,65 @@ Returns:
       #
       # When reading an IPAddress, the API always returns the IP
       # address number.
-  &quot;IPAddresses&quot;: [
+      #
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+  &quot;IPAddresses&quot;: [ # IP addresses for which this forwarding rule accepts traffic. All IP
+      # addresses must have the same IP version, IPv4 or IPv6. When a client sends
+      # traffic that matches one of the specified IP addresses, protocol and ports,
+      # the forwarding rule directs the traffic to the referencedbackendService. All IP addresses are served by the same set of
+      # backends, and they share the target capacities specified in the backend
+      # service fairly.
+      #
+      # Global external Passthrough Network Load Balancer requires two IP addresses
+      # for each forwarding rule to provide high availability when both IP
+      # addresses are used to serve client requests. The two IP addresses must come
+      # from global IP pools that belong to two distinct Availability
+      # Groups, represented by the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0 andPASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1. TheIPAddresses field specifies zero, one, or two IP addresses:
+      #
+      #    - If omitted, Google Cloud assigns two ephemeral IP addresses, one from
+      #    each Availability Group.
+      #    - If you specify one IP address that references an existing static IP
+      #    address resource from one Availability Group, Google Cloud assigns an
+      #    ephemeral IP address from the other Availability Group.
+      #    - If you specify two IP addresses that reference existing static IP
+      #    address resources, they are required to be from different Availability
+      #    Groups.
+      #
+      #
+      #
+      # For global external Passthrough Network Load Balancer, each IP address can be one of the following:
+      #
+      #    - A static or ephemeral IPv4 address from a Google-owned IP pool.
+      #    - A static IPv4 address from a global public delegated prefix.
+      #    - A static or ephemeral IPv6 /96 prefix from a Google-owned IP pool.
+      #
+      #
+      #
+      # For global external Passthrough Network Load Balancer, the two IP addresses
+      # can be of different types. One IP address can be from a BYOIP prefix while
+      # the other is from a Google-owned IP pool. One IP address can be static
+      # while the other is ephemeral. However, both IP addresses must have the same
+      # IP version, IPv4 or IPv6.
+      #
+      # The IP addresses can only be set at creation and cannot be updated.
+      #
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud-generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+      #
+      # Refer to the IPAddress field for the formats that can be used
+      # to specify IP addresses while creating a forwarding rule.
+      #
+      # Because Passthrough Network Load Balancers do not terminate or translate
+      # traffic, the backend stack types must be compatible with the forwarding
+      # rule IP version:
+      #
+      #    - If the forwarding rule IP version is IPv4, backends should be
+      #    configured as dual-stack or IPv4-only.
+      #    - If the forwarding rule IP version is IPv6, backends should be
+      #    configured as dual-stack or IPv6-only.
     &quot;A String&quot;,
   ],
   &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
@@ -1129,24 +1304,58 @@ Returns:
       &quot;reference&quot;: &quot;A String&quot;, # Output only. The resource name.
     },
   ],
-  &quot;availabilityGroup&quot;: &quot;A String&quot;, # [Output Only] Specifies the availability group of the forwarding rule. This
+  &quot;availabilityGroup&quot;: &quot;A String&quot;, # Output only. [Output Only] Specifies the load balancing availability group, one of the
+      # two that collectively provide high availability.
+      #
+      # Specifies the availability group of the forwarding rule. This
       # field is for use by global external passthrough load balancers (load
-      # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the child forwarding
-      # rules only.
+      # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the
+      # child forwarding rules only. The possible values are:
+      #
+      #    - AVAILABILITY_GROUP0: Set for the child forwarding rule
+      #    that is programmed on the AVAILABILITY_GROUP0 load balancing
+      #    stack. The child forwarding rule has the same IP protocol, port, and
+      #    backend service settings as the parent forwarding rule, but has only one of
+      #    the two IP addresses of the parent forwarding rule, the one with the
+      #    purpose PASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0.
+      #    - AVAILABILITY_GROUP1: Set for the child forwarding rule
+      #    that is programmed on the AVAILABILITY_GROUP1 load balancing
+      #    stack. The child forwarding rule has the same IP protocol, port and backend
+      #    service settings as the parent forwarding rule, but has only one of the two
+      #    IP addresses of the parent forwarding rule, the one with the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1.
+      #
+      #
+      #
+      # For each global external Passthrough Network Load Balancer forwarding rule
+      # (a parent forwarding rule) that you create, Google Cloud generates two
+      # output-only child forwarding rules, one forAVAILABILITY_GROUP0 and one forAVAILABILITY_GROUP1.
   &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-      # Required for internal and external passthrough Network Load Balancers;
-      # must be omitted for all other load balancer types.
+      #
+      # It is a required field for the following load balancers:
+      #
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
+      #
+      #
+      #
+      # It cannot be set by other load balancer types and protocol forwarding
+      # rules.
   &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
       # forwarding rule, we mean the forwarding rule that has the same IP address,
       # protocol, and port settings with the current forwarding rule, but without
       # sourceIPRanges specified.
       # Always empty if the current forwarding rule does not have sourceIPRanges
       # specified.
-  &quot;childForwardingRules&quot;: [ # Output only. [Output Only] Applicable only to the parent forwarding rule of global
+  &quot;childForwardingRules&quot;: [ # Output only. [Output Only] The resource URLs for the child forwarding rules.
+      #
+      # Applicable only to the parent forwarding rule of global
       # external passthrough load balancers. This field contains the list of child
       # forwarding rule URLs associated with the parent forwarding rule: one for
       # each availability group. AVAILABILITY_GROUP0 will be the first element, and
-      # AVAILABILITY_GROUP1 will be the second element.
+      # AVAILABILITY_GROUP1 will be the second element. Refer to theavailabilityGroup field for further details. It cannot be set
+      # by any other forwarding rules.
     &quot;A String&quot;,
   ],
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # Output only. [Output Only] Creation timestamp inRFC3339
@@ -1219,8 +1428,8 @@ Returns:
   },
   &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
       #
-      # For more information about forwarding rules, refer to
-      # Forwarding rule concepts.
+      # For more information, refer to
+      # Forwarding rule product and scheme table.
   &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
       # configuration to a limited set of xDS
       # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -1295,6 +1504,13 @@ Returns:
       # For Private Service Connect forwarding rules that forward traffic to Google
       # APIs, the forwarding rule name must be a 1-20 characters string with
       # lowercase letters and numbers and must start with a letter.
+      #
+      # For global external Passthrough Network Load Balancer forwarding rules, the
+      # forwarding rule name must be 1-43 characters long. For each global external
+      # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+      # rule) that you create, Google Cloud generates two output-only child
+      # forwarding rules that are named by concatenating the parent forwarding rule
+      # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
   &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
       #
       # For internal passthrough Network Load Balancers, this field identifies the
@@ -1317,7 +1533,9 @@ Returns:
   &quot;noAutomateDnsZone&quot;: True or False, # This is used in PSC consumer ForwardingRule to control whether it should
       # try to auto-generate a DNS zone or not. Non-PSC forwarding rules do not use
       # this field. Once set, this field is not mutable.
-  &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] Applicable only to the child forwarding rules of global external
+  &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The resource URL for the parent forwarding rule.
+      #
+      # Applicable only to the child forwarding rules of global external
       # passthrough load balancers. This field contains the URL of the parent
       # forwarding rule.
   &quot;portRange&quot;: &quot;A String&quot;, # The ports, portRange, and allPorts
@@ -1339,7 +1557,8 @@ Returns:
       #
       #
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they have overlapping portRanges.
       #
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1364,8 +1583,8 @@ Returns:
       #
       #
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair if they share at least one
-      # port number.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they share at least one port number.
       #
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1443,6 +1662,15 @@ Returns:
       #
       #
       #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+      #
+      #
+      #
+      # The following load balancers cannot set the target field (they should set the backendService field instead):
+      #
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
 }</pre>
 </div>
 
@@ -1504,6 +1732,8 @@ Args:
       # 
       # 
       # 
+      # The IP address can only be set at creation. Once set, it cannot be updated.
+      # 
       # The forwarding rule&#x27;s target or backendService,
       # and in most cases, also the loadBalancingScheme, determine the
       # type of IP address that you can use. For detailed information, see
@@ -1512,7 +1742,65 @@ Args:
       # 
       # When reading an IPAddress, the API always returns the IP
       # address number.
-  &quot;IPAddresses&quot;: [
+      # 
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+  &quot;IPAddresses&quot;: [ # IP addresses for which this forwarding rule accepts traffic. All IP
+      # addresses must have the same IP version, IPv4 or IPv6. When a client sends
+      # traffic that matches one of the specified IP addresses, protocol and ports,
+      # the forwarding rule directs the traffic to the referencedbackendService. All IP addresses are served by the same set of
+      # backends, and they share the target capacities specified in the backend
+      # service fairly.
+      # 
+      # Global external Passthrough Network Load Balancer requires two IP addresses
+      # for each forwarding rule to provide high availability when both IP
+      # addresses are used to serve client requests. The two IP addresses must come
+      # from global IP pools that belong to two distinct Availability
+      # Groups, represented by the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0 andPASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1. TheIPAddresses field specifies zero, one, or two IP addresses:
+      # 
+      #    - If omitted, Google Cloud assigns two ephemeral IP addresses, one from
+      #    each Availability Group.
+      #    - If you specify one IP address that references an existing static IP
+      #    address resource from one Availability Group, Google Cloud assigns an
+      #    ephemeral IP address from the other Availability Group.
+      #    - If you specify two IP addresses that reference existing static IP
+      #    address resources, they are required to be from different Availability
+      #    Groups.
+      # 
+      # 
+      # 
+      # For global external Passthrough Network Load Balancer, each IP address can be one of the following:
+      # 
+      #    - A static or ephemeral IPv4 address from a Google-owned IP pool.
+      #    - A static IPv4 address from a global public delegated prefix.
+      #    - A static or ephemeral IPv6 /96 prefix from a Google-owned IP pool.
+      # 
+      # 
+      # 
+      # For global external Passthrough Network Load Balancer, the two IP addresses
+      # can be of different types. One IP address can be from a BYOIP prefix while
+      # the other is from a Google-owned IP pool. One IP address can be static
+      # while the other is ephemeral. However, both IP addresses must have the same
+      # IP version, IPv4 or IPv6.
+      # 
+      # The IP addresses can only be set at creation and cannot be updated.
+      # 
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud-generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+      # 
+      # Refer to the IPAddress field for the formats that can be used
+      # to specify IP addresses while creating a forwarding rule.
+      # 
+      # Because Passthrough Network Load Balancers do not terminate or translate
+      # traffic, the backend stack types must be compatible with the forwarding
+      # rule IP version:
+      # 
+      #    - If the forwarding rule IP version is IPv4, backends should be
+      #    configured as dual-stack or IPv4-only.
+      #    - If the forwarding rule IP version is IPv6, backends should be
+      #    configured as dual-stack or IPv6-only.
     &quot;A String&quot;,
   ],
   &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
@@ -1552,24 +1840,58 @@ Args:
       &quot;reference&quot;: &quot;A String&quot;, # Output only. The resource name.
     },
   ],
-  &quot;availabilityGroup&quot;: &quot;A String&quot;, # [Output Only] Specifies the availability group of the forwarding rule. This
+  &quot;availabilityGroup&quot;: &quot;A String&quot;, # Output only. [Output Only] Specifies the load balancing availability group, one of the
+      # two that collectively provide high availability.
+      # 
+      # Specifies the availability group of the forwarding rule. This
       # field is for use by global external passthrough load balancers (load
-      # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the child forwarding
-      # rules only.
+      # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the
+      # child forwarding rules only. The possible values are:
+      # 
+      #    - AVAILABILITY_GROUP0: Set for the child forwarding rule
+      #    that is programmed on the AVAILABILITY_GROUP0 load balancing
+      #    stack. The child forwarding rule has the same IP protocol, port, and
+      #    backend service settings as the parent forwarding rule, but has only one of
+      #    the two IP addresses of the parent forwarding rule, the one with the
+      #    purpose PASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0.
+      #    - AVAILABILITY_GROUP1: Set for the child forwarding rule
+      #    that is programmed on the AVAILABILITY_GROUP1 load balancing
+      #    stack. The child forwarding rule has the same IP protocol, port and backend
+      #    service settings as the parent forwarding rule, but has only one of the two
+      #    IP addresses of the parent forwarding rule, the one with the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1.
+      # 
+      # 
+      # 
+      # For each global external Passthrough Network Load Balancer forwarding rule
+      # (a parent forwarding rule) that you create, Google Cloud generates two
+      # output-only child forwarding rules, one forAVAILABILITY_GROUP0 and one forAVAILABILITY_GROUP1.
   &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-      # Required for internal and external passthrough Network Load Balancers;
-      # must be omitted for all other load balancer types.
+      # 
+      # It is a required field for the following load balancers:
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
+      # 
+      # 
+      # 
+      # It cannot be set by other load balancer types and protocol forwarding
+      # rules.
   &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
       # forwarding rule, we mean the forwarding rule that has the same IP address,
       # protocol, and port settings with the current forwarding rule, but without
       # sourceIPRanges specified.
       # Always empty if the current forwarding rule does not have sourceIPRanges
       # specified.
-  &quot;childForwardingRules&quot;: [ # Output only. [Output Only] Applicable only to the parent forwarding rule of global
+  &quot;childForwardingRules&quot;: [ # Output only. [Output Only] The resource URLs for the child forwarding rules.
+      # 
+      # Applicable only to the parent forwarding rule of global
       # external passthrough load balancers. This field contains the list of child
       # forwarding rule URLs associated with the parent forwarding rule: one for
       # each availability group. AVAILABILITY_GROUP0 will be the first element, and
-      # AVAILABILITY_GROUP1 will be the second element.
+      # AVAILABILITY_GROUP1 will be the second element. Refer to theavailabilityGroup field for further details. It cannot be set
+      # by any other forwarding rules.
     &quot;A String&quot;,
   ],
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # Output only. [Output Only] Creation timestamp inRFC3339
@@ -1642,8 +1964,8 @@ Args:
   },
   &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
       # 
-      # For more information about forwarding rules, refer to
-      # Forwarding rule concepts.
+      # For more information, refer to
+      # Forwarding rule product and scheme table.
   &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
       # configuration to a limited set of xDS
       # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -1718,6 +2040,13 @@ Args:
       # For Private Service Connect forwarding rules that forward traffic to Google
       # APIs, the forwarding rule name must be a 1-20 characters string with
       # lowercase letters and numbers and must start with a letter.
+      # 
+      # For global external Passthrough Network Load Balancer forwarding rules, the
+      # forwarding rule name must be 1-43 characters long. For each global external
+      # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+      # rule) that you create, Google Cloud generates two output-only child
+      # forwarding rules that are named by concatenating the parent forwarding rule
+      # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
   &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
       # 
       # For internal passthrough Network Load Balancers, this field identifies the
@@ -1740,7 +2069,9 @@ Args:
   &quot;noAutomateDnsZone&quot;: True or False, # This is used in PSC consumer ForwardingRule to control whether it should
       # try to auto-generate a DNS zone or not. Non-PSC forwarding rules do not use
       # this field. Once set, this field is not mutable.
-  &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] Applicable only to the child forwarding rules of global external
+  &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The resource URL for the parent forwarding rule.
+      # 
+      # Applicable only to the child forwarding rules of global external
       # passthrough load balancers. This field contains the URL of the parent
       # forwarding rule.
   &quot;portRange&quot;: &quot;A String&quot;, # The ports, portRange, and allPorts
@@ -1762,7 +2093,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they have overlapping portRanges.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1787,8 +2119,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair if they share at least one
-      # port number.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they share at least one port number.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1866,6 +2198,15 @@ Args:
       # 
       # 
       #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+      # 
+      # 
+      # 
+      # The following load balancers cannot set the target field (they should set the backendService field instead):
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so
@@ -1928,15 +2269,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -1983,7 +2326,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -1995,14 +2338,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -2133,7 +2476,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -2302,6 +2645,8 @@ Returns:
           #
           #
           #
+          # The IP address can only be set at creation. Once set, it cannot be updated.
+          #
           # The forwarding rule&#x27;s target or backendService,
           # and in most cases, also the loadBalancingScheme, determine the
           # type of IP address that you can use. For detailed information, see
@@ -2310,7 +2655,65 @@ Returns:
           #
           # When reading an IPAddress, the API always returns the IP
           # address number.
-      &quot;IPAddresses&quot;: [
+          #
+          # When creating a global external Passthrough Network Load Balancer
+          # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+          # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+      &quot;IPAddresses&quot;: [ # IP addresses for which this forwarding rule accepts traffic. All IP
+          # addresses must have the same IP version, IPv4 or IPv6. When a client sends
+          # traffic that matches one of the specified IP addresses, protocol and ports,
+          # the forwarding rule directs the traffic to the referencedbackendService. All IP addresses are served by the same set of
+          # backends, and they share the target capacities specified in the backend
+          # service fairly.
+          #
+          # Global external Passthrough Network Load Balancer requires two IP addresses
+          # for each forwarding rule to provide high availability when both IP
+          # addresses are used to serve client requests. The two IP addresses must come
+          # from global IP pools that belong to two distinct Availability
+          # Groups, represented by the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0 andPASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1. TheIPAddresses field specifies zero, one, or two IP addresses:
+          #
+          #    - If omitted, Google Cloud assigns two ephemeral IP addresses, one from
+          #    each Availability Group.
+          #    - If you specify one IP address that references an existing static IP
+          #    address resource from one Availability Group, Google Cloud assigns an
+          #    ephemeral IP address from the other Availability Group.
+          #    - If you specify two IP addresses that reference existing static IP
+          #    address resources, they are required to be from different Availability
+          #    Groups.
+          #
+          #
+          #
+          # For global external Passthrough Network Load Balancer, each IP address can be one of the following:
+          #
+          #    - A static or ephemeral IPv4 address from a Google-owned IP pool.
+          #    - A static IPv4 address from a global public delegated prefix.
+          #    - A static or ephemeral IPv6 /96 prefix from a Google-owned IP pool.
+          #
+          #
+          #
+          # For global external Passthrough Network Load Balancer, the two IP addresses
+          # can be of different types. One IP address can be from a BYOIP prefix while
+          # the other is from a Google-owned IP pool. One IP address can be static
+          # while the other is ephemeral. However, both IP addresses must have the same
+          # IP version, IPv4 or IPv6.
+          #
+          # The IP addresses can only be set at creation and cannot be updated.
+          #
+          # When creating a global external Passthrough Network Load Balancer
+          # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud-generated child
+          # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+          #
+          # Refer to the IPAddress field for the formats that can be used
+          # to specify IP addresses while creating a forwarding rule.
+          #
+          # Because Passthrough Network Load Balancers do not terminate or translate
+          # traffic, the backend stack types must be compatible with the forwarding
+          # rule IP version:
+          #
+          #    - If the forwarding rule IP version is IPv4, backends should be
+          #    configured as dual-stack or IPv4-only.
+          #    - If the forwarding rule IP version is IPv6, backends should be
+          #    configured as dual-stack or IPv6-only.
         &quot;A String&quot;,
       ],
       &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
@@ -2350,24 +2753,58 @@ Returns:
           &quot;reference&quot;: &quot;A String&quot;, # Output only. The resource name.
         },
       ],
-      &quot;availabilityGroup&quot;: &quot;A String&quot;, # [Output Only] Specifies the availability group of the forwarding rule. This
+      &quot;availabilityGroup&quot;: &quot;A String&quot;, # Output only. [Output Only] Specifies the load balancing availability group, one of the
+          # two that collectively provide high availability.
+          #
+          # Specifies the availability group of the forwarding rule. This
           # field is for use by global external passthrough load balancers (load
-          # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the child forwarding
-          # rules only.
+          # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the
+          # child forwarding rules only. The possible values are:
+          #
+          #    - AVAILABILITY_GROUP0: Set for the child forwarding rule
+          #    that is programmed on the AVAILABILITY_GROUP0 load balancing
+          #    stack. The child forwarding rule has the same IP protocol, port, and
+          #    backend service settings as the parent forwarding rule, but has only one of
+          #    the two IP addresses of the parent forwarding rule, the one with the
+          #    purpose PASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0.
+          #    - AVAILABILITY_GROUP1: Set for the child forwarding rule
+          #    that is programmed on the AVAILABILITY_GROUP1 load balancing
+          #    stack. The child forwarding rule has the same IP protocol, port and backend
+          #    service settings as the parent forwarding rule, but has only one of the two
+          #    IP addresses of the parent forwarding rule, the one with the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1.
+          #
+          #
+          #
+          # For each global external Passthrough Network Load Balancer forwarding rule
+          # (a parent forwarding rule) that you create, Google Cloud generates two
+          # output-only child forwarding rules, one forAVAILABILITY_GROUP0 and one forAVAILABILITY_GROUP1.
       &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-          # Required for internal and external passthrough Network Load Balancers;
-          # must be omitted for all other load balancer types.
+          #
+          # It is a required field for the following load balancers:
+          #
+          #    - Internal passthrough Network Load Balancers
+          #    - Backend service-based regional external passthrough Network Load
+          #    Balancers
+          #    - Global external passthrough Network Load Balancers
+          #
+          #
+          #
+          # It cannot be set by other load balancer types and protocol forwarding
+          # rules.
       &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
           # forwarding rule, we mean the forwarding rule that has the same IP address,
           # protocol, and port settings with the current forwarding rule, but without
           # sourceIPRanges specified.
           # Always empty if the current forwarding rule does not have sourceIPRanges
           # specified.
-      &quot;childForwardingRules&quot;: [ # Output only. [Output Only] Applicable only to the parent forwarding rule of global
+      &quot;childForwardingRules&quot;: [ # Output only. [Output Only] The resource URLs for the child forwarding rules.
+          #
+          # Applicable only to the parent forwarding rule of global
           # external passthrough load balancers. This field contains the list of child
           # forwarding rule URLs associated with the parent forwarding rule: one for
           # each availability group. AVAILABILITY_GROUP0 will be the first element, and
-          # AVAILABILITY_GROUP1 will be the second element.
+          # AVAILABILITY_GROUP1 will be the second element. Refer to theavailabilityGroup field for further details. It cannot be set
+          # by any other forwarding rules.
         &quot;A String&quot;,
       ],
       &quot;creationTimestamp&quot;: &quot;A String&quot;, # Output only. [Output Only] Creation timestamp inRFC3339
@@ -2440,8 +2877,8 @@ Returns:
       },
       &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
           #
-          # For more information about forwarding rules, refer to
-          # Forwarding rule concepts.
+          # For more information, refer to
+          # Forwarding rule product and scheme table.
       &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
           # configuration to a limited set of xDS
           # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -2516,6 +2953,13 @@ Returns:
           # For Private Service Connect forwarding rules that forward traffic to Google
           # APIs, the forwarding rule name must be a 1-20 characters string with
           # lowercase letters and numbers and must start with a letter.
+          #
+          # For global external Passthrough Network Load Balancer forwarding rules, the
+          # forwarding rule name must be 1-43 characters long. For each global external
+          # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+          # rule) that you create, Google Cloud generates two output-only child
+          # forwarding rules that are named by concatenating the parent forwarding rule
+          # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
       &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
           #
           # For internal passthrough Network Load Balancers, this field identifies the
@@ -2538,7 +2982,9 @@ Returns:
       &quot;noAutomateDnsZone&quot;: True or False, # This is used in PSC consumer ForwardingRule to control whether it should
           # try to auto-generate a DNS zone or not. Non-PSC forwarding rules do not use
           # this field. Once set, this field is not mutable.
-      &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] Applicable only to the child forwarding rules of global external
+      &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The resource URL for the parent forwarding rule.
+          #
+          # Applicable only to the child forwarding rules of global external
           # passthrough load balancers. This field contains the URL of the parent
           # forwarding rule.
       &quot;portRange&quot;: &quot;A String&quot;, # The ports, portRange, and allPorts
@@ -2560,7 +3006,8 @@ Returns:
           #
           #
           # For external forwarding rules, two or more forwarding rules cannot use the
-          # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+          # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+          # fields) if they have overlapping portRanges.
           #
           # For internal forwarding rules within the same VPC network, two or more
           # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -2585,8 +3032,8 @@ Returns:
           #
           #
           # For external forwarding rules, two or more forwarding rules cannot use the
-          # same [IPAddress, IPProtocol] pair if they share at least one
-          # port number.
+          # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+          # fields) if they share at least one port number.
           #
           # For internal forwarding rules within the same VPC network, two or more
           # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -2664,6 +3111,15 @@ Returns:
           #
           #
           #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+          #
+          #
+          #
+          # The following load balancers cannot set the target field (they should set the backendService field instead):
+          #
+          #    - Internal passthrough Network Load Balancers
+          #    - Backend service-based regional external passthrough Network Load
+          #    Balancers
+          #    - Global external passthrough Network Load Balancers
     },
   ],
   &quot;kind&quot;: &quot;compute#forwardingRuleList&quot;, # Output only. Type of resource.
@@ -2684,7 +3140,7 @@ Returns:
         #   {
         #    &quot;key&quot;: &quot;scope&quot;,
         #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-        #   }
+        #   }]
       {
         &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
             # returned. For example, for warnings where there are no results in a list
@@ -2777,6 +3233,8 @@ Args:
       # 
       # 
       # 
+      # The IP address can only be set at creation. Once set, it cannot be updated.
+      # 
       # The forwarding rule&#x27;s target or backendService,
       # and in most cases, also the loadBalancingScheme, determine the
       # type of IP address that you can use. For detailed information, see
@@ -2785,7 +3243,65 @@ Args:
       # 
       # When reading an IPAddress, the API always returns the IP
       # address number.
-  &quot;IPAddresses&quot;: [
+      # 
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+  &quot;IPAddresses&quot;: [ # IP addresses for which this forwarding rule accepts traffic. All IP
+      # addresses must have the same IP version, IPv4 or IPv6. When a client sends
+      # traffic that matches one of the specified IP addresses, protocol and ports,
+      # the forwarding rule directs the traffic to the referencedbackendService. All IP addresses are served by the same set of
+      # backends, and they share the target capacities specified in the backend
+      # service fairly.
+      # 
+      # Global external Passthrough Network Load Balancer requires two IP addresses
+      # for each forwarding rule to provide high availability when both IP
+      # addresses are used to serve client requests. The two IP addresses must come
+      # from global IP pools that belong to two distinct Availability
+      # Groups, represented by the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0 andPASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1. TheIPAddresses field specifies zero, one, or two IP addresses:
+      # 
+      #    - If omitted, Google Cloud assigns two ephemeral IP addresses, one from
+      #    each Availability Group.
+      #    - If you specify one IP address that references an existing static IP
+      #    address resource from one Availability Group, Google Cloud assigns an
+      #    ephemeral IP address from the other Availability Group.
+      #    - If you specify two IP addresses that reference existing static IP
+      #    address resources, they are required to be from different Availability
+      #    Groups.
+      # 
+      # 
+      # 
+      # For global external Passthrough Network Load Balancer, each IP address can be one of the following:
+      # 
+      #    - A static or ephemeral IPv4 address from a Google-owned IP pool.
+      #    - A static IPv4 address from a global public delegated prefix.
+      #    - A static or ephemeral IPv6 /96 prefix from a Google-owned IP pool.
+      # 
+      # 
+      # 
+      # For global external Passthrough Network Load Balancer, the two IP addresses
+      # can be of different types. One IP address can be from a BYOIP prefix while
+      # the other is from a Google-owned IP pool. One IP address can be static
+      # while the other is ephemeral. However, both IP addresses must have the same
+      # IP version, IPv4 or IPv6.
+      # 
+      # The IP addresses can only be set at creation and cannot be updated.
+      # 
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud-generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
+      # 
+      # Refer to the IPAddress field for the formats that can be used
+      # to specify IP addresses while creating a forwarding rule.
+      # 
+      # Because Passthrough Network Load Balancers do not terminate or translate
+      # traffic, the backend stack types must be compatible with the forwarding
+      # rule IP version:
+      # 
+      #    - If the forwarding rule IP version is IPv4, backends should be
+      #    configured as dual-stack or IPv4-only.
+      #    - If the forwarding rule IP version is IPv6, backends should be
+      #    configured as dual-stack or IPv6-only.
     &quot;A String&quot;,
   ],
   &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
@@ -2825,24 +3341,58 @@ Args:
       &quot;reference&quot;: &quot;A String&quot;, # Output only. The resource name.
     },
   ],
-  &quot;availabilityGroup&quot;: &quot;A String&quot;, # [Output Only] Specifies the availability group of the forwarding rule. This
+  &quot;availabilityGroup&quot;: &quot;A String&quot;, # Output only. [Output Only] Specifies the load balancing availability group, one of the
+      # two that collectively provide high availability.
+      # 
+      # Specifies the availability group of the forwarding rule. This
       # field is for use by global external passthrough load balancers (load
-      # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the child forwarding
-      # rules only.
+      # balancing scheme EXTERNAL_PASSTHROUGH) and is set for the
+      # child forwarding rules only. The possible values are:
+      # 
+      #    - AVAILABILITY_GROUP0: Set for the child forwarding rule
+      #    that is programmed on the AVAILABILITY_GROUP0 load balancing
+      #    stack. The child forwarding rule has the same IP protocol, port, and
+      #    backend service settings as the parent forwarding rule, but has only one of
+      #    the two IP addresses of the parent forwarding rule, the one with the
+      #    purpose PASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP0.
+      #    - AVAILABILITY_GROUP1: Set for the child forwarding rule
+      #    that is programmed on the AVAILABILITY_GROUP1 load balancing
+      #    stack. The child forwarding rule has the same IP protocol, port and backend
+      #    service settings as the parent forwarding rule, but has only one of the two
+      #    IP addresses of the parent forwarding rule, the one with the purposePASSTHROUGH_LOAD_BALANCER_AVAILABILITY_GROUP1.
+      # 
+      # 
+      # 
+      # For each global external Passthrough Network Load Balancer forwarding rule
+      # (a parent forwarding rule) that you create, Google Cloud generates two
+      # output-only child forwarding rules, one forAVAILABILITY_GROUP0 and one forAVAILABILITY_GROUP1.
   &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-      # Required for internal and external passthrough Network Load Balancers;
-      # must be omitted for all other load balancer types.
+      # 
+      # It is a required field for the following load balancers:
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
+      # 
+      # 
+      # 
+      # It cannot be set by other load balancer types and protocol forwarding
+      # rules.
   &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
       # forwarding rule, we mean the forwarding rule that has the same IP address,
       # protocol, and port settings with the current forwarding rule, but without
       # sourceIPRanges specified.
       # Always empty if the current forwarding rule does not have sourceIPRanges
       # specified.
-  &quot;childForwardingRules&quot;: [ # Output only. [Output Only] Applicable only to the parent forwarding rule of global
+  &quot;childForwardingRules&quot;: [ # Output only. [Output Only] The resource URLs for the child forwarding rules.
+      # 
+      # Applicable only to the parent forwarding rule of global
       # external passthrough load balancers. This field contains the list of child
       # forwarding rule URLs associated with the parent forwarding rule: one for
       # each availability group. AVAILABILITY_GROUP0 will be the first element, and
-      # AVAILABILITY_GROUP1 will be the second element.
+      # AVAILABILITY_GROUP1 will be the second element. Refer to theavailabilityGroup field for further details. It cannot be set
+      # by any other forwarding rules.
     &quot;A String&quot;,
   ],
   &quot;creationTimestamp&quot;: &quot;A String&quot;, # Output only. [Output Only] Creation timestamp inRFC3339
@@ -2915,8 +3465,8 @@ Args:
   },
   &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
       # 
-      # For more information about forwarding rules, refer to
-      # Forwarding rule concepts.
+      # For more information, refer to
+      # Forwarding rule product and scheme table.
   &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
       # configuration to a limited set of xDS
       # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -2991,6 +3541,13 @@ Args:
       # For Private Service Connect forwarding rules that forward traffic to Google
       # APIs, the forwarding rule name must be a 1-20 characters string with
       # lowercase letters and numbers and must start with a letter.
+      # 
+      # For global external Passthrough Network Load Balancer forwarding rules, the
+      # forwarding rule name must be 1-43 characters long. For each global external
+      # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+      # rule) that you create, Google Cloud generates two output-only child
+      # forwarding rules that are named by concatenating the parent forwarding rule
+      # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
   &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
       # 
       # For internal passthrough Network Load Balancers, this field identifies the
@@ -3013,7 +3570,9 @@ Args:
   &quot;noAutomateDnsZone&quot;: True or False, # This is used in PSC consumer ForwardingRule to control whether it should
       # try to auto-generate a DNS zone or not. Non-PSC forwarding rules do not use
       # this field. Once set, this field is not mutable.
-  &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] Applicable only to the child forwarding rules of global external
+  &quot;parentForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The resource URL for the parent forwarding rule.
+      # 
+      # Applicable only to the child forwarding rules of global external
       # passthrough load balancers. This field contains the URL of the parent
       # forwarding rule.
   &quot;portRange&quot;: &quot;A String&quot;, # The ports, portRange, and allPorts
@@ -3035,7 +3594,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they have overlapping portRanges.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -3060,8 +3620,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair if they share at least one
-      # port number.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they share at least one port number.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -3139,6 +3699,15 @@ Args:
       # 
       # 
       #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+      # 
+      # 
+      # 
+      # The following load balancers cannot set the target field (they should set the backendService field instead):
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so
@@ -3201,15 +3770,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -3256,7 +3827,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -3268,14 +3839,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -3406,7 +3977,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -3511,15 +4082,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -3566,7 +4139,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -3578,14 +4151,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -3716,7 +4289,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -3812,15 +4385,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -3867,7 +4442,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -3879,14 +4454,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -4017,7 +4592,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list

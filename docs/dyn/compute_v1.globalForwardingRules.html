@@ -174,15 +174,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -229,7 +231,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -241,14 +243,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -379,7 +381,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -466,6 +468,8 @@ Returns:
       #
       #
       #
+      # The IP address can only be set at creation. Once set, it cannot be updated.
+      #
       # The forwarding rule&#x27;s target or backendService,
       # and in most cases, also the loadBalancingScheme, determine the
       # type of IP address that you can use. For detailed information, see
@@ -474,6 +478,10 @@ Returns:
       #
       # When reading an IPAddress, the API always returns the IP
       # address number.
+      #
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
   &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
       #
       # For protocol forwarding, valid
@@ -512,8 +520,18 @@ Returns:
     },
   ],
   &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-      # Required for internal and external passthrough Network Load Balancers;
-      # must be omitted for all other load balancer types.
+      #
+      # It is a required field for the following load balancers:
+      #
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
+      #
+      #
+      #
+      # It cannot be set by other load balancer types and protocol forwarding
+      # rules.
   &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
       # forwarding rule, we mean the forwarding rule that has the same IP address,
       # protocol, and port settings with the current forwarding rule, but without
@@ -590,8 +608,8 @@ Returns:
   },
   &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
       #
-      # For more information about forwarding rules, refer to
-      # Forwarding rule concepts.
+      # For more information, refer to
+      # Forwarding rule product and scheme table.
   &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
       # configuration to a limited set of xDS
       # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -666,6 +684,13 @@ Returns:
       # For Private Service Connect forwarding rules that forward traffic to Google
       # APIs, the forwarding rule name must be a 1-20 characters string with
       # lowercase letters and numbers and must start with a letter.
+      #
+      # For global external Passthrough Network Load Balancer forwarding rules, the
+      # forwarding rule name must be 1-43 characters long. For each global external
+      # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+      # rule) that you create, Google Cloud generates two output-only child
+      # forwarding rules that are named by concatenating the parent forwarding rule
+      # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
   &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
       #
       # For internal passthrough Network Load Balancers, this field identifies the
@@ -707,7 +732,8 @@ Returns:
       #
       #
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they have overlapping portRanges.
       #
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -732,8 +758,8 @@ Returns:
       #
       #
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair if they share at least one
-      # port number.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they share at least one port number.
       #
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -811,6 +837,15 @@ Returns:
       #
       #
       #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+      #
+      #
+      #
+      # The following load balancers cannot set the target field (they should set the backendService field instead):
+      #
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
 }</pre>
 </div>
 
@@ -871,6 +906,8 @@ Args:
       # 
       # 
       # 
+      # The IP address can only be set at creation. Once set, it cannot be updated.
+      # 
       # The forwarding rule&#x27;s target or backendService,
       # and in most cases, also the loadBalancingScheme, determine the
       # type of IP address that you can use. For detailed information, see
@@ -879,6 +916,10 @@ Args:
       # 
       # When reading an IPAddress, the API always returns the IP
       # address number.
+      # 
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
   &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
       # 
       # For protocol forwarding, valid
@@ -917,8 +958,18 @@ Args:
     },
   ],
   &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-      # Required for internal and external passthrough Network Load Balancers;
-      # must be omitted for all other load balancer types.
+      # 
+      # It is a required field for the following load balancers:
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
+      # 
+      # 
+      # 
+      # It cannot be set by other load balancer types and protocol forwarding
+      # rules.
   &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
       # forwarding rule, we mean the forwarding rule that has the same IP address,
       # protocol, and port settings with the current forwarding rule, but without
@@ -995,8 +1046,8 @@ Args:
   },
   &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
       # 
-      # For more information about forwarding rules, refer to
-      # Forwarding rule concepts.
+      # For more information, refer to
+      # Forwarding rule product and scheme table.
   &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
       # configuration to a limited set of xDS
       # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -1071,6 +1122,13 @@ Args:
       # For Private Service Connect forwarding rules that forward traffic to Google
       # APIs, the forwarding rule name must be a 1-20 characters string with
       # lowercase letters and numbers and must start with a letter.
+      # 
+      # For global external Passthrough Network Load Balancer forwarding rules, the
+      # forwarding rule name must be 1-43 characters long. For each global external
+      # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+      # rule) that you create, Google Cloud generates two output-only child
+      # forwarding rules that are named by concatenating the parent forwarding rule
+      # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
   &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
       # 
       # For internal passthrough Network Load Balancers, this field identifies the
@@ -1112,7 +1170,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they have overlapping portRanges.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1137,8 +1196,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair if they share at least one
-      # port number.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they share at least one port number.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1216,6 +1275,15 @@ Args:
       # 
       # 
       #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+      # 
+      # 
+      # 
+      # The following load balancers cannot set the target field (they should set the backendService field instead):
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so
@@ -1278,15 +1346,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -1333,7 +1403,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -1345,14 +1415,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -1483,7 +1553,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -1651,6 +1721,8 @@ Returns:
           #
           #
           #
+          # The IP address can only be set at creation. Once set, it cannot be updated.
+          #
           # The forwarding rule&#x27;s target or backendService,
           # and in most cases, also the loadBalancingScheme, determine the
           # type of IP address that you can use. For detailed information, see
@@ -1659,6 +1731,10 @@ Returns:
           #
           # When reading an IPAddress, the API always returns the IP
           # address number.
+          #
+          # When creating a global external Passthrough Network Load Balancer
+          # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+          # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
       &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
           #
           # For protocol forwarding, valid
@@ -1697,8 +1773,18 @@ Returns:
         },
       ],
       &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-          # Required for internal and external passthrough Network Load Balancers;
-          # must be omitted for all other load balancer types.
+          #
+          # It is a required field for the following load balancers:
+          #
+          #    - Internal passthrough Network Load Balancers
+          #    - Backend service-based regional external passthrough Network Load
+          #    Balancers
+          #    - Global external passthrough Network Load Balancers
+          #
+          #
+          #
+          # It cannot be set by other load balancer types and protocol forwarding
+          # rules.
       &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
           # forwarding rule, we mean the forwarding rule that has the same IP address,
           # protocol, and port settings with the current forwarding rule, but without
@@ -1775,8 +1861,8 @@ Returns:
       },
       &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
           #
-          # For more information about forwarding rules, refer to
-          # Forwarding rule concepts.
+          # For more information, refer to
+          # Forwarding rule product and scheme table.
       &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
           # configuration to a limited set of xDS
           # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -1851,6 +1937,13 @@ Returns:
           # For Private Service Connect forwarding rules that forward traffic to Google
           # APIs, the forwarding rule name must be a 1-20 characters string with
           # lowercase letters and numbers and must start with a letter.
+          #
+          # For global external Passthrough Network Load Balancer forwarding rules, the
+          # forwarding rule name must be 1-43 characters long. For each global external
+          # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+          # rule) that you create, Google Cloud generates two output-only child
+          # forwarding rules that are named by concatenating the parent forwarding rule
+          # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
       &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
           #
           # For internal passthrough Network Load Balancers, this field identifies the
@@ -1892,7 +1985,8 @@ Returns:
           #
           #
           # For external forwarding rules, two or more forwarding rules cannot use the
-          # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+          # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+          # fields) if they have overlapping portRanges.
           #
           # For internal forwarding rules within the same VPC network, two or more
           # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1917,8 +2011,8 @@ Returns:
           #
           #
           # For external forwarding rules, two or more forwarding rules cannot use the
-          # same [IPAddress, IPProtocol] pair if they share at least one
-          # port number.
+          # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+          # fields) if they share at least one port number.
           #
           # For internal forwarding rules within the same VPC network, two or more
           # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -1996,6 +2090,15 @@ Returns:
           #
           #
           #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+          #
+          #
+          #
+          # The following load balancers cannot set the target field (they should set the backendService field instead):
+          #
+          #    - Internal passthrough Network Load Balancers
+          #    - Backend service-based regional external passthrough Network Load
+          #    Balancers
+          #    - Global external passthrough Network Load Balancers
     },
   ],
   &quot;kind&quot;: &quot;compute#forwardingRuleList&quot;, # Output only. Type of resource.
@@ -2016,7 +2119,7 @@ Returns:
         #   {
         #    &quot;key&quot;: &quot;scope&quot;,
         #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-        #   }
+        #   }]
       {
         &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
             # returned. For example, for warnings where there are no results in a list
@@ -2108,6 +2211,8 @@ Args:
       # 
       # 
       # 
+      # The IP address can only be set at creation. Once set, it cannot be updated.
+      # 
       # The forwarding rule&#x27;s target or backendService,
       # and in most cases, also the loadBalancingScheme, determine the
       # type of IP address that you can use. For detailed information, see
@@ -2116,6 +2221,10 @@ Args:
       # 
       # When reading an IPAddress, the API always returns the IP
       # address number.
+      # 
+      # When creating a global external Passthrough Network Load Balancer
+      # forwarding rule (a parent forwarding rule), you must use theIPAddresses field, but the Google Cloud generated child
+      # forwarding rules set the IPAddress field instead. Refer to theavailabilityGroup field for further details.
   &quot;IPProtocol&quot;: &quot;A String&quot;, # The IP protocol to which this rule applies.
       # 
       # For protocol forwarding, valid
@@ -2154,8 +2263,18 @@ Args:
     },
   ],
   &quot;backendService&quot;: &quot;A String&quot;, # Identifies the backend service to which the forwarding rule sends traffic.
-      # Required for internal and external passthrough Network Load Balancers;
-      # must be omitted for all other load balancer types.
+      # 
+      # It is a required field for the following load balancers:
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
+      # 
+      # 
+      # 
+      # It cannot be set by other load balancer types and protocol forwarding
+      # rules.
   &quot;baseForwardingRule&quot;: &quot;A String&quot;, # Output only. [Output Only] The URL for the corresponding base forwarding rule. By base
       # forwarding rule, we mean the forwarding rule that has the same IP address,
       # protocol, and port settings with the current forwarding rule, but without
@@ -2232,8 +2351,8 @@ Args:
   },
   &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Specifies the forwarding rule type.
       # 
-      # For more information about forwarding rules, refer to
-      # Forwarding rule concepts.
+      # For more information, refer to
+      # Forwarding rule product and scheme table.
   &quot;metadataFilters&quot;: [ # Opaque filter criteria used by load balancer to restrict routing
       # configuration to a limited set of xDS
       # compliant clients. In their xDS requests to load balancer, xDS clients
@@ -2308,6 +2427,13 @@ Args:
       # For Private Service Connect forwarding rules that forward traffic to Google
       # APIs, the forwarding rule name must be a 1-20 characters string with
       # lowercase letters and numbers and must start with a letter.
+      # 
+      # For global external Passthrough Network Load Balancer forwarding rules, the
+      # forwarding rule name must be 1-43 characters long. For each global external
+      # Passthrough Network Load Balancer forwarding rule (a parent forwarding
+      # rule) that you create, Google Cloud generates two output-only child
+      # forwarding rules that are named by concatenating the parent forwarding rule
+      # name with the `-ag0` and `-ag1` suffixes, respectively. Refer to theavailabilityGroup field for further details.
   &quot;network&quot;: &quot;A String&quot;, # This field is not used for global external load balancing.
       # 
       # For internal passthrough Network Load Balancers, this field identifies the
@@ -2349,7 +2475,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair, and cannot have overlappingportRanges.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they have overlapping portRanges.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -2374,8 +2501,8 @@ Args:
       # 
       # 
       # For external forwarding rules, two or more forwarding rules cannot use the
-      # same [IPAddress, IPProtocol] pair if they share at least one
-      # port number.
+      # same [IPAddress, IPProtocol] pair (specified inIPAddress, IPAddresses, IPProtocol
+      # fields) if they share at least one port number.
       # 
       # For internal forwarding rules within the same VPC network, two or more
       # forwarding rules cannot use the same [IPAddress, IPProtocol]
@@ -2453,6 +2580,15 @@ Args:
       # 
       # 
       #      -  For Private Service Connect forwarding rules that forward traffic to managed services, the target must be a service attachment. The target is not mutable once set as a service attachment.
+      # 
+      # 
+      # 
+      # The following load balancers cannot set the target field (they should set the backendService field instead):
+      # 
+      #    - Internal passthrough Network Load Balancers
+      #    - Backend service-based regional external passthrough Network Load
+      #    Balancers
+      #    - Global external passthrough Network Load Balancers
 }
 
   requestId: string, An optional request ID to identify requests. Specify a unique request ID so
@@ -2515,15 +2651,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -2570,7 +2708,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -2582,14 +2720,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -2720,7 +2858,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -2814,15 +2952,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -2869,7 +3009,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -2881,14 +3021,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -3019,7 +3159,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
@@ -3114,15 +3254,17 @@ Returns:
       # this field will be populated.
     &quot;errors&quot;: [ # [Output Only] The array of errors encountered while processing this
         # operation.
-      {
+      { # Represents a single error encountered during the processing of an
+          # operation.
         &quot;code&quot;: &quot;A String&quot;, # [Output Only] The error type identifier for this error.
         &quot;errorDetails&quot;: [ # [Output Only] An optional list of messages that contain the error
             # details. There is a set of defined message types to use for providing
             # details.The syntax depends on the error code. For example,
             # QuotaExceededInfo will have details when the error code is
             # QUOTA_EXCEEDED.
-          {
-            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details.
+          { # Container for structured error details providing additional context
+              # specific to the encountered error code.
+            &quot;errorInfo&quot;: { # Describes the cause of the error with structured details. # Error information containing structured domain, reason, and metadata.
                 #
                 # Example of an error when contacting the &quot;pubsub.googleapis.com&quot; API when it
                 # is not enabled:
@@ -3169,7 +3311,7 @@ Returns:
                   # regular expression of `A-Z+[A-Z0-9]`, which represents
                   # UPPER_SNAKE_CASE.
             },
-            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action.
+            &quot;help&quot;: { # Provides links to documentation or for performing an out of band action. # Links and information to help the user resolve the error.
                 #
                 # For example, if a quota check failed with an error indicating the calling
                 # project hasn&#x27;t enabled the accessed service, this can contain a URL pointing
@@ -3181,14 +3323,14 @@ Returns:
                 },
               ],
             },
-            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user
+            &quot;localizedMessage&quot;: { # Provides a localized error message that is safe to return to the user # A localized human-readable error message intended for end users.
                 # which can be attached to an RPC error.
               &quot;locale&quot;: &quot;A String&quot;, # The locale used following the specification defined at
                   # https://www.rfc-editor.org/rfc/bcp/bcp47.txt.
                   # Examples are: &quot;en-US&quot;, &quot;fr-CH&quot;, &quot;es-MX&quot;
               &quot;message&quot;: &quot;A String&quot;, # The localized error message in the above locale.
             },
-            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota.
+            &quot;quotaInfo&quot;: { # Additional details for quota exceeded error for resource quota. # Details about quota limits and metrics when a quota is exceeded.
               &quot;dimensions&quot;: { # The map holding related quota dimensions.
                 &quot;a_key&quot;: &quot;A String&quot;,
               },
@@ -3319,7 +3461,7 @@ Returns:
           #   {
           #    &quot;key&quot;: &quot;scope&quot;,
           #    &quot;value&quot;: &quot;zones/us-east1-d&quot;
-          #   }
+          #   }]
         {
           &quot;key&quot;: &quot;A String&quot;, # [Output Only] A key that provides more detail on the warning being
               # returned. For example, for warnings where there are no results in a list
