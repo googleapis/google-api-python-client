@@ -1434,9 +1434,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
                 return self.mocked_api
             return self.orig_import(name, *args, **kwargs)
 
-        import_fullname = "__builtin__.__import__"
-        if sys.version_info[0] >= 3:
-            import_fullname = "builtins.__import__"
+        import_fullname = "builtins.__import__"
 
         with mock.patch(import_fullname, side_effect=import_mock):
             namespace = "google-api-client"
