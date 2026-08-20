@@ -200,6 +200,14 @@ Returns:
     &quot;supportedConnectorModes&quot;: [ # Required. The supported connector modes for the associated BAP connection.
       &quot;A String&quot;,
     ],
+    &quot;toolspecOverride&quot;: { # Customer-facing view of the admin-curated toolspec for a BAP connection. Holds the (simplified) per-tool definitions surfaced to and editable by the admin in the Discovery Engine UI. Mirrors the shape of the backend `google.cloud.connectorexecution.v1.ToolspecOverride` message, but is intentionally kept as a separate public type so the Discovery Engine API surface can evolve independently of the fed-API surface (AIP-215). Handlers convert between the two via helpers in //cloud/ml/discoveryengine/external_service/v1main/data_connector_service/lib:bap_custom_tool_util. # Optional. Custom toolspec overrides for this connection. For Enterprise BAP connectors that support admin-curated tool definitions, this holds the (simplified) per-tool overrides. On Get, populated by the server by merging persisted overrides with live runtime tool definitions and trimming the result for UI consumption. On Update, the supplied value replaces the persisted overrides after server-side validation and merging: the `base_version` field MUST match the server&#x27;s current base toolspec version (otherwise the request is rejected with a user-facing error directing the admin to re-download the latest tools first).
+      &quot;baseVersion&quot;: &quot;A String&quot;, # Required. Base toolspec version against which `tools` were authored. On Update, MUST match the server&#x27;s current stable toolspec version for the connection; mismatch is rejected with a user-facing error directing the admin to re-download the latest tools first.
+      &quot;tools&quot;: [ # Required. Tool definitions (one Struct per tool) that the admin has customised on top of the base toolspec returned by the fed API. REQUIRED because it is the only user-editable field in the modify API; the request must carry at least one tool.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+      ],
+    },
   },
   &quot;blockingReasons&quot;: [ # Output only. User actions that must be completed before the connector can start syncing data.
     &quot;A String&quot;,
@@ -216,7 +224,7 @@ Returns:
   &quot;connectorType&quot;: &quot;A String&quot;, # Output only. The type of connector. Each source can only map to one type. For example, salesforce, confluence and jira have THIRD_PARTY connector type. It is not mutable once set by system.
   &quot;createEuaSaas&quot;: True or False, # Optional. Whether the END USER AUTHENTICATION connector is created in SaaS.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. Timestamp the DataConnector was created at.
-  &quot;dataSource&quot;: &quot;A String&quot;, # Required. The identifier for the data source. This is a partial list of supported connectors. Please refer to the [documentation](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/introduction-to-connectors-and-data-stores) for the full list of connectors. Supported first-party connectors include: * `gcs` * `bigquery` * `gcp_fhir` * `google_mail` * `google_drive` * `google_calendar` * `google_chat` Supported third-party connectors include: Generally available (GA) connectors: * `onedrive` * `outlook` * `confluence` * `jira` * `servicenow` * `sharepoint` Preview connectors: * `asana` * `azure_active_directory` * `box` * `canva` * `confluence_server` * `custom_connector` * `docusign` * `dropbox` * `dynamics365` * `github` * `gitlab` * `hubspot` * `jira_server` * `linear` * `native_cloud_identity` * `notion` * `okta` * `pagerduty` * `peoplesoft` * `salesforce` * `shopify` * `slack` * `snowflake` * `teams` * `trello` * `workday` * `zendesk`
+  &quot;dataSource&quot;: &quot;A String&quot;, # Required. The identifier for the data source. For the full, up-to-date list of supported connectors and their values, see [Connect a third-party data source](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/connect-third-party-data-source#sources-by-launch-stage).
   &quot;destinationConfigs&quot;: [ # Optional. Any target destinations used to connect to third-party services.
     { # Defines target endpoints used to connect to third-party sources.
       &quot;destinations&quot;: [ # Optional. The destinations for the corresponding key.
@@ -329,6 +337,13 @@ Returns:
   &quot;kmsKeyName&quot;: &quot;A String&quot;, # Input only. The KMS key to be used to protect the DataStores managed by this connector. Must be set for requests that need to comply with CMEK Org Policy protections. If this field is set and processed successfully, the DataStores created by this connector will be protected by the KMS key.
   &quot;lastSyncTime&quot;: &quot;A String&quot;, # Output only. For periodic connectors only, the last time a data sync was completed.
   &quot;latestPauseTime&quot;: &quot;A String&quot;, # Output only. The most recent timestamp when this DataConnector was paused, affecting all functionalities such as data synchronization. Pausing a connector has the following effects: - All functionalities, including data synchronization, are halted. - Any ongoing data synchronization job will be canceled. - No future data synchronization runs will be scheduled nor can be triggered.
+  &quot;metadata&quot;: { # User-facing metadata for the connector, shown on the connector detail page (title, description, short_description, author, note). # Optional. User-facing metadata for the connector. Populated from the connector&#x27;s generated metadata / registry `ConnectorSource`.
+    &quot;author&quot;: &quot;A String&quot;, # Optional. The party that authored the connector, e.g. &quot;Google&quot; or a third-party provider name. Lets end users see who authored a connector (future: third-party-authored connectors).
+    &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the connector, shown on the connector detail page. One connector has a single description.
+    &quot;note&quot;: &quot;A String&quot;, # Optional. Free-form, multi-line note about the connector&#x27;s capabilities or a custom note that can be set for the connector.
+    &quot;shortDescription&quot;: &quot;A String&quot;, # Optional. Short, subtitle-length description of the connector (e.g. shown beneath the connector name in list and detail views).
+    &quot;title&quot;: &quot;A String&quot;, # Optional. Display title of the connector.
+  },
   &quot;name&quot;: &quot;A String&quot;, # Identifier. The full resource name of the Data Connector. Format: `projects/*/locations/*/collections/*/dataConnector`.
   &quot;nextSyncTime&quot;: { # Represents civil time (or occasionally physical time). This type can represent a civil time in one of a few possible ways: * When utc_offset is set and time_zone is unset: a civil time on a calendar day with a particular offset from UTC. * When time_zone is set and utc_offset is unset: a civil time on a calendar day in a particular time zone. * When neither time_zone nor utc_offset is set: a civil time on a calendar day in local time. The date is relative to the Proleptic Gregorian Calendar. If year, month, or day are 0, the DateTime is considered not to have a specific year, month, or day respectively. This type may also be used to represent a physical time if all the date and time fields are set and either case of the `time_offset` oneof is set. Consider using `Timestamp` message for physical time instead. If your use case also would like to store the user&#x27;s timezone, that can be done in another field. This type is more flexible than some applications may want. Make sure to document and validate your application&#x27;s limitations. # Defines the scheduled time for the next data synchronization. This field requires hour , minute, and time_zone from the [IANA Time Zone Database](https://www.iana.org/time-zones). This is utilized when the data connector has a refresh interval greater than 1 day. When the hours or minutes are not specified, we will assume a sync time of 0:00. The user must provide a time zone to avoid ambiguity.
     &quot;day&quot;: 42, # Optional. Day of month. Must be from 1 to 31 and valid for the year and month, or 0 if specifying a datetime without a day.
@@ -344,6 +359,9 @@ Returns:
     &quot;utcOffset&quot;: &quot;A String&quot;, # UTC offset. Must be whole seconds, between -18 hours and +18 hours. For example, a UTC offset of -4:00 would be represented as { seconds: -14400 }.
     &quot;year&quot;: 42, # Optional. Year of date. Must be from 1 to 9999, or 0 if specifying a datetime without a year.
   },
+  &quot;oauthStaticIpAddresses&quot;: [ # Output only. The static IP addresses used by this connector for OAuth APIs (e.g. end user authentication). These are surfaced separately from `static_ip_addresses` so that customers can apply granular firewall settings for OAuth endpoints. Only populated for connectors that have static IP enabled and are used for actions and/or federated search.
+    &quot;A String&quot;,
+  ],
   &quot;params&quot;: { # Required data connector parameters in structured json format.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
   },
@@ -375,6 +393,7 @@ Returns:
   ],
   &quot;staticIpEnabled&quot;: True or False, # Optional. Whether customer has enabled static IP addresses for this connector.
   &quot;syncMode&quot;: &quot;A String&quot;, # The data synchronization mode supported by the data connector.
+  &quot;tag&quot;: &quot;A String&quot;, # Optional. Immutable. User-facing, version-independent label for this connector. May be shared by multiple connectors under the same (project, location, collection, data_source); tag-based lookup returns the one with the greatest create_time. Optional at Create time. Agent Designer resolves connectors via (data_source, tag) when set, falling back to the legacy resource-name lookup when unset, so connectors created before the tag-write launch continue to work without a backfill.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp the DataConnector was last updated.
   &quot;vpcscEnabled&quot;: True or False, # Output only. Whether the connector is created with VPC-SC enabled.
 }</pre>
@@ -428,6 +447,14 @@ Args:
     &quot;supportedConnectorModes&quot;: [ # Required. The supported connector modes for the associated BAP connection.
       &quot;A String&quot;,
     ],
+    &quot;toolspecOverride&quot;: { # Customer-facing view of the admin-curated toolspec for a BAP connection. Holds the (simplified) per-tool definitions surfaced to and editable by the admin in the Discovery Engine UI. Mirrors the shape of the backend `google.cloud.connectorexecution.v1.ToolspecOverride` message, but is intentionally kept as a separate public type so the Discovery Engine API surface can evolve independently of the fed-API surface (AIP-215). Handlers convert between the two via helpers in //cloud/ml/discoveryengine/external_service/v1main/data_connector_service/lib:bap_custom_tool_util. # Optional. Custom toolspec overrides for this connection. For Enterprise BAP connectors that support admin-curated tool definitions, this holds the (simplified) per-tool overrides. On Get, populated by the server by merging persisted overrides with live runtime tool definitions and trimming the result for UI consumption. On Update, the supplied value replaces the persisted overrides after server-side validation and merging: the `base_version` field MUST match the server&#x27;s current base toolspec version (otherwise the request is rejected with a user-facing error directing the admin to re-download the latest tools first).
+      &quot;baseVersion&quot;: &quot;A String&quot;, # Required. Base toolspec version against which `tools` were authored. On Update, MUST match the server&#x27;s current stable toolspec version for the connection; mismatch is rejected with a user-facing error directing the admin to re-download the latest tools first.
+      &quot;tools&quot;: [ # Required. Tool definitions (one Struct per tool) that the admin has customised on top of the base toolspec returned by the fed API. REQUIRED because it is the only user-editable field in the modify API; the request must carry at least one tool.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+      ],
+    },
   },
   &quot;blockingReasons&quot;: [ # Output only. User actions that must be completed before the connector can start syncing data.
     &quot;A String&quot;,
@@ -444,7 +471,7 @@ Args:
   &quot;connectorType&quot;: &quot;A String&quot;, # Output only. The type of connector. Each source can only map to one type. For example, salesforce, confluence and jira have THIRD_PARTY connector type. It is not mutable once set by system.
   &quot;createEuaSaas&quot;: True or False, # Optional. Whether the END USER AUTHENTICATION connector is created in SaaS.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. Timestamp the DataConnector was created at.
-  &quot;dataSource&quot;: &quot;A String&quot;, # Required. The identifier for the data source. This is a partial list of supported connectors. Please refer to the [documentation](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/introduction-to-connectors-and-data-stores) for the full list of connectors. Supported first-party connectors include: * `gcs` * `bigquery` * `gcp_fhir` * `google_mail` * `google_drive` * `google_calendar` * `google_chat` Supported third-party connectors include: Generally available (GA) connectors: * `onedrive` * `outlook` * `confluence` * `jira` * `servicenow` * `sharepoint` Preview connectors: * `asana` * `azure_active_directory` * `box` * `canva` * `confluence_server` * `custom_connector` * `docusign` * `dropbox` * `dynamics365` * `github` * `gitlab` * `hubspot` * `jira_server` * `linear` * `native_cloud_identity` * `notion` * `okta` * `pagerduty` * `peoplesoft` * `salesforce` * `shopify` * `slack` * `snowflake` * `teams` * `trello` * `workday` * `zendesk`
+  &quot;dataSource&quot;: &quot;A String&quot;, # Required. The identifier for the data source. For the full, up-to-date list of supported connectors and their values, see [Connect a third-party data source](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/connect-third-party-data-source#sources-by-launch-stage).
   &quot;destinationConfigs&quot;: [ # Optional. Any target destinations used to connect to third-party services.
     { # Defines target endpoints used to connect to third-party sources.
       &quot;destinations&quot;: [ # Optional. The destinations for the corresponding key.
@@ -557,6 +584,13 @@ Args:
   &quot;kmsKeyName&quot;: &quot;A String&quot;, # Input only. The KMS key to be used to protect the DataStores managed by this connector. Must be set for requests that need to comply with CMEK Org Policy protections. If this field is set and processed successfully, the DataStores created by this connector will be protected by the KMS key.
   &quot;lastSyncTime&quot;: &quot;A String&quot;, # Output only. For periodic connectors only, the last time a data sync was completed.
   &quot;latestPauseTime&quot;: &quot;A String&quot;, # Output only. The most recent timestamp when this DataConnector was paused, affecting all functionalities such as data synchronization. Pausing a connector has the following effects: - All functionalities, including data synchronization, are halted. - Any ongoing data synchronization job will be canceled. - No future data synchronization runs will be scheduled nor can be triggered.
+  &quot;metadata&quot;: { # User-facing metadata for the connector, shown on the connector detail page (title, description, short_description, author, note). # Optional. User-facing metadata for the connector. Populated from the connector&#x27;s generated metadata / registry `ConnectorSource`.
+    &quot;author&quot;: &quot;A String&quot;, # Optional. The party that authored the connector, e.g. &quot;Google&quot; or a third-party provider name. Lets end users see who authored a connector (future: third-party-authored connectors).
+    &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the connector, shown on the connector detail page. One connector has a single description.
+    &quot;note&quot;: &quot;A String&quot;, # Optional. Free-form, multi-line note about the connector&#x27;s capabilities or a custom note that can be set for the connector.
+    &quot;shortDescription&quot;: &quot;A String&quot;, # Optional. Short, subtitle-length description of the connector (e.g. shown beneath the connector name in list and detail views).
+    &quot;title&quot;: &quot;A String&quot;, # Optional. Display title of the connector.
+  },
   &quot;name&quot;: &quot;A String&quot;, # Identifier. The full resource name of the Data Connector. Format: `projects/*/locations/*/collections/*/dataConnector`.
   &quot;nextSyncTime&quot;: { # Represents civil time (or occasionally physical time). This type can represent a civil time in one of a few possible ways: * When utc_offset is set and time_zone is unset: a civil time on a calendar day with a particular offset from UTC. * When time_zone is set and utc_offset is unset: a civil time on a calendar day in a particular time zone. * When neither time_zone nor utc_offset is set: a civil time on a calendar day in local time. The date is relative to the Proleptic Gregorian Calendar. If year, month, or day are 0, the DateTime is considered not to have a specific year, month, or day respectively. This type may also be used to represent a physical time if all the date and time fields are set and either case of the `time_offset` oneof is set. Consider using `Timestamp` message for physical time instead. If your use case also would like to store the user&#x27;s timezone, that can be done in another field. This type is more flexible than some applications may want. Make sure to document and validate your application&#x27;s limitations. # Defines the scheduled time for the next data synchronization. This field requires hour , minute, and time_zone from the [IANA Time Zone Database](https://www.iana.org/time-zones). This is utilized when the data connector has a refresh interval greater than 1 day. When the hours or minutes are not specified, we will assume a sync time of 0:00. The user must provide a time zone to avoid ambiguity.
     &quot;day&quot;: 42, # Optional. Day of month. Must be from 1 to 31 and valid for the year and month, or 0 if specifying a datetime without a day.
@@ -572,6 +606,9 @@ Args:
     &quot;utcOffset&quot;: &quot;A String&quot;, # UTC offset. Must be whole seconds, between -18 hours and +18 hours. For example, a UTC offset of -4:00 would be represented as { seconds: -14400 }.
     &quot;year&quot;: 42, # Optional. Year of date. Must be from 1 to 9999, or 0 if specifying a datetime without a year.
   },
+  &quot;oauthStaticIpAddresses&quot;: [ # Output only. The static IP addresses used by this connector for OAuth APIs (e.g. end user authentication). These are surfaced separately from `static_ip_addresses` so that customers can apply granular firewall settings for OAuth endpoints. Only populated for connectors that have static IP enabled and are used for actions and/or federated search.
+    &quot;A String&quot;,
+  ],
   &quot;params&quot;: { # Required data connector parameters in structured json format.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
   },
@@ -603,6 +640,7 @@ Args:
   ],
   &quot;staticIpEnabled&quot;: True or False, # Optional. Whether customer has enabled static IP addresses for this connector.
   &quot;syncMode&quot;: &quot;A String&quot;, # The data synchronization mode supported by the data connector.
+  &quot;tag&quot;: &quot;A String&quot;, # Optional. Immutable. User-facing, version-independent label for this connector. May be shared by multiple connectors under the same (project, location, collection, data_source); tag-based lookup returns the one with the greatest create_time. Optional at Create time. Agent Designer resolves connectors via (data_source, tag) when set, falling back to the legacy resource-name lookup when unset, so connectors created before the tag-write launch continue to work without a backfill.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp the DataConnector was last updated.
   &quot;vpcscEnabled&quot;: True or False, # Output only. Whether the connector is created with VPC-SC enabled.
 }
@@ -655,6 +693,14 @@ Returns:
     &quot;supportedConnectorModes&quot;: [ # Required. The supported connector modes for the associated BAP connection.
       &quot;A String&quot;,
     ],
+    &quot;toolspecOverride&quot;: { # Customer-facing view of the admin-curated toolspec for a BAP connection. Holds the (simplified) per-tool definitions surfaced to and editable by the admin in the Discovery Engine UI. Mirrors the shape of the backend `google.cloud.connectorexecution.v1.ToolspecOverride` message, but is intentionally kept as a separate public type so the Discovery Engine API surface can evolve independently of the fed-API surface (AIP-215). Handlers convert between the two via helpers in //cloud/ml/discoveryengine/external_service/v1main/data_connector_service/lib:bap_custom_tool_util. # Optional. Custom toolspec overrides for this connection. For Enterprise BAP connectors that support admin-curated tool definitions, this holds the (simplified) per-tool overrides. On Get, populated by the server by merging persisted overrides with live runtime tool definitions and trimming the result for UI consumption. On Update, the supplied value replaces the persisted overrides after server-side validation and merging: the `base_version` field MUST match the server&#x27;s current base toolspec version (otherwise the request is rejected with a user-facing error directing the admin to re-download the latest tools first).
+      &quot;baseVersion&quot;: &quot;A String&quot;, # Required. Base toolspec version against which `tools` were authored. On Update, MUST match the server&#x27;s current stable toolspec version for the connection; mismatch is rejected with a user-facing error directing the admin to re-download the latest tools first.
+      &quot;tools&quot;: [ # Required. Tool definitions (one Struct per tool) that the admin has customised on top of the base toolspec returned by the fed API. REQUIRED because it is the only user-editable field in the modify API; the request must carry at least one tool.
+        {
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
+      ],
+    },
   },
   &quot;blockingReasons&quot;: [ # Output only. User actions that must be completed before the connector can start syncing data.
     &quot;A String&quot;,
@@ -671,7 +717,7 @@ Returns:
   &quot;connectorType&quot;: &quot;A String&quot;, # Output only. The type of connector. Each source can only map to one type. For example, salesforce, confluence and jira have THIRD_PARTY connector type. It is not mutable once set by system.
   &quot;createEuaSaas&quot;: True or False, # Optional. Whether the END USER AUTHENTICATION connector is created in SaaS.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. Timestamp the DataConnector was created at.
-  &quot;dataSource&quot;: &quot;A String&quot;, # Required. The identifier for the data source. This is a partial list of supported connectors. Please refer to the [documentation](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/introduction-to-connectors-and-data-stores) for the full list of connectors. Supported first-party connectors include: * `gcs` * `bigquery` * `gcp_fhir` * `google_mail` * `google_drive` * `google_calendar` * `google_chat` Supported third-party connectors include: Generally available (GA) connectors: * `onedrive` * `outlook` * `confluence` * `jira` * `servicenow` * `sharepoint` Preview connectors: * `asana` * `azure_active_directory` * `box` * `canva` * `confluence_server` * `custom_connector` * `docusign` * `dropbox` * `dynamics365` * `github` * `gitlab` * `hubspot` * `jira_server` * `linear` * `native_cloud_identity` * `notion` * `okta` * `pagerduty` * `peoplesoft` * `salesforce` * `shopify` * `slack` * `snowflake` * `teams` * `trello` * `workday` * `zendesk`
+  &quot;dataSource&quot;: &quot;A String&quot;, # Required. The identifier for the data source. For the full, up-to-date list of supported connectors and their values, see [Connect a third-party data source](https://docs.cloud.google.com/gemini/enterprise/docs/connectors/connect-third-party-data-source#sources-by-launch-stage).
   &quot;destinationConfigs&quot;: [ # Optional. Any target destinations used to connect to third-party services.
     { # Defines target endpoints used to connect to third-party sources.
       &quot;destinations&quot;: [ # Optional. The destinations for the corresponding key.
@@ -784,6 +830,13 @@ Returns:
   &quot;kmsKeyName&quot;: &quot;A String&quot;, # Input only. The KMS key to be used to protect the DataStores managed by this connector. Must be set for requests that need to comply with CMEK Org Policy protections. If this field is set and processed successfully, the DataStores created by this connector will be protected by the KMS key.
   &quot;lastSyncTime&quot;: &quot;A String&quot;, # Output only. For periodic connectors only, the last time a data sync was completed.
   &quot;latestPauseTime&quot;: &quot;A String&quot;, # Output only. The most recent timestamp when this DataConnector was paused, affecting all functionalities such as data synchronization. Pausing a connector has the following effects: - All functionalities, including data synchronization, are halted. - Any ongoing data synchronization job will be canceled. - No future data synchronization runs will be scheduled nor can be triggered.
+  &quot;metadata&quot;: { # User-facing metadata for the connector, shown on the connector detail page (title, description, short_description, author, note). # Optional. User-facing metadata for the connector. Populated from the connector&#x27;s generated metadata / registry `ConnectorSource`.
+    &quot;author&quot;: &quot;A String&quot;, # Optional. The party that authored the connector, e.g. &quot;Google&quot; or a third-party provider name. Lets end users see who authored a connector (future: third-party-authored connectors).
+    &quot;description&quot;: &quot;A String&quot;, # Optional. Human-readable description of the connector, shown on the connector detail page. One connector has a single description.
+    &quot;note&quot;: &quot;A String&quot;, # Optional. Free-form, multi-line note about the connector&#x27;s capabilities or a custom note that can be set for the connector.
+    &quot;shortDescription&quot;: &quot;A String&quot;, # Optional. Short, subtitle-length description of the connector (e.g. shown beneath the connector name in list and detail views).
+    &quot;title&quot;: &quot;A String&quot;, # Optional. Display title of the connector.
+  },
   &quot;name&quot;: &quot;A String&quot;, # Identifier. The full resource name of the Data Connector. Format: `projects/*/locations/*/collections/*/dataConnector`.
   &quot;nextSyncTime&quot;: { # Represents civil time (or occasionally physical time). This type can represent a civil time in one of a few possible ways: * When utc_offset is set and time_zone is unset: a civil time on a calendar day with a particular offset from UTC. * When time_zone is set and utc_offset is unset: a civil time on a calendar day in a particular time zone. * When neither time_zone nor utc_offset is set: a civil time on a calendar day in local time. The date is relative to the Proleptic Gregorian Calendar. If year, month, or day are 0, the DateTime is considered not to have a specific year, month, or day respectively. This type may also be used to represent a physical time if all the date and time fields are set and either case of the `time_offset` oneof is set. Consider using `Timestamp` message for physical time instead. If your use case also would like to store the user&#x27;s timezone, that can be done in another field. This type is more flexible than some applications may want. Make sure to document and validate your application&#x27;s limitations. # Defines the scheduled time for the next data synchronization. This field requires hour , minute, and time_zone from the [IANA Time Zone Database](https://www.iana.org/time-zones). This is utilized when the data connector has a refresh interval greater than 1 day. When the hours or minutes are not specified, we will assume a sync time of 0:00. The user must provide a time zone to avoid ambiguity.
     &quot;day&quot;: 42, # Optional. Day of month. Must be from 1 to 31 and valid for the year and month, or 0 if specifying a datetime without a day.
@@ -799,6 +852,9 @@ Returns:
     &quot;utcOffset&quot;: &quot;A String&quot;, # UTC offset. Must be whole seconds, between -18 hours and +18 hours. For example, a UTC offset of -4:00 would be represented as { seconds: -14400 }.
     &quot;year&quot;: 42, # Optional. Year of date. Must be from 1 to 9999, or 0 if specifying a datetime without a year.
   },
+  &quot;oauthStaticIpAddresses&quot;: [ # Output only. The static IP addresses used by this connector for OAuth APIs (e.g. end user authentication). These are surfaced separately from `static_ip_addresses` so that customers can apply granular firewall settings for OAuth endpoints. Only populated for connectors that have static IP enabled and are used for actions and/or federated search.
+    &quot;A String&quot;,
+  ],
   &quot;params&quot;: { # Required data connector parameters in structured json format.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
   },
@@ -830,6 +886,7 @@ Returns:
   ],
   &quot;staticIpEnabled&quot;: True or False, # Optional. Whether customer has enabled static IP addresses for this connector.
   &quot;syncMode&quot;: &quot;A String&quot;, # The data synchronization mode supported by the data connector.
+  &quot;tag&quot;: &quot;A String&quot;, # Optional. Immutable. User-facing, version-independent label for this connector. May be shared by multiple connectors under the same (project, location, collection, data_source); tag-based lookup returns the one with the greatest create_time. Optional at Create time. Agent Designer resolves connectors via (data_source, tag) when set, falling back to the legacy resource-name lookup when unset, so connectors created before the tag-write launch continue to work without a backfill.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Timestamp the DataConnector was last updated.
   &quot;vpcscEnabled&quot;: True or False, # Output only. Whether the connector is created with VPC-SC enabled.
 }</pre>
