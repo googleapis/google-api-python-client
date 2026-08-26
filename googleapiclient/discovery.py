@@ -142,6 +142,7 @@ class APICoreVersionError(ValueError):
 # Library-specific reserved words beyond Python keywords.
 RESERVED_WORDS = frozenset(["body"])
 
+
 # patch _write_lines to avoid munging '\r' into '\n'
 # ( https://bugs.python.org/issue18886 https://bugs.python.org/issue19003 )
 class _BytesGenerator(BytesGenerator):
@@ -1325,7 +1326,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         enumDesc = paramdesc.get("enumDescriptions", [])
         if enum and enumDesc:
             docs.append("    Allowed values\n")
-            for (name, desc) in zip(enum, enumDesc):
+            for name, desc in zip(enum, enumDesc):
                 docs.append("      %s - %s\n" % (name, desc))
     if "response" in methodDesc:
         if methodName.endswith("_media"):

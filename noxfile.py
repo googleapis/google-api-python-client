@@ -17,7 +17,7 @@ import shutil
 
 import nox
 
-BLACK_VERSION = "black==22.3.0"
+BLACK_VERSION = "black==23.7.0"
 ISORT_VERSION = "isort==5.10.1"
 BLACK_PATHS = [
     "apiclient",
@@ -31,7 +31,7 @@ BLACK_PATHS = [
     "setup.py",
 ]
 
-DEFAULT_PYTHON_VERSION = "3.10"
+DEFAULT_PYTHON_VERSION = "3.14"
 
 test_dependencies = [
     "django>=2.0.0",
