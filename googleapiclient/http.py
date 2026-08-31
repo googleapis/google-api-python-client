@@ -410,19 +410,36 @@ class MediaUpload(object):
         representation produced by to_json().
 
         Args:
-          s: string, JSON from to_json().
+          s: string, JSON string to parse.
 
         Returns:
-          An instance of the subclass of MediaUpload that was serialized with
-          to_json().
+          An instance of the MediaUpload subclass specified in the JSON.
+
+        Raises:
+          ValueError: If the serialized data is not a dictionary, or specifies an
+            untrusted module or unsupported class name.
+          TypeError: If `s` is not a string.
+          OSError: If an underlying file cannot be opened (for file-based uploads).
         """
         data = json.loads(s)
-        # Find and call the right classmethod from_json() to restore the object.
-        module = data["_module"]
-        m = __import__(module, fromlist=module.split(".")[:-1])
-        kls = getattr(m, data["_class"])
-        from_json = getattr(kls, "from_json")
-        return from_json(s)
+        if not isinstance(data, dict):
+            raise ValueError("Serialized MediaUpload data must be a JSON object.")
+
+        module = data.get("_module")
+        class_name = data.get("_class")
+
+        # Security check (CWE-502): Reject any module outside of googleapiclient.http
+        # and any class not explicitly allowlisted in _ALLOWED_MEDIA_UPLOAD_CLASSES.
+        if (
+            module != "googleapiclient.http"
+            or class_name not in _ALLOWED_MEDIA_UPLOAD_CLASSES
+        ):
+            raise ValueError(
+                f"Refusing to deserialize untrusted class: {module}.{class_name}"
+            )
+
+        kls = _ALLOWED_MEDIA_UPLOAD_CLASSES[class_name]
+        return kls.from_json(s)
 
 
 class MediaIoBaseUpload(MediaUpload):
@@ -615,15 +632,78 @@ class MediaFileUpload(MediaIoBaseUpload):
         """
         return self._to_json(strip=["_fd"])
 
-    @staticmethod
-    def from_json(s):
+    @classmethod
+    def from_json(cls, s):
+        """Reconstructs a MediaFileUpload instance from a JSON string.
+
+        Args:
+          s: str, JSON-encoded string produced by MediaFileUpload.to_json().
+
+        Returns:
+          A MediaFileUpload instance (or instance of a subclass).
+
+        Raises:
+          ValueError: If the JSON payload is invalid, is not a dictionary, or
+            contains missing, malformed, or invalid fields.
+          TypeError: If `s` is not a string, or if parameters passed to the
+            constructor have invalid types.
+          OSError: If the file specified by `_filename` cannot be opened or read
+            (e.g., FileNotFoundError, PermissionError).
+        """
         d = json.loads(s)
-        return MediaFileUpload(
-            d["_filename"],
-            mimetype=d["_mimetype"],
-            chunksize=d["_chunksize"],
-            resumable=d["_resumable"],
+        if not isinstance(d, dict):
+            raise ValueError("Serialized MediaFileUpload data must be a JSON object.")
+
+        filename = d.get("_filename")
+        # Check for null bytes to prevent null-byte injection / path truncation attacks
+        # when opening files on the local filesystem.
+        if not isinstance(filename, str) or not filename or "\x00" in filename:
+            raise ValueError(
+                "Invalid or missing '_filename' in serialized MediaFileUpload."
+            )
+
+        chunksize = d.get("_chunksize")
+        if chunksize is None:
+            chunksize = DEFAULT_CHUNK_SIZE
+        elif not isinstance(chunksize, int) or isinstance(chunksize, bool):
+            raise ValueError("'_chunksize' must be an integer.")
+
+        resumable = d.get("_resumable")
+        if resumable is None:
+            resumable = False
+        elif not isinstance(resumable, bool):
+            raise ValueError("'_resumable' must be a boolean.")
+
+        mimetype = d.get("_mimetype")
+        if mimetype is not None and not isinstance(mimetype, str):
+            raise ValueError("'_mimetype' must be a string.")
+
+        return cls(
+            filename,
+            mimetype=mimetype,
+            chunksize=chunksize,
+            resumable=resumable,
         )
+
+
+# Safe Deserialization Class Map (CWE-502 Mitigation)
+# Unsafe dynamic deserialization vulnerability:
+# In previous versions, MediaUpload.new_from_json() dynamically executed:
+#     m = __import__(module, fromlist=module.split(".")[:-1])
+#     kls = getattr(m, data["_class"])
+#     from_json = getattr(kls, "from_json")
+#     return from_json(s)
+#
+# Passing untrusted JSON to __import__() and getattr() allowed attackers who could
+# tamper with serialized state (e.g., in databases, task queues, or caches) to:
+#   1. Force arbitrary module loading from sys.path (leading to Remote Code Execution).
+#   2. Instantiate arbitrary classes within googleapiclient.http or other reachable modules.
+#
+# To eliminate reflection and prevent CWE-502, we strictly map allowed class names
+# directly to their factory/class references.
+_ALLOWED_MEDIA_UPLOAD_CLASSES = {
+    "MediaFileUpload": MediaFileUpload,
+}
 
 
 class MediaInMemoryUpload(MediaIoBaseUpload):
