@@ -76,25 +76,6 @@ DEFAULT_HTTP_TIMEOUT_SEC = 60
 
 _LEGACY_BATCH_URI = "https://www.googleapis.com/batch"
 
-# Safe Deserialization Class Map (CWE-502 Mitigation)
-# Unsafe dynamic deserialization vulnerability:
-# In previous versions, MediaUpload.new_from_json() dynamically executed:
-#     m = __import__(module, fromlist=module.split(".")[:-1])
-#     kls = getattr(m, data["_class"])
-#     from_json = getattr(kls, "from_json")
-#     return from_json(s)
-#
-# Passing untrusted JSON to __import__() and getattr() allowed attackers who could
-# tamper with serialized state (e.g., in databases, task queues, or caches) to:
-#   1. Force arbitrary module loading from sys.path (leading to Remote Code Execution).
-#   2. Instantiate arbitrary classes within googleapiclient.http or other reachable modules.
-#
-# To eliminate reflection and prevent CWE-502, we strictly map allowed class names
-# directly to their factory/class references.
-_ALLOWED_MEDIA_UPLOAD_CLASSES = {
-    "MediaFileUpload": lambda: MediaFileUpload,
-}
-
 
 def _should_retry_response(resp_status, content):
     """Determines whether a response should be retried.
@@ -695,6 +676,26 @@ class MediaFileUpload(MediaIoBaseUpload):
             chunksize=chunksize,
             resumable=resumable,
         )
+
+
+# Safe Deserialization Class Map (CWE-502 Mitigation)
+# Unsafe dynamic deserialization vulnerability:
+# In previous versions, MediaUpload.new_from_json() dynamically executed:
+#     m = __import__(module, fromlist=module.split(".")[:-1])
+#     kls = getattr(m, data["_class"])
+#     from_json = getattr(kls, "from_json")
+#     return from_json(s)
+#
+# Passing untrusted JSON to __import__() and getattr() allowed attackers who could
+# tamper with serialized state (e.g., in databases, task queues, or caches) to:
+#   1. Force arbitrary module loading from sys.path (leading to Remote Code Execution).
+#   2. Instantiate arbitrary classes within googleapiclient.http or other reachable modules.
+#
+# To eliminate reflection and prevent CWE-502, we strictly map allowed class names
+# directly to their factory/class references.
+_ALLOWED_MEDIA_UPLOAD_CLASSES = {
+    "MediaFileUpload": lambda: MediaFileUpload,
+}
 
 
 class MediaInMemoryUpload(MediaIoBaseUpload):
