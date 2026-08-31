@@ -436,7 +436,7 @@ class MediaUpload(object):
                 f"Refusing to deserialize untrusted class: {module}.{class_name}"
             )
 
-        kls = _ALLOWED_MEDIA_UPLOAD_CLASSES[class_name]()
+        kls = _ALLOWED_MEDIA_UPLOAD_CLASSES[class_name]
         return kls.from_json(s)
 
 
