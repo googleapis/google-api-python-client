@@ -418,6 +418,8 @@ class MediaUpload(object):
         Raises:
           ValueError: If the serialized data is not a dictionary, or specifies an
             untrusted module or unsupported class name.
+          TypeError: If `s` is not a string.
+          OSError: If an underlying file cannot be opened (for file-based uploads).
         """
         data = json.loads(s)
         if not isinstance(data, dict):
@@ -641,8 +643,12 @@ class MediaFileUpload(MediaIoBaseUpload):
           A MediaFileUpload instance (or instance of a subclass).
 
         Raises:
-          ValueError: If the serialized data is not a dictionary, or if any field
-            is missing, malformed, or has an invalid type.
+          ValueError: If the JSON payload is invalid, is not a dictionary, or
+            contains missing, malformed, or invalid fields.
+          TypeError: If `s` is not a string, or if parameters passed to the
+            constructor have invalid types.
+          OSError: If the file specified by `_filename` cannot be opened or read
+            (e.g., FileNotFoundError, PermissionError).
         """
         d = json.loads(s)
         if not isinstance(d, dict):
