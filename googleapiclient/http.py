@@ -694,7 +694,7 @@ class MediaFileUpload(MediaIoBaseUpload):
 # To eliminate reflection and prevent CWE-502, we strictly map allowed class names
 # directly to their factory/class references.
 _ALLOWED_MEDIA_UPLOAD_CLASSES = {
-    "MediaFileUpload": lambda: MediaFileUpload,
+    "MediaFileUpload": MediaFileUpload,
 }
 
 
