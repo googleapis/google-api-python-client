@@ -630,15 +630,15 @@ class MediaFileUpload(MediaIoBaseUpload):
         """
         return self._to_json(strip=["_fd"])
 
-    @staticmethod
-    def from_json(s):
+    @classmethod
+    def from_json(cls, s):
         """Reconstructs a MediaFileUpload instance from a JSON string.
 
         Args:
           s: str, JSON-encoded string produced by MediaFileUpload.to_json().
 
         Returns:
-          A MediaFileUpload instance.
+          A MediaFileUpload instance (or instance of a subclass).
 
         Raises:
           ValueError: If the serialized data is not a dictionary, or if any field
@@ -670,7 +670,7 @@ class MediaFileUpload(MediaIoBaseUpload):
         if mimetype is not None and not isinstance(mimetype, str):
             raise ValueError("'_mimetype' must be a string.")
 
-        return MediaFileUpload(
+        return cls(
             filename,
             mimetype=mimetype,
             chunksize=chunksize,
