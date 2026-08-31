@@ -655,6 +655,8 @@ class MediaFileUpload(MediaIoBaseUpload):
             raise ValueError("Serialized MediaFileUpload data must be a JSON object.")
 
         filename = d.get("_filename")
+        # Check for null bytes to prevent null-byte injection / path truncation attacks
+        # when opening files on the local filesystem.
         if not isinstance(filename, str) or not filename or "\x00" in filename:
             raise ValueError(
                 "Invalid or missing '_filename' in serialized MediaFileUpload."
