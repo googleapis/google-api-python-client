@@ -50,6 +50,10 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/advisorynotifications_v1.html)
 
 
+## agenciesandbrands
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/agenciesandbrands_v1.html)
+
+
 ## agentidentity
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentity_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/agentidentity_v1alpha.html)
@@ -127,10 +131,6 @@
 
 ## apigee
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigee_v1.html)
-
-
-## apigeeregistry
-* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/apigeeregistry_v1.html)
 
 
 ## apihub
@@ -453,16 +453,16 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/containeranalysis_v1beta1.html)
 
 
-## content
-* [v2.1](http://googleapis.github.io/google-api-python-client/docs/dyn/content_v2_1.html)
-
-
 ## contentwarehouse
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/contentwarehouse_v1.html)
 
 
 ## css
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/css_v1.html)
+
+
+## curationpartners
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/curationpartners_v1.html)
 
 
 ## customsearch

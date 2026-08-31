@@ -98,7 +98,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, filter=None, orderBy=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists the OnlineEvaluators for the given project and location.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, body=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -165,9 +165,46 @@ Args:
 { # An OnlineEvaluator contains the configuration for an Online Evaluation.
   &quot;agentResource&quot;: &quot;A String&quot;, # Required. Immutable. The name of the agent that the OnlineEvaluator evaluates periodically. This value is used to filter the traces with a matching cloud.resource_id and link the evaluation results with relevant dashboards/UIs. This field is immutable. Once set, it cannot be changed.
   &quot;cloudObservability&quot;: { # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging). # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging).
-    &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the `_Default` view will be used.
+    &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the project&#x27;s default view (`projects/{project_id}`) will be used.
     &quot;openTelemetry&quot;: { # Configuration for data source following OpenTelemetry. # Data source follows OpenTelemetry convention.
       &quot;semconvVersion&quot;: &quot;A String&quot;, # Required. Defines which version OTel Semantic Convention the data follows. Can be &quot;1.39.0&quot; or newer.
+    },
+    &quot;sessionScope&quot;: { # If chosen, the online evaluator will evaluate sessions matching specified `filter`. A session is a group of traces with a common `gen_ai.conversation.id`. # Scope online evaluation to OTel sessions (i.e. group of traces with the same conversation ID).
+      &quot;filter&quot;: [ # Optional. A list of predicates to filter sessions. Multiple predicates are combined using AND. The maximum number of predicates is 10.
+        { # Defines a single filter predicate.
+          &quot;duration&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the duration of a session (in seconds).
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;modelCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of LLM call errors within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;modelCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying LLM calls within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;toolCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of tool call errors within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;toolCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying tool calls within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;totalTokenUsage&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the total token usage within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;userTurns&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of user turns within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+        },
+      ],
+      &quot;inactivityTrigger&quot;: { # Configuration for inactivity based session completion. # Session is considered ready for evaluation when there are no new traces for a specified period of inactivity.
+        &quot;threshold&quot;: &quot;A String&quot;, # Required. The amount of time that must pass with no new traces before a session is considered ready for evaluation. This is a required field if InactivityTrigger is used. The value must be a positive duration no greater than 7 days (604800 seconds).
+      },
     },
     &quot;traceScope&quot;: { # If chosen, the online evaluator will evaluate single traces matching specified `filter`. # Scope online evaluation to single traces.
       &quot;filter&quot;: [ # Optional. A list of predicates to filter traces. Multiple predicates are combined using AND. The maximum number of predicates is 10.
@@ -183,7 +220,7 @@ Args:
         },
       ],
     },
-    &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_Default` view will be used. NOTE: This field is not supported yet and will be ignored if set.
+    &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_AllSpans` view from `_Trace` US bucket will be used, i.e. `projects/{project_id}/locations/us/buckets/_Trace/datasets/Spans/views/_AllSpans`.
   },
   &quot;config&quot;: { # Configuration for sampling behavior of the OnlineEvaluator. The OnlineEvaluator runs at a fixed interval of 10 minutes. # Required. Configuration for the OnlineEvaluator.
     &quot;maxEvaluatedSamplesPerRun&quot;: &quot;A String&quot;, # Optional. The maximum number of evaluations to perform per run. If set to 0, the number is unbounded.
@@ -711,9 +748,46 @@ Returns:
     { # An OnlineEvaluator contains the configuration for an Online Evaluation.
   &quot;agentResource&quot;: &quot;A String&quot;, # Required. Immutable. The name of the agent that the OnlineEvaluator evaluates periodically. This value is used to filter the traces with a matching cloud.resource_id and link the evaluation results with relevant dashboards/UIs. This field is immutable. Once set, it cannot be changed.
   &quot;cloudObservability&quot;: { # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging). # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging).
-    &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the `_Default` view will be used.
+    &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the project&#x27;s default view (`projects/{project_id}`) will be used.
     &quot;openTelemetry&quot;: { # Configuration for data source following OpenTelemetry. # Data source follows OpenTelemetry convention.
       &quot;semconvVersion&quot;: &quot;A String&quot;, # Required. Defines which version OTel Semantic Convention the data follows. Can be &quot;1.39.0&quot; or newer.
+    },
+    &quot;sessionScope&quot;: { # If chosen, the online evaluator will evaluate sessions matching specified `filter`. A session is a group of traces with a common `gen_ai.conversation.id`. # Scope online evaluation to OTel sessions (i.e. group of traces with the same conversation ID).
+      &quot;filter&quot;: [ # Optional. A list of predicates to filter sessions. Multiple predicates are combined using AND. The maximum number of predicates is 10.
+        { # Defines a single filter predicate.
+          &quot;duration&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the duration of a session (in seconds).
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;modelCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of LLM call errors within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;modelCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying LLM calls within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;toolCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of tool call errors within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;toolCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying tool calls within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;totalTokenUsage&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the total token usage within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;userTurns&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of user turns within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+        },
+      ],
+      &quot;inactivityTrigger&quot;: { # Configuration for inactivity based session completion. # Session is considered ready for evaluation when there are no new traces for a specified period of inactivity.
+        &quot;threshold&quot;: &quot;A String&quot;, # Required. The amount of time that must pass with no new traces before a session is considered ready for evaluation. This is a required field if InactivityTrigger is used. The value must be a positive duration no greater than 7 days (604800 seconds).
+      },
     },
     &quot;traceScope&quot;: { # If chosen, the online evaluator will evaluate single traces matching specified `filter`. # Scope online evaluation to single traces.
       &quot;filter&quot;: [ # Optional. A list of predicates to filter traces. Multiple predicates are combined using AND. The maximum number of predicates is 10.
@@ -729,7 +803,7 @@ Returns:
         },
       ],
     },
-    &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_Default` view will be used. NOTE: This field is not supported yet and will be ignored if set.
+    &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_AllSpans` view from `_Trace` US bucket will be used, i.e. `projects/{project_id}/locations/us/buckets/_Trace/datasets/Spans/views/_AllSpans`.
   },
   &quot;config&quot;: { # Configuration for sampling behavior of the OnlineEvaluator. The OnlineEvaluator runs at a fixed interval of 10 minutes. # Required. Configuration for the OnlineEvaluator.
     &quot;maxEvaluatedSamplesPerRun&quot;: &quot;A String&quot;, # Optional. The maximum number of evaluations to perform per run. If set to 0, the number is unbounded.
@@ -1201,9 +1275,46 @@ Returns:
     { # An OnlineEvaluator contains the configuration for an Online Evaluation.
       &quot;agentResource&quot;: &quot;A String&quot;, # Required. Immutable. The name of the agent that the OnlineEvaluator evaluates periodically. This value is used to filter the traces with a matching cloud.resource_id and link the evaluation results with relevant dashboards/UIs. This field is immutable. Once set, it cannot be changed.
       &quot;cloudObservability&quot;: { # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging). # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging).
-        &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the `_Default` view will be used.
+        &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the project&#x27;s default view (`projects/{project_id}`) will be used.
         &quot;openTelemetry&quot;: { # Configuration for data source following OpenTelemetry. # Data source follows OpenTelemetry convention.
           &quot;semconvVersion&quot;: &quot;A String&quot;, # Required. Defines which version OTel Semantic Convention the data follows. Can be &quot;1.39.0&quot; or newer.
+        },
+        &quot;sessionScope&quot;: { # If chosen, the online evaluator will evaluate sessions matching specified `filter`. A session is a group of traces with a common `gen_ai.conversation.id`. # Scope online evaluation to OTel sessions (i.e. group of traces with the same conversation ID).
+          &quot;filter&quot;: [ # Optional. A list of predicates to filter sessions. Multiple predicates are combined using AND. The maximum number of predicates is 10.
+            { # Defines a single filter predicate.
+              &quot;duration&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the duration of a session (in seconds).
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+              &quot;modelCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of LLM call errors within a session.
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+              &quot;modelCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying LLM calls within a session.
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+              &quot;toolCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of tool call errors within a session.
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+              &quot;toolCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying tool calls within a session.
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+              &quot;totalTokenUsage&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the total token usage within a session.
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+              &quot;userTurns&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of user turns within a session.
+                &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+                &quot;value&quot;: 3.14, # Required. The value to compare against.
+              },
+            },
+          ],
+          &quot;inactivityTrigger&quot;: { # Configuration for inactivity based session completion. # Session is considered ready for evaluation when there are no new traces for a specified period of inactivity.
+            &quot;threshold&quot;: &quot;A String&quot;, # Required. The amount of time that must pass with no new traces before a session is considered ready for evaluation. This is a required field if InactivityTrigger is used. The value must be a positive duration no greater than 7 days (604800 seconds).
+          },
         },
         &quot;traceScope&quot;: { # If chosen, the online evaluator will evaluate single traces matching specified `filter`. # Scope online evaluation to single traces.
           &quot;filter&quot;: [ # Optional. A list of predicates to filter traces. Multiple predicates are combined using AND. The maximum number of predicates is 10.
@@ -1219,7 +1330,7 @@ Returns:
             },
           ],
         },
-        &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_Default` view will be used. NOTE: This field is not supported yet and will be ignored if set.
+        &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_AllSpans` view from `_Trace` US bucket will be used, i.e. `projects/{project_id}/locations/us/buckets/_Trace/datasets/Spans/views/_AllSpans`.
       },
       &quot;config&quot;: { # Configuration for sampling behavior of the OnlineEvaluator. The OnlineEvaluator runs at a fixed interval of 10 minutes. # Required. Configuration for the OnlineEvaluator.
         &quot;maxEvaluatedSamplesPerRun&quot;: &quot;A String&quot;, # Optional. The maximum number of evaluations to perform per run. If set to 0, the number is unbounded.
@@ -1670,17 +1781,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -1695,9 +1806,46 @@ Args:
 { # An OnlineEvaluator contains the configuration for an Online Evaluation.
   &quot;agentResource&quot;: &quot;A String&quot;, # Required. Immutable. The name of the agent that the OnlineEvaluator evaluates periodically. This value is used to filter the traces with a matching cloud.resource_id and link the evaluation results with relevant dashboards/UIs. This field is immutable. Once set, it cannot be changed.
   &quot;cloudObservability&quot;: { # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging). # Data source for the OnlineEvaluator, based on Google Cloud Observability stack (Cloud Trace &amp; Cloud Logging).
-    &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the `_Default` view will be used.
+    &quot;logView&quot;: &quot;A String&quot;, # Optional. Optional log view that will be used to query logs. If empty, the project&#x27;s default view (`projects/{project_id}`) will be used.
     &quot;openTelemetry&quot;: { # Configuration for data source following OpenTelemetry. # Data source follows OpenTelemetry convention.
       &quot;semconvVersion&quot;: &quot;A String&quot;, # Required. Defines which version OTel Semantic Convention the data follows. Can be &quot;1.39.0&quot; or newer.
+    },
+    &quot;sessionScope&quot;: { # If chosen, the online evaluator will evaluate sessions matching specified `filter`. A session is a group of traces with a common `gen_ai.conversation.id`. # Scope online evaluation to OTel sessions (i.e. group of traces with the same conversation ID).
+      &quot;filter&quot;: [ # Optional. A list of predicates to filter sessions. Multiple predicates are combined using AND. The maximum number of predicates is 10.
+        { # Defines a single filter predicate.
+          &quot;duration&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the duration of a session (in seconds).
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;modelCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of LLM call errors within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;modelCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying LLM calls within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;toolCallErrors&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of tool call errors within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;toolCalls&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of underlying tool calls within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;totalTokenUsage&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the total token usage within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+          &quot;userTurns&quot;: { # Defines a predicate for filtering based on a numeric value. # Filter on the number of user turns within a session.
+            &quot;comparisonOperator&quot;: &quot;A String&quot;, # Required. The comparison operator to apply.
+            &quot;value&quot;: 3.14, # Required. The value to compare against.
+          },
+        },
+      ],
+      &quot;inactivityTrigger&quot;: { # Configuration for inactivity based session completion. # Session is considered ready for evaluation when there are no new traces for a specified period of inactivity.
+        &quot;threshold&quot;: &quot;A String&quot;, # Required. The amount of time that must pass with no new traces before a session is considered ready for evaluation. This is a required field if InactivityTrigger is used. The value must be a positive duration no greater than 7 days (604800 seconds).
+      },
     },
     &quot;traceScope&quot;: { # If chosen, the online evaluator will evaluate single traces matching specified `filter`. # Scope online evaluation to single traces.
       &quot;filter&quot;: [ # Optional. A list of predicates to filter traces. Multiple predicates are combined using AND. The maximum number of predicates is 10.
@@ -1713,7 +1861,7 @@ Args:
         },
       ],
     },
-    &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_Default` view will be used. NOTE: This field is not supported yet and will be ignored if set.
+    &quot;traceView&quot;: &quot;A String&quot;, # Optional. Optional trace view that will be used to query traces. If empty, the `_AllSpans` view from `_Trace` US bucket will be used, i.e. `projects/{project_id}/locations/us/buckets/_Trace/datasets/Spans/views/_AllSpans`.
   },
   &quot;config&quot;: { # Configuration for sampling behavior of the OnlineEvaluator. The OnlineEvaluator runs at a fixed interval of 10 minutes. # Required. Configuration for the OnlineEvaluator.
     &quot;maxEvaluatedSamplesPerRun&quot;: &quot;A String&quot;, # Optional. The maximum number of evaluations to perform per run. If set to 0, the number is unbounded.
