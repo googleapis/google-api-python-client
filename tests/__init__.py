@@ -18,7 +18,8 @@ __author__ = "afshar@google.com (Ali Afshar)"
 
 from googleapiclient import _helpers as util
 
-
-def setup_package():
-    """Run on testing package."""
-    util.positional_parameters_enforcement = "EXCEPTION"
+# The test suite is written against strict positional parameter enforcement:
+# violations must raise TypeError rather than only log a warning. This used to
+# be configured in a nose-era setup_package() hook, which pytest never calls,
+# so set it at import time instead.
+util.positional_parameters_enforcement = util.POSITIONAL_EXCEPTION
