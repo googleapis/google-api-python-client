@@ -22,6 +22,14 @@ from googleapiclient import _helpers
 
 
 class PositionalTests(unittest.TestCase):
+    def setUp(self):
+        # These tests mutate the module-level enforcement setting; restore it
+        # so the rest of the suite keeps running in strict mode.
+        saved_enforcement = _helpers.positional_parameters_enforcement
+        self.addCleanup(
+            setattr, _helpers, "positional_parameters_enforcement", saved_enforcement
+        )
+
     def test_usage(self):
         _helpers.positional_parameters_enforcement = _helpers.POSITIONAL_EXCEPTION
 
