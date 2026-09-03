@@ -25,7 +25,7 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 
 import unittest
 
-from googleapiclient.model import BaseModel, makepatch
+from googleapiclient.model import BaseModel, JsonModel, MediaModel, RawModel, makepatch
 
 TEST_CASES = [
     # (message, original, modified, expected)
@@ -88,6 +88,23 @@ class TestBaseModel(unittest.TestCase):
         for case in test_cases:
             key, value, expect = case
             self.assertEqual(expect, model._build_query({key: value}))
+
+    def test_build_query_omits_pretty_print_by_default(self):
+        self.assertEqual("?hello=world", BaseModel()._build_query({"hello": "world"}))
+
+
+class TestPrettyPrint(unittest.TestCase):
+    def test_json_model_asks_for_compact_responses(self):
+        query = JsonModel()._build_query({"hello": "world"})
+        self.assertIn("prettyPrint=false", query)
+
+    def test_explicit_pretty_print_is_preserved(self):
+        query = JsonModel()._build_query({"prettyPrint": "true"})
+        self.assertEqual("?prettyPrint=true&alt=json", query)
+
+    def test_non_json_models_omit_pretty_print(self):
+        for model in (RawModel(), MediaModel()):
+            self.assertNotIn("prettyPrint", model._build_query({"hello": "world"}))
 
 
 if __name__ == "__main__":
