@@ -6,6 +6,16 @@ This document covers techniques you can use to improve the performance of your a
 
 This client library requests gzip compression for all API responses and unzips the data for you. Although this requires additional CPU time to uncompress the results, the tradeoff with network costs usually makes it worthwhile.
 
+## About prettyPrint
+
+Google APIs indent JSON responses by default. This client library deserializes responses before returning them to you, so that formatting is discarded during parsing; it therefore requests compact responses by sending `prettyPrint=false` with every method that returns JSON. This reduces both the bytes transferred and the work of parsing them, which is most noticeable on large responses.
+
+You do not need to pass `prettyPrint=False` yourself. To get the indented form back — for instance when inspecting raw response bodies with `googleapiclient.model.dump_request_response` enabled — pass `prettyPrint=True` to the method, and your value is used instead:
+
+```python
+response = service.stamps.list(cents=5, prettyPrint=True).execute()
+```
+
 ## Partial response (fields parameter)
 
 By default, the server sends back the full representation of a resource after processing requests. For better performance, you can ask the server to send only the fields you really need and get a _partial response_ instead.
