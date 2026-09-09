@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Simple command-line sample for the Google+ API.
+"""Legacy command-line sample for the Google+ API.
 
 Command-line application that retrieves the list of the user's posts."""
 from __future__ import print_function
