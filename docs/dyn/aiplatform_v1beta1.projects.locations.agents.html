@@ -141,9 +141,9 @@ Args:
       &quot;headers&quot;: { # Optional. The headers for the MCP server, such as for authentication. Only applicable when `type` is `mcp_server`.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
-      &quot;name&quot;: &quot;A String&quot;, # Optional. The name of the MCP server. Only applicable when `type` is `mcp_server`.
-      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `filesystem` * `google_search` * `mcp_server` * `url_context`
-      &quot;url&quot;: &quot;A String&quot;, # Optional. The URL for the MCP server endpoint. Only applicable when `type` is `mcp_server`.
+      &quot;name&quot;: &quot;A String&quot;, # Optional. The tool&#x27;s GCP resource name, used to resolve the tool. Applicable when `type` is `mcp_server` or `endpoint` (a tool registered in Agent Registry), for example `projects/{project}/locations/{location}/.../mcpServers/{id}` or `projects/{project}/locations/{location}/.../endpoints/{id}`.
+      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `endpoint` * `filesystem` * `google_search` * `mcp_server` * `url_context`
+      &quot;url&quot;: &quot;A String&quot;, # Optional. Temporary: the tool&#x27;s runtime reference, consumed by CreateAgent to create the downstream AI App. Applicable when `type` is `mcp_server` or `endpoint`. It is duplicated here (the resource name is already in `name`) only because the Agent service is not yet connected to Agent Registry to derive it from `name`; the Task Service instead resolves it from Agent Registry (GetMcpServer / GetEndpoint) at task creation.
     },
   ],
   &quot;updated&quot;: &quot;A String&quot;, # Output only. The time the agent was last updated.
@@ -245,9 +245,9 @@ Returns:
       &quot;headers&quot;: { # Optional. The headers for the MCP server, such as for authentication. Only applicable when `type` is `mcp_server`.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
-      &quot;name&quot;: &quot;A String&quot;, # Optional. The name of the MCP server. Only applicable when `type` is `mcp_server`.
-      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `filesystem` * `google_search` * `mcp_server` * `url_context`
-      &quot;url&quot;: &quot;A String&quot;, # Optional. The URL for the MCP server endpoint. Only applicable when `type` is `mcp_server`.
+      &quot;name&quot;: &quot;A String&quot;, # Optional. The tool&#x27;s GCP resource name, used to resolve the tool. Applicable when `type` is `mcp_server` or `endpoint` (a tool registered in Agent Registry), for example `projects/{project}/locations/{location}/.../mcpServers/{id}` or `projects/{project}/locations/{location}/.../endpoints/{id}`.
+      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `endpoint` * `filesystem` * `google_search` * `mcp_server` * `url_context`
+      &quot;url&quot;: &quot;A String&quot;, # Optional. Temporary: the tool&#x27;s runtime reference, consumed by CreateAgent to create the downstream AI App. Applicable when `type` is `mcp_server` or `endpoint`. It is duplicated here (the resource name is already in `name`) only because the Agent service is not yet connected to Agent Registry to derive it from `name`; the Task Service instead resolves it from Agent Registry (GetMcpServer / GetEndpoint) at task creation.
     },
   ],
   &quot;updated&quot;: &quot;A String&quot;, # Output only. The time the agent was last updated.
@@ -295,7 +295,7 @@ Returns:
 
 Args:
   parent: string, Required. The resource name of the location to list agents from. Format: `projects/{project}/locations/{location}`. (required)
-  filter: string, Optional. An [AIP-160](https://google.aip.dev/160) filter over the returned agents. An empty filter returns the unfiltered collection. Supported fields: * `created` * `updated` Both are timestamps and take an RFC-3339 value, for example `2026-08-01T00:00:00Z`. Supported operators: `=`, `!=`, `&lt;`, `&gt;`, `&lt;=`, `&gt;=`, `:`, `AND`, `OR`, `NOT` (equivalently `-`), and parentheses. Note that `OR` binds more tightly than `AND`, so `a AND b OR c` means `a AND (b OR c)`; parentheses are recommended, not required. Example: `created &gt; &quot;2026-08-01T00:00:00Z&quot; AND updated &lt; &quot;2026-08-09T00:00:00Z&quot;`. Not supported: any field other than those listed above, wildcards other than `field:*`, bare literals with no field name, functions, and the regular-expression operators `=~` and `!~`. A filter that names an unsupported field, exceeds 1000 characters, or nests parentheses more than 5 deep fails with `INVALID_ARGUMENT`.
+  filter: string, Optional. An [AIP-160](https://google.aip.dev/160) filter over the returned agents. An empty filter returns the unfiltered collection. Supported fields, and the operators each accepts: * `created` * `updated` * `base_agent` * `metadata.agent_type` `created` and `updated` are timestamps and take an RFC-3339 value, for example `2026-08-01T00:00:00Z`. Supported operators: `=`, `!=`, `&lt;`, `&gt;`, `&lt;=`, `&gt;=`, `:`, `AND`, `OR`, `NOT` (equivalently `-`), and parentheses. Note that `OR` binds more tightly than `AND`, so `a AND b OR c` means `a AND (b OR c)`; parentheses are recommended, not required. `metadata.agent_type` accepts only the value `&quot;default_agent&quot;`, matched exactly: `metadata.agent_type:&quot;default_agent&quot;` selects the caller&#x27;s default agent, of which there is at most one, and the negated form selects the rest. Any other value is `INVALID_ARGUMENT` rather than an empty page -- `metadata` is an opaque blob, so only this one marker is indexed, and the server cannot answer a question about the others. An agent designated before the server began recording the marker is not matched by the positive form; there is no backfill. `base_agent` accepts `=` and `!=` against the value an agent was created with, and selects only among the agents you own: an agent that belongs to the project rather than to a user is never returned by a filter naming it, including the negated form. An agent created before the server began recording the value is not matched either. Example: `created &gt; &quot;2026-08-01T00:00:00Z&quot; AND updated &lt; &quot;2026-08-09T00:00:00Z&quot;`. IMPORTANT -- `base_agent` and `metadata.agent_type` select only among the agents you own. An agent that belongs to the project rather than to a user is never returned by a filter naming either of them, including a negated one: `base_agent != &quot;some-value&quot;` returns your matching agents and no project-owned agents at all. Filtering on `created` or `updated` alone is unaffected and still spans both. If you want every agent in the project, do not filter on these two fields. Not supported: any field other than those listed above, wildcards other than `field:*`, bare literals with no field name, functions, and the regular-expression operators `=~` and `!~`. A filter that names an unsupported field, exceeds 1000 characters, or nests parentheses more than 5 deep fails with `INVALID_ARGUMENT`.
   orderBy: string, Optional. A comma-separated list of fields to order by. Supported fields: * `created` * `updated` Use `desc` after a field name for descending order. Example: `created desc`.
   pageSize: integer, Optional. The maximum number of agents to return. The service may return fewer than this value. The maximum page size is 100; values above 100 will be coerced to 100. If unspecified, the default page size is 10.
   pageToken: string, Optional. A page token, received from a previous AgentService.ListAgents call. Provide this to retrieve the subsequent page.
@@ -326,9 +326,9 @@ Returns:
           &quot;headers&quot;: { # Optional. The headers for the MCP server, such as for authentication. Only applicable when `type` is `mcp_server`.
             &quot;a_key&quot;: &quot;A String&quot;,
           },
-          &quot;name&quot;: &quot;A String&quot;, # Optional. The name of the MCP server. Only applicable when `type` is `mcp_server`.
-          &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `filesystem` * `google_search` * `mcp_server` * `url_context`
-          &quot;url&quot;: &quot;A String&quot;, # Optional. The URL for the MCP server endpoint. Only applicable when `type` is `mcp_server`.
+          &quot;name&quot;: &quot;A String&quot;, # Optional. The tool&#x27;s GCP resource name, used to resolve the tool. Applicable when `type` is `mcp_server` or `endpoint` (a tool registered in Agent Registry), for example `projects/{project}/locations/{location}/.../mcpServers/{id}` or `projects/{project}/locations/{location}/.../endpoints/{id}`.
+          &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `endpoint` * `filesystem` * `google_search` * `mcp_server` * `url_context`
+          &quot;url&quot;: &quot;A String&quot;, # Optional. Temporary: the tool&#x27;s runtime reference, consumed by CreateAgent to create the downstream AI App. Applicable when `type` is `mcp_server` or `endpoint`. It is duplicated here (the resource name is already in `name`) only because the Agent service is not yet connected to Agent Registry to derive it from `name`; the Task Service instead resolves it from Agent Registry (GetMcpServer / GetEndpoint) at task creation.
         },
       ],
       &quot;updated&quot;: &quot;A String&quot;, # Output only. The time the agent was last updated.
@@ -378,9 +378,9 @@ Args:
       &quot;headers&quot;: { # Optional. The headers for the MCP server, such as for authentication. Only applicable when `type` is `mcp_server`.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
-      &quot;name&quot;: &quot;A String&quot;, # Optional. The name of the MCP server. Only applicable when `type` is `mcp_server`.
-      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `filesystem` * `google_search` * `mcp_server` * `url_context`
-      &quot;url&quot;: &quot;A String&quot;, # Optional. The URL for the MCP server endpoint. Only applicable when `type` is `mcp_server`.
+      &quot;name&quot;: &quot;A String&quot;, # Optional. The tool&#x27;s GCP resource name, used to resolve the tool. Applicable when `type` is `mcp_server` or `endpoint` (a tool registered in Agent Registry), for example `projects/{project}/locations/{location}/.../mcpServers/{id}` or `projects/{project}/locations/{location}/.../endpoints/{id}`.
+      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `endpoint` * `filesystem` * `google_search` * `mcp_server` * `url_context`
+      &quot;url&quot;: &quot;A String&quot;, # Optional. Temporary: the tool&#x27;s runtime reference, consumed by CreateAgent to create the downstream AI App. Applicable when `type` is `mcp_server` or `endpoint`. It is duplicated here (the resource name is already in `name`) only because the Agent service is not yet connected to Agent Registry to derive it from `name`; the Task Service instead resolves it from Agent Registry (GetMcpServer / GetEndpoint) at task creation.
     },
   ],
   &quot;updated&quot;: &quot;A String&quot;, # Output only. The time the agent was last updated.
@@ -412,9 +412,9 @@ Returns:
       &quot;headers&quot;: { # Optional. The headers for the MCP server, such as for authentication. Only applicable when `type` is `mcp_server`.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
-      &quot;name&quot;: &quot;A String&quot;, # Optional. The name of the MCP server. Only applicable when `type` is `mcp_server`.
-      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `filesystem` * `google_search` * `mcp_server` * `url_context`
-      &quot;url&quot;: &quot;A String&quot;, # Optional. The URL for the MCP server endpoint. Only applicable when `type` is `mcp_server`.
+      &quot;name&quot;: &quot;A String&quot;, # Optional. The tool&#x27;s GCP resource name, used to resolve the tool. Applicable when `type` is `mcp_server` or `endpoint` (a tool registered in Agent Registry), for example `projects/{project}/locations/{location}/.../mcpServers/{id}` or `projects/{project}/locations/{location}/.../endpoints/{id}`.
+      &quot;type&quot;: &quot;A String&quot;, # Required. The type of the tool. Supported types: * `code_execution` * `endpoint` * `filesystem` * `google_search` * `mcp_server` * `url_context`
+      &quot;url&quot;: &quot;A String&quot;, # Optional. Temporary: the tool&#x27;s runtime reference, consumed by CreateAgent to create the downstream AI App. Applicable when `type` is `mcp_server` or `endpoint`. It is duplicated here (the resource name is already in `name`) only because the Agent service is not yet connected to Agent Registry to derive it from `name`; the Task Service instead resolves it from Agent Registry (GetMcpServer / GetEndpoint) at task creation.
     },
   ],
   &quot;updated&quot;: &quot;A String&quot;, # Output only. The time the agent was last updated.
