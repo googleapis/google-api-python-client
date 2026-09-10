@@ -26,7 +26,7 @@ __author__ = "jcgregorio@google.com (Joe Gregorio)"
 import json
 import logging
 import platform
-import urllib
+import urllib.parse
 import warnings
 
 from googleapiclient import version as googleapiclient_version
