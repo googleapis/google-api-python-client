@@ -179,6 +179,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1beta1.html)
 
 
+## auditmanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/auditmanager_v1.html)
+
+
 ## authorizedbuyersmarketplace
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1alpha.html)
@@ -187,6 +191,7 @@
 
 ## backupdr
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/backupdr_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/backupdr_v1beta.html)
 
 
 ## baremetalsolution
@@ -524,7 +529,6 @@
 
 ## dataproc
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v1.html)
-* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/dataproc_v2.html)
 
 
 ## datastore
@@ -780,6 +784,7 @@
 
 ## health
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/health_v4.html)
+* [v4beta](http://googleapis.github.io/google-api-python-client/docs/dyn/health_v4beta.html)
 
 
 ## healthcare
