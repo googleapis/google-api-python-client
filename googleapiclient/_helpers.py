@@ -17,7 +17,7 @@
 import functools
 import inspect
 import logging
-import urllib
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 

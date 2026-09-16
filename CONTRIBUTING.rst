@@ -22,7 +22,7 @@ In order to add a feature:
   documentation.
 
 - The feature must work fully on the following CPython versions:
-  3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 3.13 and 3.14 on both UNIX and Windows.
+  3.10, 3.11, 3.12, 3.13, and 3.14 on both UNIX and Windows.
 
 - The feature must not add unnecessary dependencies (where
   "unnecessary" is of course subjective, but new dependencies should
@@ -143,12 +143,12 @@ Running System Tests
    $ nox -s system
 
    # Run a single system test
-   $ nox -s system-3.8 -- -k <name of test>
+   $ nox -s system-3.10 -- -k <name of test>
 
 
   .. note::
 
-      System tests are only configured to run under Python 3.8.
+      System tests are only configured to run under Python 3.10.
       For expediency, we do not run them in older versions of Python 3.
 
   This alone will not run the tests. You'll need to change some local
@@ -195,11 +195,11 @@ configure them just like the System Tests.
 
    # Run all tests in a folder
    $ cd samples/snippets
-   $ nox -s py-3.8
+   $ nox -s py-3.10
 
    # Run a single sample test
    $ cd samples/snippets
-   $ nox -s py-3.8 -- -k <name of test>
+   $ nox -s py-3.10 -- -k <name of test>
 
 ********************************************
 Note About ``README`` as it pertains to PyPI
@@ -221,18 +221,14 @@ Supported Python Versions
 
 We support:
 
--  `Python 3.7`_
--  `Python 3.8`_
--  `Python 3.9`_
+
 -  `Python 3.10`_
 -  `Python 3.11`_
 -  `Python 3.12`_
 -  `Python 3.13`_
 -  `Python 3.14`_
 
-.. _Python 3.7: https://docs.python.org/3.7/
-.. _Python 3.8: https://docs.python.org/3.8/
-.. _Python 3.9: https://docs.python.org/3.9/
+
 .. _Python 3.10: https://docs.python.org/3.10/
 .. _Python 3.11: https://docs.python.org/3.11/
 .. _Python 3.12: https://docs.python.org/3.12/
@@ -245,7 +241,7 @@ Supported versions can be found in our ``noxfile.py`` `config`_.
 .. _config: https://github.com/googleapis/google-api-python-client/blob/main/noxfile.py
 
 
-We also explicitly decided to support Python 3 beginning with version 3.7.
+We also explicitly decided to support Python 3 beginning with version 3.10.
 Reasons for this include:
 
 -  Encouraging use of newest versions of Python 3

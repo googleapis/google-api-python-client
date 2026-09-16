@@ -101,10 +101,10 @@ h1, h2, h3 {
   <code><a href="#listUsable">listUsable(parent, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Returns all workstation configurations in the specified cluster on which the caller has the "workstations.workstation.create" permission.</p>
 <p class="toc_element">
-  <code><a href="#listUsable_next">listUsable_next()</a></code></p>
+  <code><a href="#listUsable_next">listUsable_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, allowMissing=None, body=None, updateMask=None, validateOnly=None, x__xgafv=None)</a></code></p>
@@ -242,7 +242,8 @@ Args:
       },
     },
   },
-  &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation after it last received user traffic. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
+  &quot;idleAction&quot;: &quot;A String&quot;, # Optional. The action to take when the workstation has been idle for the duration specified in idle_timeout. Defaults to STOP.
+  &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping or suspending a workstation after it last received user traffic. See idle_action to configure whether to stop or suspend idle workstations. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
   &quot;labels&quot;: { # Optional. [Labels](https://cloud.google.com/workstations/docs/label-resources) that are applied to the workstation configuration and that are also propagated to the underlying Compute Engine resources.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
@@ -252,6 +253,7 @@ Args:
     { # A directory to persist across workstation sessions. Updates to this field will not update existing workstations and will only take effect on new workstations.
       &quot;gceHd&quot;: { # A Persistent Directory backed by a Compute Engine [Hyperdisk Balanced High Availability Disk](https://cloud.google.com/compute/docs/disks/hd-types/hyperdisk-balanced-ha). This is a high-availability block storage solution that offers a balance between performance and cost for most general-purpose workloads. # A PersistentDirectory backed by a Compute Engine hyperdisk high availability disk.
         &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
+        &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
         &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
         &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`.
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb must be empty. Must be formatted as ext4 file system with no partitions.
@@ -260,6 +262,7 @@ Args:
         &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
         &quot;diskType&quot;: &quot;A String&quot;, # Optional. The [type of the persistent disk](https://cloud.google.com/compute/docs/disks#disk-types) for the home directory. Defaults to `&quot;pd-standard&quot;`.
         &quot;fsType&quot;: &quot;A String&quot;, # Optional. Type of file system that the disk should be formatted with. The workstation image must support this file system type. Must be empty if source_snapshot is set. Defaults to `&quot;ext4&quot;`.
+        &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
         &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
         &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`. If less than `200` GB, the disk_type must be `&quot;pd-balanced&quot;` or `&quot;pd-ssd&quot;`.
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty. Must be formatted as ext4 file system with no partitions.
@@ -277,7 +280,7 @@ Args:
   &quot;replicaZones&quot;: [ # Optional. Immutable. Specifies the zones used to replicate the VM and disk resources within the region. If set, exactly two zones within the workstation cluster&#x27;s region must be specified—for example, `[&#x27;us-central1-a&#x27;, &#x27;us-central1-f&#x27;]`. If this field is empty, two default zones within the region are used. Immutable after the workstation configuration is created.
     &quot;A String&quot;,
   ],
-  &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
+  &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation. We recommend that workstations be stopped daily so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field stops workstations after the specified time, regardless of whether or not the workstations are idle. Note: This timeout applies to workstations in the following states: * STATE_RUNNING * STATE_SUSPENDED Suspending a workstation does not reset this timeout. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
   &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identifier for this workstation configuration.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Time when this workstation configuration was most recently updated.
 }
@@ -477,7 +480,8 @@ Returns:
       },
     },
   },
-  &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation after it last received user traffic. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
+  &quot;idleAction&quot;: &quot;A String&quot;, # Optional. The action to take when the workstation has been idle for the duration specified in idle_timeout. Defaults to STOP.
+  &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping or suspending a workstation after it last received user traffic. See idle_action to configure whether to stop or suspend idle workstations. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
   &quot;labels&quot;: { # Optional. [Labels](https://cloud.google.com/workstations/docs/label-resources) that are applied to the workstation configuration and that are also propagated to the underlying Compute Engine resources.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
@@ -487,6 +491,7 @@ Returns:
     { # A directory to persist across workstation sessions. Updates to this field will not update existing workstations and will only take effect on new workstations.
       &quot;gceHd&quot;: { # A Persistent Directory backed by a Compute Engine [Hyperdisk Balanced High Availability Disk](https://cloud.google.com/compute/docs/disks/hd-types/hyperdisk-balanced-ha). This is a high-availability block storage solution that offers a balance between performance and cost for most general-purpose workloads. # A PersistentDirectory backed by a Compute Engine hyperdisk high availability disk.
         &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
+        &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
         &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
         &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`.
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb must be empty. Must be formatted as ext4 file system with no partitions.
@@ -495,6 +500,7 @@ Returns:
         &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
         &quot;diskType&quot;: &quot;A String&quot;, # Optional. The [type of the persistent disk](https://cloud.google.com/compute/docs/disks#disk-types) for the home directory. Defaults to `&quot;pd-standard&quot;`.
         &quot;fsType&quot;: &quot;A String&quot;, # Optional. Type of file system that the disk should be formatted with. The workstation image must support this file system type. Must be empty if source_snapshot is set. Defaults to `&quot;ext4&quot;`.
+        &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
         &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
         &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`. If less than `200` GB, the disk_type must be `&quot;pd-balanced&quot;` or `&quot;pd-ssd&quot;`.
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty. Must be formatted as ext4 file system with no partitions.
@@ -512,7 +518,7 @@ Returns:
   &quot;replicaZones&quot;: [ # Optional. Immutable. Specifies the zones used to replicate the VM and disk resources within the region. If set, exactly two zones within the workstation cluster&#x27;s region must be specified—for example, `[&#x27;us-central1-a&#x27;, &#x27;us-central1-f&#x27;]`. If this field is empty, two default zones within the region are used. Immutable after the workstation configuration is created.
     &quot;A String&quot;,
   ],
-  &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
+  &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation. We recommend that workstations be stopped daily so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field stops workstations after the specified time, regardless of whether or not the workstations are idle. Note: This timeout applies to workstations in the following states: * STATE_RUNNING * STATE_SUSPENDED Suspending a workstation does not reset this timeout. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
   &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identifier for this workstation configuration.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Time when this workstation configuration was most recently updated.
 }</pre>
@@ -701,7 +707,8 @@ Returns:
           },
         },
       },
-      &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation after it last received user traffic. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
+      &quot;idleAction&quot;: &quot;A String&quot;, # Optional. The action to take when the workstation has been idle for the duration specified in idle_timeout. Defaults to STOP.
+      &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping or suspending a workstation after it last received user traffic. See idle_action to configure whether to stop or suspend idle workstations. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
       &quot;labels&quot;: { # Optional. [Labels](https://cloud.google.com/workstations/docs/label-resources) that are applied to the workstation configuration and that are also propagated to the underlying Compute Engine resources.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
@@ -711,6 +718,7 @@ Returns:
         { # A directory to persist across workstation sessions. Updates to this field will not update existing workstations and will only take effect on new workstations.
           &quot;gceHd&quot;: { # A Persistent Directory backed by a Compute Engine [Hyperdisk Balanced High Availability Disk](https://cloud.google.com/compute/docs/disks/hd-types/hyperdisk-balanced-ha). This is a high-availability block storage solution that offers a balance between performance and cost for most general-purpose workloads. # A PersistentDirectory backed by a Compute Engine hyperdisk high availability disk.
             &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
+            &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
             &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
             &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`.
             &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb must be empty. Must be formatted as ext4 file system with no partitions.
@@ -719,6 +727,7 @@ Returns:
             &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
             &quot;diskType&quot;: &quot;A String&quot;, # Optional. The [type of the persistent disk](https://cloud.google.com/compute/docs/disks#disk-types) for the home directory. Defaults to `&quot;pd-standard&quot;`.
             &quot;fsType&quot;: &quot;A String&quot;, # Optional. Type of file system that the disk should be formatted with. The workstation image must support this file system type. Must be empty if source_snapshot is set. Defaults to `&quot;ext4&quot;`.
+            &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
             &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
             &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`. If less than `200` GB, the disk_type must be `&quot;pd-balanced&quot;` or `&quot;pd-ssd&quot;`.
             &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty. Must be formatted as ext4 file system with no partitions.
@@ -736,7 +745,7 @@ Returns:
       &quot;replicaZones&quot;: [ # Optional. Immutable. Specifies the zones used to replicate the VM and disk resources within the region. If set, exactly two zones within the workstation cluster&#x27;s region must be specified—for example, `[&#x27;us-central1-a&#x27;, &#x27;us-central1-f&#x27;]`. If this field is empty, two default zones within the region are used. Immutable after the workstation configuration is created.
         &quot;A String&quot;,
       ],
-      &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
+      &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation. We recommend that workstations be stopped daily so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field stops workstations after the specified time, regardless of whether or not the workstations are idle. Note: This timeout applies to workstations in the following states: * STATE_RUNNING * STATE_SUSPENDED Suspending a workstation does not reset this timeout. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
       &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identifier for this workstation configuration.
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Time when this workstation configuration was most recently updated.
     },
@@ -878,7 +887,8 @@ Returns:
           },
         },
       },
-      &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation after it last received user traffic. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
+      &quot;idleAction&quot;: &quot;A String&quot;, # Optional. The action to take when the workstation has been idle for the duration specified in idle_timeout. Defaults to STOP.
+      &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping or suspending a workstation after it last received user traffic. See idle_action to configure whether to stop or suspend idle workstations. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
       &quot;labels&quot;: { # Optional. [Labels](https://cloud.google.com/workstations/docs/label-resources) that are applied to the workstation configuration and that are also propagated to the underlying Compute Engine resources.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
@@ -888,6 +898,7 @@ Returns:
         { # A directory to persist across workstation sessions. Updates to this field will not update existing workstations and will only take effect on new workstations.
           &quot;gceHd&quot;: { # A Persistent Directory backed by a Compute Engine [Hyperdisk Balanced High Availability Disk](https://cloud.google.com/compute/docs/disks/hd-types/hyperdisk-balanced-ha). This is a high-availability block storage solution that offers a balance between performance and cost for most general-purpose workloads. # A PersistentDirectory backed by a Compute Engine hyperdisk high availability disk.
             &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
+            &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
             &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
             &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`.
             &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb must be empty. Must be formatted as ext4 file system with no partitions.
@@ -896,6 +907,7 @@ Returns:
             &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
             &quot;diskType&quot;: &quot;A String&quot;, # Optional. The [type of the persistent disk](https://cloud.google.com/compute/docs/disks#disk-types) for the home directory. Defaults to `&quot;pd-standard&quot;`.
             &quot;fsType&quot;: &quot;A String&quot;, # Optional. Type of file system that the disk should be formatted with. The workstation image must support this file system type. Must be empty if source_snapshot is set. Defaults to `&quot;ext4&quot;`.
+            &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
             &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
             &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`. If less than `200` GB, the disk_type must be `&quot;pd-balanced&quot;` or `&quot;pd-ssd&quot;`.
             &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty. Must be formatted as ext4 file system with no partitions.
@@ -913,7 +925,7 @@ Returns:
       &quot;replicaZones&quot;: [ # Optional. Immutable. Specifies the zones used to replicate the VM and disk resources within the region. If set, exactly two zones within the workstation cluster&#x27;s region must be specified—for example, `[&#x27;us-central1-a&#x27;, &#x27;us-central1-f&#x27;]`. If this field is empty, two default zones within the region are used. Immutable after the workstation configuration is created.
         &quot;A String&quot;,
       ],
-      &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
+      &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation. We recommend that workstations be stopped daily so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field stops workstations after the specified time, regardless of whether or not the workstations are idle. Note: This timeout applies to workstations in the following states: * STATE_RUNNING * STATE_SUSPENDED Suspending a workstation does not reset this timeout. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
       &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identifier for this workstation configuration.
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Time when this workstation configuration was most recently updated.
     },
@@ -922,31 +934,31 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="listUsable_next">listUsable_next()</code>
+    <code class="details" id="listUsable_next">listUsable_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -1070,7 +1082,8 @@ Args:
       },
     },
   },
-  &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation after it last received user traffic. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
+  &quot;idleAction&quot;: &quot;A String&quot;, # Optional. The action to take when the workstation has been idle for the duration specified in idle_timeout. Defaults to STOP.
+  &quot;idleTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping or suspending a workstation after it last received user traffic. See idle_action to configure whether to stop or suspend idle workstations. A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration should never time out due to idleness. Provide [duration](https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#duration) terminated by `s` for seconds—for example, `&quot;7200s&quot;` (2 hours). The default is `&quot;1200s&quot;` (20 minutes).
   &quot;labels&quot;: { # Optional. [Labels](https://cloud.google.com/workstations/docs/label-resources) that are applied to the workstation configuration and that are also propagated to the underlying Compute Engine resources.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
@@ -1080,6 +1093,7 @@ Args:
     { # A directory to persist across workstation sessions. Updates to this field will not update existing workstations and will only take effect on new workstations.
       &quot;gceHd&quot;: { # A Persistent Directory backed by a Compute Engine [Hyperdisk Balanced High Availability Disk](https://cloud.google.com/compute/docs/disks/hd-types/hyperdisk-balanced-ha). This is a high-availability block storage solution that offers a balance between performance and cost for most general-purpose workloads. # A PersistentDirectory backed by a Compute Engine hyperdisk high availability disk.
         &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
+        &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
         &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
         &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`.
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb must be empty. Must be formatted as ext4 file system with no partitions.
@@ -1088,6 +1102,7 @@ Args:
         &quot;archiveTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait after initially creating or subsequently shutting down the workstation before converting its disk into a snapshot. This generally saves costs at the expense of greater startup time on next workstation start, as the service will need to create a disk from the archival snapshot. A value of `&quot;0s&quot;` indicates that the disk will never be archived.
         &quot;diskType&quot;: &quot;A String&quot;, # Optional. The [type of the persistent disk](https://cloud.google.com/compute/docs/disks#disk-types) for the home directory. Defaults to `&quot;pd-standard&quot;`.
         &quot;fsType&quot;: &quot;A String&quot;, # Optional. Type of file system that the disk should be formatted with. The workstation image must support this file system type. Must be empty if source_snapshot is set. Defaults to `&quot;ext4&quot;`.
+        &quot;maxSizeGb&quot;: 42, # Optional. Maximum size in GB to which this persistent directory can be resized. Defaults to `0`, which indicates no maximum limit is enforced by this configuration. Resizing is still subject to the quotas and limits of the underlying disk type.
         &quot;reclaimPolicy&quot;: &quot;A String&quot;, # Optional. Whether the persistent disk should be deleted when the workstation is deleted. Valid values are `DELETE` and `RETAIN`. Defaults to `DELETE`.
         &quot;sizeGb&quot;: 42, # Optional. The GB capacity of a persistent home directory for each workstation created with this configuration. Must be empty if source_snapshot is set. Valid values are `10`, `50`, `100`, `200`, `500`, or `1000`. Defaults to `200`. If less than `200` GB, the disk_type must be `&quot;pd-balanced&quot;` or `&quot;pd-ssd&quot;`.
         &quot;sourceSnapshot&quot;: &quot;A String&quot;, # Optional. Name of the snapshot to use as the source for the disk. If set, size_gb and fs_type must be empty. Must be formatted as ext4 file system with no partitions.
@@ -1105,7 +1120,7 @@ Args:
   &quot;replicaZones&quot;: [ # Optional. Immutable. Specifies the zones used to replicate the VM and disk resources within the region. If set, exactly two zones within the workstation cluster&#x27;s region must be specified—for example, `[&#x27;us-central1-a&#x27;, &#x27;us-central1-f&#x27;]`. If this field is empty, two default zones within the region are used. Immutable after the workstation configuration is created.
     &quot;A String&quot;,
   ],
-  &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds that a workstation can run until it is automatically shut down. We recommend that workstations be shut down daily to reduce costs and so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field shuts down VMs after the specified time, regardless of whether or not the VMs are idle. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
+  &quot;runningTimeout&quot;: &quot;A String&quot;, # Optional. Number of seconds to wait before automatically stopping a workstation. We recommend that workstations be stopped daily so that security updates can be applied upon restart. The idle_timeout and running_timeout fields are independent of each other. Note that the running_timeout field stops workstations after the specified time, regardless of whether or not the workstations are idle. Note: This timeout applies to workstations in the following states: * STATE_RUNNING * STATE_SUSPENDED Suspending a workstation does not reset this timeout. Provide duration terminated by `s` for seconds—for example, `&quot;54000s&quot;` (15 hours). Defaults to `&quot;43200s&quot;` (12 hours). A value of `&quot;0s&quot;` indicates that workstations using this configuration should never time out. If encryption_key is set, it must be greater than `&quot;0s&quot;` and less than `&quot;86400s&quot;` (24 hours). Warning: A value of `&quot;0s&quot;` indicates that Cloud Workstations VMs created with this configuration have no maximum running time. This is strongly discouraged because you incur costs and will not pick up security updates.
   &quot;uid&quot;: &quot;A String&quot;, # Output only. A system-assigned unique identifier for this workstation configuration.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Time when this workstation configuration was most recently updated.
 }

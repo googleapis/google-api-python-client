@@ -17,7 +17,7 @@ import shutil
 
 import nox
 
-BLACK_VERSION = "black==22.3.0"
+BLACK_VERSION = "black==23.7.0"
 ISORT_VERSION = "isort==5.10.1"
 BLACK_PATHS = [
     "apiclient",
@@ -31,7 +31,7 @@ BLACK_PATHS = [
     "setup.py",
 ]
 
-DEFAULT_PYTHON_VERSION = "3.10"
+DEFAULT_PYTHON_VERSION = "3.14"
 
 test_dependencies = [
     "django>=2.0.0",
@@ -48,8 +48,6 @@ test_dependencies = [
 ]
 
 nox.options.sessions = [
-    # TODO(https://github.com/googleapis/google-api-python-client/issues/2622):
-    # Remove or restore testing for Python 3.7/3.8/3.9
     "unit-3.10",
     "unit-3.11",
     "unit-3.12",
@@ -98,7 +96,7 @@ def format(session):
     )
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
+@nox.session(python=["3.10", "3.11", "3.12", "3.13", "3.14"])
 @nox.parametrize(
     "oauth2client",
     [
