@@ -1552,7 +1552,7 @@ class Discovery(unittest.TestCase):
         build(
             "plus",
             "v1",
-            credentials=mock.MagicMock(),
+            credentials=mock.Mock(spec=google.auth.credentials.Credentials),
             static_discovery=False,
         )
         mock_http.close.assert_called_once()
