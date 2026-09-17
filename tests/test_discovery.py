@@ -596,6 +596,34 @@ class DiscoveryFromDocument(unittest.TestCase):
         self.assertIsNotNone(plus)
         self.assertTrue(hasattr(plus, "activities"))
 
+    def test_docstrings_are_generated_by_default(self):
+        plus = build_from_document(
+            read_datafile("plus.json"),
+            base="https://www.googleapis.com/",
+            credentials=self.MOCK_CREDENTIALS,
+        )
+        self.assertIn("Returns:", plus.activities().list.__doc__)
+
+    def test_can_build_from_local_document_without_docstrings(self):
+        plus = build_from_document(
+            read_datafile("plus.json"),
+            base="https://www.googleapis.com/",
+            credentials=self.MOCK_CREDENTIALS,
+            generate_docstrings=False,
+        )
+        # The flag has to reach the nested resources too, they are built lazily.
+        self.assertIsNone(plus.activities().list.__doc__)
+        self.assertIsNone(plus.people().get.__doc__)
+
+    def test_build_without_docstrings_still_builds_requests(self):
+        http = HttpMock(datafile("zoo.json"), {"status": "200"})
+        zoo = build(
+            "zoo", "v1", http=http, static_discovery=False, generate_docstrings=False
+        )
+        self.assertIsNone(zoo.animals().get.__doc__)
+        # The generated _media variants go through the same path.
+        self.assertIsNone(zoo.animals().get_media.__doc__)
+
     def test_building_with_base_remembers_base(self):
         discovery = read_datafile("plus.json")
 
@@ -2315,6 +2343,7 @@ class Discovery(unittest.TestCase):
             "_credentials_validated",
             "_developerKey",
             "_dynamic_attrs",
+            "_generate_docstrings",
             "_http",
             "_model",
             "_requestBuilder",
