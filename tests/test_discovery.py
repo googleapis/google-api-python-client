@@ -1547,7 +1547,7 @@ class Discovery(unittest.TestCase):
         mock_http = mock_http_class.return_value
         mock_http.request.return_value = (
             httplib2.Response({"status": "200"}),
-            read_datafile("plus.json"),
+            read_datafile("plus.json", "rb"),
         )
         build(
             "plus",
