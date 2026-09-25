@@ -16,21 +16,31 @@ In the following code, the logging level is set to `INFO`, and the Google Transl
 
 ```python
 import logging
+import sys
 from googleapiclient.discovery import build
 
+# Configure root logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+# Ensure logs are printed to stdout
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(levelname)s:%(name)s:%(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
 def main():
-  service = build('translate', 'v2', developerKey='your_api_key')
-  print service.translations().list(
-      source='en',
-      target='fr',
-      q=['flower', 'car']
+    service = build('translate', 'v2', developerKey='your_api_key')
+    result = service.translations().list(
+        source='en',
+        target='fr',
+        q=['flower', 'car']
     ).execute()
+    print(result)
 
 if __name__ == '__main__':
-  main()
+    main()
+
 ```
 
 The output of this code should print basic logging info:
