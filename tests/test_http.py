@@ -895,7 +895,7 @@ NOT_CONFIGURED_RESPONSE = """{
  }
 }"""
 
-LIST_NOT_CONFIGURED_RESPONSE = """[
+LIST_NOT_CONFIGURED_RESPONSE = """[{
  "error": {
   "errors": [
    {
@@ -907,7 +907,7 @@ LIST_NOT_CONFIGURED_RESPONSE = """[
   "code": 403,
   "message": "Access Not Configured"
  }
-]"""
+}]"""
 
 
 class Callbacks(object):
@@ -1169,6 +1169,19 @@ class TestHttpRequest(unittest.TestCase):
         with self.assertRaises(HttpError):
             request.execute()
         request._sleep.assert_not_called()
+
+    def test_retry_403_list_rate_limit(self):
+        content = json.dumps([json.loads(RATE_LIMIT_EXCEEDED_RESPONSE)])
+        http = HttpMockSequence(
+            [({"status": "403"}, content), ({"status": "200"}, "{}")]
+        )
+        model = JsonModel()
+        uri = "https://www.googleapis.com/someapi/v1/collection/?foo=bar"
+        request = HttpRequest(http, model.response, uri)
+        request._sleep = mock.MagicMock()
+
+        self.assertEqual({}, request.execute(num_retries=1))
+        request._sleep.assert_called_once()
 
     def test_null_postproc(self):
         resp, content = HttpRequest.null_postproc("foo", "bar")

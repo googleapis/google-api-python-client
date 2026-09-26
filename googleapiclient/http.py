@@ -132,7 +132,7 @@ def _should_retry_response(resp_status, content):
                         if "reason" in reason:
                             reason = reason["reason"]
             else:
-                reason = data[0]["error"]["errors"]["reason"]
+                reason = data[0]["error"]["errors"][0]["reason"]
         except (UnicodeDecodeError, ValueError, KeyError):
             LOGGER.warning("Invalid JSON content from response: %s", content)
             return False
