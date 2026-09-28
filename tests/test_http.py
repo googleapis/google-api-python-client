@@ -1183,6 +1183,17 @@ class TestHttpRequest(unittest.TestCase):
         self.assertEqual({}, request.execute(num_retries=1))
         request._sleep.assert_called_once()
 
+    def test_no_retry_403_malformed_body(self):
+        for content in ["[]", '[{"error": {"errors": []}}]', '["x"]', "null"]:
+            http = HttpMockSequence([({"status": "403"}, content)])
+            uri = "https://www.googleapis.com/someapi/v1/collection/?foo=bar"
+            request = HttpRequest(http, JsonModel().response, uri)
+            request._sleep = mock.MagicMock()
+
+            with self.assertRaises(HttpError):
+                request.execute(num_retries=1)
+            request._sleep.assert_not_called()
+
     def test_null_postproc(self):
         resp, content = HttpRequest.null_postproc("foo", "bar")
         self.assertEqual(resp, "foo")
