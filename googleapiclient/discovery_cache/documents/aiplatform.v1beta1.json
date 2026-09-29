@@ -22648,7 +22648,7 @@
 "interactionsHttp": {
 "methods": {
 "cancel": {
-"description": "Cancels an interaction.",
+"description": "Cancels an interaction by id. This only applies to background interactions that are still running.",
 "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/interactionsHttp/{interactionsHttpId}/cancel",
 "httpMethod": "POST",
 "id": "aiplatform.projects.locations.interactionsHttp.cancel",
@@ -22673,7 +22673,7 @@
 ]
 },
 "create": {
-"description": "Generates a set of responses from the model.",
+"description": "Creates a new interaction.",
 "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/interactionsHttp",
 "httpMethod": "POST",
 "id": "aiplatform.projects.locations.interactionsHttp.create",
@@ -22701,7 +22701,7 @@
 ]
 },
 "get": {
-"description": "Gets an interaction.",
+"description": "Retrieves the full details of a single interaction based on its `Interaction.id`.",
 "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/interactionsHttp/{interactionsHttpId}",
 "httpMethod": "GET",
 "id": "aiplatform.projects.locations.interactionsHttp.get",
@@ -51079,7 +51079,7 @@
 }
 }
 },
-"revision": "20260912",
+"revision": "20260920",
 "rootUrl": "https://aiplatform.googleapis.com/",
 "schemas": {
 "CloudAiLargeModelsVisionExperimentsResponse": {
@@ -51318,13 +51318,15 @@
 "OUTPUT_SPEC_UNSPECIFIED",
 "OUTPUT_SPEC_1920X1072x72",
 "OUTPUT_SPEC_1280X720x192",
-"OUTPUT_SPEC_960X544x432"
+"OUTPUT_SPEC_960X544x432",
+"OUTPUT_SPEC_1280X720x144"
 ],
 "enumDescriptions": [
 "",
 "High spec: 1920x1072 resolution, 72 total frames.",
 "Medium spec: 1280x720 resolution, 192 total frames.",
-"Low spec: 960x544 resolution, 432 total frames."
+"Low spec: 960x544 resolution, 432 total frames.",
+"Medium spec at 1280x720, 144 total frames. Shorter than OUTPUT_SPEC_1280X720x192 and higher quality at the same resolution."
 ],
 "type": "string"
 }
@@ -51339,12 +51341,12 @@
 "type": "string"
 },
 "horizontalOffset": {
-"description": "Horizontal offset in pixels to shift the input frame from center. Positive values shift right, negative values shift left. Optional. Default is 0 (centered).",
+"description": "Horizontal offset in pixels of the frame's left edge from the canvas's left edge. Values outside the canvas crop the frame. Optional. Default is 0 (frame flush with the canvas's left edge).",
 "format": "int32",
 "type": "integer"
 },
 "verticalOffset": {
-"description": "Vertical offset in pixels to shift the input frame from center. Positive values shift down, negative values shift up. Optional. Default is 0 (centered).",
+"description": "Vertical offset in pixels of the frame's top edge from the canvas's top edge. Values outside the canvas crop the frame. Optional. Default is 0 (frame flush with the canvas's top edge).",
 "format": "int32",
 "type": "integer"
 }
@@ -52678,11 +52680,11 @@
 "type": "object"
 },
 "GenaiVertexV1beta1EnvironmentConfigEgressRule": {
-"description": "A network egress rule that controls which external domains the environment is allowed to reach. Each rule identifies a target domain and, optionally, a set of HTTP headers to inject into every matching outbound request.",
+"description": "A single domain allowlist rule with optional header injection.",
 "id": "GenaiVertexV1beta1EnvironmentConfigEgressRule",
 "properties": {
 "domain": {
-"description": "The domain pattern to match for this rule. Use an exact hostname (e.g., `github.com`), a wildcard prefix (e.g., `*.googleapis.com`), or `*` to match all domains.",
+"description": "Domain to allow outbound requests to. Supports wildcards (e.g. '*.googleapis.com'). Use '*' to allow all domains.",
 "type": "string"
 },
 "transform": {
@@ -53390,6 +53392,7 @@
 "type": "object"
 },
 "GenaiVertexV1beta1ImageConfig": {
+"deprecated": true,
 "description": "The configuration for image interaction.",
 "id": "GenaiVertexV1beta1ImageConfig",
 "properties": {
@@ -53630,7 +53633,7 @@
 "additionalProperties": {
 "type": "string"
 },
-"description": "The labels with user-defined metadata for the request. It is used for billing and reporting only. Label keys and values can be no longer than 63 characters (Unicode codepoints) and can only contain lowercase letters, numeric characters, underscores, and dashes. International characters are allowed. Label values are optional. Label keys must start with a letter.",
+"description": "The labels with user-defined metadata for the request. Label keys and values can be no longer than 63 characters (Unicode codepoints) and can only contain lowercase letters, numeric characters, underscores, and dashes. International characters are allowed. Label values are optional. Label keys must start with a letter.",
 "type": "object"
 },
 "localEnvironment": {
@@ -53721,6 +53724,17 @@
 "BUDGET_EXCEEDED",
 "QUEUED"
 ],
+"enumDeprecated": [
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+true,
+false
+],
 "enumDescriptions": [
 "Default value. This value is unused.",
 "The interaction is in progress.",
@@ -53729,7 +53743,7 @@
 "The interaction failed.",
 "The interaction was cancelled.",
 "The interaction is completed, but contains incomplete results (e.g. hitting max_tokens).",
-"The interaction was halted because the token budget was exceeded.",
+"Deprecated: Token and execution budget exhaustion returns INCOMPLETE (11).",
 "The interaction is queued, waiting for processing (e.g. waiting for off-peak capacity)."
 ],
 "readOnly": true,
@@ -53740,7 +53754,7 @@
 "description": "Input only. The steps for the interaction."
 },
 "steps": {
-"description": "Required. Output only. The steps that make up the interaction.",
+"description": "Required. Output only. The steps that make up the interaction, when included in the response.",
 "items": {
 "$ref": "GenaiVertexV1beta1Step"
 },
@@ -53776,20 +53790,23 @@
 "type": "object"
 },
 "GenaiVertexV1beta1InteractionCompletedSseEvent": {
+"description": "Signals that the Interaction completed. Sent when the Interaction receives Complete/Cancel or naturally terminates. No more input can be sent to the Interaction after this.",
 "id": "GenaiVertexV1beta1InteractionCompletedSseEvent",
 "properties": {
 "interaction": {
 "$ref": "GenaiVertexV1beta1Interaction",
-"description": "Required. The completed interaction with empty outputs to reduce the payload size. Use the preceding ContentDelta events for the actual output."
+"description": "Required. Partial completed interaction resource emitted at the end of the stream."
 }
 },
 "type": "object"
 },
 "GenaiVertexV1beta1InteractionCreatedSseEvent": {
+"description": "Server response confirming that a new interaction was created.",
 "id": "GenaiVertexV1beta1InteractionCreatedSseEvent",
 "properties": {
 "interaction": {
-"$ref": "GenaiVertexV1beta1Interaction"
+"$ref": "GenaiVertexV1beta1Interaction",
+"description": "Required. Partial interaction resource emitted when the stream is created."
 }
 },
 "type": "object"
@@ -53812,6 +53829,17 @@
 "BUDGET_EXCEEDED",
 "QUEUED"
 ],
+"enumDeprecated": [
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+true,
+false
+],
 "enumDescriptions": [
 "Default value. This value is unused.",
 "The interaction is in progress.",
@@ -53820,7 +53848,7 @@
 "The interaction failed.",
 "The interaction was cancelled.",
 "The interaction is completed, but contains incomplete results (e.g. hitting max_tokens).",
-"The interaction was halted because the token budget was exceeded.",
+"Deprecated: Token and execution budget exhaustion returns INCOMPLETE (11).",
 "The interaction is queued, waiting for processing (e.g. waiting for off-peak capacity)."
 ],
 "type": "string"
@@ -58091,6 +58119,20 @@ false
 "deprecated": true,
 "description": "Optional. Deprecated: Use top-level `language_codes` instead. Specifies one or more languages in the audio."
 },
+"mode": {
+"description": "Optional. Configures transcription mode. Supported values: `VERBATIM`, `SMART`. If unspecified, defaults to `VERBATIM` transcription. In `SMART` mode, the model performs disfluency removal (eliminating filler words, repetitions, and false starts), light grammatical cleanup, automatic formatting (paragraphs, bullet points, numbered lists), and minor user edits (inline self-corrections). Timestamps and diarization are incompatible with mode `SMART`.",
+"enum": [
+"MODE_UNSPECIFIED",
+"VERBATIM",
+"SMART"
+],
+"enumDescriptions": [
+"Unspecified transcription mode.",
+"Verbatim transcription mode.",
+"Smart transcription mode."
+],
+"type": "string"
+},
 "wordTimestamp": {
 "description": "Optional. Configures word-level timestamp generation.",
 "type": "boolean"
@@ -61360,7 +61402,7 @@ false
 "id": "GoogleCloudAiplatformV1beta1CustomCodeExecutionSpec",
 "properties": {
 "codeExecutionRegion": {
-"description": "Optional. The region to use for code execution. If set, the Code Execution Sandbox will be invoked in the specified region regardless of the request's originating region. Must be a region where the Code Execution Sandbox is available. Supported regions: northamerica-northeast1, southamerica-east1, us-central1, us-east1, us-east4, us-west1, us-west4, europe-central2, europe-north1, europe-southwest1, europe-west1, europe-west2, europe-west3, europe-west4, europe-west6, europe-west8, europe-west9, me-west1, asia-east1, asia-east2, asia-northeast1, asia-northeast3, asia-south1, asia-south2, asia-southeast1, australia-southeast2. If unset, the request's originating region is used; requests from regions where the sandbox is unavailable will fail with UNIMPLEMENTED.",
+"description": "Optional. The region to use for code execution. If set, the Code Execution Sandbox will be invoked in the specified region regardless of the request's originating region. Must be a region where the Code Execution Sandbox is available. For the current list of [supported regions](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/locations). If unset, the request's originating region is used; requests from regions where the sandbox is unavailable will fail with UNIMPLEMENTED.",
 "type": "string"
 },
 "evaluationFunction": {
@@ -64760,7 +64802,7 @@ false
 "id": "GoogleCloudAiplatformV1beta1EvaluationParserConfigCustomCodeParserConfig",
 "properties": {
 "codeExecutionRegion": {
-"description": "Optional. The region to use for code execution. If set, the Code Execution Sandbox will be invoked in the specified region regardless of the request's originating region. Must be a region where the Code Execution Sandbox is available. Supported regions: northamerica-northeast1, southamerica-east1, us-central1, us-east1, us-east4, us-west1, us-west4, europe-central2, europe-north1, europe-southwest1, europe-west1, europe-west2, europe-west3, europe-west4, europe-west6, europe-west8, europe-west9, me-west1, asia-east1, asia-east2, asia-northeast1, asia-northeast3, asia-south1, asia-south2, asia-southeast1, australia-southeast2. If unset, the request's originating region is used.",
+"description": "Optional. The region to use for code execution. If set, the Code Execution Sandbox will be invoked in the specified region regardless of the request's originating region. Must be a region where the Code Execution Sandbox is available. For the current list of [supported regions](https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/locations). If unset, the request's originating region is used.",
 "type": "string"
 },
 "parsingFunction": {
@@ -71783,6 +71825,10 @@ false
 "description": "Source for loading traces directly from Cloud Trace.",
 "id": "GoogleCloudAiplatformV1beta1ImportEvaluationSetRequestCloudTraceSource",
 "properties": {
+"agentResource": {
+"description": "Optional. Restricts the imported spans to a single agent. Accepts either of two forms, matching `OnlineEvaluator.agent_resource`: * a project-scoped resource name, matched against the `cloud.resource_id` resource attribute that Vertex AI Agent Engine agents are stamped with; * an Agent Registry agent URN, matched against the `gen_ai.main_agent.id` resource attribute that agents on GKE, and any other runtime that stamps it, are identified by. Scopes `session_ids` selection only. Traces named explicitly in `trace_ids` are imported as given and are NOT filtered by this field, because the caller has already identified them. Setting this field with only `trace_ids` therefore has no effect. When unset, spans are selected by session or trace ID alone. That is the pre-existing behavior and it remains the correct one for a session whose agents run in several deployments, because each deployment stamps its own `gen_ai.main_agent.id` and filtering on one of them would silently truncate the trajectory.",
+"type": "string"
+},
 "projectId": {
 "description": "Required. Project ID for the Cloud Trace.",
 "type": "string"
@@ -79863,7 +79909,7 @@ false
 "type": "boolean"
 },
 "sensitiveLoggingEnabled": {
-"description": "Optional. Enables sensitive logging. Sensitive logging includes customer core content (prompts, model completions, tool argument payloads and tool responses). If `false`, those are sanitized and only structural attributes are recorded. No effect unless `observability_enabled` is true. Not yet enforced: `CreateAgent` and `UpdateAgent` currently reject setting this to `true`.",
+"description": "Optional. Enables sensitive logging. Sensitive logging includes customer core content (prompts, model completions, tool argument payloads and tool responses). If `false`, those are sanitized and only structural attributes are recorded. No effect unless `observability_enabled` is true. Settable and returned, but NOT YET ENFORCED. Nothing reads it at runtime, so `true` does not currently cause content to be captured, and `false` is not what keeps content from being captured. Treat it as a recorded intention that takes effect when enforcement lands.",
 "type": "boolean"
 }
 },
@@ -87576,6 +87622,10 @@ false
 "description": "Identifier. The resource name of the SandboxEnvironmentTemplate. Format: `projects/{project}/locations/{location}/reasoningEngines/{reasoning_engine}/sandboxEnvironmentTemplates/{sandbox_environment_template}`",
 "type": "string"
 },
+"persistentDiskConfig": {
+"$ref": "GoogleCloudAiplatformV1beta1SandboxEnvironmentTemplatePersistentDiskConfig",
+"description": "Optional. Configuration for attaching a persistent disk (PD) to each SandboxEnvironment created from this template. When unset (or when `enabled` is `false`), sandboxes created from this template are not backed by a persistent disk and rely on ephemeral storage only. See PersistentDiskConfig for details."
+},
 "state": {
 "description": "Output only. The state of the sandbox environment template.",
 "enum": [
@@ -87730,6 +87780,22 @@ false
 "TCP protocol.",
 "UDP protocol."
 ],
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleCloudAiplatformV1beta1SandboxEnvironmentTemplatePersistentDiskConfig": {
+"description": "Configuration for attaching a persistent disk (PD) to each SandboxEnvironment created from this template. A persistent disk provides durable, per-sandbox block storage whose contents survive across the sandbox lifecycle events that this service supports (e.g. pause/resume), unlike ephemeral local storage which is lost when the underlying runtime is torn down.",
+"id": "GoogleCloudAiplatformV1beta1SandboxEnvironmentTemplatePersistentDiskConfig",
+"properties": {
+"enabled": {
+"description": "Optional. Whether a persistent disk is attached to sandboxes created from this template. Defaults to `false`. This flag lets a template carry (and preserve) disk configuration while keeping the disk detached, so it can be toggled on later without re-specifying the rest of the config. When `false`, the remaining fields in this message are ignored.",
+"type": "boolean"
+},
+"sizeGb": {
+"description": "Optional. The size of the persistent disk in GB. Must be non-negative. When `enabled` is `true`, a positive value is required; when unset or zero while enabled, the service applies a default size. Ignored when `enabled` is `false`.",
+"format": "int64",
 "type": "string"
 }
 },
