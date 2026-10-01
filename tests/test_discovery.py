@@ -1625,6 +1625,23 @@ class Discovery(unittest.TestCase):
         # Five is right out.
         self.assertRaises(TypeError, zoo.query, er=["one", "five"])
 
+    def test_pattern_params_must_match_whole_value(self):
+        # The "rr" parameter is constrained by the pattern "[a-z]+". A value
+        # that only matches a prefix (extra characters, or path separators and
+        # traversal segments that would be injected into the request URL) must
+        # be rejected, not accepted because its leading characters happen to
+        # match.
+        http = HttpMock(datafile("zoo.json"), {"status": "200"})
+        zoo = build("zoo", "v1", http=http, static_discovery=False)
+
+        # A value matching the whole pattern is still accepted.
+        zoo.query(rr="foo")
+
+        self.assertRaises(TypeError, zoo.query, rr="foo123")
+        self.assertRaises(TypeError, zoo.query, rr="foo/../bar")
+        self.assertRaises(TypeError, zoo.query, rr="foo\nbar")
+        self.assertRaises(TypeError, zoo.query, rr=["foo", "bar/baz"])
+
     def test_optional_stack_query_parameters(self):
         http = HttpMock(datafile("zoo.json"), {"status": "200"})
         zoo = build("zoo", "v1", http=http, static_discovery=False)
