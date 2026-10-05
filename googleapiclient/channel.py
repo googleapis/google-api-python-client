@@ -109,6 +109,12 @@ def _upper_header_keys(headers):
     return new_headers
 
 
+def _to_bytes(value):
+    if isinstance(value, bytes):
+        return value
+    return value.encode("utf-8")
+
+
 class Notification(object):
     """A Notification from a Channel.
 
@@ -278,11 +284,13 @@ def notification_from_headers(channel, headers):
     # that authenticates a notification as originating from Google. The channel
     # id is echoed in every delivery and is not secret, so verifying it alone
     # lets anyone who learns the id forge notifications. Verify the token here,
-    # using a constant-time comparison to avoid leaking it via timing.
+    # using a constant-time comparison to avoid leaking it via timing. Either
+    # side may be str or bytes depending on the web framework, so both are
+    # normalized to bytes before comparing.
     if channel.token:
         received_token = headers.get(X_GOOG_CHANNEL_TOKEN)
         if received_token is None or not hmac.compare_digest(
-            received_token.encode("utf-8"), channel.token.encode("utf-8")
+            _to_bytes(received_token), _to_bytes(channel.token)
         ):
             raise errors.InvalidNotificationError("Channel token mismatch")
 
