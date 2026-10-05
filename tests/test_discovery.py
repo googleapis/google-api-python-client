@@ -624,6 +624,20 @@ class DiscoveryFromDocument(unittest.TestCase):
         # The generated _media variants go through the same path.
         self.assertIsNone(zoo.animals().get_media.__doc__)
 
+        # Skipping the docstrings must not stop the methods from building
+        # usable requests.
+        request = zoo.animals().get(name="Lion")
+        self.assertEqual(request.method, "GET")
+        parsed = urllib.parse.urlparse(request.uri)
+        self.assertEqual(parsed.path, "/zoo/v1/animals/Lion")
+        self.assertEqual(urllib.parse.parse_qs(parsed.query)["alt"], ["json"])
+
+        media_request = zoo.animals().get_media(name="Lion")
+        self.assertEqual(media_request.method, "GET")
+        parsed = urllib.parse.urlparse(media_request.uri)
+        self.assertEqual(parsed.path, "/zoo/v1/animals/Lion")
+        self.assertEqual(urllib.parse.parse_qs(parsed.query)["alt"], ["media"])
+
     def test_building_with_base_remembers_base(self):
         discovery = read_datafile("plus.json")
 
