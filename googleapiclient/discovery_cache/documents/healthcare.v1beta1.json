@@ -3481,6 +3481,35 @@
 "https://www.googleapis.com/auth/cloud-platform"
 ]
 },
+"executeCohort": {
+"description": "Executes and materializes a cohort definition from a FHIR store. This method returns an Operation that can be used to track the status of the cohort execution by calling GetOperation. Immediate fatal errors appear in the error field, errors are also logged to Cloud Logging (see [Viewing error logs in Cloud Logging](https://cloud.google.com/healthcare/docs/how-tos/logging)). Otherwise, when the operation finishes, a detailed response of type ExecuteCohortResponse is returned in the response field. The metadata field type for this operation is OperationMetadata.",
+"flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}:executeCohort",
+"httpMethod": "POST",
+"id": "healthcare.projects.locations.datasets.fhirStores.executeCohort",
+"parameterOrder": [
+"name"
+],
+"parameters": {
+"name": {
+"description": "Required. The name of the FHIR store to query, in the format `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.",
+"location": "path",
+"pattern": "^projects/[^/]+/locations/[^/]+/datasets/[^/]+/fhirStores/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1beta1/{+name}:executeCohort",
+"request": {
+"$ref": "ExecuteCohortRequest"
+},
+"response": {
+"$ref": "Operation"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-healthcare",
+"https://www.googleapis.com/auth/cloud-platform"
+]
+},
 "explainDataAccess": {
 "description": "Explains all the permitted/denied actor, purpose and environment for a given resource. FHIR Consent is not supported in DSTU2 or R5.",
 "flatPath": "v1beta1/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}:explainDataAccess",
@@ -5767,7 +5796,7 @@
 }
 }
 },
-"revision": "20260908",
+"revision": "20260924",
 "rootUrl": "https://healthcare.googleapis.com/",
 "schemas": {
 "AccessDeterminationLogConfig": {
@@ -6290,7 +6319,7 @@
 "type": "string"
 },
 "validateOnly": {
-"description": "Optional. If set to true, the request will only perform a dry run. By default (once the behavior change is fully rolled out), this will default to true. During the transition period, the default depends on the Mendel flag status for the project.",
+"description": "Optional. If set to `true`, the request will only perform a dry run. By default this will default to `false`.",
 "type": "boolean"
 },
 "versionConfig": {
@@ -7318,6 +7347,41 @@
 },
 "type": "object"
 },
+"ExecuteCohortRequest": {
+"description": "Request to execute a cohort definition from a FHIR store based on provided queries and sending the resulting subset of data to a specified sink.",
+"id": "ExecuteCohortRequest",
+"properties": {
+"_at": {
+"description": "Optional. If provided, the queried resources will represent the state of the FHIR store at the given past timestamp. Runs the operation against the state of the store at this timestamp. State of the store is represented by the resource versions that were the current versions during the time specified or the resources that have not been updated since. Only works if the store has history enabled. Although users should be able to use this field to reproduce previous runs of the operation and get consistent results, there are a few cases where the past state of the store can be altered, thus resulting in no guarantee of reproducibility. For example, resource versions can be deleted using the purge method, or modified using ImportResourcesHistory.",
+"format": "google-datetime",
+"type": "string"
+},
+"fhirpathQuery": {
+"$ref": "FHIRPathQuery",
+"description": "Return resources that match the specified FHIRPath expressions."
+},
+"gcsDestination": {
+"$ref": "GoogleCloudHealthcareV1beta1FhirGcsDestination",
+"description": "The Cloud Storage output destination. The Healthcare Service Agent account requires the `roles/storage.objectAdmin` role on the Cloud Storage location. The exported outputs are organized by FHIR resource types. The server creates one or more objects per resource type depending on the volume of the resources exported. When there is only one object per resource type, the object name is in the form of `{operation_id}_{resource_type}`. When there are multiple objects for a given resource type, the object names are in the form of `{operation_id}_{resource_type}-{index}-of-{total}`. Each object contains newline delimited JSON, and each line is a FHIR resource."
+},
+"validateOnly": {
+"description": "Optional. If true, the request will be validated but no cohort execution will be run.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
+"ExecuteCohortResponse": {
+"description": "Response when ExecuteCohort operation finishes querying all resources and sends them to a sink destination. This structure will be included in the response when the operation finishes successfully.",
+"id": "ExecuteCohortResponse",
+"properties": {
+"fhirStore": {
+"description": "The name of the queried FHIR store, in the format `projects/{project_id}/locations/{location_id}/datasets/{dataset_id}/fhirStores/{fhir_store_id}`.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "ExplainDataAccessConsentInfo": {
 "description": "The enforcing consent's metadata.",
 "id": "ExplainDataAccessConsentInfo",
@@ -7566,6 +7630,39 @@
 "title": {
 "description": "Optional. Title for the expression, i.e. a short string describing its purpose. This can be used e.g. in UIs which allow to enter the expression.",
 "type": "string"
+}
+},
+"type": "object"
+},
+"Expression": {
+"description": "A FHIRPath expression.",
+"id": "Expression",
+"properties": {
+"fhirpathExpression": {
+"description": "Required. FHIRPath expression used for evaluation against FHIR resources. Must be in the format `[/\"Resource\"/\"DomainResource\"].[expression]` Expressions are applied per single FHIR resource, so they can't span multiple base resource types. For example, expressions like `Patient.union(Encounter)` are invalid. For expressions involving more than one resource or resource type, consider using the FHIRPath `resolve()` method. Expressions are only allowed to evaluate to a boolean type or a single or collection of [FHIR.Resource](https://hl7.org/fhir/resource.html) types. Expressions evaluating to boolean would include the base resource in the result if the expression evaluates to `true`. Expressions evaluating to one or more FHIR.Resource types will include those resources in the result, e.g. `CareTeam.member.resolve()`.",
+"type": "string"
+},
+"label": {
+"description": "Optional. Expressions with the same label will be grouped together under the same directory when exporting to Cloud Storage.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"FHIRPathQuery": {
+"description": "A set of FHIRPath expressions that are used to filter the FHIR resources. These expressions do not maintain referential integrity on the resulting resources. Users are responsible for making sure the expressions are written in a way to ensure that if desired.",
+"id": "FHIRPathQuery",
+"properties": {
+"engineVersion": {
+"description": "Optional. FHIRPath engine version number, for example \"1.0\". Will use the latest version if not specified. For more details about the supported versions, see https://cloud.google.com/healthcare-api/private/docs/how-tos/fhir-execute-cohort#fhirpath-engine-versions.",
+"type": "string"
+},
+"expressions": {
+"description": "Required. List of FHIRPath expressions used for filtering the data.",
+"items": {
+"$ref": "Expression"
+},
+"type": "array"
 }
 },
 "type": "object"
