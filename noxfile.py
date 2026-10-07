@@ -53,6 +53,7 @@ nox.options.sessions = [
     "unit-3.12",
     "unit-3.13",
     "unit-3.14",
+    "unit-3.15",
     "lint",
     "format",
     "scripts",
@@ -96,7 +97,7 @@ def format(session):
     )
 
 
-@nox.session(python=["3.10", "3.11", "3.12", "3.13", "3.14"])
+@nox.session(python=["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"])
 @nox.parametrize(
     "oauth2client",
     [

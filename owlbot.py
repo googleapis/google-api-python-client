@@ -30,6 +30,7 @@ templated_files = common.py_library(
         "3.12",
         "3.13",
         "3.14",
+        "3.15",
     ],
 )
 
