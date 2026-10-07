@@ -179,6 +179,10 @@
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/assuredworkloads_v1beta1.html)
 
 
+## auditmanager
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/auditmanager_v1.html)
+
+
 ## authorizedbuyersmarketplace
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/authorizedbuyersmarketplace_v1alpha.html)
@@ -187,6 +191,7 @@
 
 ## backupdr
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/backupdr_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/backupdr_v1beta.html)
 
 
 ## baremetalsolution
@@ -422,6 +427,7 @@
 ## compute
 * [alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_alpha.html)
 * [beta](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_beta.html)
+* [preview](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_preview.html)
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/compute_v1.html)
 
 
@@ -550,6 +556,10 @@
 ## developerknowledge
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/developerknowledge_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/developerknowledge_v1alpha.html)
+
+
+## devicerun
+* [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/devicerun_v1alpha.html)
 
 
 ## dfareporting
@@ -779,6 +789,7 @@
 
 ## health
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/health_v4.html)
+* [v4beta](http://googleapis.github.io/google-api-python-client/docs/dyn/health_v4beta.html)
 
 
 ## healthcare
@@ -825,6 +836,7 @@
 
 ## integrations
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v1.html)
+* [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/integrations_v2.html)
 
 
 ## jobs

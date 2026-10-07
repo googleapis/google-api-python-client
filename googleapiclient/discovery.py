@@ -37,7 +37,7 @@ import logging
 import mimetypes
 import os
 import re
-import urllib
+import urllib.parse
 
 import google.api_core.client_options
 from google.auth.exceptions import MutualTLSChannelError

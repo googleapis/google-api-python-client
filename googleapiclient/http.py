@@ -32,7 +32,7 @@ import os
 import random
 import socket
 import time
-import urllib
+import urllib.parse
 import uuid
 
 import httplib2
