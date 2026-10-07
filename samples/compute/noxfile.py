@@ -86,7 +86,7 @@ def get_pytest_env_vars() -> Dict[str, str]:
     return ret
 
 
-ALL_VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+ALL_VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
 
 # Any default versions that should be ignored.
 IGNORED_VERSIONS = TEST_CONFIG["ignored_versions"]
