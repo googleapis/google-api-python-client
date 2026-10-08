@@ -17,6 +17,7 @@
 import functools
 import inspect
 import logging
+import re
 import urllib.parse
 
 logger = logging.getLogger(__name__)
@@ -205,3 +206,25 @@ def _add_query_parameter(url, name, value):
         return url
     else:
         return update_query_params(url, {name: value})
+
+
+# The developer API key travels on every request as the ``key`` query
+# parameter. It is a credential and must not be written to logs, even at
+# DEBUG level (CWE-532).
+_SENSITIVE_QUERY_PARAM_RE = re.compile(r"([?&]key=)[^&#]*", re.IGNORECASE)
+
+
+def _redact_sensitive_url(url):
+    """Redact credential query parameters from a URL before logging it.
+
+    Args:
+        url: string, the request URL that may carry an API key.
+
+    Returns:
+        A copy of the URL with the ``key`` query parameter value replaced by
+        ``REDACTED``. Non-string input is returned unchanged.
+    """
+    try:
+        return _SENSITIVE_QUERY_PARAM_RE.sub(r"\1REDACTED", url)
+    except TypeError:
+        return url
