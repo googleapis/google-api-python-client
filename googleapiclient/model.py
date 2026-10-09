@@ -106,12 +106,15 @@ class BaseModel(Model):
       no_content_response: The value to return when deserializing a 204 "No
           Content" response.
       alt_param: The value to supply as the "alt" query parameter for requests.
+      pretty_print_param: The value to supply as the "prettyPrint" query parameter
+          for requests, or None to omit it and accept the server default of "true".
     """
 
     accept = None
     content_type = None
     no_content_response = None
     alt_param = None
+    pretty_print_param = None
 
     def _log_request(self, headers, path_params, query, body):
         """Logs debugging information about the request if requested."""
@@ -192,6 +195,11 @@ class BaseModel(Model):
         """
         if self.alt_param is not None:
             params.update({"alt": self.alt_param})
+        if self.pretty_print_param is not None:
+            # Responses are deserialized before the caller sees them, so the server's
+            # default of pretty-printed JSON only adds whitespace to transfer and parse.
+            # setdefault keeps an explicit prettyPrint= from the caller authoritative.
+            params.setdefault("prettyPrint", self.pretty_print_param)
         astuples = []
         for key, value in params.items():
             if type(value) == type([]):
@@ -274,6 +282,7 @@ class JsonModel(BaseModel):
     accept = "application/json"
     content_type = "application/json"
     alt_param = "json"
+    pretty_print_param = "false"
 
     def __init__(self, data_wrapper=False):
         """Construct a JsonModel.
@@ -322,6 +331,7 @@ class RawModel(JsonModel):
     accept = "*/*"
     content_type = "application/json"
     alt_param = None
+    pretty_print_param = None
 
     def deserialize(self, content):
         return content
@@ -342,6 +352,7 @@ class MediaModel(JsonModel):
     accept = "*/*"
     content_type = "application/json"
     alt_param = "media"
+    pretty_print_param = None
 
     def deserialize(self, content):
         return content
