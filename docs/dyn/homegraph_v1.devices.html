@@ -105,6 +105,8 @@ Args:
 
 { # Request type for the [`Query`](#google.home.graph.v1.HomeGraphApiService.Query) call.
   &quot;agentUserId&quot;: &quot;A String&quot;, # Required. Third-party user ID.
+  &quot;deviceView&quot;: &quot;A String&quot;, # Optional. Specifies the type of device data to be returned in the response. This allows callers to request traditional Smart Home traits, Unified Device Data Model (UDDM) traits, or both. If unspecified, defaults to SMART_HOME_TRAIT_ONLY.
+  &quot;includeDeviceMetadata&quot;: True or False, # Optional. If true, the response will include device metadata in the device_metadata field.
   &quot;inputs&quot;: [ # Required. Inputs containing third-party device IDs for which to get the device states.
     { # Device ID inputs to QueryRequest.
       &quot;payload&quot;: { # Payload containing device IDs. # Payload containing third-party device IDs.
@@ -129,9 +131,38 @@ Returns:
 
     { # Response type for the [`Query`](#google.home.graph.v1.HomeGraphApiService.Query) call. This should follow the same format as the Google smart home `action.devices.QUERY` [response](https://developers.home.google.com/cloud-to-cloud/intents/query). Example: ```json { &quot;requestId&quot;: &quot;ff36a3cc-ec34-11e6-b1a0-64510650abcf&quot;, &quot;payload&quot;: { &quot;devices&quot;: { &quot;123&quot;: { &quot;on&quot;: true, &quot;online&quot;: true }, &quot;456&quot;: { &quot;on&quot;: true, &quot;online&quot;: true, &quot;brightness&quot;: 80, &quot;color&quot;: { &quot;name&quot;: &quot;cerulean&quot;, &quot;spectrumRGB&quot;: 31655 } } } } } ```
   &quot;payload&quot;: { # Payload containing device states information. # Device states for the devices given in the request.
+    &quot;deviceMetadata&quot;: { # Map from the Trait ID (e.g., &quot;action.devices.traits.OnOff&quot;) to its last Spanner commit timestamp. If a trait has no recorded timestamp, it will be omitted from this map.
+      &quot;a_key&quot;: { # Metadata for traits of a single device.
+        &quot;traitCommitTimestamps&quot;: { # Map from the Trait ID (e.g., &quot;action.devices.traits.OnOff&quot;) to its last Spanner commit timestamp.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
+      },
+    },
     &quot;devices&quot;: { # States of the devices. Map of third-party device ID to struct of device states.
       &quot;a_key&quot;: {
         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+      },
+    },
+    &quot;homeTraitPayload&quot;: { # Map of device IDs to their Unified Device Data Model (UDDM) trait payloads. This field is populated when `device_view` is set to HOME_TRAIT_ONLY or HOME_TRAIT_AND_SMART_HOME_TRAIT.
+      &quot;a_key&quot;: { # Container for UDDM trait data associated with a device.
+        &quot;rootComponent&quot;: { # Component of a provider device. # The root component of the device as reported by the provider.
+          &quot;childComponents&quot;: [ # Optional. Child components.
+            # Object with schema name: Component
+          ],
+          &quot;deviceTypes&quot;: [ # Required. List of Device types associated with this component. Supported device types are defined in cs//depot/google3/home/homeservicelayer/uddm/types/uddm_device_types.proto and the type string is the enum name, for example: ON_OFF_LIGHT =&gt; &quot;ON_OFF_LIGHT&quot;.
+            &quot;A String&quot;,
+          ],
+          &quot;id&quot;: &quot;A String&quot;, # Required. ID of the component from the device provider.
+          &quot;traitData&quot;: [ # Required. List of trait data associated with the component.
+            { # Contains the trait payload for a single trait.
+              &quot;commitTime&quot;: &quot;A String&quot;, # Other metadata for the trait. The time the client update was committed in the server.
+              &quot;providerUpdateTime&quot;: &quot;A String&quot;, # The custom timestamp supplied by the provider during a ReportStateAndNotification update (if provided). This field is returned as part of the `QueryResponse`.
+              &quot;trait&quot;: { # The Provider Home API trait payload.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+              },
+            },
+          ],
+        },
       },
     },
   },
@@ -147,12 +178,50 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # Request type for the [`ReportStateAndNotification`](#google.home.graph.v1.HomeGraphApiService.ReportStateAndNotification) call. It may include states, notifications, or both. States and notifications are defined per `device_id` (for example, &quot;123&quot; and &quot;456&quot; in the following example). Example: ```json { &quot;requestId&quot;: &quot;ff36a3cc-ec34-11e6-b1a0-64510650abcf&quot;, &quot;agentUserId&quot;: &quot;1234&quot;, &quot;payload&quot;: { &quot;devices&quot;: { &quot;states&quot;: { &quot;123&quot;: { &quot;on&quot;: true }, &quot;456&quot;: { &quot;on&quot;: true, &quot;brightness&quot;: 10 }, }, } } } ```
+{ # Request type for the [`ReportStateAndNotification`](#google.home.graph.v1.HomeGraphApiService.ReportStateAndNotification) call. It may include states, notifications, home_traits, home_events, or any combination thereof. Smart Home Device Traits (SHDT) `states` and `notifications` are defined per `device_id` (for example, &quot;123&quot; and &quot;456&quot; in the following example). Google Home Traits `home_traits` and `home_events` are lists of updates or events, each associated with a `device_id` (for example, &quot;789&quot; in the following example). Example: ```json { &quot;requestId&quot;: &quot;ff36a3cc-ec34-11e6-b1a0-64510650abcf&quot;, &quot;agentUserId&quot;: &quot;1234&quot;, &quot;payload&quot;: { &quot;devices&quot;: { &quot;states&quot;: { &quot;123&quot;: { &quot;on&quot;: true }, &quot;456&quot;: { &quot;on&quot;: true, &quot;brightness&quot;: 10 }, }, &quot;homeTraits&quot;: [ { &quot;deviceId&quot;: &quot;789&quot;, &quot;components&quot;: [ { &quot;componentId&quot;: &quot;main&quot;, &quot;traitData&quot;: [ { &quot;trait&quot;: { &quot;@type&quot;: &quot;type.googleapis.com/home.graph.v1.OnOffTrait&quot;, &quot;onOff&quot;: true } } ] } ] } ], &quot;homeEvents&quot;: [ { &quot;deviceId&quot;: &quot;789&quot;, &quot;events&quot;: [ { &quot;componentId&quot;: &quot;main&quot;, &quot;events&quot;: [ { &quot;eventId&quot;: &quot;event-123&quot;, &quot;eventTime&quot;: &quot;2026-01-01T00:00:00Z&quot;, &quot;event&quot;: { &quot;@type&quot;: &quot;type.googleapis.com/home.graph.v1.DoorbellPressTrait.DoorbellPressedEvent&quot; } } ] } ] } ] } } } ```
   &quot;agentUserId&quot;: &quot;A String&quot;, # Required. Third-party user ID.
   &quot;eventId&quot;: &quot;A String&quot;, # Unique identifier per event (for example, a doorbell press).
   &quot;followUpToken&quot;: &quot;A String&quot;, # Deprecated.
   &quot;payload&quot;: { # Payload containing the state and notification information for devices. # Required. State of devices to update and notification metadata for devices.
     &quot;devices&quot;: { # The states and notifications specific to a device. # The devices for updating state and sending notifications.
+      &quot;homeEvents&quot;: [ # Optional. UDDM/WHDM trait events
+        { # Contains the set of events for an item.
+          &quot;deviceId&quot;: &quot;A String&quot;, # Required. / Unique identifier for the device.
+          &quot;events&quot;: [ # Required. List of events for the item.
+            { # Contains a set of events for a specific component.
+              &quot;componentId&quot;: &quot;A String&quot;, # Optional. The ID of the provider component if the events are associated with a specific component. Optional for WHDM events, required for UDDM events.
+              &quot;events&quot;: [ # Required. List of events associated with the component.
+                { # Contains the details for a single event.
+                  &quot;event&quot;: { # Required. The actual event payload.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+                  },
+                  &quot;eventId&quot;: &quot;A String&quot;, # Required. The unique event ID from the device provider.
+                  &quot;eventTime&quot;: &quot;A String&quot;, # Required. The timestamp of the event.
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      &quot;homeTraits&quot;: [ # Optional. UDDM/WHDM trait updates.
+        { # Contains the set of updates for a device.
+          &quot;components&quot;: [ # Required. Trait updates for each component.
+            { # Contains the set of updates for a component.
+              &quot;componentId&quot;: &quot;A String&quot;, # Required. ID of the component from the device provider.
+              &quot;traitData&quot;: [ # Required. The updated trait data for the component.
+                { # Contains the trait payload for a single trait.
+                  &quot;commitTime&quot;: &quot;A String&quot;, # Other metadata for the trait. The time the client update was committed in the server.
+                  &quot;providerUpdateTime&quot;: &quot;A String&quot;, # The custom timestamp supplied by the provider during a ReportStateAndNotification update (if provided). This field is returned as part of the `QueryResponse`.
+                  &quot;trait&quot;: { # The Provider Home API trait payload.
+                    &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+                  },
+                },
+              ],
+            },
+          ],
+          &quot;deviceId&quot;: &quot;A String&quot;, # Required. Unique identifier for the device.
+        },
+      ],
       &quot;notifications&quot;: { # Notifications metadata for devices. See the **Device NOTIFICATIONS** section of the individual trait [reference guides](https://developers.home.google.com/cloud-to-cloud/traits).
         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
       },
@@ -173,6 +242,11 @@ Returns:
   An object of the form:
 
     { # Response type for the [`ReportStateAndNotification`](#google.home.graph.v1.HomeGraphApiService.ReportStateAndNotification) call.
+  &quot;deviceResults&quot;: { # Map from agent device ID to the result of reporting state and notifications. This is only populated for UDDM updates for now.
+    &quot;a_key&quot;: { # Result of reporting state and notifications for a single device.
+      &quot;homeTraitCommitTime&quot;: &quot;A String&quot;, # The trait commit timestamp of the state update in Home Graph.
+    },
+  },
   &quot;requestId&quot;: &quot;A String&quot;, # Request ID copied from ReportStateAndNotificationRequest.
 }</pre>
 </div>
@@ -245,7 +319,7 @@ Returns:
           &quot;defaultNames&quot;: [ # List of names provided by the manufacturer rather than the user, such as serial numbers, SKUs, etc.
             &quot;A String&quot;,
           ],
-          &quot;name&quot;: &quot;A String&quot;, # Primary name of the device, generally provided by the user.
+          &quot;name&quot;: &quot;A String&quot;, # Primary name of the device, generally provided by the user. Names will be truncated if over the 60 Unicode code point (character) limit and no errors will be thrown. Developers are responsible for handling long names.
           &quot;nicknames&quot;: [ # Additional names provided by the user for the device.
             &quot;A String&quot;,
           ],

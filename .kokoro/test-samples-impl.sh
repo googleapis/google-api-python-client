@@ -13,11 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# `-e` enables the script to automatically fail when a command fails
-# `-o pipefail` sets the exit code to the rightmost comment to exit with a non-zero
 set -eo pipefail
-# Enables `**` to include files nested inside sub-folders
 shopt -s globstar
 
 # Exit early if samples don't exist
@@ -33,42 +29,32 @@ export PYTHONUNBUFFERED=1
 env | grep KOKORO
 
 # Install nox
-# `virtualenv==20.26.6` is added for Python 3.7 compatibility
-python3.9 -m pip install --upgrade --quiet nox virtualenv==20.26.6
 
-# Use secrets acessor service account to get secrets
-if [[ -f "${KOKORO_GFILE_DIR}/secrets_viewer_service_account.json" ]]; then
-    gcloud auth activate-service-account \
-	   --key-file="${KOKORO_GFILE_DIR}/secrets_viewer_service_account.json" \
-	   --project="cloud-devrel-kokoro-resources"
+# Setup project id.
+if [[ -f "${KOKORO_GFILE_DIR}/project-id.json" ]]; then
+  export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
+  export GOOGLE_CLOUD_PROJECT="${PROJECT_ID}"
+  gcloud config set project "$PROJECT_ID"
+  
+  # Compute tests require CLOUD_STORAGE_BUCKET. We reuse a fixed bucket name
+  # within the project so it doesn't leak thousands of buckets over time.
+  export CLOUD_STORAGE_BUCKET="${PROJECT_ID}-api-client-compute"
 fi
 
-# This script will create 3 files:
-# - testing/test-env.sh
-# - testing/service-account.json
-# - testing/client-secrets.json
-./scripts/decrypt-secrets.sh
-
-source ./testing/test-env.sh
-export GOOGLE_APPLICATION_CREDENTIALS=$(pwd)/testing/service-account.json
-
-# For cloud-run session, we activate the service account for gcloud sdk.
-gcloud auth activate-service-account \
-       --key-file "${GOOGLE_APPLICATION_CREDENTIALS}"
-
-export GOOGLE_CLIENT_SECRETS=$(pwd)/testing/client-secrets.json
+# Setup service account credentials.
+if [[ -f "${KOKORO_GFILE_DIR}/service-account.json" ]]; then
+  export GOOGLE_APPLICATION_CREDENTIALS="${KOKORO_GFILE_DIR}/service-account.json"
+  gcloud auth activate-service-account --key-file="${GOOGLE_APPLICATION_CREDENTIALS}"
+fi
 
 echo -e "\n******************** TESTING PROJECTS ********************"
 
-# Switch to 'fail at end' to allow all tests to complete before exiting.
 set +e
-# Use RTN to return a non-zero value if the test fails.
 RTN=0
 ROOT=$(pwd)
 # Find all requirements.txt in the samples directory (may break on whitespace).
 for file in samples/**/requirements.txt; do
     cd "$ROOT"
-    # Navigate to the project folder.
     file=$(dirname "$file")
     cd "$file"
 
@@ -76,12 +62,9 @@ for file in samples/**/requirements.txt; do
     echo "- testing $file"
     echo "------------------------------------------------------------"
 
-    # Use nox to execute the tests for the project.
-    python3.9 -m nox -s "$RUN_TESTS_SESSION"
+    python3 -m nox -s "$RUN_TESTS_SESSION"
     EXIT=$?
 
-    # If this is a periodic build, send the test log to the FlakyBot.
-    # See https://github.com/googleapis/repo-automation-bots/tree/main/packages/flakybot.
     if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
       chmod +x $KOKORO_GFILE_DIR/linux_amd64/flakybot
       $KOKORO_GFILE_DIR/linux_amd64/flakybot
@@ -93,11 +76,7 @@ for file in samples/**/requirements.txt; do
     else
       echo -e "\n Testing completed.\n"
     fi
-
 done
+
 cd "$ROOT"
-
-# Workaround for Kokoro permissions issue: delete secrets
-rm testing/{test-env.sh,client-secrets.json,service-account.json}
-
 exit "$RTN"

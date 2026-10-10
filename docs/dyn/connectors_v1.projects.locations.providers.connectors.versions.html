@@ -92,7 +92,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, pageSize=None, pageToken=None, view=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists Connector Versions in a given project and location.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -208,7 +208,7 @@ Returns:
           &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
           &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
           &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
           &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
             &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
             &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -284,7 +284,7 @@ Returns:
       &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
       &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
       &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-      &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+      &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
       &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
         &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
         &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -332,6 +332,7 @@ Returns:
   &quot;connectorInfraConfig&quot;: { # This cofiguration provides infra configs like rate limit threshold which need to be configurable for every connector version # Output only. Infra configs supported by Connector.
     &quot;alwaysAllocateCpu&quot;: True or False, # Indicates that the Cloud Run CPU should always be allocated.
     &quot;connectionRatelimitWindowSeconds&quot;: &quot;A String&quot;, # The window used for ratelimiting runtime requests to connections.
+    &quot;connectionServiceAccountEnabled&quot;: True or False, # Indicate whether connection service account is enabled. If false, the common runtime service agent is used.
     &quot;connectorVersioningEnabled&quot;: True or False, # Indicate whether connector versioning is enabled.
     &quot;deploymentModel&quot;: &quot;A String&quot;, # Indicate whether connector is deployed on GKE/CloudRun
     &quot;hpaConfig&quot;: { # Autoscaling config for connector deployment system metrics. # HPA autoscaling config.
@@ -342,9 +343,14 @@ Returns:
     &quot;maxInstanceRequestConcurrency&quot;: 42, # Max Instance Request Conncurrency for Cloud Run service.
     &quot;migrateDeploymentModel&quot;: True or False, # Indicate whether connector is being migrated to cloud run deployment model.
     &quot;migrateTls&quot;: True or False, # Indicate whether connector is being migrated to TLS.
-    &quot;networkEgressMode&quot;: &quot;A String&quot;, # Indicate whether connector is being migrated to use direct VPC egress.
+    &quot;networkEgressModeOverride&quot;: { # NetworkEgressModeOverride provides the network egress mode override for a connector. # Network egress mode override to migrate to direct VPC egress.
+      &quot;isEventingOverrideEnabled&quot;: True or False, # boolean should be set to true to make sure only eventing enabled connections are migrated to direct vpc egress.
+      &quot;isJobsOverrideEnabled&quot;: True or False, # boolean should be set to true to make sure only async operations enabled connections are migrated to direct vpc egress.
+      &quot;networkEgressMode&quot;: &quot;A String&quot;, # Determines the VPC Egress mode for the connector.
+    },
     &quot;provisionCloudSpanner&quot;: True or False, # Indicate whether cloud spanner is required for connector job.
     &quot;provisionMemstore&quot;: True or False, # Indicate whether memstore is required for connector job.
+    &quot;publicNetworkIngressEnabled&quot;: True or False, # Indicate whether public network ingress should be enabled.
     &quot;ratelimitThreshold&quot;: &quot;A String&quot;, # Max QPS supported by the connector version before throttling of requests.
     &quot;resourceLimits&quot;: { # Resource limits defined for connection pods of a given connector type. # System resource limits.
       &quot;cpu&quot;: &quot;A String&quot;, # Output only. CPU limit.
@@ -375,11 +381,12 @@ Returns:
   ],
   &quot;displayName&quot;: &quot;A String&quot;, # Output only. Display name.
   &quot;egressControlConfig&quot;: { # Egress control config for connector runtime. These configurations define the rules to identify which outbound domains/hosts needs to be whitelisted. It may be a static information for a particular connector version or it is derived from the configurations provided by the customer in Connection resource. # Output only. Configuration for Egress Control.
-    &quot;backends&quot;: &quot;A String&quot;, # Static Comma separated backends which are common for all Connection resources. Supported formats for each backend are host:port or just host (host can be ip address or domain name).
-    &quot;extractionRules&quot;: { # Extraction Rules to identity the backends from customer provided configuration in Connection resource. # Extractions Rules to extract the backends from customer provided configuration.
+    &quot;accessMode&quot;: &quot;A String&quot;, # Optional. Access mode for egress control.
+    &quot;additionalExtractionRules&quot;: { # Extraction Rules to identity the backends from customer provided configuration in Connection resource. # Additional extraction rules to identity the backends from customer provided configuration in Connection resource. These rules are applied in addition to the ones specified in `oneof_backends`.
       &quot;extractionRule&quot;: [ # Collection of Extraction Rule.
         { # Extraction Rule.
           &quot;extractionRegex&quot;: &quot;A String&quot;, # Regex used to extract backend details from source. If empty, whole source value will be used.
+          &quot;formatString&quot;: &quot;A String&quot;, # Format string used to format the extracted backend details. If empty, extracted backend details will be returned as it is.
           &quot;source&quot;: { # Source to extract the backend from. # Source on which the rule is applied.
             &quot;fieldId&quot;: &quot;A String&quot;, # Field identifier. For example config variable name.
             &quot;sourceType&quot;: &quot;A String&quot;, # Type of the source.
@@ -387,6 +394,23 @@ Returns:
         },
       ],
     },
+    &quot;allowlistedProjectNumbers&quot;: [ # Optional. Used when access_mode is RESTRICTED or ACCESS_MODE_UNSPECIFIED.
+      &quot;A String&quot;,
+    ],
+    &quot;backends&quot;: &quot;A String&quot;, # Static Comma separated backends which are common for all Connection resources. Supported formats for each backend are host:port or just host (host can be ip address or domain name).
+    &quot;extractionRules&quot;: { # Extraction Rules to identity the backends from customer provided configuration in Connection resource. # Extractions Rules to extract the backends from customer provided configuration.
+      &quot;extractionRule&quot;: [ # Collection of Extraction Rule.
+        { # Extraction Rule.
+          &quot;extractionRegex&quot;: &quot;A String&quot;, # Regex used to extract backend details from source. If empty, whole source value will be used.
+          &quot;formatString&quot;: &quot;A String&quot;, # Format string used to format the extracted backend details. If empty, extracted backend details will be returned as it is.
+          &quot;source&quot;: { # Source to extract the backend from. # Source on which the rule is applied.
+            &quot;fieldId&quot;: &quot;A String&quot;, # Field identifier. For example config variable name.
+            &quot;sourceType&quot;: &quot;A String&quot;, # Type of the source.
+          },
+        },
+      ],
+    },
+    &quot;launchEnvironment&quot;: &quot;A String&quot;, # Launch environment for egress control.
   },
   &quot;eventingConfigTemplate&quot;: { # Eventing Config details of a connector version. next: 14 # Output only. Eventing configuration supported by the Connector.
     &quot;additionalVariables&quot;: [ # Additional fields that need to be rendered.
@@ -414,7 +438,7 @@ Returns:
         &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
         &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
         &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-        &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+        &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
         &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
           &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
           &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -488,7 +512,7 @@ Returns:
             &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
             &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
             &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
             &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
               &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
               &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -564,7 +588,7 @@ Returns:
       &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
       &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
       &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-      &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+      &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
       &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
         &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
         &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -640,7 +664,7 @@ Returns:
             &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
             &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
             &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
             &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
               &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
               &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -744,7 +768,7 @@ Returns:
           &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
           &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
           &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
           &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
             &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
             &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -823,7 +847,7 @@ Returns:
         &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
         &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
         &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-        &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+        &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
         &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
           &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
           &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -931,7 +955,7 @@ Returns:
         &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
         &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
         &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-        &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+        &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
         &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
           &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
           &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1005,6 +1029,12 @@ Returns:
     &quot;A String&quot;,
   ],
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Updated time.
+  &quot;vpcscConfig&quot;: { # This configuration provides VPCSC config for a connector. # Output only. VPCSC config for the connector.
+    &quot;defaultAllowlistedHost&quot;: [ # The list of allowlisted FQDNs for VPCSC.
+      &quot;A String&quot;,
+    ],
+    &quot;disableFirewallVpcscFlow&quot;: True or False, # Whether to disable firewall VPCSC flow.
+  },
 }</pre>
 </div>
 
@@ -1061,7 +1091,7 @@ Returns:
               &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
               &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
               &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-              &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+              &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
               &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
                 &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
                 &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1137,7 +1167,7 @@ Returns:
           &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
           &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
           &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
           &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
             &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
             &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1185,6 +1215,7 @@ Returns:
       &quot;connectorInfraConfig&quot;: { # This cofiguration provides infra configs like rate limit threshold which need to be configurable for every connector version # Output only. Infra configs supported by Connector.
         &quot;alwaysAllocateCpu&quot;: True or False, # Indicates that the Cloud Run CPU should always be allocated.
         &quot;connectionRatelimitWindowSeconds&quot;: &quot;A String&quot;, # The window used for ratelimiting runtime requests to connections.
+        &quot;connectionServiceAccountEnabled&quot;: True or False, # Indicate whether connection service account is enabled. If false, the common runtime service agent is used.
         &quot;connectorVersioningEnabled&quot;: True or False, # Indicate whether connector versioning is enabled.
         &quot;deploymentModel&quot;: &quot;A String&quot;, # Indicate whether connector is deployed on GKE/CloudRun
         &quot;hpaConfig&quot;: { # Autoscaling config for connector deployment system metrics. # HPA autoscaling config.
@@ -1195,9 +1226,14 @@ Returns:
         &quot;maxInstanceRequestConcurrency&quot;: 42, # Max Instance Request Conncurrency for Cloud Run service.
         &quot;migrateDeploymentModel&quot;: True or False, # Indicate whether connector is being migrated to cloud run deployment model.
         &quot;migrateTls&quot;: True or False, # Indicate whether connector is being migrated to TLS.
-        &quot;networkEgressMode&quot;: &quot;A String&quot;, # Indicate whether connector is being migrated to use direct VPC egress.
+        &quot;networkEgressModeOverride&quot;: { # NetworkEgressModeOverride provides the network egress mode override for a connector. # Network egress mode override to migrate to direct VPC egress.
+          &quot;isEventingOverrideEnabled&quot;: True or False, # boolean should be set to true to make sure only eventing enabled connections are migrated to direct vpc egress.
+          &quot;isJobsOverrideEnabled&quot;: True or False, # boolean should be set to true to make sure only async operations enabled connections are migrated to direct vpc egress.
+          &quot;networkEgressMode&quot;: &quot;A String&quot;, # Determines the VPC Egress mode for the connector.
+        },
         &quot;provisionCloudSpanner&quot;: True or False, # Indicate whether cloud spanner is required for connector job.
         &quot;provisionMemstore&quot;: True or False, # Indicate whether memstore is required for connector job.
+        &quot;publicNetworkIngressEnabled&quot;: True or False, # Indicate whether public network ingress should be enabled.
         &quot;ratelimitThreshold&quot;: &quot;A String&quot;, # Max QPS supported by the connector version before throttling of requests.
         &quot;resourceLimits&quot;: { # Resource limits defined for connection pods of a given connector type. # System resource limits.
           &quot;cpu&quot;: &quot;A String&quot;, # Output only. CPU limit.
@@ -1228,11 +1264,12 @@ Returns:
       ],
       &quot;displayName&quot;: &quot;A String&quot;, # Output only. Display name.
       &quot;egressControlConfig&quot;: { # Egress control config for connector runtime. These configurations define the rules to identify which outbound domains/hosts needs to be whitelisted. It may be a static information for a particular connector version or it is derived from the configurations provided by the customer in Connection resource. # Output only. Configuration for Egress Control.
-        &quot;backends&quot;: &quot;A String&quot;, # Static Comma separated backends which are common for all Connection resources. Supported formats for each backend are host:port or just host (host can be ip address or domain name).
-        &quot;extractionRules&quot;: { # Extraction Rules to identity the backends from customer provided configuration in Connection resource. # Extractions Rules to extract the backends from customer provided configuration.
+        &quot;accessMode&quot;: &quot;A String&quot;, # Optional. Access mode for egress control.
+        &quot;additionalExtractionRules&quot;: { # Extraction Rules to identity the backends from customer provided configuration in Connection resource. # Additional extraction rules to identity the backends from customer provided configuration in Connection resource. These rules are applied in addition to the ones specified in `oneof_backends`.
           &quot;extractionRule&quot;: [ # Collection of Extraction Rule.
             { # Extraction Rule.
               &quot;extractionRegex&quot;: &quot;A String&quot;, # Regex used to extract backend details from source. If empty, whole source value will be used.
+              &quot;formatString&quot;: &quot;A String&quot;, # Format string used to format the extracted backend details. If empty, extracted backend details will be returned as it is.
               &quot;source&quot;: { # Source to extract the backend from. # Source on which the rule is applied.
                 &quot;fieldId&quot;: &quot;A String&quot;, # Field identifier. For example config variable name.
                 &quot;sourceType&quot;: &quot;A String&quot;, # Type of the source.
@@ -1240,6 +1277,23 @@ Returns:
             },
           ],
         },
+        &quot;allowlistedProjectNumbers&quot;: [ # Optional. Used when access_mode is RESTRICTED or ACCESS_MODE_UNSPECIFIED.
+          &quot;A String&quot;,
+        ],
+        &quot;backends&quot;: &quot;A String&quot;, # Static Comma separated backends which are common for all Connection resources. Supported formats for each backend are host:port or just host (host can be ip address or domain name).
+        &quot;extractionRules&quot;: { # Extraction Rules to identity the backends from customer provided configuration in Connection resource. # Extractions Rules to extract the backends from customer provided configuration.
+          &quot;extractionRule&quot;: [ # Collection of Extraction Rule.
+            { # Extraction Rule.
+              &quot;extractionRegex&quot;: &quot;A String&quot;, # Regex used to extract backend details from source. If empty, whole source value will be used.
+              &quot;formatString&quot;: &quot;A String&quot;, # Format string used to format the extracted backend details. If empty, extracted backend details will be returned as it is.
+              &quot;source&quot;: { # Source to extract the backend from. # Source on which the rule is applied.
+                &quot;fieldId&quot;: &quot;A String&quot;, # Field identifier. For example config variable name.
+                &quot;sourceType&quot;: &quot;A String&quot;, # Type of the source.
+              },
+            },
+          ],
+        },
+        &quot;launchEnvironment&quot;: &quot;A String&quot;, # Launch environment for egress control.
       },
       &quot;eventingConfigTemplate&quot;: { # Eventing Config details of a connector version. next: 14 # Output only. Eventing configuration supported by the Connector.
         &quot;additionalVariables&quot;: [ # Additional fields that need to be rendered.
@@ -1267,7 +1321,7 @@ Returns:
             &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
             &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
             &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
             &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
               &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
               &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1341,7 +1395,7 @@ Returns:
                 &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
                 &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
                 &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-                &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+                &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
                 &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
                   &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
                   &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1417,7 +1471,7 @@ Returns:
           &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
           &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
           &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+          &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
           &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
             &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
             &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1493,7 +1547,7 @@ Returns:
                 &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
                 &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
                 &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-                &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+                &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
                 &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
                   &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
                   &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1597,7 +1651,7 @@ Returns:
               &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
               &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
               &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-              &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+              &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
               &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
                 &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
                 &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1676,7 +1730,7 @@ Returns:
             &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
             &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
             &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
             &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
               &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
               &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1784,7 +1838,7 @@ Returns:
             &quot;enumSource&quot;: &quot;A String&quot;, # Optional. enum source denotes the source of api to fill the enum options
             &quot;isAdvanced&quot;: True or False, # Optional. Indicates if current template is part of advanced settings
             &quot;key&quot;: &quot;A String&quot;, # Optional. Key of the config variable.
-            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Tyep denotes where this value should be sent in BYOC connections.
+            &quot;locationType&quot;: &quot;A String&quot;, # Optional. Location Type denotes where this value should be sent in BYOC connections.
             &quot;multipleSelectConfig&quot;: { # MultipleSelectConfig represents the multiple options for a config variable. # Optional. MultipleSelectConfig represents the multiple options for a config variable.
               &quot;allowCustomValues&quot;: True or False, # Optional. Allow custom values.
               &quot;multipleSelectOptions&quot;: [ # Required. Multiple select options.
@@ -1858,6 +1912,12 @@ Returns:
         &quot;A String&quot;,
       ],
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. Updated time.
+      &quot;vpcscConfig&quot;: { # This configuration provides VPCSC config for a connector. # Output only. VPCSC config for the connector.
+        &quot;defaultAllowlistedHost&quot;: [ # The list of allowlisted FQDNs for VPCSC.
+          &quot;A String&quot;,
+        ],
+        &quot;disableFirewallVpcscFlow&quot;: True or False, # Whether to disable firewall VPCSC flow.
+      },
     },
   ],
   &quot;nextPageToken&quot;: &quot;A String&quot;, # Next page token.
@@ -1868,17 +1928,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 </body></html>

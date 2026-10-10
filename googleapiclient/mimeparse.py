@@ -95,7 +95,7 @@ def fitness_and_quality_parsed(mime_type, parsed_ranges):
     best_fitness = -1
     best_fit_q = 0
     (target_type, target_subtype, target_params) = parse_media_range(mime_type)
-    for (type, subtype, params) in parsed_ranges:
+    for type, subtype, params in parsed_ranges:
         type_match = type == target_type or type == "*" or target_type == "*"
         subtype_match = (
             subtype == target_subtype or subtype == "*" or target_subtype == "*"

@@ -753,7 +753,7 @@
 }
 }
 },
-"revision": "20250501",
+"revision": "20260903",
 "rootUrl": "https://monitoring.googleapis.com/",
 "schemas": {
 "Aggregation": {
@@ -1258,7 +1258,7 @@
 "type": "array"
 },
 "minAlignmentPeriod": {
-"description": "Optional. The lower bound on data point frequency for this data set, implemented by specifying the minimum alignment period to use in a time series query For example, if the data is published once every 10 minutes, the min_alignment_period should be at least 10 minutes. It would not make sense to fetch and align data at one minute intervals.",
+"description": "Optional. The lower bound on data point frequency for this data set, implemented by specifying the minimum alignment period to use in a time series query. For example, if the data is published once every 10 minutes, the min_alignment_period should be at least 10 minutes. It would not make sense to fetch and align data at one minute intervals.For PromQL queries, this field is used to set the minimum interval for the query step, controlling data granularity. Larger values can improve performance on long time ranges. See Querying Basics and Range Queries for more details on the PromQL step.",
 "format": "google-duration",
 "type": "string"
 },
@@ -1313,7 +1313,7 @@
 "id": "Dimension",
 "properties": {
 "column": {
-"description": "Required. The name of the column in the source SQL query that is used to chart the dimension.",
+"description": "Required. For widgets that use SQL queries, set the value to the name of the column in the results table whose data is charted. For a histogram that uses a time series query, set the value of this field to metric_value.",
 "type": "string"
 },
 "columnType": {
@@ -1326,12 +1326,12 @@
 "type": "number"
 },
 "maxBinCount": {
-"description": "A limit to the number of bins generated. When 0 is specified, the maximum count is not enforced.",
+"description": "For widgets that use SQL queries, the limit to the number of bins to generate. When 0 is specified, the maximum count is not enforced. For a histogram that uses a time series query, the exact number of bins to generate. If not specified or the value is 0, then the histogram determines the number of bins to use.",
 "format": "int32",
 "type": "integer"
 },
 "numericBinSize": {
-"description": "numeric_bin_size is used when the column type used for a dimension is numeric or string.",
+"description": "numeric_bin_size is used when the column type used for a dimension is numeric or string. If the column field is set to metric_value, then numericBinSize overrides maxBinCount.",
 "format": "int32",
 "type": "integer"
 },
@@ -1356,9 +1356,19 @@
 "type": "string"
 },
 "timeBinSize": {
-"description": "time_bin_size is used when the data type specified by column is a time type and the bin size is determined by a time duration. If column_type is DATE, this must be a whole value multiple of 1 day. If column_type is TIME, this must be less than or equal to 24 hours.",
+"description": "time_bin_size is used when the data type of the specified dimension is a time type and the bin size is determined by a time duration. If column_type is DATE, this must be a whole value multiple of 1 day. If column_type is TIME, this must be less than or equal to 24 hours.",
 "format": "google-duration",
 "type": "string"
+},
+"xMax": {
+"description": "The maximum value for the x-axis.",
+"format": "double",
+"type": "number"
+},
+"xMin": {
+"description": "The minimum value for the x-axis.",
+"format": "double",
+"type": "number"
 }
 },
 "type": "object"
@@ -1450,7 +1460,11 @@
 "SERVICE_HEALTH_INCIDENT",
 "SAP_BACKINT",
 "SAP_AVAILABILITY",
-"SAP_OPERATIONS"
+"SAP_OPERATIONS",
+"INTERCONNECT_MAINTENANCE_STARTED",
+"INTERCONNECT_MAINTENANCE_COMPLETED",
+"VPN_TRAFFIC_SELECTOR_NARROWING",
+"VPN_MAINTENANCE"
 ],
 "enumDescriptions": [
 "No event type specified.",
@@ -1477,7 +1491,11 @@
 "Incidents from Service Health",
 "Agent for SAP Backint related events.",
 "Agent for SAP availability related events.",
-"Agent for SAP operations related events."
+"Agent for SAP operations related events.",
+"Interconnect maintenance started event.",
+"Interconnect maintenance completed event.",
+"VPN traffic selector narrowing event.",
+"VPN maintenance event."
 ],
 "type": "string"
 },
@@ -1496,7 +1514,7 @@
 "type": "object"
 },
 "Field": {
-"description": "A single field of a message type.",
+"description": "A single field of a message type.New usages of this message as an alternative to FieldDescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Field",
 "properties": {
 "cardinality": {
@@ -1596,6 +1614,17 @@
 },
 "typeUrl": {
 "description": "The field type URL, without the scheme, for message or enumeration types. Example: \"type.googleapis.com/google.protobuf.Timestamp\".",
+"type": "string"
+}
+},
+"type": "object"
+},
+"FilterControl": {
+"description": "A widget that displays an input field to change the value of a template variable.",
+"id": "FilterControl",
+"properties": {
+"templateVariable": {
+"description": "Name of the template variable the widget affects.",
 "type": "string"
 }
 },
@@ -1939,7 +1968,7 @@
 "type": "object"
 },
 "Option": {
-"description": "A protocol buffer option, which can be attached to a message, field, enumeration, etc.",
+"description": "A protocol buffer option, which can be attached to a message, field, enumeration, etc.New usages of this message as an alternative to FileOptions, MessageOptions, FieldOptions, EnumOptions, EnumValueOptions, ServiceOptions, or MethodOptions are strongly discouraged.",
 "id": "Option",
 "properties": {
 "name": {
@@ -2335,6 +2364,24 @@
 },
 "type": "object"
 },
+"SpanAttributeFilter": {
+"description": "Span attribute key and list of values to be used for filtering.",
+"id": "SpanAttributeFilter",
+"properties": {
+"key": {
+"description": "Key of the attribute",
+"type": "string"
+},
+"value": {
+"description": "List of attribute values for given key. Multiple values will be OR'd together.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "SpanContext": {
 "description": "The context of a span. This is attached to an Exemplar in Distribution values during aggregation.It contains the name of a span with format: projects/[PROJECT_ID_OR_NUMBER]/traces/[TRACE_ID]/spans/[SPAN_ID] ",
 "id": "SpanContext",
@@ -2346,12 +2393,89 @@
 },
 "type": "object"
 },
+"SpanFilters": {
+"description": "First version of span filtering that is supported by the Trace component.",
+"id": "SpanFilters",
+"properties": {
+"apphubServices": {
+"description": "Optional. Filtering for spans containing one of the Apphub service IDs in the list. Multiple values will be OR'd together. Example: \"service-id1\", \"service-id2\"",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"apphubWorkloads": {
+"description": "Optional. Filtering for spans containing one of the Apphub workload IDs in the list. Multiple values will be OR'd together. Example: \"workload-id1\", \"workload-id2\"",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"applicationIds": {
+"description": "Optional. Filtering for spans containing one of the Apphub Application IDs in the list. Multiple values will be OR'd together.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"attributes": {
+"description": "Optional. List of span attribute filters. Each SpanAttributeFilter key must be unique. Multiple attribute filters will be AND'd together.",
+"items": {
+"$ref": "SpanAttributeFilter"
+},
+"type": "array"
+},
+"displayNames": {
+"description": "Optional. Filtering for spans containing one of the span display names in the list. Multiple values will be OR'd together.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"isRootSpan": {
+"description": "Optional. Filters for root spans only if set to true. A root span is a span without a defined parent span ID.",
+"type": "boolean"
+},
+"kinds": {
+"description": "Optional. Filtering for spans containing one of the kinds in the list. Multiple values will be OR'd together.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"maxDuration": {
+"description": "Optional. Filtering for spans with a maximum duration.",
+"format": "google-duration",
+"type": "string"
+},
+"minDuration": {
+"description": "Optional. Filtering for spans with a minimum duration.",
+"format": "google-duration",
+"type": "string"
+},
+"services": {
+"description": "Optional. Filtering for spans containing one of the services in the list. Multiple values will be OR'd together.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"status": {
+"description": "Optional. Filtering for spans containing one of the statuses in the list. Multiple values will be OR'd together.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "SparkChartView": {
 "description": "A sparkChart is a small chart suitable for inclusion in a table-cell or inline in text. This message contains the configuration for a sparkChart to show up on a Scorecard, showing recent trends of the scorecard's timeseries.",
 "id": "SparkChartView",
 "properties": {
 "minAlignmentPeriod": {
-"description": "The lower bound on data point frequency in the chart implemented by specifying the minimum alignment period to use in a time series query. For example, if the data is published once every 10 minutes it would not make sense to fetch and align data at one minute intervals. This field is optional and exists only as a hint.",
+"description": "The lower bound on data point frequency in the chart implemented by specifying the minimum alignment period to use in a time series query. For example, if the data is published once every 10 minutes it would not make sense to fetch and align data at one minute intervals. This field is optional and exists only as a hint.For PromQL queries, this field is used to set the minimum interval for the query step, controlling data granularity. Larger values can improve performance on long time ranges. See Querying Basics and Range Queries for more details on the PromQL step.",
 "format": "google-duration",
 "type": "string"
 },
@@ -2742,6 +2866,22 @@
 },
 "type": "object"
 },
+"TimeRange": {
+"description": "Represents a time range.",
+"id": "TimeRange",
+"properties": {
+"absoluteWindow": {
+"$ref": "Interval",
+"description": "Optional. Represents a time range with absolute start and end times. The start time is inclusive, and the end time is exclusive."
+},
+"relativeDuration": {
+"description": "Optional. Specifies the duration used to shift the data relative to current time as the end time. The duration must be positive.",
+"format": "google-duration",
+"type": "string"
+}
+},
+"type": "object"
+},
 "TimeSeriesFilter": {
 "description": "A filter that defines a subset of time series data that is displayed in a widget. Time series data is fetched using the ListTimeSeries (https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.timeSeries/list) method.",
 "id": "TimeSeriesFilter",
@@ -2826,6 +2966,10 @@
 "description": "A query used to fetch time series with MQL.",
 "type": "string"
 },
+"traceQuery": {
+"$ref": "TraceQuery",
+"description": "Optional. Preview: Query for traces. This is a preview feature and may be subject to change before final release."
+},
 "unitOverride": {
 "description": "The unit of data contained in fetched time series. If non-empty, this unit will override any unit that accompanies fetched data. The format is the same as the unit (https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors) field in MetricDescriptor.",
 "type": "string"
@@ -2868,8 +3012,85 @@
 },
 "type": "object"
 },
+"TraceQuery": {
+"description": "LINT.IfChange Preview: Query for traces. This is a preview feature and may be subject to change before final release.",
+"id": "TraceQuery",
+"properties": {
+"resourceContainer": {
+"description": "Optional. The resource name of the project or Trace scope to fetch data from. If empty, the widget will default to the project's default Trace scope. If scope cannot be determined, then we fallback to the current project. Optional.",
+"type": "string"
+},
+"spanDataValue": {
+"description": "The type of span data value to be displayed on the chart. Required.",
+"enum": [
+"SPAN_DATA_VALUE_UNSPECIFIED",
+"SPAN_COUNT",
+"SPAN_DURATION",
+"SPAN_DURATION_PERCENTILES"
+],
+"enumDescriptions": [
+"We are required to have an UNSPECIFIED value for enums. This should not be used in practice.",
+"Span count data value",
+"Span duration data value",
+"Span duration percentiles data value"
+],
+"type": "string"
+},
+"spanFilters": {
+"$ref": "SpanFilters",
+"description": "First version of span filtering that we will support. Required."
+}
+},
+"type": "object"
+},
+"Treemap": {
+"description": "A widget that displays hierarchical data as a treemap.",
+"id": "Treemap",
+"properties": {
+"dataSets": {
+"description": "Required. The collection of datasets used to construct and populate the treemap. For the rendered treemap rectangles: Color is determined by the aggregated value for each grouping. Size is proportional to the count of time series aggregated within that rectangle's segment.",
+"items": {
+"$ref": "TreemapDataSet"
+},
+"type": "array"
+},
+"treemapHierarchy": {
+"description": "Required. Ordered labels representing the hierarchical treemap structure.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"TreemapDataSet": {
+"description": "The data represented by the treemap. Needs to include the data itself, plus rules on how to organize it hierarchically.",
+"id": "TreemapDataSet",
+"properties": {
+"breakdowns": {
+"description": "Optional. The collection of breakdowns to be applied to the dataset. A breakdown is a way to slice the data. For example, you can break down the data by region.",
+"items": {
+"$ref": "Breakdown"
+},
+"type": "array"
+},
+"measures": {
+"description": "Optional. A collection of measures. A measure is a measured value of a property in your data. For example, rainfall in inches, number of units sold, revenue gained, etc.",
+"items": {
+"$ref": "Measure"
+},
+"type": "array"
+},
+"timeSeriesQuery": {
+"$ref": "TimeSeriesQuery",
+"description": "Required. The query that fetches the relevant data. See google.monitoring.dashboard.v1.TimeSeriesQuery"
+}
+},
+"type": "object"
+},
 "Type": {
-"description": "A protocol buffer message type.",
+"description": "A protocol buffer message type.New usages of this message as an alternative to DescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Type",
 "properties": {
 "edition": {
@@ -2953,6 +3174,10 @@
 "$ref": "ErrorReportingPanel",
 "description": "A widget that displays a list of error groups."
 },
+"filterControl": {
+"$ref": "FilterControl",
+"description": "A widget that displays an input field to change the value of a template variable."
+},
 "id": {
 "description": "Optional. The widget id. Ids may be made up of alphanumerics, dashes and underscores. Widget ids are optional.",
 "type": "string"
@@ -2985,6 +3210,10 @@
 "$ref": "Text",
 "description": "A raw string or markdown displaying textual content."
 },
+"timeRange": {
+"$ref": "TimeRange",
+"description": "Optional. Represents a time range for the widget. When set, this time range will override the dashboard time range. Supported for line, stacked area and stacked bar widgets only."
+},
 "timeSeriesTable": {
 "$ref": "TimeSeriesTable",
 "description": "A widget that displays time series data in a tabular format."
@@ -2992,6 +3221,10 @@
 "title": {
 "description": "Optional. The title of the widget.",
 "type": "string"
+},
+"treemap": {
+"$ref": "Treemap",
+"description": "A widget that displays data as a treemap."
 },
 "visibilityCondition": {
 "$ref": "VisibilityCondition",

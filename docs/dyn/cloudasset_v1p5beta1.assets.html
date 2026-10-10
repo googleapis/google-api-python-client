@@ -81,7 +81,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, assetTypes=None, contentType=None, pageSize=None, pageToken=None, readTime=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists assets with time and resource types and returns paged results in response.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -269,7 +269,7 @@ Returns:
           &quot;egressPolicies&quot;: [ # List of EgressPolicies to apply to the perimeter. A perimeter may have multiple EgressPolicies, each of which is evaluated separately. Access is granted if any EgressPolicy grants it. Must be empty for a perimeter bridge.
             { # Policy for egress from perimeter. EgressPolicies match requests based on `egress_from` and `egress_to` stanzas. For an EgressPolicy to match, both `egress_from` and `egress_to` stanzas must be matched. If an EgressPolicy matches a request, the request is allowed to span the ServicePerimeter boundary. For example, an EgressPolicy can be used to allow VMs on networks within the ServicePerimeter to access a defined set of projects outside the perimeter in certain contexts (e.g. to read data from a Cloud Storage bucket or query against a BigQuery dataset). EgressPolicies are concerned with the *resources* that a request relates as well as the API services and API actions being used. They do not related to the direction of data movement. More detailed documentation for this concept can be found in the descriptions of EgressFrom and EgressTo.
               &quot;egressFrom&quot;: { # Defines the conditions under which an EgressPolicy matches a request. Conditions based on information about the source of the request. Note that if the destination of the request is also protected by a ServicePerimeter, then that ServicePerimeter must have an IngressPolicy which allows access in order for this request to succeed. # Defines conditions on the source of a request causing this EgressPolicy to apply.
-                &quot;identities&quot;: [ # A list of identities that are allowed access through [EgressPolicy]. Identities can be an individual user, service account, Google group, or third-party identity. For third-party identity, only single identities are supported and other identity types are not supported. The `v1` identities that have the prefix `user`, `group`, `serviceAccount`, and `principal` in https://cloud.google.com/iam/docs/principal-identifiers#v1 are supported.
+                &quot;identities&quot;: [ # A list of identities that are allowed access through [EgressPolicy]. Identities can be an individual user, service account, Google group, third-party identity, or agent identity. For the list of supported identity types, see https://docs.cloud.google.com/vpc-service-controls/docs/supported-identities.
                   &quot;A String&quot;,
                 ],
                 &quot;identityType&quot;: &quot;A String&quot;, # Specifies the type of identities that are allowed access to outside the perimeter. If left unspecified, then members of `identities` field will be allowed access.
@@ -277,6 +277,9 @@ Returns:
                 &quot;sources&quot;: [ # Sources that this EgressPolicy authorizes access from. If this field is not empty, then `source_restriction` must be set to `SOURCE_RESTRICTION_ENABLED`.
                   { # The source that EgressPolicy authorizes access from inside the ServicePerimeter to somewhere outside the ServicePerimeter boundaries.
                     &quot;accessLevel&quot;: &quot;A String&quot;, # An AccessLevel resource name that allows protected resources inside the ServicePerimeters to access outside the ServicePerimeter boundaries. AccessLevels listed must be in the same policy as this ServicePerimeter. Referencing a nonexistent AccessLevel will cause an error. If an AccessLevel name is not specified, only resources within the perimeter can be accessed through Google Cloud calls with request origins within the perimeter. Example: `accessPolicies/MY_POLICY/accessLevels/MY_LEVEL`. If a single `*` is specified for `access_level`, then all EgressSources will be allowed.
+                    &quot;pscEndpoint&quot;: { # Specifies the Private Service Connect endpoint that an API call refers to. # A PrivateServiceConnectEndpoint that is allowed to access data outside the perimeter. The Private Service Connect endpoint may be in any organization, not just the organization that the perimeter is defined in.
+                      &quot;forwardingRule&quot;: &quot;A String&quot;, # The full resource name of the global forwarding rule that identifies a Private Service Connect endpoint. Forwarding rule format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/forwardingRules/{FORWARDING_RULE_ID}`.
+                    },
                     &quot;resource&quot;: &quot;A String&quot;, # A Google Cloud resource from the service perimeter that you want to allow to access data outside the perimeter. This field supports only projects. The project format is `projects/{project_number}`. You can&#x27;t use `*` in this field to allow all Google Cloud resources.
                   },
                 ],
@@ -309,13 +312,16 @@ Returns:
           &quot;ingressPolicies&quot;: [ # List of IngressPolicies to apply to the perimeter. A perimeter may have multiple IngressPolicies, each of which is evaluated separately. Access is granted if any Ingress Policy grants it. Must be empty for a perimeter bridge.
             { # Policy for ingress into ServicePerimeter. IngressPolicies match requests based on `ingress_from` and `ingress_to` stanzas. For an ingress policy to match, both the `ingress_from` and `ingress_to` stanzas must be matched. If an IngressPolicy matches a request, the request is allowed through the perimeter boundary from outside the perimeter. For example, access from the internet can be allowed either based on an AccessLevel or, for traffic hosted on Google Cloud, the project of the source network. For access from private networks, using the project of the hosting network is required. Individual ingress policies can be limited by restricting which services and/or actions they match using the `ingress_to` field.
               &quot;ingressFrom&quot;: { # Defines the conditions under which an IngressPolicy matches a request. Conditions are based on information about the source of the request. The request must satisfy what is defined in `sources` AND identity related fields in order to match. # Defines the conditions on the source of a request causing this IngressPolicy to apply.
-                &quot;identities&quot;: [ # A list of identities that are allowed access through [IngressPolicy]. Identities can be an individual user, service account, Google group, or third-party identity. For third-party identity, only single identities are supported and other identity types are not supported. The `v1` identities that have the prefix `user`, `group`, `serviceAccount`, and `principal` in https://cloud.google.com/iam/docs/principal-identifiers#v1 are supported.
+                &quot;identities&quot;: [ # A list of identities that are allowed access through [IngressPolicy]. Identities can be an individual user, service account, Google group, third-party identity, or agent identity. For the list of supported identity types, see https://docs.cloud.google.com/vpc-service-controls/docs/supported-identities.
                   &quot;A String&quot;,
                 ],
                 &quot;identityType&quot;: &quot;A String&quot;, # Specifies the type of identities that are allowed access from outside the perimeter. If left unspecified, then members of `identities` field will be allowed access.
                 &quot;sources&quot;: [ # Sources that this IngressPolicy authorizes access from.
                   { # The source that IngressPolicy authorizes access from.
                     &quot;accessLevel&quot;: &quot;A String&quot;, # An AccessLevel resource name that allow resources within the ServicePerimeters to be accessed from the internet. AccessLevels listed must be in the same policy as this ServicePerimeter. Referencing a nonexistent AccessLevel will cause an error. If no AccessLevel names are listed, resources within the perimeter can only be accessed via Google Cloud calls with request origins within the perimeter. Example: `accessPolicies/MY_POLICY/accessLevels/MY_LEVEL`. If a single `*` is specified for `access_level`, then all IngressSources will be allowed.
+                    &quot;pscEndpoint&quot;: { # Specifies the Private Service Connect endpoint that an API call refers to. # A PrivateServiceConnectEndpoint that is allowed to access the perimeter. The Private Service Connect endpoint may be in any organization, not just the organization that the perimeter is defined in.
+                      &quot;forwardingRule&quot;: &quot;A String&quot;, # The full resource name of the global forwarding rule that identifies a Private Service Connect endpoint. Forwarding rule format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/forwardingRules/{FORWARDING_RULE_ID}`.
+                    },
                     &quot;resource&quot;: &quot;A String&quot;, # A Google Cloud resource that is allowed to ingress the perimeter. Requests from these resources will be allowed to access perimeter data. Currently only projects and VPCs are allowed. Project format: `projects/{project_number}` VPC network format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/networks/{NAME}`. The project may be in any Google Cloud organization, not just the organization that the perimeter is defined in. `*` is not allowed, the case of allowing all Google Cloud resources only is not supported.
                   },
                 ],
@@ -349,10 +355,27 @@ Returns:
             &quot;A String&quot;,
           ],
           &quot;vpcAccessibleServices&quot;: { # Specifies how APIs are allowed to communicate within the Service Perimeter. # Configuration for APIs allowed within Perimeter.
+            &quot;allowedServicePatterns&quot;: [ # Specifies which Google services are allowed to be accessed from VPC networks in the service perimeter.
+              { # Service patterns used to allow access.
+                &quot;modifiers&quot;: [ # Modifiers to apply to the requests that match the URL pattern.
+                  { # Modifier to apply to the API requests.
+                    &quot;addRequestHeader&quot;: { # Adds a request header to the API. # Adds an additional HTTP request header.
+                      &quot;key&quot;: &quot;A String&quot;, # HTTP header key.
+                      &quot;value&quot;: &quot;A String&quot;, # HTTP header value.
+                    },
+                  },
+                ],
+                &quot;pattern&quot;: &quot;A String&quot;, # URL pattern to allow. Only patterns of &quot;.googleapis.com/*&quot;, &quot;www.googleapis.com//*&quot; and &quot;*.appspot.com/* forms are supported, where should be an alphanumeric name.
+                &quot;service&quot;: &quot;A String&quot;, # Supported service to allow.
+              },
+            ],
             &quot;allowedServices&quot;: [ # The list of APIs usable within the Service Perimeter. Must be empty unless &#x27;enable_restriction&#x27; is True. You can specify a list of individual services, as well as include the &#x27;RESTRICTED-SERVICES&#x27; value, which automatically includes all of the services protected by the perimeter.
               &quot;A String&quot;,
             ],
             &quot;enableRestriction&quot;: True or False, # Whether to restrict API calls within the Service Perimeter to the list of APIs specified in &#x27;allowed_services&#x27;.
+            &quot;servicePatternsEnforcementScopes&quot;: [ # Defines the enforcement scopes of service patterns.
+              &quot;A String&quot;,
+            ],
           },
         },
         &quot;status&quot;: { # `ServicePerimeterConfig` specifies a set of Google Cloud resources that describe specific Service Perimeter configuration. # Current ServicePerimeter configuration. Specifies sets of resources, restricted services and access levels that determine perimeter content and boundaries.
@@ -362,7 +385,7 @@ Returns:
           &quot;egressPolicies&quot;: [ # List of EgressPolicies to apply to the perimeter. A perimeter may have multiple EgressPolicies, each of which is evaluated separately. Access is granted if any EgressPolicy grants it. Must be empty for a perimeter bridge.
             { # Policy for egress from perimeter. EgressPolicies match requests based on `egress_from` and `egress_to` stanzas. For an EgressPolicy to match, both `egress_from` and `egress_to` stanzas must be matched. If an EgressPolicy matches a request, the request is allowed to span the ServicePerimeter boundary. For example, an EgressPolicy can be used to allow VMs on networks within the ServicePerimeter to access a defined set of projects outside the perimeter in certain contexts (e.g. to read data from a Cloud Storage bucket or query against a BigQuery dataset). EgressPolicies are concerned with the *resources* that a request relates as well as the API services and API actions being used. They do not related to the direction of data movement. More detailed documentation for this concept can be found in the descriptions of EgressFrom and EgressTo.
               &quot;egressFrom&quot;: { # Defines the conditions under which an EgressPolicy matches a request. Conditions based on information about the source of the request. Note that if the destination of the request is also protected by a ServicePerimeter, then that ServicePerimeter must have an IngressPolicy which allows access in order for this request to succeed. # Defines conditions on the source of a request causing this EgressPolicy to apply.
-                &quot;identities&quot;: [ # A list of identities that are allowed access through [EgressPolicy]. Identities can be an individual user, service account, Google group, or third-party identity. For third-party identity, only single identities are supported and other identity types are not supported. The `v1` identities that have the prefix `user`, `group`, `serviceAccount`, and `principal` in https://cloud.google.com/iam/docs/principal-identifiers#v1 are supported.
+                &quot;identities&quot;: [ # A list of identities that are allowed access through [EgressPolicy]. Identities can be an individual user, service account, Google group, third-party identity, or agent identity. For the list of supported identity types, see https://docs.cloud.google.com/vpc-service-controls/docs/supported-identities.
                   &quot;A String&quot;,
                 ],
                 &quot;identityType&quot;: &quot;A String&quot;, # Specifies the type of identities that are allowed access to outside the perimeter. If left unspecified, then members of `identities` field will be allowed access.
@@ -370,6 +393,9 @@ Returns:
                 &quot;sources&quot;: [ # Sources that this EgressPolicy authorizes access from. If this field is not empty, then `source_restriction` must be set to `SOURCE_RESTRICTION_ENABLED`.
                   { # The source that EgressPolicy authorizes access from inside the ServicePerimeter to somewhere outside the ServicePerimeter boundaries.
                     &quot;accessLevel&quot;: &quot;A String&quot;, # An AccessLevel resource name that allows protected resources inside the ServicePerimeters to access outside the ServicePerimeter boundaries. AccessLevels listed must be in the same policy as this ServicePerimeter. Referencing a nonexistent AccessLevel will cause an error. If an AccessLevel name is not specified, only resources within the perimeter can be accessed through Google Cloud calls with request origins within the perimeter. Example: `accessPolicies/MY_POLICY/accessLevels/MY_LEVEL`. If a single `*` is specified for `access_level`, then all EgressSources will be allowed.
+                    &quot;pscEndpoint&quot;: { # Specifies the Private Service Connect endpoint that an API call refers to. # A PrivateServiceConnectEndpoint that is allowed to access data outside the perimeter. The Private Service Connect endpoint may be in any organization, not just the organization that the perimeter is defined in.
+                      &quot;forwardingRule&quot;: &quot;A String&quot;, # The full resource name of the global forwarding rule that identifies a Private Service Connect endpoint. Forwarding rule format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/forwardingRules/{FORWARDING_RULE_ID}`.
+                    },
                     &quot;resource&quot;: &quot;A String&quot;, # A Google Cloud resource from the service perimeter that you want to allow to access data outside the perimeter. This field supports only projects. The project format is `projects/{project_number}`. You can&#x27;t use `*` in this field to allow all Google Cloud resources.
                   },
                 ],
@@ -402,13 +428,16 @@ Returns:
           &quot;ingressPolicies&quot;: [ # List of IngressPolicies to apply to the perimeter. A perimeter may have multiple IngressPolicies, each of which is evaluated separately. Access is granted if any Ingress Policy grants it. Must be empty for a perimeter bridge.
             { # Policy for ingress into ServicePerimeter. IngressPolicies match requests based on `ingress_from` and `ingress_to` stanzas. For an ingress policy to match, both the `ingress_from` and `ingress_to` stanzas must be matched. If an IngressPolicy matches a request, the request is allowed through the perimeter boundary from outside the perimeter. For example, access from the internet can be allowed either based on an AccessLevel or, for traffic hosted on Google Cloud, the project of the source network. For access from private networks, using the project of the hosting network is required. Individual ingress policies can be limited by restricting which services and/or actions they match using the `ingress_to` field.
               &quot;ingressFrom&quot;: { # Defines the conditions under which an IngressPolicy matches a request. Conditions are based on information about the source of the request. The request must satisfy what is defined in `sources` AND identity related fields in order to match. # Defines the conditions on the source of a request causing this IngressPolicy to apply.
-                &quot;identities&quot;: [ # A list of identities that are allowed access through [IngressPolicy]. Identities can be an individual user, service account, Google group, or third-party identity. For third-party identity, only single identities are supported and other identity types are not supported. The `v1` identities that have the prefix `user`, `group`, `serviceAccount`, and `principal` in https://cloud.google.com/iam/docs/principal-identifiers#v1 are supported.
+                &quot;identities&quot;: [ # A list of identities that are allowed access through [IngressPolicy]. Identities can be an individual user, service account, Google group, third-party identity, or agent identity. For the list of supported identity types, see https://docs.cloud.google.com/vpc-service-controls/docs/supported-identities.
                   &quot;A String&quot;,
                 ],
                 &quot;identityType&quot;: &quot;A String&quot;, # Specifies the type of identities that are allowed access from outside the perimeter. If left unspecified, then members of `identities` field will be allowed access.
                 &quot;sources&quot;: [ # Sources that this IngressPolicy authorizes access from.
                   { # The source that IngressPolicy authorizes access from.
                     &quot;accessLevel&quot;: &quot;A String&quot;, # An AccessLevel resource name that allow resources within the ServicePerimeters to be accessed from the internet. AccessLevels listed must be in the same policy as this ServicePerimeter. Referencing a nonexistent AccessLevel will cause an error. If no AccessLevel names are listed, resources within the perimeter can only be accessed via Google Cloud calls with request origins within the perimeter. Example: `accessPolicies/MY_POLICY/accessLevels/MY_LEVEL`. If a single `*` is specified for `access_level`, then all IngressSources will be allowed.
+                    &quot;pscEndpoint&quot;: { # Specifies the Private Service Connect endpoint that an API call refers to. # A PrivateServiceConnectEndpoint that is allowed to access the perimeter. The Private Service Connect endpoint may be in any organization, not just the organization that the perimeter is defined in.
+                      &quot;forwardingRule&quot;: &quot;A String&quot;, # The full resource name of the global forwarding rule that identifies a Private Service Connect endpoint. Forwarding rule format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/forwardingRules/{FORWARDING_RULE_ID}`.
+                    },
                     &quot;resource&quot;: &quot;A String&quot;, # A Google Cloud resource that is allowed to ingress the perimeter. Requests from these resources will be allowed to access perimeter data. Currently only projects and VPCs are allowed. Project format: `projects/{project_number}` VPC network format: `//compute.googleapis.com/projects/{PROJECT_ID}/global/networks/{NAME}`. The project may be in any Google Cloud organization, not just the organization that the perimeter is defined in. `*` is not allowed, the case of allowing all Google Cloud resources only is not supported.
                   },
                 ],
@@ -442,10 +471,27 @@ Returns:
             &quot;A String&quot;,
           ],
           &quot;vpcAccessibleServices&quot;: { # Specifies how APIs are allowed to communicate within the Service Perimeter. # Configuration for APIs allowed within Perimeter.
+            &quot;allowedServicePatterns&quot;: [ # Specifies which Google services are allowed to be accessed from VPC networks in the service perimeter.
+              { # Service patterns used to allow access.
+                &quot;modifiers&quot;: [ # Modifiers to apply to the requests that match the URL pattern.
+                  { # Modifier to apply to the API requests.
+                    &quot;addRequestHeader&quot;: { # Adds a request header to the API. # Adds an additional HTTP request header.
+                      &quot;key&quot;: &quot;A String&quot;, # HTTP header key.
+                      &quot;value&quot;: &quot;A String&quot;, # HTTP header value.
+                    },
+                  },
+                ],
+                &quot;pattern&quot;: &quot;A String&quot;, # URL pattern to allow. Only patterns of &quot;.googleapis.com/*&quot;, &quot;www.googleapis.com//*&quot; and &quot;*.appspot.com/* forms are supported, where should be an alphanumeric name.
+                &quot;service&quot;: &quot;A String&quot;, # Supported service to allow.
+              },
+            ],
             &quot;allowedServices&quot;: [ # The list of APIs usable within the Service Perimeter. Must be empty unless &#x27;enable_restriction&#x27; is True. You can specify a list of individual services, as well as include the &#x27;RESTRICTED-SERVICES&#x27; value, which automatically includes all of the services protected by the perimeter.
               &quot;A String&quot;,
             ],
             &quot;enableRestriction&quot;: True or False, # Whether to restrict API calls within the Service Perimeter to the list of APIs specified in &#x27;allowed_services&#x27;.
+            &quot;servicePatternsEnforcementScopes&quot;: [ # Defines the enforcement scopes of service patterns.
+              &quot;A String&quot;,
+            ],
           },
         },
         &quot;title&quot;: &quot;A String&quot;, # Human readable title. Must be unique within the Policy.
@@ -459,17 +505,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 </body></html>

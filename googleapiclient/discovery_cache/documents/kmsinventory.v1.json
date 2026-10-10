@@ -110,7 +110,7 @@
 "protectedResources": {
 "methods": {
 "search": {
-"description": "Returns metadata about the resources protected by the given Cloud KMS CryptoKey in the given Cloud organization.",
+"description": "Returns metadata about the resources protected by the given Cloud KMS CryptoKey in the given Cloud organization/project.",
 "flatPath": "v1/organizations/{organizationsId}/protectedResources:search",
 "httpMethod": "GET",
 "id": "kmsinventory.organizations.protectedResources.search",
@@ -141,7 +141,7 @@
 "type": "string"
 },
 "scope": {
-"description": "Required. Resource name of the organization. Example: organizations/123",
+"description": "Required. A scope can be an organization or a project. Resources protected by the crypto key in provided scope will be returned. The following values are allowed: * organizations/{ORGANIZATION_NUMBER} (e.g., \"organizations/12345678\") * projects/{PROJECT_ID} (e.g., \"projects/foo-bar\") * projects/{PROJECT_NUMBER} (e.g., \"projects/12345678\")",
 "location": "path",
 "pattern": "^organizations/[^/]+$",
 "required": true,
@@ -209,7 +209,7 @@
 "cryptoKeys": {
 "methods": {
 "getProtectedResourcesSummary": {
-"description": "Returns aggregate information about the resources protected by the given Cloud KMS CryptoKey. Only resources within the same Cloud organization as the key will be returned. The project that holds the key must be part of an organization in order for this call to succeed.",
+"description": "Returns aggregate information about the resources protected by the given Cloud KMS CryptoKey. By default, summary of resources within the same Cloud organization as the key will be returned, which requires the KMS organization service account to be configured(refer https://docs.cloud.google.com/kms/docs/view-key-usage#required-roles). If the KMS organization service account is not configured or key's project is not part of an organization, set fallback_scope to `FALLBACK_SCOPE_PROJECT` to retrieve a summary of protected resources within the key's project.",
 "flatPath": "v1/projects/{projectsId}/locations/{locationsId}/keyRings/{keyRingsId}/cryptoKeys/{cryptoKeysId}/protectedResourcesSummary",
 "httpMethod": "GET",
 "id": "kmsinventory.projects.locations.keyRings.cryptoKeys.getProtectedResourcesSummary",
@@ -217,6 +217,19 @@
 "name"
 ],
 "parameters": {
+"fallbackScope": {
+"description": "Optional. The scope to use if the kms organization service account is not configured.",
+"enum": [
+"FALLBACK_SCOPE_UNSPECIFIED",
+"FALLBACK_SCOPE_PROJECT"
+],
+"enumDescriptions": [
+"Unspecified scope type.",
+"If set to `FALLBACK_SCOPE_PROJECT`, the API will fall back to using key's project as request scope if the kms organization service account is not configured."
+],
+"location": "query",
+"type": "string"
+},
 "name": {
 "description": "Required. The resource name of the CryptoKey.",
 "location": "path",
@@ -238,11 +251,62 @@
 }
 }
 }
+},
+"protectedResources": {
+"methods": {
+"search": {
+"description": "Returns metadata about the resources protected by the given Cloud KMS CryptoKey in the given Cloud organization/project.",
+"flatPath": "v1/projects/{projectsId}/protectedResources:search",
+"httpMethod": "GET",
+"id": "kmsinventory.projects.protectedResources.search",
+"parameterOrder": [
+"scope"
+],
+"parameters": {
+"cryptoKey": {
+"description": "Required. The resource name of the CryptoKey.",
+"location": "query",
+"type": "string"
+},
+"pageSize": {
+"description": "The maximum number of resources to return. The service may return fewer than this value. If unspecified, at most 500 resources will be returned. The maximum value is 500; values above 500 will be coerced to 500.",
+"format": "int32",
+"location": "query",
+"type": "integer"
+},
+"pageToken": {
+"description": "A page token, received from a previous KeyTrackingService.SearchProtectedResources call. Provide this to retrieve the subsequent page. When paginating, all other parameters provided to KeyTrackingService.SearchProtectedResources must match the call that provided the page token.",
+"location": "query",
+"type": "string"
+},
+"resourceTypes": {
+"description": "Optional. A list of resource types that this request searches for. If empty, it will search all the [trackable resource types](https://cloud.google.com/kms/docs/view-key-usage#tracked-resource-types). Regular expressions are also supported. For example: * `compute.googleapis.com.*` snapshots resources whose type starts with `compute.googleapis.com`. * `.*Image` snapshots resources whose type ends with `Image`. * `.*Image.*` snapshots resources whose type contains `Image`. See [RE2](https://github.com/google/re2/wiki/Syntax) for all supported regular expression syntax. If the regular expression does not match any supported resource type, an INVALID_ARGUMENT error will be returned.",
+"location": "query",
+"repeated": true,
+"type": "string"
+},
+"scope": {
+"description": "Required. A scope can be an organization or a project. Resources protected by the crypto key in provided scope will be returned. The following values are allowed: * organizations/{ORGANIZATION_NUMBER} (e.g., \"organizations/12345678\") * projects/{PROJECT_ID} (e.g., \"projects/foo-bar\") * projects/{PROJECT_NUMBER} (e.g., \"projects/12345678\")",
+"location": "path",
+"pattern": "^projects/[^/]+$",
+"required": true,
+"type": "string"
+}
+},
+"path": "v1/{+scope}/protectedResources:search",
+"response": {
+"$ref": "GoogleCloudKmsInventoryV1SearchProtectedResourcesResponse"
+},
+"scopes": [
+"https://www.googleapis.com/auth/cloud-platform"
+]
+}
+}
 }
 }
 }
 },
-"revision": "20250518",
+"revision": "20260816",
 "rootUrl": "https://kmsinventory.googleapis.com/",
 "schemas": {
 "GoogleCloudKmsInventoryV1ListCryptoKeysResponse": {
@@ -319,7 +383,7 @@
 "type": "object"
 },
 "GoogleCloudKmsInventoryV1ProtectedResourcesSummary": {
-"description": "Aggregate information about the resources protected by a Cloud KMS key in the same Cloud organization as the key.",
+"description": "Aggregate information about the resources protected by a Cloud KMS key in the same Cloud organization/project as the key.",
 "id": "GoogleCloudKmsInventoryV1ProtectedResourcesSummary",
 "properties": {
 "cloudProducts": {
@@ -359,6 +423,13 @@
 },
 "description": "The number of resources protected by the key grouped by resource type.",
 "type": "object"
+},
+"warnings": {
+"description": "Warning messages for the state of response ProtectedResourcesSummary For example, if the organization service account is not configured, INSUFFICIENT_PERMISSIONS_PARTIAL_DATA warning will be returned.",
+"items": {
+"$ref": "GoogleCloudKmsInventoryV1Warning"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -381,6 +452,33 @@
 },
 "type": "object"
 },
+"GoogleCloudKmsInventoryV1Warning": {
+"description": "A warning message that indicates potential problems with the response data.",
+"id": "GoogleCloudKmsInventoryV1Warning",
+"properties": {
+"displayMessage": {
+"description": "The literal message providing context and details about the warnings.",
+"type": "string"
+},
+"warningCode": {
+"description": "The specific warning code for the displayed message.",
+"enum": [
+"WARNING_CODE_UNSPECIFIED",
+"INSUFFICIENT_PERMISSIONS_PARTIAL_DATA",
+"RESOURCE_LIMIT_EXCEEDED_PARTIAL_DATA",
+"ORG_LESS_PROJECT_PARTIAL_DATA"
+],
+"enumDescriptions": [
+"Default value. This value is unused.",
+"Indicates that the caller or service agent lacks necessary permissions to view some of the requested data. The response may be partial. Example: - KMS organization service agent {service_agent_name} lacks the `cloudasset.assets.searchAllResources` permission on the scope.",
+"Indicates that a resource limit has been exceeded, resulting in partial data. Example: - The project has more than 10,000 assets (resources, crypto keys, key handles, IAM policies, etc).",
+"Indicates that the project exists outside of an organization resource. Thus the analysis is only done for the project level data and results might be partial."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "GoogleCloudKmsV1CryptoKey": {
 "description": "A CryptoKey represents a logical key that can be used for cryptographic operations. A CryptoKey is made up of zero or more versions, which represent the actual key material used in cryptographic operations.",
 "id": "GoogleCloudKmsV1CryptoKey",
@@ -392,7 +490,7 @@
 "type": "string"
 },
 "cryptoKeyBackend": {
-"description": "Immutable. The resource name of the backend environment where the key material for all CryptoKeyVersions associated with this CryptoKey reside and where all related cryptographic operations are performed. Only applicable if CryptoKeyVersions have a ProtectionLevel of EXTERNAL_VPC, with the resource name in the format `projects/*/locations/*/ekmConnections/*`. Note, this list is non-exhaustive and may apply to additional ProtectionLevels in the future.",
+"description": "Immutable. The resource name of the backend environment where the key material for all CryptoKeyVersions associated with this CryptoKey reside and where all related cryptographic operations are performed. Only applicable if CryptoKeyVersions have a ProtectionLevel of EXTERNAL_VPC, with the resource name in the format `projects/*/locations/*/ekmConnections/*`. Only applicable if CryptoKeyVersions have a ProtectionLevel of HSM_SINGLE_TENANT, with the resource name in the format `projects/*/locations/*/singleTenantHsmInstances/*`. Note, this list is non-exhaustive and may apply to additional ProtectionLevels in the future.",
 "type": "string"
 },
 "destroyScheduledDuration": {
@@ -406,7 +504,7 @@
 },
 "keyAccessJustificationsPolicy": {
 "$ref": "GoogleCloudKmsV1KeyAccessJustificationsPolicy",
-"description": "Optional. The policy used for Key Access Justifications Policy Enforcement. If this field is present and this key is enrolled in Key Access Justifications Policy Enforcement, the policy will be evaluated in encrypt, decrypt, and sign operations, and the operation will fail if rejected by the policy. The policy is defined by specifying zero or more allowed justification codes. https://cloud.google.com/assured-workloads/key-access-justifications/docs/justification-codes By default, this field is absent, and all justification codes are allowed."
+"description": "Optional. The policy used for Key Access Justifications Policy Enforcement. If this field is present and this key is enrolled in Key Access Justifications Policy Enforcement, the policy will be evaluated in encrypt, decrypt, and sign operations, and the operation will fail if rejected by the policy. The policy is defined by specifying zero or more allowed justification codes. https://cloud.google.com/assured-workloads/key-access-justifications/docs/justification-codes By default, this field is absent, and all justification codes are allowed. If the `key_access_justifications_policy.allowed_access_reasons` is empty (zero allowed justification code), all encrypt, decrypt, and sign operations will fail."
 },
 "labels": {
 "additionalProperties": {
@@ -438,7 +536,9 @@
 "ASYMMETRIC_SIGN",
 "ASYMMETRIC_DECRYPT",
 "RAW_ENCRYPT_DECRYPT",
-"MAC"
+"MAC",
+"KEY_ENCAPSULATION",
+"AES_WRAPPING"
 ],
 "enumDescriptions": [
 "Not specified.",
@@ -446,7 +546,9 @@
 "CryptoKeys with this purpose may be used with AsymmetricSign and GetPublicKey.",
 "CryptoKeys with this purpose may be used with AsymmetricDecrypt and GetPublicKey.",
 "CryptoKeys with this purpose may be used with RawEncrypt and RawDecrypt. This purpose is meant to be used for interoperable symmetric encryption and does not support automatic CryptoKey rotation.",
-"CryptoKeys with this purpose may be used with MacSign."
+"CryptoKeys with this purpose may be used with MacSign.",
+"CryptoKeys with this purpose may be used with GetPublicKey and Decapsulate.",
+"CryptoKeys with this purpose may be used for AES key"
 ],
 "type": "string"
 },
@@ -505,8 +607,20 @@
 "HMAC_SHA512",
 "HMAC_SHA224",
 "EXTERNAL_SYMMETRIC_ENCRYPTION",
+"ML_KEM_768",
+"ML_KEM_1024",
+"KEM_XWING",
+"PQ_SIGN_ML_DSA_44",
 "PQ_SIGN_ML_DSA_65",
-"PQ_SIGN_SLH_DSA_SHA2_128S"
+"PQ_SIGN_ML_DSA_87",
+"PQ_SIGN_SLH_DSA_SHA2_128S",
+"PQ_SIGN_HASH_SLH_DSA_SHA2_128S_SHA256",
+"PQ_SIGN_ML_DSA_44_EXTERNAL_MU",
+"PQ_SIGN_ML_DSA_65_EXTERNAL_MU",
+"PQ_SIGN_ML_DSA_87_EXTERNAL_MU",
+"KEM_ECDH_P256",
+"KEM_ECDH_P384",
+"AES_256_KWP"
 ],
 "enumDescriptions": [
 "Not specified.",
@@ -545,8 +659,20 @@
 "HMAC-SHA512 signing with a 512 bit key.",
 "HMAC-SHA224 signing with a 224 bit key.",
 "Algorithm representing symmetric encryption by an external key manager.",
+"ML-KEM-768 (FIPS 203)",
+"ML-KEM-1024 (FIPS 203)",
+"X-Wing hybrid KEM combining ML-KEM-768 with X25519 following datatracker.ietf.org/doc/draft-connolly-cfrg-xwing-kem/.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 1. Randomized version.",
 "The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 3. Randomized version.",
-"The post-quantum stateless hash-based digital signature algorithm, at security level 1. Randomized version."
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 5. Randomized version.",
+"The post-quantum stateless hash-based digital signature algorithm, at security level 1. Randomized version.",
+"The post-quantum stateless hash-based digital signature algorithm, at security level 1. Randomized pre-hash version supporting SHA256 digests.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 1. Randomized version supporting externally-computed message representatives.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 3. Randomized version supporting externally-computed message representatives.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 5. Randomized version supporting externally-computed message representatives.",
+"Key encapsulation: Elliptic Curve Diffie-Hellman with NIST P-256 key that returns shared secret.",
+"Key encapsulation: Elliptic Curve Diffie-Hellman with NIST P-384 key that returns shared secret.",
+"AES key wrap with zero padding algorithm (RFC 5649). Can only be used by keys with purpose AES_WRAPPING."
 ],
 "readOnly": true,
 "type": "string"
@@ -594,6 +720,11 @@
 "readOnly": true,
 "type": "string"
 },
+"hsmTrusted": {
+"description": "Output only. Field indicating that the key wrapping key is trusted. This field is only valid for key purpose AES_256_WRAPPING, and protection level HSM_SINGLE_TENANT.",
+"readOnly": true,
+"type": "boolean"
+},
 "importFailureReason": {
 "description": "Output only. The root cause of the most recent import failure. Only present if state is IMPORT_FAILED.",
 "readOnly": true,
@@ -622,14 +753,16 @@
 "SOFTWARE",
 "HSM",
 "EXTERNAL",
-"EXTERNAL_VPC"
+"EXTERNAL_VPC",
+"HSM_SINGLE_TENANT"
 ],
 "enumDescriptions": [
 "Not specified.",
 "Crypto operations are performed in software.",
 "Crypto operations are performed in a Hardware Security Module.",
 "Crypto operations are performed by an external key manager.",
-"Crypto operations are performed in an EKM-over-VPC backend."
+"Crypto operations are performed in an EKM-over-VPC backend.",
+"Crypto operations are performed in a single-tenant HSM."
 ],
 "readOnly": true,
 "type": "string"
@@ -668,6 +801,10 @@
 "This version was destroyed, and it may not be used or enabled again. However, Cloud KMS could not confirm that the corresponding key material residing in an external key manager was destroyed. Additional details can be found in CryptoKeyVersion.external_destruction_failure_reason."
 ],
 "type": "string"
+},
+"trustedWrappingEnabled": {
+"description": "Optional. Immutable. Field indicating that the key may be wrapped by a trusted key. This field can be set for all key purposes except ENCRYPT_DECRYPT, and is only valid for keys with protection level HSM_SINGLE_TENANT. This field can only be set at creation or import time via CreateCryptoKeyVersion, or ImportCryptoKeyVersion.",
+"type": "boolean"
 }
 },
 "type": "object"
@@ -715,8 +852,20 @@
 "HMAC_SHA512",
 "HMAC_SHA224",
 "EXTERNAL_SYMMETRIC_ENCRYPTION",
+"ML_KEM_768",
+"ML_KEM_1024",
+"KEM_XWING",
+"PQ_SIGN_ML_DSA_44",
 "PQ_SIGN_ML_DSA_65",
-"PQ_SIGN_SLH_DSA_SHA2_128S"
+"PQ_SIGN_ML_DSA_87",
+"PQ_SIGN_SLH_DSA_SHA2_128S",
+"PQ_SIGN_HASH_SLH_DSA_SHA2_128S_SHA256",
+"PQ_SIGN_ML_DSA_44_EXTERNAL_MU",
+"PQ_SIGN_ML_DSA_65_EXTERNAL_MU",
+"PQ_SIGN_ML_DSA_87_EXTERNAL_MU",
+"KEM_ECDH_P256",
+"KEM_ECDH_P384",
+"AES_256_KWP"
 ],
 "enumDescriptions": [
 "Not specified.",
@@ -755,8 +904,20 @@
 "HMAC-SHA512 signing with a 512 bit key.",
 "HMAC-SHA224 signing with a 224 bit key.",
 "Algorithm representing symmetric encryption by an external key manager.",
+"ML-KEM-768 (FIPS 203)",
+"ML-KEM-1024 (FIPS 203)",
+"X-Wing hybrid KEM combining ML-KEM-768 with X25519 following datatracker.ietf.org/doc/draft-connolly-cfrg-xwing-kem/.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 1. Randomized version.",
 "The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 3. Randomized version.",
-"The post-quantum stateless hash-based digital signature algorithm, at security level 1. Randomized version."
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 5. Randomized version.",
+"The post-quantum stateless hash-based digital signature algorithm, at security level 1. Randomized version.",
+"The post-quantum stateless hash-based digital signature algorithm, at security level 1. Randomized pre-hash version supporting SHA256 digests.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 1. Randomized version supporting externally-computed message representatives.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 3. Randomized version supporting externally-computed message representatives.",
+"The post-quantum Module-Lattice-Based Digital Signature Algorithm, at security level 5. Randomized version supporting externally-computed message representatives.",
+"Key encapsulation: Elliptic Curve Diffie-Hellman with NIST P-256 key that returns shared secret.",
+"Key encapsulation: Elliptic Curve Diffie-Hellman with NIST P-384 key that returns shared secret.",
+"AES key wrap with zero padding algorithm (RFC 5649). Can only be used by keys with purpose AES_WRAPPING."
 ],
 "type": "string"
 },
@@ -767,14 +928,16 @@
 "SOFTWARE",
 "HSM",
 "EXTERNAL",
-"EXTERNAL_VPC"
+"EXTERNAL_VPC",
+"HSM_SINGLE_TENANT"
 ],
 "enumDescriptions": [
 "Not specified.",
 "Crypto operations are performed in software.",
 "Crypto operations are performed in a Hardware Security Module.",
 "Crypto operations are performed by an external key manager.",
-"Crypto operations are performed in an EKM-over-VPC backend."
+"Crypto operations are performed in an EKM-over-VPC backend.",
+"Crypto operations are performed in a single-tenant HSM."
 ],
 "type": "string"
 }
@@ -785,23 +948,27 @@
 "description": "ExternalProtectionLevelOptions stores a group of additional fields for configuring a CryptoKeyVersion that are specific to the EXTERNAL protection level and EXTERNAL_VPC protection levels.",
 "id": "GoogleCloudKmsV1ExternalProtectionLevelOptions",
 "properties": {
+"ekmConnectionBackendOverride": {
+"description": "Optional. The resource name of the backend environment where the key material of CryptoKeyVersions is associated with. Setting this field overrides the crypto_key_backend. This field may be set when CryptoKeyVersions is set to EXTERNAL_VPC. Format: `projects/*/locations/*/ekmConnections/*`.",
+"type": "string"
+},
 "ekmConnectionKeyPath": {
-"description": "The path to the external key material on the EKM when using EkmConnection e.g., \"v0/my/key\". Set this field instead of external_key_uri when using an EkmConnection.",
+"description": "Optional. The path to the external key material on the EKM when using EkmConnection e.g., \"v0/my/key\". Set this field instead of external_key_uri when using an EkmConnection.",
 "type": "string"
 },
 "externalKeyUri": {
-"description": "The URI for an external resource that this CryptoKeyVersion represents.",
+"description": "Optional. The URI for an external resource that this CryptoKeyVersion represents.",
 "type": "string"
 }
 },
 "type": "object"
 },
 "GoogleCloudKmsV1KeyAccessJustificationsPolicy": {
-"description": "A KeyAccessJustificationsPolicy specifies zero or more allowed AccessReason values for encrypt, decrypt, and sign operations on a CryptoKey.",
+"description": "A KeyAccessJustificationsPolicy specifies zero or more allowed AccessReason values for encrypt, decrypt, and sign operations on a CryptoKey or KeyAccessJustificationsPolicyConfig (the default Key Access Justifications policy).",
 "id": "GoogleCloudKmsV1KeyAccessJustificationsPolicy",
 "properties": {
 "allowedAccessReasons": {
-"description": "The list of allowed reasons for access to a CryptoKey. Zero allowed access reasons means all encrypt, decrypt, and sign operations for the CryptoKey associated with this policy will fail.",
+"description": "The list of allowed reasons for access to a CryptoKey. Note that empty allowed_access_reasons has a different meaning depending on where this message appears. If this is under KeyAccessJustificationsPolicyConfig, it means allow-all. If this is under CryptoKey, it means deny-all.",
 "items": {
 "enum": [
 "REASON_UNSPECIFIED",
@@ -817,6 +984,20 @@
 "GOOGLE_RESPONSE_TO_PRODUCTION_ALERT",
 "CUSTOMER_AUTHORIZED_WORKFLOW_SERVICING"
 ],
+"enumDeprecated": [
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+true,
+true,
+false,
+false
+],
 "enumDescriptions": [
 "Unspecified access reason.",
 "Customer-initiated support.",
@@ -826,8 +1007,8 @@
 "Customer uses their account to perform any access to their own data which their IAM policy authorizes.",
 "Google systems access customer data to help optimize the structure of the data or quality for future uses by the customer.",
 "No reason is expected for this key request.",
-"Customer uses their account to perform any access to their own data which their IAM policy authorizes, and one of the following is true: * A Google administrator has reset the root-access account associated with the user's organization within the past 7 days. * A Google-initiated emergency access operation has interacted with a resource in the same project or folder as the currently accessed resource within the past 7 days.",
-"Google systems access customer data to help optimize the structure of the data or quality for future uses by the customer, and one of the following is true: * A Google administrator has reset the root-access account associated with the user's organization within the past 7 days. * A Google-initiated emergency access operation has interacted with a resource in the same project or folder as the currently accessed resource within the past 7 days.",
+"Deprecated: This code is no longer generated by Google Cloud. The GOOGLE_RESPONSE_TO_PRODUCTION_ALERT justification codes available in both Key Access Justifications and Access Transparency logs provide customer-visible signals of emergency access in more precise contexts. Customer uses their account to perform any access to their own data which their IAM policy authorizes, and one of the following is true: * A Google administrator has reset the root-access account associated with the user's organization within the past 7 days. * A Google-initiated emergency access operation has interacted with a resource in the same project or folder as the currently accessed resource within the past 7 days.",
+"Deprecated: This code is no longer generated by Google Cloud. The GOOGLE_RESPONSE_TO_PRODUCTION_ALERT justification codes available in both Key Access Justifications and Access Transparency logs provide customer-visible signals of emergency access in more precise contexts. Google systems access customer data to help optimize the structure of the data or quality for future uses by the customer, and one of the following is true: * A Google administrator has reset the root-access account associated with the user's organization within the past 7 days. * A Google-initiated emergency access operation has interacted with a resource in the same project or folder as the currently accessed resource within the past 7 days.",
 "Google-initiated access to maintain system reliability.",
 "One of the following operations is being executed while simultaneously encountering an internal technical issue which prevented a more precise justification code from being generated: * Your account has been used to perform any access to your own data which your IAM policy authorizes. * An automated Google system operates on encrypted customer data which your IAM policy authorizes. * Customer-initiated Google support access. * Google-initiated support access to protect system reliability."
 ],
@@ -858,12 +1039,14 @@
 "enum": [
 "ATTESTATION_FORMAT_UNSPECIFIED",
 "CAVIUM_V1_COMPRESSED",
-"CAVIUM_V2_COMPRESSED"
+"CAVIUM_V2_COMPRESSED",
+"CAVIUM_V209"
 ],
 "enumDescriptions": [
 "Not specified.",
 "Cavium HSM attestation compressed with gzip. Note that this format is defined by Cavium and subject to change at any time. See https://www.marvell.com/products/security-solutions/nitrox-hs-adapters/software-key-attestation.html.",
-"Cavium HSM attestation V2 compressed with gzip. This is a new format introduced in Cavium's version 3.2-08."
+"Cavium HSM attestation V2 compressed with gzip. This is a new format introduced in Cavium's version 3.2-08.",
+"Cavium HSM attestation V209, introduced in Cavium's version 2.09-0702."
 ],
 "readOnly": true,
 "type": "string"

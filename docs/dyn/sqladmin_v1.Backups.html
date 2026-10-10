@@ -87,7 +87,7 @@ h1, h2, h3 {
   <code><a href="#ListBackups">ListBackups(parent, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists all backups associated with the project.</p>
 <p class="toc_element">
-  <code><a href="#ListBackups_next">ListBackups_next()</a></code></p>
+  <code><a href="#ListBackups_next">ListBackups_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#UpdateBackup">UpdateBackup(name, body=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -105,7 +105,7 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # A backup resource. Next ID: 30
+{ # A backup resource.
   &quot;backupInterval&quot;: { # Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time. # Output only. This output contains the following values: start_time: All database writes up to this time are available. end_time: Any database writes after this time aren&#x27;t available.
     &quot;endTime&quot;: &quot;A String&quot;, # Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.
     &quot;startTime&quot;: &quot;A String&quot;, # Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.
@@ -127,15 +127,35 @@ Args:
       &quot;A String&quot;,
     ],
     &quot;backendType&quot;: &quot;A String&quot;, # The backend type. `SECOND_GEN`: Cloud SQL database instance. `EXTERNAL`: A database server that is not managed by Google. This property is read-only; use the `tier` property in the `settings` object to determine the database type.
-    &quot;clearNetwork&quot;: True or False, # Clears private network settings when the instance is restored.
     &quot;connectionName&quot;: &quot;A String&quot;, # Connection name of the Cloud SQL instance used in connection strings.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
     &quot;currentDiskSize&quot;: &quot;A String&quot;, # The current disk usage of the instance in bytes. This property has been deprecated. Use the &quot;cloudsql.googleapis.com/database/disk/bytes_used&quot; metric in Cloud Monitoring API instead. Please see [this announcement](https://groups.google.com/d/msg/google-cloud-sql-announce/I_7-F9EBhT0/BtvFtdFeAgAJ) for details.
+    &quot;databaseCenterIntegrationEnabled&quot;: True or False, # Optional. If true, instance metadata is sent to the Database Center. If false, instance metadata is not sent to the Database Center.
     &quot;databaseInstalledVersion&quot;: &quot;A String&quot;, # Output only. Stores the current database version running on the instance including minor version such as `MYSQL_8_0_18`.
     &quot;databaseVersion&quot;: &quot;A String&quot;, # The database engine type and version. The `databaseVersion` field cannot be changed after instance creation.
+    &quot;deploymentInfo&quot;: { # Blue-green deployment metadata for a database instance. In a blue-green deployment, we maintain two environments, one of which is live. This message contains details about the blue-green deployment. # Output only. Deployment info for the instance. This is set if the instance is currently part of any blue-green setup.
+      &quot;deploymentId&quot;: &quot;A String&quot;, # Output only. The resource ID of the blue-green deployment.
+      &quot;source&quot;: { # The source instance for the Blue-Green deployment. # Output only. The source instance for the Blue-Green deployment.
+        &quot;targetId&quot;: { # Reference to another Cloud SQL instance. # Output only. The target instance paired with this source instance in a blue-green deployment.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+          &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+          &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+        },
+      },
+      &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of blue-green-deployment for UI tags
+      &quot;target&quot;: { # The target instance for the Blue-Green deployment. # Output only. The target instance for the Blue-Green deployment.
+        &quot;sourceId&quot;: { # Reference to another Cloud SQL instance. # Output only. The source instance paired with this target instance in a blue-green deployment.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+          &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+          &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+        },
+      },
+    },
     &quot;diskEncryptionConfiguration&quot;: { # Disk encryption configuration for an instance. # Disk encryption configuration specific to an instance.
+      &quot;cmekSourceLogEncryptionEnforced&quot;: True or False, # Optional. Whether to enforce CMEK log encryption at source. When enforced, transaction logs are encrypted prior to being uploaded to Cloud Storage. If not enforced, then CMEK logs are encrypted by the Cloud Storage service.
+      &quot;confidentialMode&quot;: True or False, # Optional. If true, enables Confidential Mode for the instance&#x27;s Hyperdisk Balanced volumes. Only supported for zonal C4A instances currently.
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionConfiguration`.
-      &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption
+      &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption.
     },
     &quot;diskEncryptionStatus&quot;: { # Disk encryption status for an instance. # Disk encryption status specific to an instance.
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionStatus`.
@@ -146,7 +166,8 @@ Args:
       { # DNS metadata.
         &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
         &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-        &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+        &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+        &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
       },
     ],
     &quot;etag&quot;: &quot;A String&quot;, # This field is deprecated and will be removed from a future version of the API. Use the `settings.settingsVersion` field instead.
@@ -186,7 +207,8 @@ Args:
           { # DNS metadata.
             &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
             &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-            &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+            &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+            &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
           },
         ],
         &quot;gceZone&quot;: &quot;A String&quot;, # Output only. The zone of the read pool node.
@@ -198,6 +220,20 @@ Args:
           },
         ],
         &quot;name&quot;: &quot;A String&quot;, # Output only. The name of the read pool node, to be used for retrieving metrics and logs.
+        &quot;pscAutoConnections&quot;: [ # Output only. The list of settings for requested automatically-setup Private Service Connect (PSC) consumer endpoints that can be used to connect to this read pool node.
+          { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
+            &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
+            &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
+            &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+            &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
+            &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+            &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+            &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
+            &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+            &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
+          },
+        ],
+        &quot;pscServiceAttachmentLink&quot;: &quot;A String&quot;, # Output only. The Private Service Connect (PSC) service attachment of the read pool node.
         &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of the read pool node.
       },
     ],
@@ -205,6 +241,7 @@ Args:
       &quot;caCertificate&quot;: &quot;A String&quot;, # PEM representation of the trusted CA&#x27;s x509 certificate.
       &quot;clientCertificate&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s x509 certificate.
       &quot;clientKey&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s private key. The corresponding public key is encoded in the client&#x27;s certificate.
+      &quot;dmsManaged&quot;: True or False, # Output only. Indicates whether the resource is managed by Database Migration Service.
       &quot;dumpFilePath&quot;: &quot;A String&quot;, # The dump file to create the Cloud SQL replica.
       &quot;hostPort&quot;: &quot;A String&quot;, # The host and port of the on-premises instance in host:port format
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#onPremisesConfiguration`.
@@ -280,10 +317,17 @@ Args:
     },
     &quot;serviceAccountEmailAddress&quot;: &quot;A String&quot;, # The service account email address assigned to the instance.\This property is read-only.
     &quot;settings&quot;: { # Database instance settings. # The user settings.
+      &quot;acceleratedReplicaMode&quot;: True or False, # Optional. Whether the replica is in accelerated mode. This feature is in private preview and requires allowlisting to take effect.
       &quot;activationPolicy&quot;: &quot;A String&quot;, # The activation policy specifies when the instance is activated; it is applicable only when the instance state is RUNNABLE. Valid values: * `ALWAYS`: The instance is on, and remains so even in the absence of connection requests. * `NEVER`: The instance is off; it is not activated, even if a connection request arrives.
       &quot;activeDirectoryConfig&quot;: { # Active Directory configuration, relevant only for Cloud SQL for SQL Server. # Active Directory configuration, relevant only for Cloud SQL for SQL Server.
+        &quot;adminCredentialSecretName&quot;: &quot;A String&quot;, # Optional. The secret manager key storing the administrator credential. (e.g., projects/{project}/secrets/{secret}).
+        &quot;dnsServers&quot;: [ # Optional. Domain controller IPv4 addresses used to bootstrap Active Directory.
+          &quot;A String&quot;,
+        ],
         &quot;domain&quot;: &quot;A String&quot;, # The name of the domain (e.g., mydomain.com).
         &quot;kind&quot;: &quot;A String&quot;, # This is always sql#activeDirectoryConfig.
+        &quot;mode&quot;: &quot;A String&quot;, # Optional. The mode of the Active Directory configuration.
+        &quot;organizationalUnit&quot;: &quot;A String&quot;, # Optional. The organizational unit distinguished name. This is the full hierarchical path to the organizational unit.
       },
       &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. # Specifies advanced machine configuration for the instances relevant only for SQL Server.
         &quot;threadsPerCore&quot;: 42, # The number of threads per physical core.
@@ -291,6 +335,7 @@ Args:
       &quot;authorizedGaeApplications&quot;: [ # The App Engine app IDs that can access this instance. (Deprecated) Applied to First Generation instances only.
         &quot;A String&quot;,
       ],
+      &quot;autoUpgradeEnabled&quot;: True or False, # Optional. Cloud SQL for MySQL auto-upgrade configuration. When this parameter is set to true, auto-upgrade is enabled for MySQL 8.0 minor versions. The MySQL version must be 8.0.35 or higher.
       &quot;availabilityType&quot;: &quot;A String&quot;, # Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available)./ For more information, see [Overview of the High Availability Configuration](https://cloud.google.com/sql/docs/mysql/high-availability).
       &quot;backupConfiguration&quot;: { # Database instance backup configuration. # The daily backup configuration for the instance.
         &quot;backupRetentionSettings&quot;: { # We currently only support backup retention by specifying the number of backups we will retain. # Backup retention settings.
@@ -303,7 +348,7 @@ Args:
         &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#backupConfiguration`.
         &quot;location&quot;: &quot;A String&quot;, # Location of the backup
         &quot;pointInTimeRecoveryEnabled&quot;: True or False, # Whether point in time recovery is enabled.
-        &quot;replicationLogArchivingEnabled&quot;: True or False, # Reserved for future use.
+        &quot;replicationLogArchivingEnabled&quot;: True or False, # Optional. Deprecated: replication_log_archiving_enabled is deprecated and will be removed from a future version of the API. Use point_in_time_recovery_enabled instead.
         &quot;startTime&quot;: &quot;A String&quot;, # Start time for the daily backup configuration in UTC timezone in the 24 hour format - `HH:MM`.
         &quot;transactionLogRetentionDays&quot;: 42, # The number of days of transaction logs we retain for point in time restore, from 1-7.
         &quot;transactionalLogStorageState&quot;: &quot;A String&quot;, # Output only. This value contains the storage location of transactional logs used to perform point-in-time recovery (PITR) for the database.
@@ -317,9 +362,11 @@ Args:
             &quot;value&quot;: &quot;A String&quot;, # Required. The value of the flag. Boolean flags are set to `on` for true and `off` for false. This field must be omitted if the flag doesn&#x27;t take a value.
           },
         ],
+        &quot;poolerCount&quot;: 42, # Output only. Number of connection poolers.
       },
       &quot;connectorEnforcement&quot;: &quot;A String&quot;, # Specifies if connections must use Cloud SQL connectors. Option values include the following: `NOT_REQUIRED` (Cloud SQL instances can be connected without Cloud SQL Connectors) and `REQUIRED` (Only allow connections that use Cloud SQL Connectors). Note that using REQUIRED disables all existing authorized networks. If this field is not specified when creating a new instance, NOT_REQUIRED is used. If this field is not specified when patching or updating an existing instance, it is left unchanged in the instance.
       &quot;crashSafeReplicationEnabled&quot;: True or False, # Configuration specific to read replica instances. Indicates whether database flags for crash-safe replication are enabled. This property was only applicable to First Generation instances.
+      &quot;dataApiAccess&quot;: &quot;A String&quot;, # This parameter controls whether to allow using ExecuteSql API to connect to the instance. Not allowed by default.
       &quot;dataCacheConfig&quot;: { # Data cache configurations. # Configuration for data cache.
         &quot;dataCacheEnabled&quot;: True or False, # Whether data cache is enabled for the instance.
       },
@@ -342,10 +389,20 @@ Args:
           &quot;time&quot;: &quot;A String&quot;, # Time in UTC when the &quot;deny maintenance period&quot; starts on start_date and ends on end_date. The time is in format: HH:mm:SS, i.e., 00:00:00
         },
       ],
-      &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition of the instance.
+      &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition type of the Cloud SQL instance.
       &quot;enableDataplexIntegration&quot;: True or False, # Optional. By default, Cloud SQL instances have schema extraction disabled for Dataplex. When this parameter is set to true, schema extraction for Dataplex on Cloud SQL instances is activated.
       &quot;enableGoogleMlIntegration&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL instances can connect to Vertex AI to pass requests for real-time predictions and insights to the AI. The default value is false. This applies only to Cloud SQL for MySQL and Cloud SQL for PostgreSQL instances.
+      &quot;entraidConfig&quot;: { # SQL Server Entra ID configuration. # Optional. The Microsoft Entra ID configuration for the SQL Server instance.
+        &quot;applicationId&quot;: &quot;A String&quot;, # Optional. The application ID for the Entra ID configuration.
+        &quot;kind&quot;: &quot;A String&quot;, # Output only. This is always sql#sqlServerEntraIdConfig
+        &quot;tenantId&quot;: &quot;A String&quot;, # Optional. The tenant ID for the Entra ID configuration.
+      },
+      &quot;finalBackupConfig&quot;: { # Config used to determine the final backup settings for the instance. # Optional. The final backup configuration for the instance.
+        &quot;enabled&quot;: True or False, # Whether the final backup is enabled for the instance.
+        &quot;retentionDays&quot;: 42, # The number of days to retain the final backup after the instance deletion. The final backup will be purged at (time_of_instance_deletion + retention_days).
+      },
       &quot;insightsConfig&quot;: { # Insights configuration. This specifies when Cloud SQL Insights feature is enabled and optional configuration. # Insights configuration, for now relevant only for Postgres.
+        &quot;enhancedQueryInsightsEnabled&quot;: True or False, # Optional. Whether enhanced query insights feature is enabled.
         &quot;queryInsightsEnabled&quot;: True or False, # Whether Query Insights feature is enabled.
         &quot;queryPlansPerMinute&quot;: 42, # Number of query execution plans captured by Insights per minute for all queries combined. Default is 5.
         &quot;queryStringLength&quot;: 42, # Maximum query length stored in bytes. Default value: 1024 bytes. Range: 256-4500 bytes. Query lengths greater than this field value will be truncated to this value. When unset, query length will be the default value. Changing query length will restart the database.
@@ -372,21 +429,29 @@ Args:
           &quot;allowedConsumerProjects&quot;: [ # Optional. The list of consumer projects that are allow-listed for PSC connections to this instance. This instance can be connected to with PSC from any network in these projects. Each consumer project in this list may be represented by a project number (numeric) or by a project id (alphanumeric).
             &quot;A String&quot;,
           ],
-          &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect via PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+          &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect using the PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+          &quot;pscAutoConnectionPolicyEnabled&quot;: True or False, # Optional. Whether to set up the PSC service connection policy automatically.
           &quot;pscAutoConnections&quot;: [ # Optional. The list of settings for requested Private Service Connect consumer endpoints that can be used to connect to this Cloud SQL instance.
             { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
               &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
               &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
-              &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. Optional. This is only applicable if consumer_network is a shared vpc network.
+              &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+              &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
               &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+              &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+              &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
               &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+              &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
             },
           ],
+          &quot;pscAutoDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal DNS record across all networks configured with Private Service Connect auto-connections. This will default to true for new instances when Private Service Connect is enabled.
           &quot;pscEnabled&quot;: True or False, # Whether PSC connectivity is enabled for this instance.
+          &quot;pscWriteEndpointDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect write endpoint DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal global DNS record across all networks configured with Private Service Connect auto-connections that points to the cluster primary instance. This feature is only supported for Enterprise Plus edition. This will default to true for new Enterprise Plus instances when `psc_auto_dns_enabled` is enabled.
         },
         &quot;requireSsl&quot;: True or False, # Use `ssl_mode` instead. Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won&#x27;t be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the `require_ssl` flag.
         &quot;serverCaMode&quot;: &quot;A String&quot;, # Specify what type of CA is used for the server certificate.
         &quot;serverCaPool&quot;: &quot;A String&quot;, # Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects/{PROJECT}/locations/{REGION}/caPools/{CA_POOL_ID}
+        &quot;serverCertificateRotationMode&quot;: &quot;A String&quot;, # Optional. Controls the automatic server certificate rotation feature. This feature is disabled by default. When enabled, the server certificate will be automatically rotated during Cloud SQL scheduled maintenance or self-service maintenance updates up to six months before it expires. This setting can only be set if server_ca_mode is either GOOGLE_MANAGED_CAS_CA or CUSTOMER_MANAGED_CAS_CA.
         &quot;sslMode&quot;: &quot;A String&quot;, # Specify how SSL/TLS is enforced in database connections. If you must use the `require_ssl` flag for backward compatibility, then only the following value pairs are valid: For PostgreSQL and MySQL: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` * `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true` For SQL Server: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=true` The value of `ssl_mode` has priority over the value of `require_ssl`. For example, for the pair `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false`, `ssl_mode=ENCRYPTED_ONLY` means accept only SSL connections, while `require_ssl=false` means accept both non-SSL and SSL connections. In this case, MySQL and PostgreSQL databases respect `ssl_mode` and accepts only SSL connections.
       },
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#settings`.
@@ -402,16 +467,48 @@ Args:
         &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#maintenanceWindow`.
         &quot;updateTrack&quot;: &quot;A String&quot;, # Maintenance timing settings: `canary`, `stable`, or `week5`. For more information, see [About maintenance on Cloud SQL instances](https://cloud.google.com/sql/docs/mysql/maintenance).
       },
-      &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy # The local user password validation policy of the instance.
+      &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy. This message defines the password policy for local database users. When enabled, it enforces constraints on password complexity, length, and reuse. Keep this policy enabled to help prevent unauthorized access. # The local user password validation policy of the instance for PostgreSQL and MySQL.
         &quot;complexity&quot;: &quot;A String&quot;, # The complexity of the password.
         &quot;disallowCompromisedCredentials&quot;: True or False, # This field is deprecated and will be removed in a future version of the API.
         &quot;disallowUsernameSubstring&quot;: True or False, # Disallow username as a part of the password.
-        &quot;enablePasswordPolicy&quot;: True or False, # Whether the password policy is enabled or not.
+        &quot;enablePasswordPolicy&quot;: True or False, # Whether to enable the password policy or not. When enabled, passwords must meet complexity requirements. Keep this policy enabled to help prevent unauthorized access. Disabling this policy allows weak passwords.
         &quot;minLength&quot;: 42, # Minimum number of characters allowed.
         &quot;passwordChangeInterval&quot;: &quot;A String&quot;, # Minimum interval after which the password can be changed. This flag is only supported for PostgreSQL.
         &quot;reuseInterval&quot;: 42, # Number of previous passwords that cannot be reused.
       },
+      &quot;performanceCaptureConfig&quot;: { # Performance capture configuration. # Optional. Configuration for Performance Capture, provides diagnostic metrics during high load situations.
+        &quot;cpuUtilizationThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of CPU utilization to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+        &quot;enabled&quot;: True or False, # Optional. Enables or disables the performance capture feature.
+        &quot;historyListLengthThresholdCount&quot;: 42, # Optional. Specifies the minimum number of undo log entries in the history list length to trigger the performance capture. Valid integers range from `10000` to `10000000`. Enter `0` to disable the check.
+        &quot;memoryUsageThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of memory usage to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+        &quot;probeThreshold&quot;: 42, # Optional. Specifies the minimum number of consecutive probe threshold that triggers performance capture.
+        &quot;probingIntervalSeconds&quot;: 42, # Optional. Specifies the interval in seconds between consecutive probes that check if any trigger condition thresholds have been reached.
+        &quot;runningThreadsThreshold&quot;: 42, # Optional. Specifies the minimum number of MySQL `Threads_running` to trigger the performance capture on the primary instance.
+        &quot;secondsBehindSourceThreshold&quot;: 42, # Optional. Specifies the minimum number of seconds replica must be lagging behind primary instance to trigger the performance capture on replica.
+        &quot;semaphoreWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of semaphore waits to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+        &quot;transactionDurationThreshold&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts recording it.
+        &quot;transactionKillExcludedUserHosts&quot;: [ # Optional. Specifies a customer-defined list of users to exclude from transaction termination. Entries can be in the format &#x27;user@host&#x27; or just &#x27;user&#x27;. A standalone &#x27;user&#x27; implies &#x27;user@%&#x27;, excluding the user from any host. Wildcard &#x27;%&#x27; is allowed in the host part of the &#x27;user@host&#x27; format. Example: `[&quot;app_user&quot;, &quot;db_admin@10.1.2.3&quot;, &quot;report_user@%&quot;]`
+          &quot;A String&quot;,
+        ],
+        &quot;transactionKillThresholdSeconds&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts terminating it. Valid integers range from `60` to `604800` (7 days). Enter `0` to disable. If enabled (i.e., &gt; 0), this value must be greater than or equal to `transaction_duration_threshold`. Configurations where `0 &lt; transaction_kill_threshold_seconds &lt; transaction_duration_threshold` will be rejected.
+        &quot;transactionKillType&quot;: &quot;A String&quot;, # Optional. Determines which transactions are allowed to be terminated when they exceed `transaction_kill_threshold_seconds`. This allows protecting write-heavy transactions from auto-termination if desired. Defaults to `READ_ONLY_TRANSACTIONS` if unspecified.
+        &quot;transactionLockWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of transactions in lock wait state to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+      },
       &quot;pricingPlan&quot;: &quot;A String&quot;, # The pricing plan for this instance. This can be either `PER_USE` or `PACKAGE`. Only `PER_USE` is supported for Second Generation instances.
+      &quot;readPoolAutoScaleConfig&quot;: { # The read pool auto-scale configuration. # Optional. The read pool auto-scale configuration for the instance.
+        &quot;disableScaleIn&quot;: True or False, # Indicates whether read pool auto scaling supports scale in operations (removing nodes).
+        &quot;enabled&quot;: True or False, # Indicates whether read pool auto scaling is enabled.
+        &quot;maxNodeCount&quot;: 42, # Maximum number of read pool nodes to be maintained.
+        &quot;minNodeCount&quot;: 42, # Minimum number of read pool nodes to be maintained.
+        &quot;scaleInCooldownSeconds&quot;: 42, # The cooldown period for scale-in operations.
+        &quot;scaleOutCooldownSeconds&quot;: 42, # The cooldown period for scale-out operations.
+        &quot;targetMetrics&quot;: [ # Optional. Target metrics for read pool auto scaling.
+          { # Target metric for read pool auto scaling.
+            &quot;metric&quot;: &quot;A String&quot;, # The metric name to be used for auto scaling.
+            &quot;targetValue&quot;: 3.14, # The target value for the metric.
+          },
+        ],
+      },
       &quot;replicationLagMaxSeconds&quot;: 42, # Optional. Configuration value for recreation of replica after certain replication lag
       &quot;replicationType&quot;: &quot;A String&quot;, # The type of replication this instance uses. This can be either `ASYNCHRONOUS` or `SYNCHRONOUS`. (Deprecated) This property was only applicable to First Generation instances.
       &quot;retainBackupsOnDelete&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL retains backups of the instance even after the instance is deleted. The ON_DEMAND backup will be retained until customer deletes the backup or the project. The AUTOMATED backup will be retained based on the backups retention setting.
@@ -554,7 +651,7 @@ Returns:
         &quot;pvkPassword&quot;: &quot;A String&quot;, # Password that encrypts the private key
         &quot;pvkPath&quot;: &quot;A String&quot;, # Path to the Certificate Private Key (.pvk) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
       },
-      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option Applies only to Cloud SQL for SQL Server.
+      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option. Applies only to Cloud SQL for SQL Server.
       &quot;recoveryOnly&quot;: True or False, # Whether or not the backup importing request will just bring database online without downloading Bak content only one of &quot;no_recovery&quot; and &quot;recovery_only&quot; can be true otherwise error will return. Applies only to Cloud SQL for SQL Server.
       &quot;stopAt&quot;: &quot;A String&quot;, # Optional. The timestamp when the import should stop. This timestamp is in the [RFC 3339](https://tools.ietf.org/html/rfc3339) format (for example, `2023-10-01T16:19:00.094`). This field is equivalent to the STOPAT keyword and applies to Cloud SQL for SQL Server only.
       &quot;stopAtMark&quot;: &quot;A String&quot;, # Optional. The marked transaction where the import should stop. This field is equivalent to the STOPATMARK keyword and applies to Cloud SQL for SQL Server only.
@@ -594,9 +691,37 @@ Returns:
   &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#operation`.
   &quot;name&quot;: &quot;A String&quot;, # An identifier that uniquely identifies the operation. You can use this identifier to retrieve the Operations resource that has information about the operation.
   &quot;operationType&quot;: &quot;A String&quot;, # The type of the operation. Valid values are: * `CREATE` * `DELETE` * `UPDATE` * `RESTART` * `IMPORT` * `EXPORT` * `BACKUP_VOLUME` * `RESTORE_VOLUME` * `CREATE_USER` * `DELETE_USER` * `CREATE_DATABASE` * `DELETE_DATABASE`
+  &quot;preCheckMajorVersionUpgradeContext&quot;: { # Pre-check major version upgrade context. # This field is only populated when the operation_type is PRE_CHECK_MAJOR_VERSION_UPGRADE. The PreCheckMajorVersionUpgradeContext message itself contains the details for that pre-check, such as the target database version for the upgrade and the results of the check (including any warnings or errors found).
+    &quot;kind&quot;: &quot;A String&quot;, # Optional. This is always `sql#preCheckMajorVersionUpgradeContext`.
+    &quot;preCheckResponse&quot;: [ # Output only. The responses from the precheck operation.
+      { # Structured PreCheckResponse containing message, type, and required actions.
+        &quot;actionsRequired&quot;: [ # The actions that the user needs to take. Use repeated for multiple actions.
+          &quot;A String&quot;,
+        ],
+        &quot;message&quot;: &quot;A String&quot;, # The message to be displayed to the user.
+        &quot;messageType&quot;: &quot;A String&quot;, # The type of message whether it is an info, warning, or error.
+      },
+    ],
+    &quot;targetDatabaseVersion&quot;: &quot;A String&quot;, # Required. The target database version to upgrade to.
+  },
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this resource.
   &quot;startTime&quot;: &quot;A String&quot;, # The time this operation actually started in UTC timezone in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
+  &quot;startWorkloadCaptureContext&quot;: { # The context for the `StartWorkloadCapture` operation, which contains details to start recording the workload (SQL queries) on a Cloud SQL instance. # The context for the `StartWorkloadCapture` operation, which contains details to start recording the workload (SQL queries) on a Cloud SQL instance.
+    &quot;enableLiveReplay&quot;: True or False, # Optional. If true, the captured workload is simultaneously executed on a separate, ephemeral Cloud SQL instance. This &quot;live replay&quot; instance is automatically provisioned and is cloned from the source instance. If false (the default), the workload is only stored and no live replay occurs. It can be replayed later using a separate `StartWorkloadReplayRequest`. Note: The workload capture runs continuously until an explicit `StopWorkloadCaptureRequest` is issued.
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Optional. Required if `enable_live_replay` is true. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+  },
+  &quot;startWorkloadReplayContext&quot;: { # The context for the `StartWorkloadReplay` operation, which contains details about starting the execution of a captured workload (recorded read and write SQL queries) on a replay instance (the Cloud SQL instance where the recorded SQL queries are executed). # The context for the `StartWorkloadReplay` operation, which contains details about starting the execution of a captured workload (recorded read and write SQL queries) on a replay instance (the Cloud SQL instance where the recorded SQL queries are executed).
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Required. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+    &quot;workloadId&quot;: &quot;A String&quot;, # Output only. The ID of the workload to start executing on the replay instance. Each workload capture generates a unique ID in the format `workload-` (for example, `workload-1786046400`). Use this ID to start executing the recorded SQL queries.
+  },
   &quot;status&quot;: &quot;A String&quot;, # The status of an operation.
+  &quot;stopWorkloadCaptureContext&quot;: { # The context for the `StopWorkloadCapture` operation, which contains details to stop recording the workload (SQL queries) on a Cloud SQL instance. # The context for the `StopWorkloadCapture` operation, which contains details to stop recording the workload (SQL queries) on a Cloud SQL instance.
+    &quot;abortLiveReplay&quot;: True or False, # Optional. If true, immediately aborts the concurrent live replay and discards any un-replayed traffic alongside stopping the capture. If false (the default), the capture stops recording new traffic, but the live replay will continue executing until the entire backlog of captured traffic has been replayed.
+  },
+  &quot;stopWorkloadReplayContext&quot;: { # The context for the `StopWorkloadReplay` operation, which contains details about stopping the execution of a captured workload (recorded read and write SQL queries) on a replay instance. # The context for the `StopWorkloadReplay` operation, which contains details about stopping the execution of a captured workload (recorded read and write SQL queries) on a replay instance.
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Required. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+    &quot;workloadId&quot;: &quot;A String&quot;, # Output only. The ID of the workload to stop executing on the replay instance. Each workload capture generates a unique ID in the format `workload-` (for example, `workload-1786046400`). Use this ID to stop executing the recorded SQL queries.
+  },
   &quot;subOperationType&quot;: { # The sub operation type based on the operation type. # Optional. The sub operation based on the operation type.
     &quot;maintenanceType&quot;: &quot;A String&quot;, # The type of maintenance to be performed on the instance.
   },
@@ -704,7 +829,7 @@ Returns:
         &quot;pvkPassword&quot;: &quot;A String&quot;, # Password that encrypts the private key
         &quot;pvkPath&quot;: &quot;A String&quot;, # Path to the Certificate Private Key (.pvk) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
       },
-      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option Applies only to Cloud SQL for SQL Server.
+      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option. Applies only to Cloud SQL for SQL Server.
       &quot;recoveryOnly&quot;: True or False, # Whether or not the backup importing request will just bring database online without downloading Bak content only one of &quot;no_recovery&quot; and &quot;recovery_only&quot; can be true otherwise error will return. Applies only to Cloud SQL for SQL Server.
       &quot;stopAt&quot;: &quot;A String&quot;, # Optional. The timestamp when the import should stop. This timestamp is in the [RFC 3339](https://tools.ietf.org/html/rfc3339) format (for example, `2023-10-01T16:19:00.094`). This field is equivalent to the STOPAT keyword and applies to Cloud SQL for SQL Server only.
       &quot;stopAtMark&quot;: &quot;A String&quot;, # Optional. The marked transaction where the import should stop. This field is equivalent to the STOPATMARK keyword and applies to Cloud SQL for SQL Server only.
@@ -744,9 +869,37 @@ Returns:
   &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#operation`.
   &quot;name&quot;: &quot;A String&quot;, # An identifier that uniquely identifies the operation. You can use this identifier to retrieve the Operations resource that has information about the operation.
   &quot;operationType&quot;: &quot;A String&quot;, # The type of the operation. Valid values are: * `CREATE` * `DELETE` * `UPDATE` * `RESTART` * `IMPORT` * `EXPORT` * `BACKUP_VOLUME` * `RESTORE_VOLUME` * `CREATE_USER` * `DELETE_USER` * `CREATE_DATABASE` * `DELETE_DATABASE`
+  &quot;preCheckMajorVersionUpgradeContext&quot;: { # Pre-check major version upgrade context. # This field is only populated when the operation_type is PRE_CHECK_MAJOR_VERSION_UPGRADE. The PreCheckMajorVersionUpgradeContext message itself contains the details for that pre-check, such as the target database version for the upgrade and the results of the check (including any warnings or errors found).
+    &quot;kind&quot;: &quot;A String&quot;, # Optional. This is always `sql#preCheckMajorVersionUpgradeContext`.
+    &quot;preCheckResponse&quot;: [ # Output only. The responses from the precheck operation.
+      { # Structured PreCheckResponse containing message, type, and required actions.
+        &quot;actionsRequired&quot;: [ # The actions that the user needs to take. Use repeated for multiple actions.
+          &quot;A String&quot;,
+        ],
+        &quot;message&quot;: &quot;A String&quot;, # The message to be displayed to the user.
+        &quot;messageType&quot;: &quot;A String&quot;, # The type of message whether it is an info, warning, or error.
+      },
+    ],
+    &quot;targetDatabaseVersion&quot;: &quot;A String&quot;, # Required. The target database version to upgrade to.
+  },
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this resource.
   &quot;startTime&quot;: &quot;A String&quot;, # The time this operation actually started in UTC timezone in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
+  &quot;startWorkloadCaptureContext&quot;: { # The context for the `StartWorkloadCapture` operation, which contains details to start recording the workload (SQL queries) on a Cloud SQL instance. # The context for the `StartWorkloadCapture` operation, which contains details to start recording the workload (SQL queries) on a Cloud SQL instance.
+    &quot;enableLiveReplay&quot;: True or False, # Optional. If true, the captured workload is simultaneously executed on a separate, ephemeral Cloud SQL instance. This &quot;live replay&quot; instance is automatically provisioned and is cloned from the source instance. If false (the default), the workload is only stored and no live replay occurs. It can be replayed later using a separate `StartWorkloadReplayRequest`. Note: The workload capture runs continuously until an explicit `StopWorkloadCaptureRequest` is issued.
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Optional. Required if `enable_live_replay` is true. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+  },
+  &quot;startWorkloadReplayContext&quot;: { # The context for the `StartWorkloadReplay` operation, which contains details about starting the execution of a captured workload (recorded read and write SQL queries) on a replay instance (the Cloud SQL instance where the recorded SQL queries are executed). # The context for the `StartWorkloadReplay` operation, which contains details about starting the execution of a captured workload (recorded read and write SQL queries) on a replay instance (the Cloud SQL instance where the recorded SQL queries are executed).
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Required. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+    &quot;workloadId&quot;: &quot;A String&quot;, # Output only. The ID of the workload to start executing on the replay instance. Each workload capture generates a unique ID in the format `workload-` (for example, `workload-1786046400`). Use this ID to start executing the recorded SQL queries.
+  },
   &quot;status&quot;: &quot;A String&quot;, # The status of an operation.
+  &quot;stopWorkloadCaptureContext&quot;: { # The context for the `StopWorkloadCapture` operation, which contains details to stop recording the workload (SQL queries) on a Cloud SQL instance. # The context for the `StopWorkloadCapture` operation, which contains details to stop recording the workload (SQL queries) on a Cloud SQL instance.
+    &quot;abortLiveReplay&quot;: True or False, # Optional. If true, immediately aborts the concurrent live replay and discards any un-replayed traffic alongside stopping the capture. If false (the default), the capture stops recording new traffic, but the live replay will continue executing until the entire backlog of captured traffic has been replayed.
+  },
+  &quot;stopWorkloadReplayContext&quot;: { # The context for the `StopWorkloadReplay` operation, which contains details about stopping the execution of a captured workload (recorded read and write SQL queries) on a replay instance. # The context for the `StopWorkloadReplay` operation, which contains details about stopping the execution of a captured workload (recorded read and write SQL queries) on a replay instance.
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Required. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+    &quot;workloadId&quot;: &quot;A String&quot;, # Output only. The ID of the workload to stop executing on the replay instance. Each workload capture generates a unique ID in the format `workload-` (for example, `workload-1786046400`). Use this ID to stop executing the recorded SQL queries.
+  },
   &quot;subOperationType&quot;: { # The sub operation type based on the operation type. # Optional. The sub operation based on the operation type.
     &quot;maintenanceType&quot;: &quot;A String&quot;, # The type of maintenance to be performed on the instance.
   },
@@ -771,7 +924,7 @@ Args:
 Returns:
   An object of the form:
 
-    { # A backup resource. Next ID: 30
+    { # A backup resource.
   &quot;backupInterval&quot;: { # Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time. # Output only. This output contains the following values: start_time: All database writes up to this time are available. end_time: Any database writes after this time aren&#x27;t available.
     &quot;endTime&quot;: &quot;A String&quot;, # Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.
     &quot;startTime&quot;: &quot;A String&quot;, # Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.
@@ -793,15 +946,35 @@ Returns:
       &quot;A String&quot;,
     ],
     &quot;backendType&quot;: &quot;A String&quot;, # The backend type. `SECOND_GEN`: Cloud SQL database instance. `EXTERNAL`: A database server that is not managed by Google. This property is read-only; use the `tier` property in the `settings` object to determine the database type.
-    &quot;clearNetwork&quot;: True or False, # Clears private network settings when the instance is restored.
     &quot;connectionName&quot;: &quot;A String&quot;, # Connection name of the Cloud SQL instance used in connection strings.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
     &quot;currentDiskSize&quot;: &quot;A String&quot;, # The current disk usage of the instance in bytes. This property has been deprecated. Use the &quot;cloudsql.googleapis.com/database/disk/bytes_used&quot; metric in Cloud Monitoring API instead. Please see [this announcement](https://groups.google.com/d/msg/google-cloud-sql-announce/I_7-F9EBhT0/BtvFtdFeAgAJ) for details.
+    &quot;databaseCenterIntegrationEnabled&quot;: True or False, # Optional. If true, instance metadata is sent to the Database Center. If false, instance metadata is not sent to the Database Center.
     &quot;databaseInstalledVersion&quot;: &quot;A String&quot;, # Output only. Stores the current database version running on the instance including minor version such as `MYSQL_8_0_18`.
     &quot;databaseVersion&quot;: &quot;A String&quot;, # The database engine type and version. The `databaseVersion` field cannot be changed after instance creation.
+    &quot;deploymentInfo&quot;: { # Blue-green deployment metadata for a database instance. In a blue-green deployment, we maintain two environments, one of which is live. This message contains details about the blue-green deployment. # Output only. Deployment info for the instance. This is set if the instance is currently part of any blue-green setup.
+      &quot;deploymentId&quot;: &quot;A String&quot;, # Output only. The resource ID of the blue-green deployment.
+      &quot;source&quot;: { # The source instance for the Blue-Green deployment. # Output only. The source instance for the Blue-Green deployment.
+        &quot;targetId&quot;: { # Reference to another Cloud SQL instance. # Output only. The target instance paired with this source instance in a blue-green deployment.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+          &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+          &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+        },
+      },
+      &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of blue-green-deployment for UI tags
+      &quot;target&quot;: { # The target instance for the Blue-Green deployment. # Output only. The target instance for the Blue-Green deployment.
+        &quot;sourceId&quot;: { # Reference to another Cloud SQL instance. # Output only. The source instance paired with this target instance in a blue-green deployment.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+          &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+          &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+        },
+      },
+    },
     &quot;diskEncryptionConfiguration&quot;: { # Disk encryption configuration for an instance. # Disk encryption configuration specific to an instance.
+      &quot;cmekSourceLogEncryptionEnforced&quot;: True or False, # Optional. Whether to enforce CMEK log encryption at source. When enforced, transaction logs are encrypted prior to being uploaded to Cloud Storage. If not enforced, then CMEK logs are encrypted by the Cloud Storage service.
+      &quot;confidentialMode&quot;: True or False, # Optional. If true, enables Confidential Mode for the instance&#x27;s Hyperdisk Balanced volumes. Only supported for zonal C4A instances currently.
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionConfiguration`.
-      &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption
+      &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption.
     },
     &quot;diskEncryptionStatus&quot;: { # Disk encryption status for an instance. # Disk encryption status specific to an instance.
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionStatus`.
@@ -812,7 +985,8 @@ Returns:
       { # DNS metadata.
         &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
         &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-        &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+        &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+        &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
       },
     ],
     &quot;etag&quot;: &quot;A String&quot;, # This field is deprecated and will be removed from a future version of the API. Use the `settings.settingsVersion` field instead.
@@ -852,7 +1026,8 @@ Returns:
           { # DNS metadata.
             &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
             &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-            &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+            &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+            &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
           },
         ],
         &quot;gceZone&quot;: &quot;A String&quot;, # Output only. The zone of the read pool node.
@@ -864,6 +1039,20 @@ Returns:
           },
         ],
         &quot;name&quot;: &quot;A String&quot;, # Output only. The name of the read pool node, to be used for retrieving metrics and logs.
+        &quot;pscAutoConnections&quot;: [ # Output only. The list of settings for requested automatically-setup Private Service Connect (PSC) consumer endpoints that can be used to connect to this read pool node.
+          { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
+            &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
+            &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
+            &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+            &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
+            &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+            &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+            &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
+            &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+            &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
+          },
+        ],
+        &quot;pscServiceAttachmentLink&quot;: &quot;A String&quot;, # Output only. The Private Service Connect (PSC) service attachment of the read pool node.
         &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of the read pool node.
       },
     ],
@@ -871,6 +1060,7 @@ Returns:
       &quot;caCertificate&quot;: &quot;A String&quot;, # PEM representation of the trusted CA&#x27;s x509 certificate.
       &quot;clientCertificate&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s x509 certificate.
       &quot;clientKey&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s private key. The corresponding public key is encoded in the client&#x27;s certificate.
+      &quot;dmsManaged&quot;: True or False, # Output only. Indicates whether the resource is managed by Database Migration Service.
       &quot;dumpFilePath&quot;: &quot;A String&quot;, # The dump file to create the Cloud SQL replica.
       &quot;hostPort&quot;: &quot;A String&quot;, # The host and port of the on-premises instance in host:port format
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#onPremisesConfiguration`.
@@ -946,10 +1136,17 @@ Returns:
     },
     &quot;serviceAccountEmailAddress&quot;: &quot;A String&quot;, # The service account email address assigned to the instance.\This property is read-only.
     &quot;settings&quot;: { # Database instance settings. # The user settings.
+      &quot;acceleratedReplicaMode&quot;: True or False, # Optional. Whether the replica is in accelerated mode. This feature is in private preview and requires allowlisting to take effect.
       &quot;activationPolicy&quot;: &quot;A String&quot;, # The activation policy specifies when the instance is activated; it is applicable only when the instance state is RUNNABLE. Valid values: * `ALWAYS`: The instance is on, and remains so even in the absence of connection requests. * `NEVER`: The instance is off; it is not activated, even if a connection request arrives.
       &quot;activeDirectoryConfig&quot;: { # Active Directory configuration, relevant only for Cloud SQL for SQL Server. # Active Directory configuration, relevant only for Cloud SQL for SQL Server.
+        &quot;adminCredentialSecretName&quot;: &quot;A String&quot;, # Optional. The secret manager key storing the administrator credential. (e.g., projects/{project}/secrets/{secret}).
+        &quot;dnsServers&quot;: [ # Optional. Domain controller IPv4 addresses used to bootstrap Active Directory.
+          &quot;A String&quot;,
+        ],
         &quot;domain&quot;: &quot;A String&quot;, # The name of the domain (e.g., mydomain.com).
         &quot;kind&quot;: &quot;A String&quot;, # This is always sql#activeDirectoryConfig.
+        &quot;mode&quot;: &quot;A String&quot;, # Optional. The mode of the Active Directory configuration.
+        &quot;organizationalUnit&quot;: &quot;A String&quot;, # Optional. The organizational unit distinguished name. This is the full hierarchical path to the organizational unit.
       },
       &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. # Specifies advanced machine configuration for the instances relevant only for SQL Server.
         &quot;threadsPerCore&quot;: 42, # The number of threads per physical core.
@@ -957,6 +1154,7 @@ Returns:
       &quot;authorizedGaeApplications&quot;: [ # The App Engine app IDs that can access this instance. (Deprecated) Applied to First Generation instances only.
         &quot;A String&quot;,
       ],
+      &quot;autoUpgradeEnabled&quot;: True or False, # Optional. Cloud SQL for MySQL auto-upgrade configuration. When this parameter is set to true, auto-upgrade is enabled for MySQL 8.0 minor versions. The MySQL version must be 8.0.35 or higher.
       &quot;availabilityType&quot;: &quot;A String&quot;, # Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available)./ For more information, see [Overview of the High Availability Configuration](https://cloud.google.com/sql/docs/mysql/high-availability).
       &quot;backupConfiguration&quot;: { # Database instance backup configuration. # The daily backup configuration for the instance.
         &quot;backupRetentionSettings&quot;: { # We currently only support backup retention by specifying the number of backups we will retain. # Backup retention settings.
@@ -969,7 +1167,7 @@ Returns:
         &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#backupConfiguration`.
         &quot;location&quot;: &quot;A String&quot;, # Location of the backup
         &quot;pointInTimeRecoveryEnabled&quot;: True or False, # Whether point in time recovery is enabled.
-        &quot;replicationLogArchivingEnabled&quot;: True or False, # Reserved for future use.
+        &quot;replicationLogArchivingEnabled&quot;: True or False, # Optional. Deprecated: replication_log_archiving_enabled is deprecated and will be removed from a future version of the API. Use point_in_time_recovery_enabled instead.
         &quot;startTime&quot;: &quot;A String&quot;, # Start time for the daily backup configuration in UTC timezone in the 24 hour format - `HH:MM`.
         &quot;transactionLogRetentionDays&quot;: 42, # The number of days of transaction logs we retain for point in time restore, from 1-7.
         &quot;transactionalLogStorageState&quot;: &quot;A String&quot;, # Output only. This value contains the storage location of transactional logs used to perform point-in-time recovery (PITR) for the database.
@@ -983,9 +1181,11 @@ Returns:
             &quot;value&quot;: &quot;A String&quot;, # Required. The value of the flag. Boolean flags are set to `on` for true and `off` for false. This field must be omitted if the flag doesn&#x27;t take a value.
           },
         ],
+        &quot;poolerCount&quot;: 42, # Output only. Number of connection poolers.
       },
       &quot;connectorEnforcement&quot;: &quot;A String&quot;, # Specifies if connections must use Cloud SQL connectors. Option values include the following: `NOT_REQUIRED` (Cloud SQL instances can be connected without Cloud SQL Connectors) and `REQUIRED` (Only allow connections that use Cloud SQL Connectors). Note that using REQUIRED disables all existing authorized networks. If this field is not specified when creating a new instance, NOT_REQUIRED is used. If this field is not specified when patching or updating an existing instance, it is left unchanged in the instance.
       &quot;crashSafeReplicationEnabled&quot;: True or False, # Configuration specific to read replica instances. Indicates whether database flags for crash-safe replication are enabled. This property was only applicable to First Generation instances.
+      &quot;dataApiAccess&quot;: &quot;A String&quot;, # This parameter controls whether to allow using ExecuteSql API to connect to the instance. Not allowed by default.
       &quot;dataCacheConfig&quot;: { # Data cache configurations. # Configuration for data cache.
         &quot;dataCacheEnabled&quot;: True or False, # Whether data cache is enabled for the instance.
       },
@@ -1008,10 +1208,20 @@ Returns:
           &quot;time&quot;: &quot;A String&quot;, # Time in UTC when the &quot;deny maintenance period&quot; starts on start_date and ends on end_date. The time is in format: HH:mm:SS, i.e., 00:00:00
         },
       ],
-      &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition of the instance.
+      &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition type of the Cloud SQL instance.
       &quot;enableDataplexIntegration&quot;: True or False, # Optional. By default, Cloud SQL instances have schema extraction disabled for Dataplex. When this parameter is set to true, schema extraction for Dataplex on Cloud SQL instances is activated.
       &quot;enableGoogleMlIntegration&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL instances can connect to Vertex AI to pass requests for real-time predictions and insights to the AI. The default value is false. This applies only to Cloud SQL for MySQL and Cloud SQL for PostgreSQL instances.
+      &quot;entraidConfig&quot;: { # SQL Server Entra ID configuration. # Optional. The Microsoft Entra ID configuration for the SQL Server instance.
+        &quot;applicationId&quot;: &quot;A String&quot;, # Optional. The application ID for the Entra ID configuration.
+        &quot;kind&quot;: &quot;A String&quot;, # Output only. This is always sql#sqlServerEntraIdConfig
+        &quot;tenantId&quot;: &quot;A String&quot;, # Optional. The tenant ID for the Entra ID configuration.
+      },
+      &quot;finalBackupConfig&quot;: { # Config used to determine the final backup settings for the instance. # Optional. The final backup configuration for the instance.
+        &quot;enabled&quot;: True or False, # Whether the final backup is enabled for the instance.
+        &quot;retentionDays&quot;: 42, # The number of days to retain the final backup after the instance deletion. The final backup will be purged at (time_of_instance_deletion + retention_days).
+      },
       &quot;insightsConfig&quot;: { # Insights configuration. This specifies when Cloud SQL Insights feature is enabled and optional configuration. # Insights configuration, for now relevant only for Postgres.
+        &quot;enhancedQueryInsightsEnabled&quot;: True or False, # Optional. Whether enhanced query insights feature is enabled.
         &quot;queryInsightsEnabled&quot;: True or False, # Whether Query Insights feature is enabled.
         &quot;queryPlansPerMinute&quot;: 42, # Number of query execution plans captured by Insights per minute for all queries combined. Default is 5.
         &quot;queryStringLength&quot;: 42, # Maximum query length stored in bytes. Default value: 1024 bytes. Range: 256-4500 bytes. Query lengths greater than this field value will be truncated to this value. When unset, query length will be the default value. Changing query length will restart the database.
@@ -1038,21 +1248,29 @@ Returns:
           &quot;allowedConsumerProjects&quot;: [ # Optional. The list of consumer projects that are allow-listed for PSC connections to this instance. This instance can be connected to with PSC from any network in these projects. Each consumer project in this list may be represented by a project number (numeric) or by a project id (alphanumeric).
             &quot;A String&quot;,
           ],
-          &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect via PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+          &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect using the PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+          &quot;pscAutoConnectionPolicyEnabled&quot;: True or False, # Optional. Whether to set up the PSC service connection policy automatically.
           &quot;pscAutoConnections&quot;: [ # Optional. The list of settings for requested Private Service Connect consumer endpoints that can be used to connect to this Cloud SQL instance.
             { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
               &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
               &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
-              &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. Optional. This is only applicable if consumer_network is a shared vpc network.
+              &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+              &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
               &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+              &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+              &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
               &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+              &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
             },
           ],
+          &quot;pscAutoDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal DNS record across all networks configured with Private Service Connect auto-connections. This will default to true for new instances when Private Service Connect is enabled.
           &quot;pscEnabled&quot;: True or False, # Whether PSC connectivity is enabled for this instance.
+          &quot;pscWriteEndpointDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect write endpoint DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal global DNS record across all networks configured with Private Service Connect auto-connections that points to the cluster primary instance. This feature is only supported for Enterprise Plus edition. This will default to true for new Enterprise Plus instances when `psc_auto_dns_enabled` is enabled.
         },
         &quot;requireSsl&quot;: True or False, # Use `ssl_mode` instead. Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won&#x27;t be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the `require_ssl` flag.
         &quot;serverCaMode&quot;: &quot;A String&quot;, # Specify what type of CA is used for the server certificate.
         &quot;serverCaPool&quot;: &quot;A String&quot;, # Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects/{PROJECT}/locations/{REGION}/caPools/{CA_POOL_ID}
+        &quot;serverCertificateRotationMode&quot;: &quot;A String&quot;, # Optional. Controls the automatic server certificate rotation feature. This feature is disabled by default. When enabled, the server certificate will be automatically rotated during Cloud SQL scheduled maintenance or self-service maintenance updates up to six months before it expires. This setting can only be set if server_ca_mode is either GOOGLE_MANAGED_CAS_CA or CUSTOMER_MANAGED_CAS_CA.
         &quot;sslMode&quot;: &quot;A String&quot;, # Specify how SSL/TLS is enforced in database connections. If you must use the `require_ssl` flag for backward compatibility, then only the following value pairs are valid: For PostgreSQL and MySQL: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` * `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true` For SQL Server: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=true` The value of `ssl_mode` has priority over the value of `require_ssl`. For example, for the pair `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false`, `ssl_mode=ENCRYPTED_ONLY` means accept only SSL connections, while `require_ssl=false` means accept both non-SSL and SSL connections. In this case, MySQL and PostgreSQL databases respect `ssl_mode` and accepts only SSL connections.
       },
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#settings`.
@@ -1068,16 +1286,48 @@ Returns:
         &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#maintenanceWindow`.
         &quot;updateTrack&quot;: &quot;A String&quot;, # Maintenance timing settings: `canary`, `stable`, or `week5`. For more information, see [About maintenance on Cloud SQL instances](https://cloud.google.com/sql/docs/mysql/maintenance).
       },
-      &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy # The local user password validation policy of the instance.
+      &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy. This message defines the password policy for local database users. When enabled, it enforces constraints on password complexity, length, and reuse. Keep this policy enabled to help prevent unauthorized access. # The local user password validation policy of the instance for PostgreSQL and MySQL.
         &quot;complexity&quot;: &quot;A String&quot;, # The complexity of the password.
         &quot;disallowCompromisedCredentials&quot;: True or False, # This field is deprecated and will be removed in a future version of the API.
         &quot;disallowUsernameSubstring&quot;: True or False, # Disallow username as a part of the password.
-        &quot;enablePasswordPolicy&quot;: True or False, # Whether the password policy is enabled or not.
+        &quot;enablePasswordPolicy&quot;: True or False, # Whether to enable the password policy or not. When enabled, passwords must meet complexity requirements. Keep this policy enabled to help prevent unauthorized access. Disabling this policy allows weak passwords.
         &quot;minLength&quot;: 42, # Minimum number of characters allowed.
         &quot;passwordChangeInterval&quot;: &quot;A String&quot;, # Minimum interval after which the password can be changed. This flag is only supported for PostgreSQL.
         &quot;reuseInterval&quot;: 42, # Number of previous passwords that cannot be reused.
       },
+      &quot;performanceCaptureConfig&quot;: { # Performance capture configuration. # Optional. Configuration for Performance Capture, provides diagnostic metrics during high load situations.
+        &quot;cpuUtilizationThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of CPU utilization to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+        &quot;enabled&quot;: True or False, # Optional. Enables or disables the performance capture feature.
+        &quot;historyListLengthThresholdCount&quot;: 42, # Optional. Specifies the minimum number of undo log entries in the history list length to trigger the performance capture. Valid integers range from `10000` to `10000000`. Enter `0` to disable the check.
+        &quot;memoryUsageThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of memory usage to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+        &quot;probeThreshold&quot;: 42, # Optional. Specifies the minimum number of consecutive probe threshold that triggers performance capture.
+        &quot;probingIntervalSeconds&quot;: 42, # Optional. Specifies the interval in seconds between consecutive probes that check if any trigger condition thresholds have been reached.
+        &quot;runningThreadsThreshold&quot;: 42, # Optional. Specifies the minimum number of MySQL `Threads_running` to trigger the performance capture on the primary instance.
+        &quot;secondsBehindSourceThreshold&quot;: 42, # Optional. Specifies the minimum number of seconds replica must be lagging behind primary instance to trigger the performance capture on replica.
+        &quot;semaphoreWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of semaphore waits to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+        &quot;transactionDurationThreshold&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts recording it.
+        &quot;transactionKillExcludedUserHosts&quot;: [ # Optional. Specifies a customer-defined list of users to exclude from transaction termination. Entries can be in the format &#x27;user@host&#x27; or just &#x27;user&#x27;. A standalone &#x27;user&#x27; implies &#x27;user@%&#x27;, excluding the user from any host. Wildcard &#x27;%&#x27; is allowed in the host part of the &#x27;user@host&#x27; format. Example: `[&quot;app_user&quot;, &quot;db_admin@10.1.2.3&quot;, &quot;report_user@%&quot;]`
+          &quot;A String&quot;,
+        ],
+        &quot;transactionKillThresholdSeconds&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts terminating it. Valid integers range from `60` to `604800` (7 days). Enter `0` to disable. If enabled (i.e., &gt; 0), this value must be greater than or equal to `transaction_duration_threshold`. Configurations where `0 &lt; transaction_kill_threshold_seconds &lt; transaction_duration_threshold` will be rejected.
+        &quot;transactionKillType&quot;: &quot;A String&quot;, # Optional. Determines which transactions are allowed to be terminated when they exceed `transaction_kill_threshold_seconds`. This allows protecting write-heavy transactions from auto-termination if desired. Defaults to `READ_ONLY_TRANSACTIONS` if unspecified.
+        &quot;transactionLockWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of transactions in lock wait state to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+      },
       &quot;pricingPlan&quot;: &quot;A String&quot;, # The pricing plan for this instance. This can be either `PER_USE` or `PACKAGE`. Only `PER_USE` is supported for Second Generation instances.
+      &quot;readPoolAutoScaleConfig&quot;: { # The read pool auto-scale configuration. # Optional. The read pool auto-scale configuration for the instance.
+        &quot;disableScaleIn&quot;: True or False, # Indicates whether read pool auto scaling supports scale in operations (removing nodes).
+        &quot;enabled&quot;: True or False, # Indicates whether read pool auto scaling is enabled.
+        &quot;maxNodeCount&quot;: 42, # Maximum number of read pool nodes to be maintained.
+        &quot;minNodeCount&quot;: 42, # Minimum number of read pool nodes to be maintained.
+        &quot;scaleInCooldownSeconds&quot;: 42, # The cooldown period for scale-in operations.
+        &quot;scaleOutCooldownSeconds&quot;: 42, # The cooldown period for scale-out operations.
+        &quot;targetMetrics&quot;: [ # Optional. Target metrics for read pool auto scaling.
+          { # Target metric for read pool auto scaling.
+            &quot;metric&quot;: &quot;A String&quot;, # The metric name to be used for auto scaling.
+            &quot;targetValue&quot;: 3.14, # The target value for the metric.
+          },
+        ],
+      },
       &quot;replicationLagMaxSeconds&quot;: 42, # Optional. Configuration value for recreation of replica after certain replication lag
       &quot;replicationType&quot;: &quot;A String&quot;, # The type of replication this instance uses. This can be either `ASYNCHRONOUS` or `SYNCHRONOUS`. (Deprecated) This property was only applicable to First Generation instances.
       &quot;retainBackupsOnDelete&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL retains backups of the instance even after the instance is deleted. The ON_DEMAND backup will be retained until customer deletes the backup or the project. The AUTOMATED backup will be retained based on the backups retention setting.
@@ -1149,7 +1399,7 @@ Returns:
 
     { # The response payload containing a list of the backups.
   &quot;backups&quot;: [ # A list of backups.
-    { # A backup resource. Next ID: 30
+    { # A backup resource.
       &quot;backupInterval&quot;: { # Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time. # Output only. This output contains the following values: start_time: All database writes up to this time are available. end_time: Any database writes after this time aren&#x27;t available.
         &quot;endTime&quot;: &quot;A String&quot;, # Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.
         &quot;startTime&quot;: &quot;A String&quot;, # Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.
@@ -1171,15 +1421,35 @@ Returns:
           &quot;A String&quot;,
         ],
         &quot;backendType&quot;: &quot;A String&quot;, # The backend type. `SECOND_GEN`: Cloud SQL database instance. `EXTERNAL`: A database server that is not managed by Google. This property is read-only; use the `tier` property in the `settings` object to determine the database type.
-        &quot;clearNetwork&quot;: True or False, # Clears private network settings when the instance is restored.
         &quot;connectionName&quot;: &quot;A String&quot;, # Connection name of the Cloud SQL instance used in connection strings.
         &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
         &quot;currentDiskSize&quot;: &quot;A String&quot;, # The current disk usage of the instance in bytes. This property has been deprecated. Use the &quot;cloudsql.googleapis.com/database/disk/bytes_used&quot; metric in Cloud Monitoring API instead. Please see [this announcement](https://groups.google.com/d/msg/google-cloud-sql-announce/I_7-F9EBhT0/BtvFtdFeAgAJ) for details.
+        &quot;databaseCenterIntegrationEnabled&quot;: True or False, # Optional. If true, instance metadata is sent to the Database Center. If false, instance metadata is not sent to the Database Center.
         &quot;databaseInstalledVersion&quot;: &quot;A String&quot;, # Output only. Stores the current database version running on the instance including minor version such as `MYSQL_8_0_18`.
         &quot;databaseVersion&quot;: &quot;A String&quot;, # The database engine type and version. The `databaseVersion` field cannot be changed after instance creation.
+        &quot;deploymentInfo&quot;: { # Blue-green deployment metadata for a database instance. In a blue-green deployment, we maintain two environments, one of which is live. This message contains details about the blue-green deployment. # Output only. Deployment info for the instance. This is set if the instance is currently part of any blue-green setup.
+          &quot;deploymentId&quot;: &quot;A String&quot;, # Output only. The resource ID of the blue-green deployment.
+          &quot;source&quot;: { # The source instance for the Blue-Green deployment. # Output only. The source instance for the Blue-Green deployment.
+            &quot;targetId&quot;: { # Reference to another Cloud SQL instance. # Output only. The target instance paired with this source instance in a blue-green deployment.
+              &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+              &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+              &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+            },
+          },
+          &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of blue-green-deployment for UI tags
+          &quot;target&quot;: { # The target instance for the Blue-Green deployment. # Output only. The target instance for the Blue-Green deployment.
+            &quot;sourceId&quot;: { # Reference to another Cloud SQL instance. # Output only. The source instance paired with this target instance in a blue-green deployment.
+              &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+              &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+              &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+            },
+          },
+        },
         &quot;diskEncryptionConfiguration&quot;: { # Disk encryption configuration for an instance. # Disk encryption configuration specific to an instance.
+          &quot;cmekSourceLogEncryptionEnforced&quot;: True or False, # Optional. Whether to enforce CMEK log encryption at source. When enforced, transaction logs are encrypted prior to being uploaded to Cloud Storage. If not enforced, then CMEK logs are encrypted by the Cloud Storage service.
+          &quot;confidentialMode&quot;: True or False, # Optional. If true, enables Confidential Mode for the instance&#x27;s Hyperdisk Balanced volumes. Only supported for zonal C4A instances currently.
           &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionConfiguration`.
-          &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption
+          &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption.
         },
         &quot;diskEncryptionStatus&quot;: { # Disk encryption status for an instance. # Disk encryption status specific to an instance.
           &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionStatus`.
@@ -1190,7 +1460,8 @@ Returns:
           { # DNS metadata.
             &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
             &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-            &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+            &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+            &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
           },
         ],
         &quot;etag&quot;: &quot;A String&quot;, # This field is deprecated and will be removed from a future version of the API. Use the `settings.settingsVersion` field instead.
@@ -1230,7 +1501,8 @@ Returns:
               { # DNS metadata.
                 &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
                 &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-                &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+                &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+                &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
               },
             ],
             &quot;gceZone&quot;: &quot;A String&quot;, # Output only. The zone of the read pool node.
@@ -1242,6 +1514,20 @@ Returns:
               },
             ],
             &quot;name&quot;: &quot;A String&quot;, # Output only. The name of the read pool node, to be used for retrieving metrics and logs.
+            &quot;pscAutoConnections&quot;: [ # Output only. The list of settings for requested automatically-setup Private Service Connect (PSC) consumer endpoints that can be used to connect to this read pool node.
+              { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
+                &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
+                &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
+                &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+                &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
+                &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+                &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+                &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
+                &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+                &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
+              },
+            ],
+            &quot;pscServiceAttachmentLink&quot;: &quot;A String&quot;, # Output only. The Private Service Connect (PSC) service attachment of the read pool node.
             &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of the read pool node.
           },
         ],
@@ -1249,6 +1535,7 @@ Returns:
           &quot;caCertificate&quot;: &quot;A String&quot;, # PEM representation of the trusted CA&#x27;s x509 certificate.
           &quot;clientCertificate&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s x509 certificate.
           &quot;clientKey&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s private key. The corresponding public key is encoded in the client&#x27;s certificate.
+          &quot;dmsManaged&quot;: True or False, # Output only. Indicates whether the resource is managed by Database Migration Service.
           &quot;dumpFilePath&quot;: &quot;A String&quot;, # The dump file to create the Cloud SQL replica.
           &quot;hostPort&quot;: &quot;A String&quot;, # The host and port of the on-premises instance in host:port format
           &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#onPremisesConfiguration`.
@@ -1324,10 +1611,17 @@ Returns:
         },
         &quot;serviceAccountEmailAddress&quot;: &quot;A String&quot;, # The service account email address assigned to the instance.\This property is read-only.
         &quot;settings&quot;: { # Database instance settings. # The user settings.
+          &quot;acceleratedReplicaMode&quot;: True or False, # Optional. Whether the replica is in accelerated mode. This feature is in private preview and requires allowlisting to take effect.
           &quot;activationPolicy&quot;: &quot;A String&quot;, # The activation policy specifies when the instance is activated; it is applicable only when the instance state is RUNNABLE. Valid values: * `ALWAYS`: The instance is on, and remains so even in the absence of connection requests. * `NEVER`: The instance is off; it is not activated, even if a connection request arrives.
           &quot;activeDirectoryConfig&quot;: { # Active Directory configuration, relevant only for Cloud SQL for SQL Server. # Active Directory configuration, relevant only for Cloud SQL for SQL Server.
+            &quot;adminCredentialSecretName&quot;: &quot;A String&quot;, # Optional. The secret manager key storing the administrator credential. (e.g., projects/{project}/secrets/{secret}).
+            &quot;dnsServers&quot;: [ # Optional. Domain controller IPv4 addresses used to bootstrap Active Directory.
+              &quot;A String&quot;,
+            ],
             &quot;domain&quot;: &quot;A String&quot;, # The name of the domain (e.g., mydomain.com).
             &quot;kind&quot;: &quot;A String&quot;, # This is always sql#activeDirectoryConfig.
+            &quot;mode&quot;: &quot;A String&quot;, # Optional. The mode of the Active Directory configuration.
+            &quot;organizationalUnit&quot;: &quot;A String&quot;, # Optional. The organizational unit distinguished name. This is the full hierarchical path to the organizational unit.
           },
           &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. # Specifies advanced machine configuration for the instances relevant only for SQL Server.
             &quot;threadsPerCore&quot;: 42, # The number of threads per physical core.
@@ -1335,6 +1629,7 @@ Returns:
           &quot;authorizedGaeApplications&quot;: [ # The App Engine app IDs that can access this instance. (Deprecated) Applied to First Generation instances only.
             &quot;A String&quot;,
           ],
+          &quot;autoUpgradeEnabled&quot;: True or False, # Optional. Cloud SQL for MySQL auto-upgrade configuration. When this parameter is set to true, auto-upgrade is enabled for MySQL 8.0 minor versions. The MySQL version must be 8.0.35 or higher.
           &quot;availabilityType&quot;: &quot;A String&quot;, # Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available)./ For more information, see [Overview of the High Availability Configuration](https://cloud.google.com/sql/docs/mysql/high-availability).
           &quot;backupConfiguration&quot;: { # Database instance backup configuration. # The daily backup configuration for the instance.
             &quot;backupRetentionSettings&quot;: { # We currently only support backup retention by specifying the number of backups we will retain. # Backup retention settings.
@@ -1347,7 +1642,7 @@ Returns:
             &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#backupConfiguration`.
             &quot;location&quot;: &quot;A String&quot;, # Location of the backup
             &quot;pointInTimeRecoveryEnabled&quot;: True or False, # Whether point in time recovery is enabled.
-            &quot;replicationLogArchivingEnabled&quot;: True or False, # Reserved for future use.
+            &quot;replicationLogArchivingEnabled&quot;: True or False, # Optional. Deprecated: replication_log_archiving_enabled is deprecated and will be removed from a future version of the API. Use point_in_time_recovery_enabled instead.
             &quot;startTime&quot;: &quot;A String&quot;, # Start time for the daily backup configuration in UTC timezone in the 24 hour format - `HH:MM`.
             &quot;transactionLogRetentionDays&quot;: 42, # The number of days of transaction logs we retain for point in time restore, from 1-7.
             &quot;transactionalLogStorageState&quot;: &quot;A String&quot;, # Output only. This value contains the storage location of transactional logs used to perform point-in-time recovery (PITR) for the database.
@@ -1361,9 +1656,11 @@ Returns:
                 &quot;value&quot;: &quot;A String&quot;, # Required. The value of the flag. Boolean flags are set to `on` for true and `off` for false. This field must be omitted if the flag doesn&#x27;t take a value.
               },
             ],
+            &quot;poolerCount&quot;: 42, # Output only. Number of connection poolers.
           },
           &quot;connectorEnforcement&quot;: &quot;A String&quot;, # Specifies if connections must use Cloud SQL connectors. Option values include the following: `NOT_REQUIRED` (Cloud SQL instances can be connected without Cloud SQL Connectors) and `REQUIRED` (Only allow connections that use Cloud SQL Connectors). Note that using REQUIRED disables all existing authorized networks. If this field is not specified when creating a new instance, NOT_REQUIRED is used. If this field is not specified when patching or updating an existing instance, it is left unchanged in the instance.
           &quot;crashSafeReplicationEnabled&quot;: True or False, # Configuration specific to read replica instances. Indicates whether database flags for crash-safe replication are enabled. This property was only applicable to First Generation instances.
+          &quot;dataApiAccess&quot;: &quot;A String&quot;, # This parameter controls whether to allow using ExecuteSql API to connect to the instance. Not allowed by default.
           &quot;dataCacheConfig&quot;: { # Data cache configurations. # Configuration for data cache.
             &quot;dataCacheEnabled&quot;: True or False, # Whether data cache is enabled for the instance.
           },
@@ -1386,10 +1683,20 @@ Returns:
               &quot;time&quot;: &quot;A String&quot;, # Time in UTC when the &quot;deny maintenance period&quot; starts on start_date and ends on end_date. The time is in format: HH:mm:SS, i.e., 00:00:00
             },
           ],
-          &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition of the instance.
+          &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition type of the Cloud SQL instance.
           &quot;enableDataplexIntegration&quot;: True or False, # Optional. By default, Cloud SQL instances have schema extraction disabled for Dataplex. When this parameter is set to true, schema extraction for Dataplex on Cloud SQL instances is activated.
           &quot;enableGoogleMlIntegration&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL instances can connect to Vertex AI to pass requests for real-time predictions and insights to the AI. The default value is false. This applies only to Cloud SQL for MySQL and Cloud SQL for PostgreSQL instances.
+          &quot;entraidConfig&quot;: { # SQL Server Entra ID configuration. # Optional. The Microsoft Entra ID configuration for the SQL Server instance.
+            &quot;applicationId&quot;: &quot;A String&quot;, # Optional. The application ID for the Entra ID configuration.
+            &quot;kind&quot;: &quot;A String&quot;, # Output only. This is always sql#sqlServerEntraIdConfig
+            &quot;tenantId&quot;: &quot;A String&quot;, # Optional. The tenant ID for the Entra ID configuration.
+          },
+          &quot;finalBackupConfig&quot;: { # Config used to determine the final backup settings for the instance. # Optional. The final backup configuration for the instance.
+            &quot;enabled&quot;: True or False, # Whether the final backup is enabled for the instance.
+            &quot;retentionDays&quot;: 42, # The number of days to retain the final backup after the instance deletion. The final backup will be purged at (time_of_instance_deletion + retention_days).
+          },
           &quot;insightsConfig&quot;: { # Insights configuration. This specifies when Cloud SQL Insights feature is enabled and optional configuration. # Insights configuration, for now relevant only for Postgres.
+            &quot;enhancedQueryInsightsEnabled&quot;: True or False, # Optional. Whether enhanced query insights feature is enabled.
             &quot;queryInsightsEnabled&quot;: True or False, # Whether Query Insights feature is enabled.
             &quot;queryPlansPerMinute&quot;: 42, # Number of query execution plans captured by Insights per minute for all queries combined. Default is 5.
             &quot;queryStringLength&quot;: 42, # Maximum query length stored in bytes. Default value: 1024 bytes. Range: 256-4500 bytes. Query lengths greater than this field value will be truncated to this value. When unset, query length will be the default value. Changing query length will restart the database.
@@ -1416,21 +1723,29 @@ Returns:
               &quot;allowedConsumerProjects&quot;: [ # Optional. The list of consumer projects that are allow-listed for PSC connections to this instance. This instance can be connected to with PSC from any network in these projects. Each consumer project in this list may be represented by a project number (numeric) or by a project id (alphanumeric).
                 &quot;A String&quot;,
               ],
-              &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect via PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+              &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect using the PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+              &quot;pscAutoConnectionPolicyEnabled&quot;: True or False, # Optional. Whether to set up the PSC service connection policy automatically.
               &quot;pscAutoConnections&quot;: [ # Optional. The list of settings for requested Private Service Connect consumer endpoints that can be used to connect to this Cloud SQL instance.
                 { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
                   &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
                   &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
-                  &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. Optional. This is only applicable if consumer_network is a shared vpc network.
+                  &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+                  &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
                   &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+                  &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+                  &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
                   &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+                  &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
                 },
               ],
+              &quot;pscAutoDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal DNS record across all networks configured with Private Service Connect auto-connections. This will default to true for new instances when Private Service Connect is enabled.
               &quot;pscEnabled&quot;: True or False, # Whether PSC connectivity is enabled for this instance.
+              &quot;pscWriteEndpointDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect write endpoint DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal global DNS record across all networks configured with Private Service Connect auto-connections that points to the cluster primary instance. This feature is only supported for Enterprise Plus edition. This will default to true for new Enterprise Plus instances when `psc_auto_dns_enabled` is enabled.
             },
             &quot;requireSsl&quot;: True or False, # Use `ssl_mode` instead. Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won&#x27;t be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the `require_ssl` flag.
             &quot;serverCaMode&quot;: &quot;A String&quot;, # Specify what type of CA is used for the server certificate.
             &quot;serverCaPool&quot;: &quot;A String&quot;, # Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects/{PROJECT}/locations/{REGION}/caPools/{CA_POOL_ID}
+            &quot;serverCertificateRotationMode&quot;: &quot;A String&quot;, # Optional. Controls the automatic server certificate rotation feature. This feature is disabled by default. When enabled, the server certificate will be automatically rotated during Cloud SQL scheduled maintenance or self-service maintenance updates up to six months before it expires. This setting can only be set if server_ca_mode is either GOOGLE_MANAGED_CAS_CA or CUSTOMER_MANAGED_CAS_CA.
             &quot;sslMode&quot;: &quot;A String&quot;, # Specify how SSL/TLS is enforced in database connections. If you must use the `require_ssl` flag for backward compatibility, then only the following value pairs are valid: For PostgreSQL and MySQL: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` * `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true` For SQL Server: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=true` The value of `ssl_mode` has priority over the value of `require_ssl`. For example, for the pair `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false`, `ssl_mode=ENCRYPTED_ONLY` means accept only SSL connections, while `require_ssl=false` means accept both non-SSL and SSL connections. In this case, MySQL and PostgreSQL databases respect `ssl_mode` and accepts only SSL connections.
           },
           &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#settings`.
@@ -1446,16 +1761,48 @@ Returns:
             &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#maintenanceWindow`.
             &quot;updateTrack&quot;: &quot;A String&quot;, # Maintenance timing settings: `canary`, `stable`, or `week5`. For more information, see [About maintenance on Cloud SQL instances](https://cloud.google.com/sql/docs/mysql/maintenance).
           },
-          &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy # The local user password validation policy of the instance.
+          &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy. This message defines the password policy for local database users. When enabled, it enforces constraints on password complexity, length, and reuse. Keep this policy enabled to help prevent unauthorized access. # The local user password validation policy of the instance for PostgreSQL and MySQL.
             &quot;complexity&quot;: &quot;A String&quot;, # The complexity of the password.
             &quot;disallowCompromisedCredentials&quot;: True or False, # This field is deprecated and will be removed in a future version of the API.
             &quot;disallowUsernameSubstring&quot;: True or False, # Disallow username as a part of the password.
-            &quot;enablePasswordPolicy&quot;: True or False, # Whether the password policy is enabled or not.
+            &quot;enablePasswordPolicy&quot;: True or False, # Whether to enable the password policy or not. When enabled, passwords must meet complexity requirements. Keep this policy enabled to help prevent unauthorized access. Disabling this policy allows weak passwords.
             &quot;minLength&quot;: 42, # Minimum number of characters allowed.
             &quot;passwordChangeInterval&quot;: &quot;A String&quot;, # Minimum interval after which the password can be changed. This flag is only supported for PostgreSQL.
             &quot;reuseInterval&quot;: 42, # Number of previous passwords that cannot be reused.
           },
+          &quot;performanceCaptureConfig&quot;: { # Performance capture configuration. # Optional. Configuration for Performance Capture, provides diagnostic metrics during high load situations.
+            &quot;cpuUtilizationThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of CPU utilization to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+            &quot;enabled&quot;: True or False, # Optional. Enables or disables the performance capture feature.
+            &quot;historyListLengthThresholdCount&quot;: 42, # Optional. Specifies the minimum number of undo log entries in the history list length to trigger the performance capture. Valid integers range from `10000` to `10000000`. Enter `0` to disable the check.
+            &quot;memoryUsageThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of memory usage to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+            &quot;probeThreshold&quot;: 42, # Optional. Specifies the minimum number of consecutive probe threshold that triggers performance capture.
+            &quot;probingIntervalSeconds&quot;: 42, # Optional. Specifies the interval in seconds between consecutive probes that check if any trigger condition thresholds have been reached.
+            &quot;runningThreadsThreshold&quot;: 42, # Optional. Specifies the minimum number of MySQL `Threads_running` to trigger the performance capture on the primary instance.
+            &quot;secondsBehindSourceThreshold&quot;: 42, # Optional. Specifies the minimum number of seconds replica must be lagging behind primary instance to trigger the performance capture on replica.
+            &quot;semaphoreWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of semaphore waits to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+            &quot;transactionDurationThreshold&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts recording it.
+            &quot;transactionKillExcludedUserHosts&quot;: [ # Optional. Specifies a customer-defined list of users to exclude from transaction termination. Entries can be in the format &#x27;user@host&#x27; or just &#x27;user&#x27;. A standalone &#x27;user&#x27; implies &#x27;user@%&#x27;, excluding the user from any host. Wildcard &#x27;%&#x27; is allowed in the host part of the &#x27;user@host&#x27; format. Example: `[&quot;app_user&quot;, &quot;db_admin@10.1.2.3&quot;, &quot;report_user@%&quot;]`
+              &quot;A String&quot;,
+            ],
+            &quot;transactionKillThresholdSeconds&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts terminating it. Valid integers range from `60` to `604800` (7 days). Enter `0` to disable. If enabled (i.e., &gt; 0), this value must be greater than or equal to `transaction_duration_threshold`. Configurations where `0 &lt; transaction_kill_threshold_seconds &lt; transaction_duration_threshold` will be rejected.
+            &quot;transactionKillType&quot;: &quot;A String&quot;, # Optional. Determines which transactions are allowed to be terminated when they exceed `transaction_kill_threshold_seconds`. This allows protecting write-heavy transactions from auto-termination if desired. Defaults to `READ_ONLY_TRANSACTIONS` if unspecified.
+            &quot;transactionLockWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of transactions in lock wait state to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+          },
           &quot;pricingPlan&quot;: &quot;A String&quot;, # The pricing plan for this instance. This can be either `PER_USE` or `PACKAGE`. Only `PER_USE` is supported for Second Generation instances.
+          &quot;readPoolAutoScaleConfig&quot;: { # The read pool auto-scale configuration. # Optional. The read pool auto-scale configuration for the instance.
+            &quot;disableScaleIn&quot;: True or False, # Indicates whether read pool auto scaling supports scale in operations (removing nodes).
+            &quot;enabled&quot;: True or False, # Indicates whether read pool auto scaling is enabled.
+            &quot;maxNodeCount&quot;: 42, # Maximum number of read pool nodes to be maintained.
+            &quot;minNodeCount&quot;: 42, # Minimum number of read pool nodes to be maintained.
+            &quot;scaleInCooldownSeconds&quot;: 42, # The cooldown period for scale-in operations.
+            &quot;scaleOutCooldownSeconds&quot;: 42, # The cooldown period for scale-out operations.
+            &quot;targetMetrics&quot;: [ # Optional. Target metrics for read pool auto scaling.
+              { # Target metric for read pool auto scaling.
+                &quot;metric&quot;: &quot;A String&quot;, # The metric name to be used for auto scaling.
+                &quot;targetValue&quot;: 3.14, # The target value for the metric.
+              },
+            ],
+          },
           &quot;replicationLagMaxSeconds&quot;: 42, # Optional. Configuration value for recreation of replica after certain replication lag
           &quot;replicationType&quot;: &quot;A String&quot;, # The type of replication this instance uses. This can be either `ASYNCHRONOUS` or `SYNCHRONOUS`. (Deprecated) This property was only applicable to First Generation instances.
           &quot;retainBackupsOnDelete&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL retains backups of the instance even after the instance is deleted. The ON_DEMAND backup will be retained until customer deletes the backup or the project. The AUTOMATED backup will be retained based on the backups retention setting.
@@ -1519,17 +1866,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="ListBackups_next">ListBackups_next()</code>
+    <code class="details" id="ListBackups_next">ListBackups_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -1541,7 +1888,7 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # A backup resource. Next ID: 30
+{ # A backup resource.
   &quot;backupInterval&quot;: { # Represents a time interval, encoded as a Timestamp start (inclusive) and a Timestamp end (exclusive). The start must be less than or equal to the end. When the start equals the end, the interval is empty (matches no time). When both start and end are unspecified, the interval matches any time. # Output only. This output contains the following values: start_time: All database writes up to this time are available. end_time: Any database writes after this time aren&#x27;t available.
     &quot;endTime&quot;: &quot;A String&quot;, # Optional. Exclusive end of the interval. If specified, a Timestamp matching this interval will have to be before the end.
     &quot;startTime&quot;: &quot;A String&quot;, # Optional. Inclusive start of the interval. If specified, a Timestamp matching this interval will have to be the same or after the start.
@@ -1563,15 +1910,35 @@ Args:
       &quot;A String&quot;,
     ],
     &quot;backendType&quot;: &quot;A String&quot;, # The backend type. `SECOND_GEN`: Cloud SQL database instance. `EXTERNAL`: A database server that is not managed by Google. This property is read-only; use the `tier` property in the `settings` object to determine the database type.
-    &quot;clearNetwork&quot;: True or False, # Clears private network settings when the instance is restored.
     &quot;connectionName&quot;: &quot;A String&quot;, # Connection name of the Cloud SQL instance used in connection strings.
     &quot;createTime&quot;: &quot;A String&quot;, # Output only. The time when the instance was created in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
     &quot;currentDiskSize&quot;: &quot;A String&quot;, # The current disk usage of the instance in bytes. This property has been deprecated. Use the &quot;cloudsql.googleapis.com/database/disk/bytes_used&quot; metric in Cloud Monitoring API instead. Please see [this announcement](https://groups.google.com/d/msg/google-cloud-sql-announce/I_7-F9EBhT0/BtvFtdFeAgAJ) for details.
+    &quot;databaseCenterIntegrationEnabled&quot;: True or False, # Optional. If true, instance metadata is sent to the Database Center. If false, instance metadata is not sent to the Database Center.
     &quot;databaseInstalledVersion&quot;: &quot;A String&quot;, # Output only. Stores the current database version running on the instance including minor version such as `MYSQL_8_0_18`.
     &quot;databaseVersion&quot;: &quot;A String&quot;, # The database engine type and version. The `databaseVersion` field cannot be changed after instance creation.
+    &quot;deploymentInfo&quot;: { # Blue-green deployment metadata for a database instance. In a blue-green deployment, we maintain two environments, one of which is live. This message contains details about the blue-green deployment. # Output only. Deployment info for the instance. This is set if the instance is currently part of any blue-green setup.
+      &quot;deploymentId&quot;: &quot;A String&quot;, # Output only. The resource ID of the blue-green deployment.
+      &quot;source&quot;: { # The source instance for the Blue-Green deployment. # Output only. The source instance for the Blue-Green deployment.
+        &quot;targetId&quot;: { # Reference to another Cloud SQL instance. # Output only. The target instance paired with this source instance in a blue-green deployment.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+          &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+          &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+        },
+      },
+      &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of blue-green-deployment for UI tags
+      &quot;target&quot;: { # The target instance for the Blue-Green deployment. # Output only. The target instance for the Blue-Green deployment.
+        &quot;sourceId&quot;: { # Reference to another Cloud SQL instance. # Output only. The source instance paired with this target instance in a blue-green deployment.
+          &quot;name&quot;: &quot;A String&quot;, # The name of the Cloud SQL instance being referenced. This does not include the project ID.
+          &quot;project&quot;: &quot;A String&quot;, # The project ID of the Cloud SQL instance being referenced. The default is the same project ID as the instance references it.
+          &quot;region&quot;: &quot;A String&quot;, # The region of the Cloud SQL instance being referenced.
+        },
+      },
+    },
     &quot;diskEncryptionConfiguration&quot;: { # Disk encryption configuration for an instance. # Disk encryption configuration specific to an instance.
+      &quot;cmekSourceLogEncryptionEnforced&quot;: True or False, # Optional. Whether to enforce CMEK log encryption at source. When enforced, transaction logs are encrypted prior to being uploaded to Cloud Storage. If not enforced, then CMEK logs are encrypted by the Cloud Storage service.
+      &quot;confidentialMode&quot;: True or False, # Optional. If true, enables Confidential Mode for the instance&#x27;s Hyperdisk Balanced volumes. Only supported for zonal C4A instances currently.
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionConfiguration`.
-      &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption
+      &quot;kmsKeyName&quot;: &quot;A String&quot;, # Resource name of KMS key for disk encryption.
     },
     &quot;diskEncryptionStatus&quot;: { # Disk encryption status for an instance. # Disk encryption status specific to an instance.
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#diskEncryptionStatus`.
@@ -1582,7 +1949,8 @@ Args:
       { # DNS metadata.
         &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
         &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-        &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+        &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+        &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
       },
     ],
     &quot;etag&quot;: &quot;A String&quot;, # This field is deprecated and will be removed from a future version of the API. Use the `settings.settingsVersion` field instead.
@@ -1622,7 +1990,8 @@ Args:
           { # DNS metadata.
             &quot;connectionType&quot;: &quot;A String&quot;, # Output only. The connection type of the DNS name.
             &quot;dnsScope&quot;: &quot;A String&quot;, # Output only. The scope that the DNS name applies to.
-            &quot;name&quot;: &quot;A String&quot;, # The DNS name.
+            &quot;name&quot;: &quot;A String&quot;, # Output only. The DNS name.
+            &quot;recordManager&quot;: &quot;A String&quot;, # Output only. The manager for this DNS record.
           },
         ],
         &quot;gceZone&quot;: &quot;A String&quot;, # Output only. The zone of the read pool node.
@@ -1634,6 +2003,20 @@ Args:
           },
         ],
         &quot;name&quot;: &quot;A String&quot;, # Output only. The name of the read pool node, to be used for retrieving metrics and logs.
+        &quot;pscAutoConnections&quot;: [ # Output only. The list of settings for requested automatically-setup Private Service Connect (PSC) consumer endpoints that can be used to connect to this read pool node.
+          { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
+            &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
+            &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
+            &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+            &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
+            &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+            &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+            &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
+            &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+            &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
+          },
+        ],
+        &quot;pscServiceAttachmentLink&quot;: &quot;A String&quot;, # Output only. The Private Service Connect (PSC) service attachment of the read pool node.
         &quot;state&quot;: &quot;A String&quot;, # Output only. The current state of the read pool node.
       },
     ],
@@ -1641,6 +2024,7 @@ Args:
       &quot;caCertificate&quot;: &quot;A String&quot;, # PEM representation of the trusted CA&#x27;s x509 certificate.
       &quot;clientCertificate&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s x509 certificate.
       &quot;clientKey&quot;: &quot;A String&quot;, # PEM representation of the replica&#x27;s private key. The corresponding public key is encoded in the client&#x27;s certificate.
+      &quot;dmsManaged&quot;: True or False, # Output only. Indicates whether the resource is managed by Database Migration Service.
       &quot;dumpFilePath&quot;: &quot;A String&quot;, # The dump file to create the Cloud SQL replica.
       &quot;hostPort&quot;: &quot;A String&quot;, # The host and port of the on-premises instance in host:port format
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#onPremisesConfiguration`.
@@ -1716,10 +2100,17 @@ Args:
     },
     &quot;serviceAccountEmailAddress&quot;: &quot;A String&quot;, # The service account email address assigned to the instance.\This property is read-only.
     &quot;settings&quot;: { # Database instance settings. # The user settings.
+      &quot;acceleratedReplicaMode&quot;: True or False, # Optional. Whether the replica is in accelerated mode. This feature is in private preview and requires allowlisting to take effect.
       &quot;activationPolicy&quot;: &quot;A String&quot;, # The activation policy specifies when the instance is activated; it is applicable only when the instance state is RUNNABLE. Valid values: * `ALWAYS`: The instance is on, and remains so even in the absence of connection requests. * `NEVER`: The instance is off; it is not activated, even if a connection request arrives.
       &quot;activeDirectoryConfig&quot;: { # Active Directory configuration, relevant only for Cloud SQL for SQL Server. # Active Directory configuration, relevant only for Cloud SQL for SQL Server.
+        &quot;adminCredentialSecretName&quot;: &quot;A String&quot;, # Optional. The secret manager key storing the administrator credential. (e.g., projects/{project}/secrets/{secret}).
+        &quot;dnsServers&quot;: [ # Optional. Domain controller IPv4 addresses used to bootstrap Active Directory.
+          &quot;A String&quot;,
+        ],
         &quot;domain&quot;: &quot;A String&quot;, # The name of the domain (e.g., mydomain.com).
         &quot;kind&quot;: &quot;A String&quot;, # This is always sql#activeDirectoryConfig.
+        &quot;mode&quot;: &quot;A String&quot;, # Optional. The mode of the Active Directory configuration.
+        &quot;organizationalUnit&quot;: &quot;A String&quot;, # Optional. The organizational unit distinguished name. This is the full hierarchical path to the organizational unit.
       },
       &quot;advancedMachineFeatures&quot;: { # Specifies options for controlling advanced machine features. # Specifies advanced machine configuration for the instances relevant only for SQL Server.
         &quot;threadsPerCore&quot;: 42, # The number of threads per physical core.
@@ -1727,6 +2118,7 @@ Args:
       &quot;authorizedGaeApplications&quot;: [ # The App Engine app IDs that can access this instance. (Deprecated) Applied to First Generation instances only.
         &quot;A String&quot;,
       ],
+      &quot;autoUpgradeEnabled&quot;: True or False, # Optional. Cloud SQL for MySQL auto-upgrade configuration. When this parameter is set to true, auto-upgrade is enabled for MySQL 8.0 minor versions. The MySQL version must be 8.0.35 or higher.
       &quot;availabilityType&quot;: &quot;A String&quot;, # Availability type. Potential values: * `ZONAL`: The instance serves data from only one zone. Outages in that zone affect data accessibility. * `REGIONAL`: The instance can serve data from more than one zone in a region (it is highly available)./ For more information, see [Overview of the High Availability Configuration](https://cloud.google.com/sql/docs/mysql/high-availability).
       &quot;backupConfiguration&quot;: { # Database instance backup configuration. # The daily backup configuration for the instance.
         &quot;backupRetentionSettings&quot;: { # We currently only support backup retention by specifying the number of backups we will retain. # Backup retention settings.
@@ -1739,7 +2131,7 @@ Args:
         &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#backupConfiguration`.
         &quot;location&quot;: &quot;A String&quot;, # Location of the backup
         &quot;pointInTimeRecoveryEnabled&quot;: True or False, # Whether point in time recovery is enabled.
-        &quot;replicationLogArchivingEnabled&quot;: True or False, # Reserved for future use.
+        &quot;replicationLogArchivingEnabled&quot;: True or False, # Optional. Deprecated: replication_log_archiving_enabled is deprecated and will be removed from a future version of the API. Use point_in_time_recovery_enabled instead.
         &quot;startTime&quot;: &quot;A String&quot;, # Start time for the daily backup configuration in UTC timezone in the 24 hour format - `HH:MM`.
         &quot;transactionLogRetentionDays&quot;: 42, # The number of days of transaction logs we retain for point in time restore, from 1-7.
         &quot;transactionalLogStorageState&quot;: &quot;A String&quot;, # Output only. This value contains the storage location of transactional logs used to perform point-in-time recovery (PITR) for the database.
@@ -1753,9 +2145,11 @@ Args:
             &quot;value&quot;: &quot;A String&quot;, # Required. The value of the flag. Boolean flags are set to `on` for true and `off` for false. This field must be omitted if the flag doesn&#x27;t take a value.
           },
         ],
+        &quot;poolerCount&quot;: 42, # Output only. Number of connection poolers.
       },
       &quot;connectorEnforcement&quot;: &quot;A String&quot;, # Specifies if connections must use Cloud SQL connectors. Option values include the following: `NOT_REQUIRED` (Cloud SQL instances can be connected without Cloud SQL Connectors) and `REQUIRED` (Only allow connections that use Cloud SQL Connectors). Note that using REQUIRED disables all existing authorized networks. If this field is not specified when creating a new instance, NOT_REQUIRED is used. If this field is not specified when patching or updating an existing instance, it is left unchanged in the instance.
       &quot;crashSafeReplicationEnabled&quot;: True or False, # Configuration specific to read replica instances. Indicates whether database flags for crash-safe replication are enabled. This property was only applicable to First Generation instances.
+      &quot;dataApiAccess&quot;: &quot;A String&quot;, # This parameter controls whether to allow using ExecuteSql API to connect to the instance. Not allowed by default.
       &quot;dataCacheConfig&quot;: { # Data cache configurations. # Configuration for data cache.
         &quot;dataCacheEnabled&quot;: True or False, # Whether data cache is enabled for the instance.
       },
@@ -1778,10 +2172,20 @@ Args:
           &quot;time&quot;: &quot;A String&quot;, # Time in UTC when the &quot;deny maintenance period&quot; starts on start_date and ends on end_date. The time is in format: HH:mm:SS, i.e., 00:00:00
         },
       ],
-      &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition of the instance.
+      &quot;edition&quot;: &quot;A String&quot;, # Optional. The edition type of the Cloud SQL instance.
       &quot;enableDataplexIntegration&quot;: True or False, # Optional. By default, Cloud SQL instances have schema extraction disabled for Dataplex. When this parameter is set to true, schema extraction for Dataplex on Cloud SQL instances is activated.
       &quot;enableGoogleMlIntegration&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL instances can connect to Vertex AI to pass requests for real-time predictions and insights to the AI. The default value is false. This applies only to Cloud SQL for MySQL and Cloud SQL for PostgreSQL instances.
+      &quot;entraidConfig&quot;: { # SQL Server Entra ID configuration. # Optional. The Microsoft Entra ID configuration for the SQL Server instance.
+        &quot;applicationId&quot;: &quot;A String&quot;, # Optional. The application ID for the Entra ID configuration.
+        &quot;kind&quot;: &quot;A String&quot;, # Output only. This is always sql#sqlServerEntraIdConfig
+        &quot;tenantId&quot;: &quot;A String&quot;, # Optional. The tenant ID for the Entra ID configuration.
+      },
+      &quot;finalBackupConfig&quot;: { # Config used to determine the final backup settings for the instance. # Optional. The final backup configuration for the instance.
+        &quot;enabled&quot;: True or False, # Whether the final backup is enabled for the instance.
+        &quot;retentionDays&quot;: 42, # The number of days to retain the final backup after the instance deletion. The final backup will be purged at (time_of_instance_deletion + retention_days).
+      },
       &quot;insightsConfig&quot;: { # Insights configuration. This specifies when Cloud SQL Insights feature is enabled and optional configuration. # Insights configuration, for now relevant only for Postgres.
+        &quot;enhancedQueryInsightsEnabled&quot;: True or False, # Optional. Whether enhanced query insights feature is enabled.
         &quot;queryInsightsEnabled&quot;: True or False, # Whether Query Insights feature is enabled.
         &quot;queryPlansPerMinute&quot;: 42, # Number of query execution plans captured by Insights per minute for all queries combined. Default is 5.
         &quot;queryStringLength&quot;: 42, # Maximum query length stored in bytes. Default value: 1024 bytes. Range: 256-4500 bytes. Query lengths greater than this field value will be truncated to this value. When unset, query length will be the default value. Changing query length will restart the database.
@@ -1808,21 +2212,29 @@ Args:
           &quot;allowedConsumerProjects&quot;: [ # Optional. The list of consumer projects that are allow-listed for PSC connections to this instance. This instance can be connected to with PSC from any network in these projects. Each consumer project in this list may be represented by a project number (numeric) or by a project id (alphanumeric).
             &quot;A String&quot;,
           ],
-          &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect via PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+          &quot;networkAttachmentUri&quot;: &quot;A String&quot;, # Optional. The network attachment of the consumer network that the Private Service Connect enabled Cloud SQL instance is authorized to connect using the PSC interface. format: projects/PROJECT/regions/REGION/networkAttachments/ID
+          &quot;pscAutoConnectionPolicyEnabled&quot;: True or False, # Optional. Whether to set up the PSC service connection policy automatically.
           &quot;pscAutoConnections&quot;: [ # Optional. The list of settings for requested Private Service Connect consumer endpoints that can be used to connect to this Cloud SQL instance.
             { # Settings for an automatically-setup Private Service Connect consumer endpoint that is used to connect to a Cloud SQL instance.
               &quot;consumerNetwork&quot;: &quot;A String&quot;, # Optional. The consumer network of this consumer endpoint. This must be a resource path that includes both the host project and the network name. For example, `projects/project1/global/networks/network1`. The consumer host project of this network might be different from the consumer service project.
               &quot;consumerNetworkStatus&quot;: &quot;A String&quot;, # The connection policy status of the consumer network.
-              &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. Optional. This is only applicable if consumer_network is a shared vpc network.
+              &quot;consumerProject&quot;: &quot;A String&quot;, # Optional. This is the project ID of consumer service project of this consumer endpoint. This is only applicable if `consumer_network` is a shared VPC network.
+              &quot;instanceAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning.
               &quot;ipAddress&quot;: &quot;A String&quot;, # The IP address of the consumer endpoint.
+              &quot;serviceConnectionPolicy&quot;: &quot;A String&quot;, # Output only. The service connection policy created automatically for the consumer network when `psc_auto_connection_policy_enabled` is true. It is in the format of: `projects/{project}/regions/{region}/serviceConnectionPolicies/{policy_id}` The `policy_id` is in format of `$NETWORK-$RANDOM`.
+              &quot;serviceConnectionPolicyCreationResult&quot;: &quot;A String&quot;, # Output only. The status of service connection policy creation.
               &quot;status&quot;: &quot;A String&quot;, # The connection status of the consumer endpoint.
+              &quot;writeEndpointAutoDnsStatus&quot;: &quot;A String&quot;, # Output only. The status of automated DNS provisioning for the write endpoint.
             },
           ],
+          &quot;pscAutoDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal DNS record across all networks configured with Private Service Connect auto-connections. This will default to true for new instances when Private Service Connect is enabled.
           &quot;pscEnabled&quot;: True or False, # Whether PSC connectivity is enabled for this instance.
+          &quot;pscWriteEndpointDnsEnabled&quot;: True or False, # Optional. Indicates whether Private Service Connect write endpoint DNS automation is enabled for this instance. When enabled, Cloud SQL provisions a universal global DNS record across all networks configured with Private Service Connect auto-connections that points to the cluster primary instance. This feature is only supported for Enterprise Plus edition. This will default to true for new Enterprise Plus instances when `psc_auto_dns_enabled` is enabled.
         },
         &quot;requireSsl&quot;: True or False, # Use `ssl_mode` instead. Whether SSL/TLS connections over IP are enforced. If set to false, then allow both non-SSL/non-TLS and SSL/TLS connections. For SSL/TLS connections, the client certificate won&#x27;t be verified. If set to true, then only allow connections encrypted with SSL/TLS and with valid client certificates. If you want to enforce SSL/TLS without enforcing the requirement for valid client certificates, then use the `ssl_mode` flag instead of the `require_ssl` flag.
         &quot;serverCaMode&quot;: &quot;A String&quot;, # Specify what type of CA is used for the server certificate.
         &quot;serverCaPool&quot;: &quot;A String&quot;, # Optional. The resource name of the server CA pool for an instance with `CUSTOMER_MANAGED_CAS_CA` as the `server_ca_mode`. Format: projects/{PROJECT}/locations/{REGION}/caPools/{CA_POOL_ID}
+        &quot;serverCertificateRotationMode&quot;: &quot;A String&quot;, # Optional. Controls the automatic server certificate rotation feature. This feature is disabled by default. When enabled, the server certificate will be automatically rotated during Cloud SQL scheduled maintenance or self-service maintenance updates up to six months before it expires. This setting can only be set if server_ca_mode is either GOOGLE_MANAGED_CAS_CA or CUSTOMER_MANAGED_CAS_CA.
         &quot;sslMode&quot;: &quot;A String&quot;, # Specify how SSL/TLS is enforced in database connections. If you must use the `require_ssl` flag for backward compatibility, then only the following value pairs are valid: For PostgreSQL and MySQL: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false` * `ssl_mode=TRUSTED_CLIENT_CERTIFICATE_REQUIRED` and `require_ssl=true` For SQL Server: * `ssl_mode=ALLOW_UNENCRYPTED_AND_ENCRYPTED` and `require_ssl=false` * `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=true` The value of `ssl_mode` has priority over the value of `require_ssl`. For example, for the pair `ssl_mode=ENCRYPTED_ONLY` and `require_ssl=false`, `ssl_mode=ENCRYPTED_ONLY` means accept only SSL connections, while `require_ssl=false` means accept both non-SSL and SSL connections. In this case, MySQL and PostgreSQL databases respect `ssl_mode` and accepts only SSL connections.
       },
       &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#settings`.
@@ -1838,16 +2250,48 @@ Args:
         &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#maintenanceWindow`.
         &quot;updateTrack&quot;: &quot;A String&quot;, # Maintenance timing settings: `canary`, `stable`, or `week5`. For more information, see [About maintenance on Cloud SQL instances](https://cloud.google.com/sql/docs/mysql/maintenance).
       },
-      &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy # The local user password validation policy of the instance.
+      &quot;passwordValidationPolicy&quot;: { # Database instance local user password validation policy. This message defines the password policy for local database users. When enabled, it enforces constraints on password complexity, length, and reuse. Keep this policy enabled to help prevent unauthorized access. # The local user password validation policy of the instance for PostgreSQL and MySQL.
         &quot;complexity&quot;: &quot;A String&quot;, # The complexity of the password.
         &quot;disallowCompromisedCredentials&quot;: True or False, # This field is deprecated and will be removed in a future version of the API.
         &quot;disallowUsernameSubstring&quot;: True or False, # Disallow username as a part of the password.
-        &quot;enablePasswordPolicy&quot;: True or False, # Whether the password policy is enabled or not.
+        &quot;enablePasswordPolicy&quot;: True or False, # Whether to enable the password policy or not. When enabled, passwords must meet complexity requirements. Keep this policy enabled to help prevent unauthorized access. Disabling this policy allows weak passwords.
         &quot;minLength&quot;: 42, # Minimum number of characters allowed.
         &quot;passwordChangeInterval&quot;: &quot;A String&quot;, # Minimum interval after which the password can be changed. This flag is only supported for PostgreSQL.
         &quot;reuseInterval&quot;: 42, # Number of previous passwords that cannot be reused.
       },
+      &quot;performanceCaptureConfig&quot;: { # Performance capture configuration. # Optional. Configuration for Performance Capture, provides diagnostic metrics during high load situations.
+        &quot;cpuUtilizationThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of CPU utilization to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+        &quot;enabled&quot;: True or False, # Optional. Enables or disables the performance capture feature.
+        &quot;historyListLengthThresholdCount&quot;: 42, # Optional. Specifies the minimum number of undo log entries in the history list length to trigger the performance capture. Valid integers range from `10000` to `10000000`. Enter `0` to disable the check.
+        &quot;memoryUsageThresholdPercent&quot;: 42, # Optional. Specifies the minimum percentage of memory usage to trigger the performance capture. Valid integers range from `10` to `99`. Enter `0` to disable the check.
+        &quot;probeThreshold&quot;: 42, # Optional. Specifies the minimum number of consecutive probe threshold that triggers performance capture.
+        &quot;probingIntervalSeconds&quot;: 42, # Optional. Specifies the interval in seconds between consecutive probes that check if any trigger condition thresholds have been reached.
+        &quot;runningThreadsThreshold&quot;: 42, # Optional. Specifies the minimum number of MySQL `Threads_running` to trigger the performance capture on the primary instance.
+        &quot;secondsBehindSourceThreshold&quot;: 42, # Optional. Specifies the minimum number of seconds replica must be lagging behind primary instance to trigger the performance capture on replica.
+        &quot;semaphoreWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of semaphore waits to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+        &quot;transactionDurationThreshold&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts recording it.
+        &quot;transactionKillExcludedUserHosts&quot;: [ # Optional. Specifies a customer-defined list of users to exclude from transaction termination. Entries can be in the format &#x27;user@host&#x27; or just &#x27;user&#x27;. A standalone &#x27;user&#x27; implies &#x27;user@%&#x27;, excluding the user from any host. Wildcard &#x27;%&#x27; is allowed in the host part of the &#x27;user@host&#x27; format. Example: `[&quot;app_user&quot;, &quot;db_admin@10.1.2.3&quot;, &quot;report_user@%&quot;]`
+          &quot;A String&quot;,
+        ],
+        &quot;transactionKillThresholdSeconds&quot;: 42, # Optional. Specifies the amount of time in seconds that a transaction needs to have been open before the watcher starts terminating it. Valid integers range from `60` to `604800` (7 days). Enter `0` to disable. If enabled (i.e., &gt; 0), this value must be greater than or equal to `transaction_duration_threshold`. Configurations where `0 &lt; transaction_kill_threshold_seconds &lt; transaction_duration_threshold` will be rejected.
+        &quot;transactionKillType&quot;: &quot;A String&quot;, # Optional. Determines which transactions are allowed to be terminated when they exceed `transaction_kill_threshold_seconds`. This allows protecting write-heavy transactions from auto-termination if desired. Defaults to `READ_ONLY_TRANSACTIONS` if unspecified.
+        &quot;transactionLockWaitThresholdCount&quot;: 42, # Optional. Specifies the minimum allowed number of transactions in lock wait state to trigger the performance capture. Valid integers range from `10` to `10000`. Enter `0` to disable the check.
+      },
       &quot;pricingPlan&quot;: &quot;A String&quot;, # The pricing plan for this instance. This can be either `PER_USE` or `PACKAGE`. Only `PER_USE` is supported for Second Generation instances.
+      &quot;readPoolAutoScaleConfig&quot;: { # The read pool auto-scale configuration. # Optional. The read pool auto-scale configuration for the instance.
+        &quot;disableScaleIn&quot;: True or False, # Indicates whether read pool auto scaling supports scale in operations (removing nodes).
+        &quot;enabled&quot;: True or False, # Indicates whether read pool auto scaling is enabled.
+        &quot;maxNodeCount&quot;: 42, # Maximum number of read pool nodes to be maintained.
+        &quot;minNodeCount&quot;: 42, # Minimum number of read pool nodes to be maintained.
+        &quot;scaleInCooldownSeconds&quot;: 42, # The cooldown period for scale-in operations.
+        &quot;scaleOutCooldownSeconds&quot;: 42, # The cooldown period for scale-out operations.
+        &quot;targetMetrics&quot;: [ # Optional. Target metrics for read pool auto scaling.
+          { # Target metric for read pool auto scaling.
+            &quot;metric&quot;: &quot;A String&quot;, # The metric name to be used for auto scaling.
+            &quot;targetValue&quot;: 3.14, # The target value for the metric.
+          },
+        ],
+      },
       &quot;replicationLagMaxSeconds&quot;: 42, # Optional. Configuration value for recreation of replica after certain replication lag
       &quot;replicationType&quot;: &quot;A String&quot;, # The type of replication this instance uses. This can be either `ASYNCHRONOUS` or `SYNCHRONOUS`. (Deprecated) This property was only applicable to First Generation instances.
       &quot;retainBackupsOnDelete&quot;: True or False, # Optional. When this parameter is set to true, Cloud SQL retains backups of the instance even after the instance is deleted. The ON_DEMAND backup will be retained until customer deletes the backup or the project. The AUTOMATED backup will be retained based on the backups retention setting.
@@ -1991,7 +2435,7 @@ Returns:
         &quot;pvkPassword&quot;: &quot;A String&quot;, # Password that encrypts the private key
         &quot;pvkPath&quot;: &quot;A String&quot;, # Path to the Certificate Private Key (.pvk) in Cloud Storage, in the form `gs://bucketName/fileName`. The instance must have write permissions to the bucket and read access to the file.
       },
-      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option Applies only to Cloud SQL for SQL Server.
+      &quot;noRecovery&quot;: True or False, # Whether or not the backup importing will restore database with NORECOVERY option. Applies only to Cloud SQL for SQL Server.
       &quot;recoveryOnly&quot;: True or False, # Whether or not the backup importing request will just bring database online without downloading Bak content only one of &quot;no_recovery&quot; and &quot;recovery_only&quot; can be true otherwise error will return. Applies only to Cloud SQL for SQL Server.
       &quot;stopAt&quot;: &quot;A String&quot;, # Optional. The timestamp when the import should stop. This timestamp is in the [RFC 3339](https://tools.ietf.org/html/rfc3339) format (for example, `2023-10-01T16:19:00.094`). This field is equivalent to the STOPAT keyword and applies to Cloud SQL for SQL Server only.
       &quot;stopAtMark&quot;: &quot;A String&quot;, # Optional. The marked transaction where the import should stop. This field is equivalent to the STOPATMARK keyword and applies to Cloud SQL for SQL Server only.
@@ -2031,9 +2475,37 @@ Returns:
   &quot;kind&quot;: &quot;A String&quot;, # This is always `sql#operation`.
   &quot;name&quot;: &quot;A String&quot;, # An identifier that uniquely identifies the operation. You can use this identifier to retrieve the Operations resource that has information about the operation.
   &quot;operationType&quot;: &quot;A String&quot;, # The type of the operation. Valid values are: * `CREATE` * `DELETE` * `UPDATE` * `RESTART` * `IMPORT` * `EXPORT` * `BACKUP_VOLUME` * `RESTORE_VOLUME` * `CREATE_USER` * `DELETE_USER` * `CREATE_DATABASE` * `DELETE_DATABASE`
+  &quot;preCheckMajorVersionUpgradeContext&quot;: { # Pre-check major version upgrade context. # This field is only populated when the operation_type is PRE_CHECK_MAJOR_VERSION_UPGRADE. The PreCheckMajorVersionUpgradeContext message itself contains the details for that pre-check, such as the target database version for the upgrade and the results of the check (including any warnings or errors found).
+    &quot;kind&quot;: &quot;A String&quot;, # Optional. This is always `sql#preCheckMajorVersionUpgradeContext`.
+    &quot;preCheckResponse&quot;: [ # Output only. The responses from the precheck operation.
+      { # Structured PreCheckResponse containing message, type, and required actions.
+        &quot;actionsRequired&quot;: [ # The actions that the user needs to take. Use repeated for multiple actions.
+          &quot;A String&quot;,
+        ],
+        &quot;message&quot;: &quot;A String&quot;, # The message to be displayed to the user.
+        &quot;messageType&quot;: &quot;A String&quot;, # The type of message whether it is an info, warning, or error.
+      },
+    ],
+    &quot;targetDatabaseVersion&quot;: &quot;A String&quot;, # Required. The target database version to upgrade to.
+  },
   &quot;selfLink&quot;: &quot;A String&quot;, # The URI of this resource.
   &quot;startTime&quot;: &quot;A String&quot;, # The time this operation actually started in UTC timezone in [RFC 3339](https://tools.ietf.org/html/rfc3339) format, for example `2012-11-15T16:19:00.094Z`.
+  &quot;startWorkloadCaptureContext&quot;: { # The context for the `StartWorkloadCapture` operation, which contains details to start recording the workload (SQL queries) on a Cloud SQL instance. # The context for the `StartWorkloadCapture` operation, which contains details to start recording the workload (SQL queries) on a Cloud SQL instance.
+    &quot;enableLiveReplay&quot;: True or False, # Optional. If true, the captured workload is simultaneously executed on a separate, ephemeral Cloud SQL instance. This &quot;live replay&quot; instance is automatically provisioned and is cloned from the source instance. If false (the default), the workload is only stored and no live replay occurs. It can be replayed later using a separate `StartWorkloadReplayRequest`. Note: The workload capture runs continuously until an explicit `StopWorkloadCaptureRequest` is issued.
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Optional. Required if `enable_live_replay` is true. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+  },
+  &quot;startWorkloadReplayContext&quot;: { # The context for the `StartWorkloadReplay` operation, which contains details about starting the execution of a captured workload (recorded read and write SQL queries) on a replay instance (the Cloud SQL instance where the recorded SQL queries are executed). # The context for the `StartWorkloadReplay` operation, which contains details about starting the execution of a captured workload (recorded read and write SQL queries) on a replay instance (the Cloud SQL instance where the recorded SQL queries are executed).
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Required. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+    &quot;workloadId&quot;: &quot;A String&quot;, # Output only. The ID of the workload to start executing on the replay instance. Each workload capture generates a unique ID in the format `workload-` (for example, `workload-1786046400`). Use this ID to start executing the recorded SQL queries.
+  },
   &quot;status&quot;: &quot;A String&quot;, # The status of an operation.
+  &quot;stopWorkloadCaptureContext&quot;: { # The context for the `StopWorkloadCapture` operation, which contains details to stop recording the workload (SQL queries) on a Cloud SQL instance. # The context for the `StopWorkloadCapture` operation, which contains details to stop recording the workload (SQL queries) on a Cloud SQL instance.
+    &quot;abortLiveReplay&quot;: True or False, # Optional. If true, immediately aborts the concurrent live replay and discards any un-replayed traffic alongside stopping the capture. If false (the default), the capture stops recording new traffic, but the live replay will continue executing until the entire backlog of captured traffic has been replayed.
+  },
+  &quot;stopWorkloadReplayContext&quot;: { # The context for the `StopWorkloadReplay` operation, which contains details about stopping the execution of a captured workload (recorded read and write SQL queries) on a replay instance. # The context for the `StopWorkloadReplay` operation, which contains details about stopping the execution of a captured workload (recorded read and write SQL queries) on a replay instance.
+    &quot;replayInstance&quot;: &quot;A String&quot;, # Required. The name of the Cloud SQL instance where the captured workload (SQL queries) is being executed, excluding the project ID (for example, `my-replay-instance`). The instance name must start with a lowercase letter and contain only lowercase letters, numbers, and hyphens. The combined length of `project-ID:instance-name` must be 98 characters or less.
+    &quot;workloadId&quot;: &quot;A String&quot;, # Output only. The ID of the workload to stop executing on the replay instance. Each workload capture generates a unique ID in the format `workload-` (for example, `workload-1786046400`). Use this ID to stop executing the recorded SQL queries.
+  },
   &quot;subOperationType&quot;: { # The sub operation type based on the operation type. # Optional. The sub operation based on the operation type.
     &quot;maintenanceType&quot;: &quot;A String&quot;, # The type of maintenance to be performed on the instance.
   },

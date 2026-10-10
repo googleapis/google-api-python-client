@@ -21,8 +21,8 @@ from __future__ import print_function
 
 import sys
 
-if sys.version_info < (3, 7):
-    print("google-api-python-client requires python3 version >= 3.7.", file=sys.stderr)
+if sys.version_info < (3, 10):
+    print("google-api-python-client requires python3 version >= 3.10.", file=sys.stderr)
     sys.exit(1)
 
 import io
@@ -69,20 +69,19 @@ setup(
     author_email="googleapis-packages@google.com",
     url="https://github.com/googleapis/google-api-python-client/",
     install_requires=install_requires,
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     packages=packages,
     package_data={"googleapiclient": ["discovery_cache/documents/*.json"]},
     license="Apache 2.0",
     keywords="google api client",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",

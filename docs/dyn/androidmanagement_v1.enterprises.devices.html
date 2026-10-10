@@ -95,7 +95,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists devices for a given enterprise. Deleted devices are not returned in the response.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, body=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -117,6 +117,7 @@ Args:
       WIPE_DATA_FLAG_UNSPECIFIED - This value is ignored.
       PRESERVE_RESET_PROTECTION_DATA - Preserve the factory reset protection data on the device.
       WIPE_EXTERNAL_STORAGE - Additionally wipe the device&#x27;s external storage (such as SD cards).
+      WIPE_ESIMS - For company-owned devices, this removes all eSIMs from the device when the device is wiped. In personally-owned devices, this will remove managed eSIMs (eSIMs which are added via the ADD_ESIM command) on the devices and no personally owned eSIMs will be removed. For devices running on Android 16 or higher, managed eSIMs are always wiped when work profile is removed for personally-owned devices, whether this flag is provided or not.
   wipeReasonMessage: string, Optional. A short message displayed to the user before wiping the work profile on personal devices. This has no effect on company owned devices. The maximum message length is 200 characters.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -169,8 +170,13 @@ Returns:
       ],
       &quot;packageName&quot;: &quot;A String&quot;, # Package name of the app.
       &quot;packageSha256Hash&quot;: &quot;A String&quot;, # The SHA-256 hash of the app&#x27;s APK file, which can be used to verify the app hasn&#x27;t been modified. Each byte of the hash value is represented as a two-digit hexadecimal number.
-      &quot;signingKeyCertFingerprints&quot;: [ # The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
+      &quot;signingKeyCertFingerprints&quot;: [ # Deprecated. Use signingKeyCerts instead. The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
         &quot;A String&quot;,
+      ],
+      &quot;signingKeyCerts&quot;: [ # Output only. Signing key certificates of the app.
+        { # The application signing key certificate.
+          &quot;signingKeyCertFingerprintSha256&quot;: &quot;A String&quot;, # Required. The SHA-256 hash value of the signing key certificate of the app. This must be a valid SHA-256 hash value, i.e. 32 bytes.
+        },
       ],
       &quot;state&quot;: &quot;A String&quot;, # Application state.
       &quot;userFacingType&quot;: &quot;A String&quot;, # Whether the app is user facing.
@@ -178,22 +184,22 @@ Returns:
       &quot;versionName&quot;: &quot;A String&quot;, # The app version as displayed to the user.
     },
   ],
-  &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. The applied requirements may be slightly different from those specified in passwordPolicies in some cases. fieldPath is set based on passwordPolicies.
+  &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. This field exists because the applied requirements may be slightly different from those specified in passwordPolicies in some cases. Note that this field does not provide information about password compliance. For non-compliance information, see nonComplianceDetails. NonComplianceDetail.fieldPath, is set based on passwordPolicies, not based on this field.
     { # Requirements for the password used to unlock a device.
-      &quot;maximumFailedPasswordsForWipe&quot;: 42, # Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
-      &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Password expiration timeout.
-      &quot;passwordHistoryLength&quot;: 42, # The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
-      &quot;passwordMinimumLength&quot;: 42, # The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
-      &quot;passwordMinimumLetters&quot;: 42, # Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumLowerCase&quot;: 42, # Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumNonLetter&quot;: 42, # Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumNumeric&quot;: 42, # Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumSymbols&quot;: 42, # Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumUpperCase&quot;: 42, # Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordQuality&quot;: &quot;A String&quot;, # The required password quality.
-      &quot;passwordScope&quot;: &quot;A String&quot;, # The scope that the password requirement applies to.
-      &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
-      &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
+      &quot;maximumFailedPasswordsForWipe&quot;: 42, # Optional. Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
+      &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Optional. Password expiration timeout.
+      &quot;passwordHistoryLength&quot;: 42, # Optional. The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
+      &quot;passwordMinimumLength&quot;: 42, # Optional. The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
+      &quot;passwordMinimumLetters&quot;: 42, # Optional. Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumLowerCase&quot;: 42, # Optional. Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumNonLetter&quot;: 42, # Optional. Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumNumeric&quot;: 42, # Optional. Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumSymbols&quot;: 42, # Optional. Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumUpperCase&quot;: 42, # Optional. Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordQuality&quot;: &quot;A String&quot;, # Optional. The required password quality.
+      &quot;passwordScope&quot;: &quot;A String&quot;, # Optional. The scope that the password requirement applies to.
+      &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # Optional. The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
+      &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Optional. Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
     },
   ],
   &quot;appliedPolicyName&quot;: &quot;A String&quot;, # The name of the policy currently applied to the device.
@@ -203,6 +209,18 @@ Returns:
     &quot;commonCriteriaModeStatus&quot;: &quot;A String&quot;, # Whether Common Criteria Mode is enabled.
     &quot;policySignatureVerificationStatus&quot;: &quot;A String&quot;, # Output only. The status of policy signature verification.
   },
+  &quot;defaultApplicationInfo&quot;: [ # Output only. The default application information for the DefaultApplicationType. This information is only available if defaultApplicationInfoReportingEnabled is true in the device&#x27;s policy. Available on Android 16 and above.All app types are reported on fully managed devices. DEFAULT_BROWSER, DEFAULT_CALL_REDIRECTION, DEFAULT_CALL_SCREENING and DEFAULT_DIALER types are reported for the work profiles on company-owned devices with a work profile and personally-owned devices. DEFAULT_WALLET is also reported for company-owned devices with a work profile, but will only include work profile information.
+    { # The default application information for a specific DefaultApplicationType.
+      &quot;defaultApplicationSettingAttempts&quot;: [ # Output only. Details on the default application setting attempts, in the same order as listed in defaultApplications.
+        { # Details on a default application setting attempt.
+          &quot;attemptOutcome&quot;: &quot;A String&quot;, # Output only. The outcome of setting the app as the default.
+          &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the attempted application.
+        },
+      ],
+      &quot;defaultApplicationType&quot;: &quot;A String&quot;, # Output only. The default application type.
+      &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the current default application.
+    },
+  ],
   &quot;deviceSettings&quot;: { # Information about security related device settings on device. # Device settings information. This information is only available if deviceSettingsEnabled is true in the device&#x27;s policy.
     &quot;adbEnabled&quot;: True or False, # Whether ADB (https://developer.android.com/studio/command-line/adb.html) is enabled on the device.
     &quot;developmentSettingsEnabled&quot;: True or False, # Whether developer mode is enabled on the device.
@@ -266,7 +284,7 @@ Returns:
     &quot;hardware&quot;: &quot;A String&quot;, # Name of the hardware. For example, Angler.
     &quot;manufacturer&quot;: &quot;A String&quot;, # Manufacturer. For example, Motorola.
     &quot;model&quot;: &quot;A String&quot;, # The model of the device. For example, Asus Nexus 7.
-    &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number.
+    &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number. However, for personally-owned devices running Android 12 and above, this is the same as the enterpriseSpecificId.
     &quot;skinShutdownTemperatures&quot;: [ # Device skin shutdown temperature thresholds in Celsius.
       3.14,
     ],
@@ -317,9 +335,11 @@ Returns:
     &quot;imei&quot;: &quot;A String&quot;, # IMEI number of the GSM device. For example, A1000031212.
     &quot;meid&quot;: &quot;A String&quot;, # MEID number of the CDMA device. For example, A00000292788E1.
     &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
-    &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
-      { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+    &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android 6.
+      { # Telephony information associated with a given SIM card on the device. This is supported for all SIM cards on fully managed devices on Android 6 and above. In addition, this is supported for admin-added eSIMs on all devices for Android 15 and above.
+        &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below Android 15.
         &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+        &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below Android 15.
         &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
         &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
       },
@@ -335,6 +355,9 @@ Returns:
       &quot;packageName&quot;: &quot;A String&quot;, # The package name indicating which app is out of compliance, if applicable.
       &quot;settingName&quot;: &quot;A String&quot;, # The name of the policy setting. This is the JSON field name of a top-level Policy field.
       &quot;specificNonComplianceContext&quot;: { # Additional context for SpecificNonComplianceReason. # Additional context for specific_non_compliance_reason.
+        &quot;defaultApplicationContext&quot;: { # Additional context for non-compliance related to default application settings. # Output only. Additional context for non-compliance related to default application settings. See DEFAULT_APPLICATION_SETTING_FAILED_FOR_SCOPE.
+          &quot;defaultApplicationScope&quot;: &quot;A String&quot;, # Output only. The scope of non-compliant default application setting.
+        },
         &quot;oncWifiContext&quot;: { # Additional context for non-compliance related to Wi-Fi configuration. # Additional context for non-compliance related to Wi-Fi configuration. See ONC_WIFI_INVALID_VALUE and ONC_WIFI_API_LEVEL
           &quot;wifiGuid&quot;: &quot;A String&quot;, # The GUID of non-compliant Wi-Fi configuration.
         },
@@ -411,6 +434,10 @@ Args:
     The object takes the form of:
 
 { # A command.
+  &quot;addEsimParams&quot;: { # Parameters associated with the ADD_ESIM command to add an eSIM profile to the device. # Optional. Parameters for the ADD_ESIM command to add an eSIM profile to the device. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to ADD_ESIM. It is also acceptable to explicitly set type to ADD_ESIM.
+    &quot;activationCode&quot;: &quot;A String&quot;, # Required. The activation code for the eSIM profile.
+    &quot;activationState&quot;: &quot;A String&quot;, # Required. The activation state of the eSIM profile once it is downloaded.
+  },
   &quot;clearAppsDataParams&quot;: { # Parameters associated with the CLEAR_APP_DATA command to clear the data of specified apps from the device. # Parameters for the CLEAR_APP_DATA command to clear the data of specified apps from the device. See ClearAppsDataParams. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to CLEAR_APP_DATA. It is also acceptable to explicitly set type to CLEAR_APP_DATA.
     &quot;packageNames&quot;: [ # The package names of the apps whose data will be cleared when the command is executed.
       &quot;A String&quot;,
@@ -426,7 +453,22 @@ Args:
   &quot;createTime&quot;: &quot;A String&quot;, # The timestamp at which the command was created. The timestamp is automatically generated by the server.
   &quot;duration&quot;: &quot;A String&quot;, # The duration for which the command is valid. The command will expire if not executed by the device during this time. The default duration if unspecified is ten minutes. There is no maximum duration.
   &quot;errorCode&quot;: &quot;A String&quot;, # If the command failed, an error code explaining the failure. This is not set when the command is cancelled by the caller. For reasoning about command errors, prefer fields in the following order (most preferred first): 1. Command-specific fields like clearAppsDataStatus, startLostModeStatus, or similar, if they exist. 2. This field, if set. 3. The generic error field in the Operation that wraps the command.
+  &quot;esimStatus&quot;: { # Status and error details (if present) of an ADD_ESIM or REMOVE_ESIM command. # Output only. Status of an ADD_ESIM or REMOVE_ESIM command.
+    &quot;esimInfo&quot;: { # Details of the eSIM added or removed. # Output only. Information about the eSIM added or removed. This is populated only when the eSIM operation status is SUCCESS.
+      &quot;iccId&quot;: &quot;A String&quot;, # Output only. ICC ID of the eSIM.
+    },
+    &quot;internalErrorDetails&quot;: { # Internal error details if present for the ADD_ESIM or REMOVE_ESIM command. # Output only. Details of the error if the status is set to INTERNAL_ERROR.
+      &quot;errorCode&quot;: &quot;A String&quot;, # Output only. Integer representation of the error code as specified here (https://developer.android.com/reference/android/telephony/euicc/EuiccManager#EXTRA_EMBEDDED_SUBSCRIPTION_DETAILED_CODE). See also, OPERATION_SMDX_SUBJECT_REASON_CODE. See error_code_detail for more details.
+      &quot;errorCodeDetail&quot;: &quot;A String&quot;, # Output only. The error code detail corresponding to the error_code.
+      &quot;operationCode&quot;: &quot;A String&quot;, # Output only. Integer representation of the operation code as specified here (https://developer.android.com/reference/android/telephony/euicc/EuiccManager#EXTRA_EMBEDDED_SUBSCRIPTION_DETAILED_CODE). See operation_code_detail for more details.
+      &quot;operationCodeDetail&quot;: &quot;A String&quot;, # Output only. The operation code detail corresponding to the operation_code.
+    },
+    &quot;status&quot;: &quot;A String&quot;, # Output only. Status of an ADD_ESIM or REMOVE_ESIM command.
+  },
   &quot;newPassword&quot;: &quot;A String&quot;, # For commands of type RESET_PASSWORD, optionally specifies the new password. Note: The new password must be at least 6 characters long if it is numeric in case of Android 14 devices. Else the command will fail with INVALID_VALUE.
+  &quot;removeEsimParams&quot;: { # Parameters associated with the REMOVE_ESIM command to remove an eSIM profile from the device. # Optional. Parameters for the REMOVE_ESIM command to remove an eSIM profile from the device. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to REMOVE_ESIM. It is also acceptable to explicitly set type to REMOVE_ESIM.
+    &quot;iccId&quot;: &quot;A String&quot;, # Required. ICC ID of the eSIM profile to be deleted.
+  },
   &quot;requestDeviceInfoParams&quot;: { # Parameters associated with the REQUEST_DEVICE_INFO command to get device related information. # Optional. Parameters for the REQUEST_DEVICE_INFO command to get device related information. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to REQUEST_DEVICE_INFO . It is also acceptable to explicitly set type to REQUEST_DEVICE_INFO.
     &quot;deviceInfo&quot;: &quot;A String&quot;, # Required. Type of device information to be requested.
   },
@@ -480,6 +522,17 @@ Args:
   },
   &quot;type&quot;: &quot;A String&quot;, # The type of the command.
   &quot;userName&quot;: &quot;A String&quot;, # The resource name of the user that owns the device in the form enterprises/{enterpriseId}/users/{userId}. This is automatically generated by the server based on the device the command is sent to.
+  &quot;wipeParams&quot;: { # Parameters associated with the WIPE command to wipe the device. # Optional. Parameters for the WIPE command to wipe the device. If this is set, then it is suggested that type should not be set. In this case, the server automatically sets it to WIPE. It is also acceptable to explicitly set type to WIPE.
+    &quot;wipeDataFlags&quot;: [ # Optional. Flags to determine what data to wipe.
+      &quot;A String&quot;,
+    ],
+    &quot;wipeReason&quot;: { # Provides a user-facing message with locale info. The maximum message length is 4096 characters. # Optional. A short message displayed to the user before wiping the work profile on personal devices. This has no effect on company owned devices. The maximum message length is 200 characters.
+      &quot;defaultMessage&quot;: &quot;A String&quot;, # The default message displayed if no localized message is specified or the user&#x27;s locale doesn&#x27;t match with any of the localized messages. A default message must be provided if any localized messages are provided.
+      &quot;localizedMessages&quot;: { # A map containing pairs, where locale is a well-formed BCP 47 language (https://www.w3.org/International/articles/language-tags/) code, such as en-US, es-ES, or fr.
+        &quot;a_key&quot;: &quot;A String&quot;,
+      },
+    },
+  },
 }
 
   x__xgafv: string, V1 error format.
@@ -517,7 +570,7 @@ Returns:
 
 Args:
   parent: string, The name of the enterprise in the form enterprises/{enterpriseId}. (required)
-  pageSize: integer, The requested page size. The actual page size may be fixed to a min or max value.
+  pageSize: integer, The requested page size. If unspecified, at most 10 devices will be returned. The maximum value is 100; values above 100 will be coerced to 100. The limits can change over time.
   pageToken: string, A token identifying a page of results returned by the server.
   x__xgafv: string, V1 error format.
     Allowed values
@@ -554,8 +607,13 @@ Returns:
           ],
           &quot;packageName&quot;: &quot;A String&quot;, # Package name of the app.
           &quot;packageSha256Hash&quot;: &quot;A String&quot;, # The SHA-256 hash of the app&#x27;s APK file, which can be used to verify the app hasn&#x27;t been modified. Each byte of the hash value is represented as a two-digit hexadecimal number.
-          &quot;signingKeyCertFingerprints&quot;: [ # The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
+          &quot;signingKeyCertFingerprints&quot;: [ # Deprecated. Use signingKeyCerts instead. The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
             &quot;A String&quot;,
+          ],
+          &quot;signingKeyCerts&quot;: [ # Output only. Signing key certificates of the app.
+            { # The application signing key certificate.
+              &quot;signingKeyCertFingerprintSha256&quot;: &quot;A String&quot;, # Required. The SHA-256 hash value of the signing key certificate of the app. This must be a valid SHA-256 hash value, i.e. 32 bytes.
+            },
           ],
           &quot;state&quot;: &quot;A String&quot;, # Application state.
           &quot;userFacingType&quot;: &quot;A String&quot;, # Whether the app is user facing.
@@ -563,22 +621,22 @@ Returns:
           &quot;versionName&quot;: &quot;A String&quot;, # The app version as displayed to the user.
         },
       ],
-      &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. The applied requirements may be slightly different from those specified in passwordPolicies in some cases. fieldPath is set based on passwordPolicies.
+      &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. This field exists because the applied requirements may be slightly different from those specified in passwordPolicies in some cases. Note that this field does not provide information about password compliance. For non-compliance information, see nonComplianceDetails. NonComplianceDetail.fieldPath, is set based on passwordPolicies, not based on this field.
         { # Requirements for the password used to unlock a device.
-          &quot;maximumFailedPasswordsForWipe&quot;: 42, # Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
-          &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Password expiration timeout.
-          &quot;passwordHistoryLength&quot;: 42, # The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
-          &quot;passwordMinimumLength&quot;: 42, # The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
-          &quot;passwordMinimumLetters&quot;: 42, # Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
-          &quot;passwordMinimumLowerCase&quot;: 42, # Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
-          &quot;passwordMinimumNonLetter&quot;: 42, # Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
-          &quot;passwordMinimumNumeric&quot;: 42, # Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
-          &quot;passwordMinimumSymbols&quot;: 42, # Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
-          &quot;passwordMinimumUpperCase&quot;: 42, # Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
-          &quot;passwordQuality&quot;: &quot;A String&quot;, # The required password quality.
-          &quot;passwordScope&quot;: &quot;A String&quot;, # The scope that the password requirement applies to.
-          &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
-          &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
+          &quot;maximumFailedPasswordsForWipe&quot;: 42, # Optional. Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
+          &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Optional. Password expiration timeout.
+          &quot;passwordHistoryLength&quot;: 42, # Optional. The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
+          &quot;passwordMinimumLength&quot;: 42, # Optional. The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
+          &quot;passwordMinimumLetters&quot;: 42, # Optional. Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
+          &quot;passwordMinimumLowerCase&quot;: 42, # Optional. Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
+          &quot;passwordMinimumNonLetter&quot;: 42, # Optional. Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
+          &quot;passwordMinimumNumeric&quot;: 42, # Optional. Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
+          &quot;passwordMinimumSymbols&quot;: 42, # Optional. Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
+          &quot;passwordMinimumUpperCase&quot;: 42, # Optional. Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
+          &quot;passwordQuality&quot;: &quot;A String&quot;, # Optional. The required password quality.
+          &quot;passwordScope&quot;: &quot;A String&quot;, # Optional. The scope that the password requirement applies to.
+          &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # Optional. The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
+          &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Optional. Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
         },
       ],
       &quot;appliedPolicyName&quot;: &quot;A String&quot;, # The name of the policy currently applied to the device.
@@ -588,6 +646,18 @@ Returns:
         &quot;commonCriteriaModeStatus&quot;: &quot;A String&quot;, # Whether Common Criteria Mode is enabled.
         &quot;policySignatureVerificationStatus&quot;: &quot;A String&quot;, # Output only. The status of policy signature verification.
       },
+      &quot;defaultApplicationInfo&quot;: [ # Output only. The default application information for the DefaultApplicationType. This information is only available if defaultApplicationInfoReportingEnabled is true in the device&#x27;s policy. Available on Android 16 and above.All app types are reported on fully managed devices. DEFAULT_BROWSER, DEFAULT_CALL_REDIRECTION, DEFAULT_CALL_SCREENING and DEFAULT_DIALER types are reported for the work profiles on company-owned devices with a work profile and personally-owned devices. DEFAULT_WALLET is also reported for company-owned devices with a work profile, but will only include work profile information.
+        { # The default application information for a specific DefaultApplicationType.
+          &quot;defaultApplicationSettingAttempts&quot;: [ # Output only. Details on the default application setting attempts, in the same order as listed in defaultApplications.
+            { # Details on a default application setting attempt.
+              &quot;attemptOutcome&quot;: &quot;A String&quot;, # Output only. The outcome of setting the app as the default.
+              &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the attempted application.
+            },
+          ],
+          &quot;defaultApplicationType&quot;: &quot;A String&quot;, # Output only. The default application type.
+          &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the current default application.
+        },
+      ],
       &quot;deviceSettings&quot;: { # Information about security related device settings on device. # Device settings information. This information is only available if deviceSettingsEnabled is true in the device&#x27;s policy.
         &quot;adbEnabled&quot;: True or False, # Whether ADB (https://developer.android.com/studio/command-line/adb.html) is enabled on the device.
         &quot;developmentSettingsEnabled&quot;: True or False, # Whether developer mode is enabled on the device.
@@ -651,7 +721,7 @@ Returns:
         &quot;hardware&quot;: &quot;A String&quot;, # Name of the hardware. For example, Angler.
         &quot;manufacturer&quot;: &quot;A String&quot;, # Manufacturer. For example, Motorola.
         &quot;model&quot;: &quot;A String&quot;, # The model of the device. For example, Asus Nexus 7.
-        &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number.
+        &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number. However, for personally-owned devices running Android 12 and above, this is the same as the enterpriseSpecificId.
         &quot;skinShutdownTemperatures&quot;: [ # Device skin shutdown temperature thresholds in Celsius.
           3.14,
         ],
@@ -702,9 +772,11 @@ Returns:
         &quot;imei&quot;: &quot;A String&quot;, # IMEI number of the GSM device. For example, A1000031212.
         &quot;meid&quot;: &quot;A String&quot;, # MEID number of the CDMA device. For example, A00000292788E1.
         &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
-        &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
-          { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+        &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android 6.
+          { # Telephony information associated with a given SIM card on the device. This is supported for all SIM cards on fully managed devices on Android 6 and above. In addition, this is supported for admin-added eSIMs on all devices for Android 15 and above.
+            &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below Android 15.
             &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+            &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below Android 15.
             &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
             &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
           },
@@ -720,6 +792,9 @@ Returns:
           &quot;packageName&quot;: &quot;A String&quot;, # The package name indicating which app is out of compliance, if applicable.
           &quot;settingName&quot;: &quot;A String&quot;, # The name of the policy setting. This is the JSON field name of a top-level Policy field.
           &quot;specificNonComplianceContext&quot;: { # Additional context for SpecificNonComplianceReason. # Additional context for specific_non_compliance_reason.
+            &quot;defaultApplicationContext&quot;: { # Additional context for non-compliance related to default application settings. # Output only. Additional context for non-compliance related to default application settings. See DEFAULT_APPLICATION_SETTING_FAILED_FOR_SCOPE.
+              &quot;defaultApplicationScope&quot;: &quot;A String&quot;, # Output only. The scope of non-compliant default application setting.
+            },
             &quot;oncWifiContext&quot;: { # Additional context for non-compliance related to Wi-Fi configuration. # Additional context for non-compliance related to Wi-Fi configuration. See ONC_WIFI_INVALID_VALUE and ONC_WIFI_API_LEVEL
               &quot;wifiGuid&quot;: &quot;A String&quot;, # The GUID of non-compliant Wi-Fi configuration.
             },
@@ -790,17 +865,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -837,8 +912,13 @@ Args:
       ],
       &quot;packageName&quot;: &quot;A String&quot;, # Package name of the app.
       &quot;packageSha256Hash&quot;: &quot;A String&quot;, # The SHA-256 hash of the app&#x27;s APK file, which can be used to verify the app hasn&#x27;t been modified. Each byte of the hash value is represented as a two-digit hexadecimal number.
-      &quot;signingKeyCertFingerprints&quot;: [ # The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
+      &quot;signingKeyCertFingerprints&quot;: [ # Deprecated. Use signingKeyCerts instead. The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
         &quot;A String&quot;,
+      ],
+      &quot;signingKeyCerts&quot;: [ # Output only. Signing key certificates of the app.
+        { # The application signing key certificate.
+          &quot;signingKeyCertFingerprintSha256&quot;: &quot;A String&quot;, # Required. The SHA-256 hash value of the signing key certificate of the app. This must be a valid SHA-256 hash value, i.e. 32 bytes.
+        },
       ],
       &quot;state&quot;: &quot;A String&quot;, # Application state.
       &quot;userFacingType&quot;: &quot;A String&quot;, # Whether the app is user facing.
@@ -846,22 +926,22 @@ Args:
       &quot;versionName&quot;: &quot;A String&quot;, # The app version as displayed to the user.
     },
   ],
-  &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. The applied requirements may be slightly different from those specified in passwordPolicies in some cases. fieldPath is set based on passwordPolicies.
+  &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. This field exists because the applied requirements may be slightly different from those specified in passwordPolicies in some cases. Note that this field does not provide information about password compliance. For non-compliance information, see nonComplianceDetails. NonComplianceDetail.fieldPath, is set based on passwordPolicies, not based on this field.
     { # Requirements for the password used to unlock a device.
-      &quot;maximumFailedPasswordsForWipe&quot;: 42, # Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
-      &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Password expiration timeout.
-      &quot;passwordHistoryLength&quot;: 42, # The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
-      &quot;passwordMinimumLength&quot;: 42, # The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
-      &quot;passwordMinimumLetters&quot;: 42, # Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumLowerCase&quot;: 42, # Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumNonLetter&quot;: 42, # Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumNumeric&quot;: 42, # Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumSymbols&quot;: 42, # Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumUpperCase&quot;: 42, # Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordQuality&quot;: &quot;A String&quot;, # The required password quality.
-      &quot;passwordScope&quot;: &quot;A String&quot;, # The scope that the password requirement applies to.
-      &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
-      &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
+      &quot;maximumFailedPasswordsForWipe&quot;: 42, # Optional. Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
+      &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Optional. Password expiration timeout.
+      &quot;passwordHistoryLength&quot;: 42, # Optional. The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
+      &quot;passwordMinimumLength&quot;: 42, # Optional. The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
+      &quot;passwordMinimumLetters&quot;: 42, # Optional. Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumLowerCase&quot;: 42, # Optional. Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumNonLetter&quot;: 42, # Optional. Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumNumeric&quot;: 42, # Optional. Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumSymbols&quot;: 42, # Optional. Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumUpperCase&quot;: 42, # Optional. Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordQuality&quot;: &quot;A String&quot;, # Optional. The required password quality.
+      &quot;passwordScope&quot;: &quot;A String&quot;, # Optional. The scope that the password requirement applies to.
+      &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # Optional. The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
+      &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Optional. Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
     },
   ],
   &quot;appliedPolicyName&quot;: &quot;A String&quot;, # The name of the policy currently applied to the device.
@@ -871,6 +951,18 @@ Args:
     &quot;commonCriteriaModeStatus&quot;: &quot;A String&quot;, # Whether Common Criteria Mode is enabled.
     &quot;policySignatureVerificationStatus&quot;: &quot;A String&quot;, # Output only. The status of policy signature verification.
   },
+  &quot;defaultApplicationInfo&quot;: [ # Output only. The default application information for the DefaultApplicationType. This information is only available if defaultApplicationInfoReportingEnabled is true in the device&#x27;s policy. Available on Android 16 and above.All app types are reported on fully managed devices. DEFAULT_BROWSER, DEFAULT_CALL_REDIRECTION, DEFAULT_CALL_SCREENING and DEFAULT_DIALER types are reported for the work profiles on company-owned devices with a work profile and personally-owned devices. DEFAULT_WALLET is also reported for company-owned devices with a work profile, but will only include work profile information.
+    { # The default application information for a specific DefaultApplicationType.
+      &quot;defaultApplicationSettingAttempts&quot;: [ # Output only. Details on the default application setting attempts, in the same order as listed in defaultApplications.
+        { # Details on a default application setting attempt.
+          &quot;attemptOutcome&quot;: &quot;A String&quot;, # Output only. The outcome of setting the app as the default.
+          &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the attempted application.
+        },
+      ],
+      &quot;defaultApplicationType&quot;: &quot;A String&quot;, # Output only. The default application type.
+      &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the current default application.
+    },
+  ],
   &quot;deviceSettings&quot;: { # Information about security related device settings on device. # Device settings information. This information is only available if deviceSettingsEnabled is true in the device&#x27;s policy.
     &quot;adbEnabled&quot;: True or False, # Whether ADB (https://developer.android.com/studio/command-line/adb.html) is enabled on the device.
     &quot;developmentSettingsEnabled&quot;: True or False, # Whether developer mode is enabled on the device.
@@ -934,7 +1026,7 @@ Args:
     &quot;hardware&quot;: &quot;A String&quot;, # Name of the hardware. For example, Angler.
     &quot;manufacturer&quot;: &quot;A String&quot;, # Manufacturer. For example, Motorola.
     &quot;model&quot;: &quot;A String&quot;, # The model of the device. For example, Asus Nexus 7.
-    &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number.
+    &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number. However, for personally-owned devices running Android 12 and above, this is the same as the enterpriseSpecificId.
     &quot;skinShutdownTemperatures&quot;: [ # Device skin shutdown temperature thresholds in Celsius.
       3.14,
     ],
@@ -985,9 +1077,11 @@ Args:
     &quot;imei&quot;: &quot;A String&quot;, # IMEI number of the GSM device. For example, A1000031212.
     &quot;meid&quot;: &quot;A String&quot;, # MEID number of the CDMA device. For example, A00000292788E1.
     &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
-    &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
-      { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+    &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android 6.
+      { # Telephony information associated with a given SIM card on the device. This is supported for all SIM cards on fully managed devices on Android 6 and above. In addition, this is supported for admin-added eSIMs on all devices for Android 15 and above.
+        &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below Android 15.
         &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+        &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below Android 15.
         &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
         &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
       },
@@ -1003,6 +1097,9 @@ Args:
       &quot;packageName&quot;: &quot;A String&quot;, # The package name indicating which app is out of compliance, if applicable.
       &quot;settingName&quot;: &quot;A String&quot;, # The name of the policy setting. This is the JSON field name of a top-level Policy field.
       &quot;specificNonComplianceContext&quot;: { # Additional context for SpecificNonComplianceReason. # Additional context for specific_non_compliance_reason.
+        &quot;defaultApplicationContext&quot;: { # Additional context for non-compliance related to default application settings. # Output only. Additional context for non-compliance related to default application settings. See DEFAULT_APPLICATION_SETTING_FAILED_FOR_SCOPE.
+          &quot;defaultApplicationScope&quot;: &quot;A String&quot;, # Output only. The scope of non-compliant default application setting.
+        },
         &quot;oncWifiContext&quot;: { # Additional context for non-compliance related to Wi-Fi configuration. # Additional context for non-compliance related to Wi-Fi configuration. See ONC_WIFI_INVALID_VALUE and ONC_WIFI_API_LEVEL
           &quot;wifiGuid&quot;: &quot;A String&quot;, # The GUID of non-compliant Wi-Fi configuration.
         },
@@ -1102,8 +1199,13 @@ Returns:
       ],
       &quot;packageName&quot;: &quot;A String&quot;, # Package name of the app.
       &quot;packageSha256Hash&quot;: &quot;A String&quot;, # The SHA-256 hash of the app&#x27;s APK file, which can be used to verify the app hasn&#x27;t been modified. Each byte of the hash value is represented as a two-digit hexadecimal number.
-      &quot;signingKeyCertFingerprints&quot;: [ # The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
+      &quot;signingKeyCertFingerprints&quot;: [ # Deprecated. Use signingKeyCerts instead. The SHA-1 hash of each android.content.pm.Signature (https://developer.android.com/reference/android/content/pm/Signature.html) associated with the app package. Each byte of each hash value is represented as a two-digit hexadecimal number.
         &quot;A String&quot;,
+      ],
+      &quot;signingKeyCerts&quot;: [ # Output only. Signing key certificates of the app.
+        { # The application signing key certificate.
+          &quot;signingKeyCertFingerprintSha256&quot;: &quot;A String&quot;, # Required. The SHA-256 hash value of the signing key certificate of the app. This must be a valid SHA-256 hash value, i.e. 32 bytes.
+        },
       ],
       &quot;state&quot;: &quot;A String&quot;, # Application state.
       &quot;userFacingType&quot;: &quot;A String&quot;, # Whether the app is user facing.
@@ -1111,22 +1213,22 @@ Returns:
       &quot;versionName&quot;: &quot;A String&quot;, # The app version as displayed to the user.
     },
   ],
-  &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. The applied requirements may be slightly different from those specified in passwordPolicies in some cases. fieldPath is set based on passwordPolicies.
+  &quot;appliedPasswordPolicies&quot;: [ # The password requirements currently applied to the device. This field exists because the applied requirements may be slightly different from those specified in passwordPolicies in some cases. Note that this field does not provide information about password compliance. For non-compliance information, see nonComplianceDetails. NonComplianceDetail.fieldPath, is set based on passwordPolicies, not based on this field.
     { # Requirements for the password used to unlock a device.
-      &quot;maximumFailedPasswordsForWipe&quot;: 42, # Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
-      &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Password expiration timeout.
-      &quot;passwordHistoryLength&quot;: 42, # The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
-      &quot;passwordMinimumLength&quot;: 42, # The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
-      &quot;passwordMinimumLetters&quot;: 42, # Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumLowerCase&quot;: 42, # Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumNonLetter&quot;: 42, # Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumNumeric&quot;: 42, # Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumSymbols&quot;: 42, # Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordMinimumUpperCase&quot;: 42, # Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
-      &quot;passwordQuality&quot;: &quot;A String&quot;, # The required password quality.
-      &quot;passwordScope&quot;: &quot;A String&quot;, # The scope that the password requirement applies to.
-      &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
-      &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
+      &quot;maximumFailedPasswordsForWipe&quot;: 42, # Optional. Number of incorrect device-unlock passwords that can be entered before a device is wiped. A value of 0 means there is no restriction.
+      &quot;passwordExpirationTimeout&quot;: &quot;A String&quot;, # Optional. Password expiration timeout.
+      &quot;passwordHistoryLength&quot;: 42, # Optional. The length of the password history. After setting this field, the user won&#x27;t be able to enter a new password that is the same as any password in the history. A value of 0 means there is no restriction.
+      &quot;passwordMinimumLength&quot;: 42, # Optional. The minimum allowed password length. A value of 0 means there is no restriction. Only enforced when password_quality is NUMERIC, NUMERIC_COMPLEX, ALPHABETIC, ALPHANUMERIC, or COMPLEX.
+      &quot;passwordMinimumLetters&quot;: 42, # Optional. Minimum number of letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumLowerCase&quot;: 42, # Optional. Minimum number of lower case letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumNonLetter&quot;: 42, # Optional. Minimum number of non-letter characters (numerical digits or symbols) required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumNumeric&quot;: 42, # Optional. Minimum number of numerical digits required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumSymbols&quot;: 42, # Optional. Minimum number of symbols required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordMinimumUpperCase&quot;: 42, # Optional. Minimum number of upper case letters required in the password. Only enforced when password_quality is COMPLEX.
+      &quot;passwordQuality&quot;: &quot;A String&quot;, # Optional. The required password quality.
+      &quot;passwordScope&quot;: &quot;A String&quot;, # Optional. The scope that the password requirement applies to.
+      &quot;requirePasswordUnlock&quot;: &quot;A String&quot;, # Optional. The length of time after a device or work profile is unlocked using a strong form of authentication (password, PIN, pattern) that it can be unlocked using any other authentication method (e.g. fingerprint, trust agents, face). After the specified time period elapses, only strong forms of authentication can be used to unlock the device or work profile.
+      &quot;unifiedLockSettings&quot;: &quot;A String&quot;, # Optional. Controls whether a unified lock is allowed for the device and the work profile, on devices running Android 9 and above with a work profile. This can be set only if password_scope is set to SCOPE_PROFILE, the policy will be rejected otherwise. If user has not set a separate work lock and this field is set to REQUIRE_SEPARATE_WORK_LOCK, a NonComplianceDetail is reported with nonComplianceReason set to USER_ACTION.
     },
   ],
   &quot;appliedPolicyName&quot;: &quot;A String&quot;, # The name of the policy currently applied to the device.
@@ -1136,6 +1238,18 @@ Returns:
     &quot;commonCriteriaModeStatus&quot;: &quot;A String&quot;, # Whether Common Criteria Mode is enabled.
     &quot;policySignatureVerificationStatus&quot;: &quot;A String&quot;, # Output only. The status of policy signature verification.
   },
+  &quot;defaultApplicationInfo&quot;: [ # Output only. The default application information for the DefaultApplicationType. This information is only available if defaultApplicationInfoReportingEnabled is true in the device&#x27;s policy. Available on Android 16 and above.All app types are reported on fully managed devices. DEFAULT_BROWSER, DEFAULT_CALL_REDIRECTION, DEFAULT_CALL_SCREENING and DEFAULT_DIALER types are reported for the work profiles on company-owned devices with a work profile and personally-owned devices. DEFAULT_WALLET is also reported for company-owned devices with a work profile, but will only include work profile information.
+    { # The default application information for a specific DefaultApplicationType.
+      &quot;defaultApplicationSettingAttempts&quot;: [ # Output only. Details on the default application setting attempts, in the same order as listed in defaultApplications.
+        { # Details on a default application setting attempt.
+          &quot;attemptOutcome&quot;: &quot;A String&quot;, # Output only. The outcome of setting the app as the default.
+          &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the attempted application.
+        },
+      ],
+      &quot;defaultApplicationType&quot;: &quot;A String&quot;, # Output only. The default application type.
+      &quot;packageName&quot;: &quot;A String&quot;, # Output only. The package name of the current default application.
+    },
+  ],
   &quot;deviceSettings&quot;: { # Information about security related device settings on device. # Device settings information. This information is only available if deviceSettingsEnabled is true in the device&#x27;s policy.
     &quot;adbEnabled&quot;: True or False, # Whether ADB (https://developer.android.com/studio/command-line/adb.html) is enabled on the device.
     &quot;developmentSettingsEnabled&quot;: True or False, # Whether developer mode is enabled on the device.
@@ -1199,7 +1313,7 @@ Returns:
     &quot;hardware&quot;: &quot;A String&quot;, # Name of the hardware. For example, Angler.
     &quot;manufacturer&quot;: &quot;A String&quot;, # Manufacturer. For example, Motorola.
     &quot;model&quot;: &quot;A String&quot;, # The model of the device. For example, Asus Nexus 7.
-    &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number.
+    &quot;serialNumber&quot;: &quot;A String&quot;, # The device serial number. However, for personally-owned devices running Android 12 and above, this is the same as the enterpriseSpecificId.
     &quot;skinShutdownTemperatures&quot;: [ # Device skin shutdown temperature thresholds in Celsius.
       3.14,
     ],
@@ -1250,9 +1364,11 @@ Returns:
     &quot;imei&quot;: &quot;A String&quot;, # IMEI number of the GSM device. For example, A1000031212.
     &quot;meid&quot;: &quot;A String&quot;, # MEID number of the CDMA device. For example, A00000292788E1.
     &quot;networkOperatorName&quot;: &quot;A String&quot;, # Alphabetic name of current registered operator. For example, Vodafone.
-    &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
-      { # Telephony information associated with a given SIM card on the device. Only supported on fully managed devices starting from Android API level 23.
+    &quot;telephonyInfos&quot;: [ # Provides telephony information associated with each SIM card on the device. Only supported on fully managed devices starting from Android 6.
+      { # Telephony information associated with a given SIM card on the device. This is supported for all SIM cards on fully managed devices on Android 6 and above. In addition, this is supported for admin-added eSIMs on all devices for Android 15 and above.
+        &quot;activationState&quot;: &quot;A String&quot;, # Output only. Activation state of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always ACTIVATION_STATE_UNSPECIFIED for physical SIMs and for devices below Android 15.
         &quot;carrierName&quot;: &quot;A String&quot;, # The carrier name associated with this SIM card.
+        &quot;configMode&quot;: &quot;A String&quot;, # Output only. The configuration mode of the SIM card on the device. This is applicable for eSIMs only. This is supported on all devices for Android 15 and above. This is always CONFIG_MODE_UNSPECIFIED for physical SIMs and for devices below Android 15.
         &quot;iccId&quot;: &quot;A String&quot;, # Output only. The ICCID associated with this SIM card.
         &quot;phoneNumber&quot;: &quot;A String&quot;, # The phone number associated with this SIM card.
       },
@@ -1268,6 +1384,9 @@ Returns:
       &quot;packageName&quot;: &quot;A String&quot;, # The package name indicating which app is out of compliance, if applicable.
       &quot;settingName&quot;: &quot;A String&quot;, # The name of the policy setting. This is the JSON field name of a top-level Policy field.
       &quot;specificNonComplianceContext&quot;: { # Additional context for SpecificNonComplianceReason. # Additional context for specific_non_compliance_reason.
+        &quot;defaultApplicationContext&quot;: { # Additional context for non-compliance related to default application settings. # Output only. Additional context for non-compliance related to default application settings. See DEFAULT_APPLICATION_SETTING_FAILED_FOR_SCOPE.
+          &quot;defaultApplicationScope&quot;: &quot;A String&quot;, # Output only. The scope of non-compliant default application setting.
+        },
         &quot;oncWifiContext&quot;: { # Additional context for non-compliance related to Wi-Fi configuration. # Additional context for non-compliance related to Wi-Fi configuration. See ONC_WIFI_INVALID_VALUE and ONC_WIFI_API_LEVEL
           &quot;wifiGuid&quot;: &quot;A String&quot;, # The GUID of non-compliant Wi-Fi configuration.
         },

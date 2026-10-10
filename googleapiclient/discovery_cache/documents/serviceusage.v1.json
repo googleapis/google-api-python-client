@@ -221,6 +221,11 @@
 "description": "The standard list page token.",
 "location": "query",
 "type": "string"
+},
+"returnPartialSuccess": {
+"description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the ListOperationsResponse.unreachable field. This can only be `true` when reading across collections. For example, when `parent` is set to `\"projects/example/locations/-\"`. This field is not supported by default and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+"location": "query",
+"type": "boolean"
 }
 },
 "path": "v1/operations",
@@ -426,7 +431,7 @@
 }
 }
 },
-"revision": "20250515",
+"revision": "20260921",
 "rootUrl": "https://serviceusage.googleapis.com/",
 "schemas": {
 "AddEnableRulesMetadata": {
@@ -492,7 +497,7 @@
 "description": "A message to group the analysis information.",
 "id": "Analysis",
 "properties": {
-"analysis": {
+"analysisResult": {
 "$ref": "AnalysisResult",
 "description": "Output only. Analysis result of updating a policy.",
 "readOnly": true
@@ -502,14 +507,12 @@
 "enum": [
 "ANALYSIS_TYPE_UNSPECIFIED",
 "ANALYSIS_TYPE_DEPENDENCY",
-"ANALYSIS_TYPE_RESOURCE_USAGE",
-"ANALYSIS_TYPE_RESOURCE_EXISTENCE"
+"ANALYSIS_TYPE_RESOURCE_USAGE"
 ],
 "enumDescriptions": [
 "Unspecified analysis type. Do not use.",
 "The analysis of service dependencies.",
-"The analysis of service resource usage.",
-"The analysis of service resource existence."
+"The analysis of service resource usage."
 ],
 "readOnly": true,
 "type": "string"
@@ -568,9 +571,13 @@
 "type": "object"
 },
 "Api": {
-"description": "Api is a light-weight descriptor for an API Interface. Interfaces are also described as \"protocol buffer services\" in some contexts, such as by the \"service\" keyword in a .proto file, but they are different from API Services, which represent a concrete implementation of an interface as opposed to simply a description of methods and bindings. They are also sometimes simply referred to as \"APIs\" in other contexts, such as the name of this message itself. See https://cloud.google.com/apis/design/glossary for detailed terminology.",
+"description": "Api is a light-weight descriptor for an API Interface. Interfaces are also described as \"protocol buffer services\" in some contexts, such as by the \"service\" keyword in a .proto file, but they are different from API Services, which represent a concrete implementation of an interface as opposed to simply a description of methods and bindings. They are also sometimes simply referred to as \"APIs\" in other contexts, such as the name of this message itself. See https://cloud.google.com/apis/design/glossary for detailed terminology. New usages of this message as an alternative to ServiceDescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Api",
 "properties": {
+"edition": {
+"description": "The source edition string, only valid when syntax is SYNTAX_EDITIONS.",
+"type": "string"
+},
 "methods": {
 "description": "The methods of this interface, in unspecified order.",
 "items": {
@@ -629,6 +636,13 @@
 "description": "The type of this aspect configuration.",
 "type": "string"
 },
+"rules": {
+"description": "Optional. Rules of the Configuration.",
+"items": {
+"$ref": "AspectRule"
+},
+"type": "array"
+},
 "spec": {
 "additionalProperties": {
 "description": "Properties of the object.",
@@ -636,6 +650,25 @@
 },
 "description": "Content of the configuration. The underlying schema should be defined by Aspect owners as protobuf message under `google/api/configaspects/proto`.",
 "type": "object"
+}
+},
+"type": "object"
+},
+"AspectRule": {
+"description": "Rule-based configuration for an aspect.",
+"id": "AspectRule",
+"properties": {
+"config": {
+"additionalProperties": {
+"description": "Properties of the object.",
+"type": "any"
+},
+"description": "Required. Rules of the configuration. The underlying schema should be defined by Aspect owners as protobuf message under `google/api/configaspects/proto`.",
+"type": "object"
+},
+"selector": {
+"description": "Required. Selects the RPC methods to which this rule applies. Refer to selector for syntax details.",
+"type": "string"
 }
 },
 "type": "object"
@@ -794,6 +827,7 @@
 "type": "object"
 },
 "pathTranslation": {
+"description": "Path translation specifies how to combine the backend address with the request path in order to produce the appropriate forwarding URL for the request. See PathTranslation for more details.",
 "enum": [
 "PATH_TRANSLATION_UNSPECIFIED",
 "CONSTANT_ADDRESS",
@@ -1126,7 +1160,7 @@
 },
 "selectiveGapicGeneration": {
 "$ref": "SelectiveGapicGeneration",
-"description": "Configuration for which RPCs should be generated in the GAPIC client."
+"description": "Configuration for which RPCs should be generated in the GAPIC client. Note: This field should not be used in most cases."
 }
 },
 "type": "object"
@@ -1135,15 +1169,14 @@
 "description": "Consumer Policy is a set of rules that define what services or service groups can be used for a cloud resource hierarchy.",
 "id": "ConsumerPolicy",
 "properties": {
-"annotations": {
-"additionalProperties": {
+"createTime": {
+"description": "Output only. The time the policy was created. For singleton policies, this is the first touch of the policy.",
+"format": "google-datetime",
+"readOnly": true,
 "type": "string"
 },
-"description": "Optional. Annotations is an unstructured key-value map stored with a policy that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. [AIP-128](https://google.aip.dev/128#annotations)",
-"type": "object"
-},
 "enableRules": {
-"description": "Enable rules define usable services and service groups.",
+"description": "Enable rules define usable services and groups. There can currently be at most one `EnableRule`. This restriction will be lifted in later releases.",
 "items": {
 "$ref": "EnableRule"
 },
@@ -1154,13 +1187,55 @@
 "type": "string"
 },
 "name": {
-"description": "Output only. The resource name of the policy. We only allow consumer policy name as `default` for now: `projects/12345/consumerPolicies/default`, `folders/12345/consumerPolicies/default`, `organizations/12345/consumerPolicies/default`.",
+"description": "Output only. The resource name of the policy. Only the `default` policy is supported: `projects/12345/consumerPolicies/default`, `folders/12345/consumerPolicies/default`, `organizations/12345/consumerPolicies/default`.",
 "readOnly": true,
 "type": "string"
 },
 "updateTime": {
-"description": "The last-modified time.",
+"description": "Output only. The time the policy was last updated.",
 "format": "google-datetime",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"ContentSecurity": {
+"description": "ContentSecurity defines the content security related fields of a MCP policy.",
+"id": "ContentSecurity",
+"properties": {
+"contentSecurityProviders": {
+"description": "List of content security providers that are enabled for content scanning.",
+"items": {
+"$ref": "ContentSecurityProvider"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"ContentSecurityPolicy": {
+"description": "Content Security Policy contains the content security related policy of a resource.",
+"id": "ContentSecurityPolicy",
+"properties": {
+"mcpContentSecurity": {
+"$ref": "ContentSecurity",
+"description": "mcp_content_security contains the content security related settings at resource level for MCP traffic."
+},
+"name": {
+"description": "Output only. The resource name of the policy. Only the `default` policy is supported. We allow the following formats: `projects/{PROJECT_NUMBER}/contentSecurityPolicies/default`, `projects/{PROJECT_ID}/contentSecurityPolicies/default`, We only support project level content security policy for now.",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"ContentSecurityProvider": {
+"description": "ContentSecurityProvider contains the name of content security provider.",
+"id": "ContentSecurityProvider",
+"properties": {
+"name": {
+"description": "Name of security service for content scanning, such as Google Cloud Model Armor or supported third-party ISV solutions. If it is Google 1P service, the name should be prefixed with `services/`. If it is a 3P service, the format needs to be documented. The currently supported values are: - `services/modelarmor.googleapis.com` for Google Cloud Model Armor.",
 "type": "string"
 }
 },
@@ -1224,7 +1299,7 @@
 "id": "Control",
 "properties": {
 "environment": {
-"description": "The service controller environment to use. If empty, no control plane feature (like quota and billing) will be enabled. The recommended value for most services is servicecontrol.googleapis.com",
+"description": "The service controller environment to use. If empty, no control plane features (like quota and billing) will be enabled. The recommended value for most services is servicecontrol.googleapis.com.",
 "type": "string"
 },
 "methodPolicies": {
@@ -1486,43 +1561,26 @@
 "type": "object"
 },
 "EnableRule": {
-"description": "The consumer policy rule that defines usable services and service groups.",
+"description": "The consumer policy rule that defines enabled services and catalogs.",
 "id": "EnableRule",
 "properties": {
-"enableType": {
-"description": "Client and resource project enable type.",
-"enum": [
-"ENABLE_TYPE_UNSPECIFIED",
-"CLIENT",
-"RESOURCE",
-"V1_COMPATIBLE"
-],
-"enumDescriptions": [
-"Unspecified enable type, which means enabled as both client and resource project.",
-"Enable all clients under the CRM node specified by `ConsumerPolicy.name` to use the listed services. A client can be an API key, an OAuth client, or a service account.",
-"Enable resources in the list services to be created and used under the CRM node specified by the `ConsumerPolicy.name`.",
-"Activation made by Service Usage v1 API. This will be how consumers differentiate between policy changes made by v1 and v2 clients and understand what is actually possible based on those different policies."
-],
-"type": "string"
-},
-"groups": {
-"deprecated": true,
-"description": "DEPRECATED: Please use field `values`. Service group should have prefix `groups/`. The names of the service groups that are enabled (Not Implemented). Example: `groups/googleServices`.",
+"catalogs": {
+"description": "The names of the catalogs that are enabled. Example: `catalogs/default-cloud-services`.",
 "items": {
 "type": "string"
 },
 "type": "array"
 },
 "services": {
-"deprecated": true,
-"description": "DEPRECATED: Please use field `values`. Service should have prefix `services/`. The names of the services that are enabled. Example: `storage.googleapis.com`.",
+"description": "The names of the services that are enabled. Example: `services/storage.googleapis.com`.",
 "items": {
 "type": "string"
 },
 "type": "array"
 },
 "values": {
-"description": "The names of the services or service groups that are enabled. Example: `services/storage.googleapis.com`, `groups/googleServices`, `groups/allServices`.",
+"deprecated": true,
+"description": "Deprecated: Use the `services` field instead. The names of the services or service groups that are enabled. Example: `services/storage.googleapis.com`, `groups/googleServices`, `groups/allServices`.",
 "items": {
 "type": "string"
 },
@@ -1575,7 +1633,7 @@
 "type": "object"
 },
 "Enum": {
-"description": "Enum type definition.",
+"description": "Enum type definition. New usages of this message as an alternative to EnumDescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Enum",
 "properties": {
 "edition": {
@@ -1622,7 +1680,7 @@
 "type": "object"
 },
 "EnumValue": {
-"description": "Enum value definition.",
+"description": "Enum value definition. New usages of this message as an alternative to EnumValueDescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "EnumValue",
 "properties": {
 "name": {
@@ -1664,7 +1722,7 @@
 "type": "object"
 },
 "Field": {
-"description": "A single field of a message type.",
+"description": "A single field of a message type. New usages of this message as an alternative to FieldDescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Field",
 "properties": {
 "cardinality": {
@@ -1829,7 +1887,7 @@
 "additionalProperties": {
 "type": "string"
 },
-"description": "Map of service names to renamed services. Keys are the package relative service names and values are the name to be used for the service client and call options. publishing: go_settings: renamed_services: Publisher: TopicAdmin",
+"description": "Map of service names to renamed services. Keys are the package relative service names and values are the name to be used for the service client and call options. Example: publishing: go_settings: renamed_services: Publisher: TopicAdmin",
 "type": "object"
 }
 },
@@ -1927,7 +1985,7 @@
 "type": "array"
 },
 "monitoredResources": {
-"description": "Defines the monitored resources used by this service. This is required by the Service.monitoring and Service.logging configurations.",
+"description": "Defines the monitored resources used by this service. This is required by the `Service.monitoring` and `Service.logging` configurations.",
 "items": {
 "$ref": "MonitoredResourceDescriptor"
 },
@@ -2127,6 +2185,85 @@
 },
 "type": "object"
 },
+"GoogleApiServiceusageV2alphaAnalysis": {
+"description": "A message to group the analysis information.",
+"id": "GoogleApiServiceusageV2alphaAnalysis",
+"properties": {
+"analysisResult": {
+"$ref": "GoogleApiServiceusageV2alphaAnalysisResult",
+"description": "Output only. Analysis result of updating a policy.",
+"readOnly": true
+},
+"analysisType": {
+"description": "Output only. The type of analysis.",
+"enum": [
+"ANALYSIS_TYPE_UNSPECIFIED",
+"ANALYSIS_TYPE_DEPENDENCY",
+"ANALYSIS_TYPE_RESOURCE_USAGE",
+"ANALYSIS_TYPE_RESOURCE_EXISTENCE"
+],
+"enumDescriptions": [
+"Unspecified analysis type. Do not use.",
+"The analysis of service dependencies.",
+"The analysis of service resource usage.",
+"The analysis of service resource existence."
+],
+"readOnly": true,
+"type": "string"
+},
+"displayName": {
+"description": "Output only. The user friendly display name of the analysis type. E.g. service dependency analysis, service resource usage analysis, etc.",
+"readOnly": true,
+"type": "string"
+},
+"service": {
+"description": "The names of the service that has analysis result of warnings or blockers. Example: `services/storage.googleapis.com`.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleApiServiceusageV2alphaAnalysisResult": {
+"description": "An analysis result including blockers and warnings.",
+"id": "GoogleApiServiceusageV2alphaAnalysisResult",
+"properties": {
+"blockers": {
+"description": "Blocking information that would prevent the policy changes at runtime.",
+"items": {
+"$ref": "GoogleApiServiceusageV2alphaImpact"
+},
+"type": "array"
+},
+"warnings": {
+"description": "Warning information indicating that the policy changes might be unsafe, but will not block the changes at runtime.",
+"items": {
+"$ref": "GoogleApiServiceusageV2alphaImpact"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"GoogleApiServiceusageV2alphaAnalyzeConsumerPolicyMetadata": {
+"description": "Metadata for the `AnalyzeConsumerPolicy` method.",
+"id": "GoogleApiServiceusageV2alphaAnalyzeConsumerPolicyMetadata",
+"properties": {},
+"type": "object"
+},
+"GoogleApiServiceusageV2alphaAnalyzeConsumerPolicyResponse": {
+"description": "The response of analyzing a consumer policy update.",
+"id": "GoogleApiServiceusageV2alphaAnalyzeConsumerPolicyResponse",
+"properties": {
+"analysis": {
+"description": "The list of analyses returned from performing the intended policy update analysis. The analysis is grouped by service name and different analysis types. The empty analysis list means that the consumer policy can be updated without any warnings or blockers.",
+"items": {
+"$ref": "GoogleApiServiceusageV2alphaAnalysis"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
 "GoogleApiServiceusageV2alphaConsumerPolicy": {
 "description": "Consumer Policy is a set of rules that define what services or service groups can be used for a cloud resource hierarchy.",
 "id": "GoogleApiServiceusageV2alphaConsumerPolicy",
@@ -2180,6 +2317,37 @@
 "type": "string"
 },
 "type": "array"
+}
+},
+"type": "object"
+},
+"GoogleApiServiceusageV2alphaImpact": {
+"description": "A message to group impacts of updating a policy.",
+"id": "GoogleApiServiceusageV2alphaImpact",
+"properties": {
+"detail": {
+"description": "Output only. User friendly impact detail in a free form message.",
+"readOnly": true,
+"type": "string"
+},
+"impactType": {
+"description": "Output only. The type of impact.",
+"enum": [
+"IMPACT_TYPE_UNSPECIFIED",
+"DEPENDENCY_MISSING_DEPENDENCIES",
+"RESOURCE_EXISTENCE_PROJECT"
+],
+"enumDescriptions": [
+"Reserved Blocks (Block n contains codes from 100n to 100(n+1) -1 Block 0 - Special/Admin codes Block 1 - Impact Type of ANALYSIS_TYPE_DEPENDENCY Block 2 - Impact Type of ANALYSIS_TYPE_RESOURCE_USAGE Block 3 - Impact Type of ANALYSIS_TYPE_RESOURCE_EXISTENCE ...",
+"Block 1 - Impact Type of ANALYSIS_TYPE_DEPENDENCY",
+"Block 3 - Impact Type of ANALYSIS_TYPE_RESOURCE_EXISTENCE"
+],
+"readOnly": true,
+"type": "string"
+},
+"parent": {
+"description": "The parent resource that the analysis is based on and the service name that the analysis is for. Example: `projects/100/services/compute.googleapis.com`, folders/101/services/compute.googleapis.com` and `organizations/102/services/compute.googleapis.com`. Usually, the parent resource here is same as the parent resource of the analyzed policy. However, for some analysis types, the parent can be different. For example, for resource existence analysis, if the parent resource of the analyzed policy is a folder or an organization, the parent resource here can still be the project that contains the resources.",
+"type": "string"
 }
 },
 "type": "object"
@@ -2271,13 +2439,6 @@
 "description": "Consumer Policy is a set of rules that define what services or service groups can be used for a cloud resource hierarchy.",
 "id": "GoogleApiServiceusageV2betaConsumerPolicy",
 "properties": {
-"annotations": {
-"additionalProperties": {
-"type": "string"
-},
-"description": "Optional. Annotations is an unstructured key-value map stored with a policy that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. [AIP-128](https://google.aip.dev/128#annotations)",
-"type": "object"
-},
 "createTime": {
 "description": "Output only. The time the policy was created. For singleton policies, this is the first touch of the policy.",
 "format": "google-datetime",
@@ -2292,8 +2453,7 @@
 "type": "array"
 },
 "etag": {
-"description": "Output only. An opaque tag indicating the current version of the policy, used for concurrency control.",
-"readOnly": true,
+"description": "An opaque tag indicating the current version of the policy, used for concurrency control.",
 "type": "string"
 },
 "name": {
@@ -2314,6 +2474,13 @@
 "description": "The consumer policy rule that defines enabled services, groups, and categories.",
 "id": "GoogleApiServiceusageV2betaEnableRule",
 "properties": {
+"catalogs": {
+"description": "The names of the catalogs that are enabled. Example: `catalogs/default-cloud-services`.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
 "services": {
 "description": "The names of the services that are enabled. Example: `services/storage.googleapis.com`.",
 "items": {
@@ -2345,6 +2512,71 @@
 ],
 "readOnly": true,
 "type": "string"
+},
+"missingDependency": {
+"description": "Output only. This field will be populated only for the `DEPENDENCY_MISSING_DEPENDENCIES` impact type. Example: `services/compute.googleapis.com`. Impact.detail will be in format : `missing service dependency: {missing_dependency}.`",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleApiServiceusageV2betaMcpEnableRule": {
+"description": "McpEnableRule contains MCP enablement related rules.",
+"id": "GoogleApiServiceusageV2betaMcpEnableRule",
+"properties": {
+"mcpServices": {
+"description": "List of enabled MCP services.",
+"items": {
+"$ref": "GoogleApiServiceusageV2betaMcpService"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"GoogleApiServiceusageV2betaMcpPolicy": {
+"description": "MCP Consumer Policy is a set of rules that define MCP related policy for a cloud resource hierarchy.",
+"id": "GoogleApiServiceusageV2betaMcpPolicy",
+"properties": {
+"createTime": {
+"description": "Output only. The time the policy was created. For singleton policies (such as the `default` policy), this is the first touch of the policy.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+},
+"etag": {
+"description": "An opaque tag indicating the current version of the policy, used for concurrency control.",
+"type": "string"
+},
+"mcpEnableRules": {
+"description": "McpEnableRules contains MCP enablement related rules.",
+"items": {
+"$ref": "GoogleApiServiceusageV2betaMcpEnableRule"
+},
+"type": "array"
+},
+"name": {
+"description": "Output only. The resource name of the policy. Only the `default` policy is supported. We allow the following formats: `projects/{PROJECT_NUMBER}/mcpPolicies/default`, `projects/{PROJECT_ID}/mcpPolicies/default`, `folders/{FOLDER_ID}/mcpPolicies/default`, `organizations/{ORG_ID}/mcpPolicies/default`.",
+"readOnly": true,
+"type": "string"
+},
+"updateTime": {
+"description": "Output only. The time the policy was last updated.",
+"format": "google-datetime",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"GoogleApiServiceusageV2betaMcpService": {
+"description": "McpService contains the service names that are enabled for MCP.",
+"id": "GoogleApiServiceusageV2betaMcpService",
+"properties": {
+"service": {
+"description": "The names of the services that are enabled for MCP. Example: `services/library-example.googleapis.com`",
+"type": "string"
 }
 },
 "type": "object"
@@ -2352,6 +2584,12 @@
 "GoogleApiServiceusageV2betaUpdateConsumerPolicyMetadata": {
 "description": "Metadata for the `UpdateConsumerPolicy` method.",
 "id": "GoogleApiServiceusageV2betaUpdateConsumerPolicyMetadata",
+"properties": {},
+"type": "object"
+},
+"GoogleApiServiceusageV2betaUpdateMcpPolicyMetadata": {
+"description": "Metadata for the `UpdateMcpPolicy` method.",
+"id": "GoogleApiServiceusageV2betaUpdateMcpPolicyMetadata",
 "properties": {},
 "type": "object"
 },
@@ -2436,19 +2674,18 @@
 "description": "Output only. The type of impact.",
 "enum": [
 "IMPACT_TYPE_UNSPECIFIED",
-"DEPENDENCY_MISSING_DEPENDENCIES",
-"RESOURCE_EXISTENCE_PROJECT"
+"DEPENDENCY_MISSING_DEPENDENCIES"
 ],
 "enumDescriptions": [
-"Reserved Blocks (Block n contains codes from 100n to 100(n+1) -1 Block 0 - Special/Admin codes Block 1 - Impact Type of ANALYSIS_TYPE_DEPENDENCY Block 2 - Impact Type of ANALYSIS_TYPE_RESOURCE_USAGE Block 3 - Impact Type of ANALYSIS_TYPE_RESOURCE_EXISTENCE ...",
-"Block 1 - Impact Type of ANALYSIS_TYPE_DEPENDENCY",
-"Block 3 - Impact Type of ANALYSIS_TYPE_RESOURCE_EXISTENCE"
+"Reserved Blocks (Block n contains codes from 100n to 100(n+1) -1 Block 0 - Special/Admin codes Block 1 - Impact Type of ANALYSIS_TYPE_DEPENDENCY Block 2 - Impact Type of ANALYSIS_TYPE_RESOURCE_USAGE ...",
+"Block 1 - Impact Type of ANALYSIS_TYPE_DEPENDENCY"
 ],
 "readOnly": true,
 "type": "string"
 },
-"parent": {
-"description": "The parent resource that the analysis is based on and the service name that the analysis is for. Example: `projects/100/services/compute.googleapis.com`, folders/101/services/compute.googleapis.com` and `organizations/102/services/compute.googleapis.com`. Usually, the parent resource here is same as the parent resource of the analyzed policy. However, for some analysis types, the parent can be different. For example, for resource existence analysis, if the parent resource of the analyzed policy is a folder or an organization, the parent resource here can still be the project that contains the resources.",
+"missingDependency": {
+"description": "Output only. This field will be populated only for the `DEPENDENCY_MISSING_DEPENDENCIES` impact type. Example: `services/compute.googleapis.com`. Impact.detail will be in format : `missing service dependency: {missing_dependency}.`",
+"readOnly": true,
 "type": "string"
 }
 },
@@ -2602,6 +2839,13 @@
 "$ref": "Operation"
 },
 "type": "array"
+},
+"unreachable": {
+"description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections. For example, when attempting to list all resources across all supported locations.",
+"items": {
+"type": "string"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -2717,9 +2961,14 @@
 "type": "object"
 },
 "Method": {
-"description": "Method represents a method of an API interface.",
+"description": "Method represents a method of an API interface. New usages of this message as an alternative to MethodDescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Method",
 "properties": {
+"edition": {
+"deprecated": true,
+"description": "The source edition string, only valid when syntax is SYNTAX_EDITIONS. This field should be ignored, instead the edition should be inherited from Api. This is similar to Field and EnumValue.",
+"type": "string"
+},
 "name": {
 "description": "The simple name of this method.",
 "type": "string"
@@ -2748,7 +2997,8 @@
 "type": "string"
 },
 "syntax": {
-"description": "The source syntax of this method.",
+"deprecated": true,
+"description": "The source syntax of this method. This field should be ignored, instead the syntax should be inherited from Api. This is similar to Field and EnumValue.",
 "enum": [
 "SYNTAX_PROTO2",
 "SYNTAX_PROTO3",
@@ -2980,12 +3230,28 @@
 "description": "Bind API methods to metrics. Binding a method to a metric causes that metric's configured quota behaviors to apply to the method call.",
 "id": "MetricRule",
 "properties": {
+"agenticMetricCosts": {
+"additionalProperties": {
+"format": "int64",
+"type": "string"
+},
+"description": "Optional. Metrics to update when the selected methods are called, and the associated cost applied to each metric, iff the source of the call is an agent. The key of the map is the metric name, and the values are the amount increased for the metric against which the quota limits are defined. The value must not be negative.",
+"type": "object"
+},
 "metricCosts": {
 "additionalProperties": {
 "format": "int64",
 "type": "string"
 },
 "description": "Metrics to update when the selected methods are called, and the associated cost applied to each metric. The key of the map is the metric name, and the values are the amount increased for the metric against which the quota limits are defined. The value must not be negative.",
+"type": "object"
+},
+"nonagenticMetricCosts": {
+"additionalProperties": {
+"format": "int64",
+"type": "string"
+},
+"description": "Optional. Metrics to update when the selected methods are called, and the associated cost applied to each metric, iff the source of the call is not an agent. The key of the map is the metric name, and the values are the amount increased for the metric against which the quota limits are defined. The value must not be negative.",
 "type": "object"
 },
 "selector": {
@@ -3175,7 +3441,7 @@
 "type": "object"
 },
 "Option": {
-"description": "A protocol buffer option, which can be attached to a message, field, enumeration, etc.",
+"description": "A protocol buffer option, which can be attached to a message, field, enumeration, etc. New usages of this message as an alternative to FileOptions, MessageOptions, FieldOptions, EnumOptions, EnumValueOptions, ServiceOptions, or MethodOptions are strongly discouraged.",
 "id": "Option",
 "properties": {
 "name": {
@@ -3222,6 +3488,10 @@
 "common": {
 "$ref": "CommonLanguageSettings",
 "description": "Some settings."
+},
+"libraryPackage": {
+"description": "The package name to use in Php. Clobbers the php_namespace option set in the protobuf. This should be used **only** by APIs who have already set the language_settings.php.package_name\" field in gapic.yaml. API teams should use the protobuf php_namespace option where possible. Example of a YAML configuration:: publishing: library_settings: php_settings: library_package: Google\\Cloud\\PubSub\\V1",
+"type": "string"
 }
 },
 "type": "object"
@@ -3281,7 +3551,8 @@
 "STREET_VIEW",
 "SHOPPING",
 "GEO",
-"GENERATIVE_AI"
+"GENERATIVE_AI",
+"HEALTH"
 ],
 "enumDescriptions": [
 "Not useful.",
@@ -3291,7 +3562,8 @@
 "Street View Org.",
 "Shopping Org.",
 "Geo Org.",
-"Generative AI - https://developers.generativeai.google"
+"Generative AI - https://developers.generativeai.google",
+"Health Org."
 ],
 "type": "string"
 },
@@ -3381,6 +3653,20 @@
 "description": "Name of the quota limit. The name must be provided, and it must be unique within the service. The name can only include alphanumeric characters as well as '-'. The maximum length of the limit name is 64 characters.",
 "type": "string"
 },
+"trafficSource": {
+"description": "Optional. This is only informational, the logic to allocate the quota to the correct metric (such as in `metric_rules`) should identify which quota metrics to allocate to.",
+"enum": [
+"TRAFFIC_SOURCE_UNSPECIFIED",
+"TRAFFIC_SOURCE_NONAGENTIC",
+"TRAFFIC_SOURCE_AGENTIC"
+],
+"enumDescriptions": [
+"This quota limit applies to all traffic. This is the default value.",
+"This quota limit applies to traffic not recognized as agentic.",
+"This quota limit applies to only agentic traffic."
+],
+"type": "string"
+},
 "unit": {
 "description": "Specify the unit of the quota limit. It uses the same syntax as MetricDescriptor.unit. The supported unit kinds are determined by the quota backend system. Here are some examples: * \"1/min/{project}\" for quota per minute per project. Note: the order of unit components is insignificant. The \"1\" at the beginning is required to follow the metric unit syntax.",
 "type": "string"
@@ -3447,7 +3733,7 @@
 },
 "removedValues": {
 "deprecated": true,
-"description": "The values removed from the parent consumer policy.",
+"description": "Deprecated: This field is no longer populated. Use GetConsumerPolicy to verify the remaining enabled values.",
 "items": {
 "type": "string"
 },
@@ -3468,7 +3754,7 @@
 "type": "object"
 },
 "SelectiveGapicGeneration": {
-"description": "This message is used to configure the generation of a subset of the RPCs in a service for client libraries.",
+"description": "This message is used to configure the generation of a subset of the RPCs in a service for client libraries. Note: This feature should not be used in most cases.",
 "id": "SelectiveGapicGeneration",
 "properties": {
 "generateOmittedAsInternal": {
@@ -3608,7 +3894,7 @@
 "type": "object"
 },
 "Type": {
-"description": "A protocol buffer message type.",
+"description": "A protocol buffer message type. New usages of this message as an alternative to DescriptorProto are strongly discouraged. This message does not reliability preserve all information necessary to model the schema and preserve semantics. Instead make use of FileDescriptorSet which preserves the necessary information.",
 "id": "Type",
 "properties": {
 "edition": {
@@ -3673,6 +3959,12 @@
 "properties": {},
 "type": "object"
 },
+"UpdateContentSecurityPolicyMetadata": {
+"description": "Metadata for the `UpdateContentSecurityPolicy` method.",
+"id": "UpdateContentSecurityPolicyMetadata",
+"properties": {},
+"type": "object"
+},
 "Usage": {
 "description": "Configuration controlling usage of a service.",
 "id": "Usage",
@@ -3703,7 +3995,7 @@
 "id": "UsageRule",
 "properties": {
 "allowUnregisteredCalls": {
-"description": " Use this rule to configure unregistered calls for the service. Unregistered calls are calls that do not contain consumer project identity. (Example: calls that do not contain an API key). WARNING: By default, API methods do not allow unregistered calls, and each method call must be identified by a consumer project identity.",
+"description": "Use this rule to configure unregistered calls for the service. Unregistered calls are calls that do not contain consumer project identity. (Example: calls that do not contain an API key). WARNING: By default, API methods do not allow unregistered calls, and each method call must be identified by a consumer project identity.",
 "type": "boolean"
 },
 "selector": {

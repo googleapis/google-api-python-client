@@ -135,7 +135,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "firebaseapphosting.projects.locations.list",
@@ -144,7 +144,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -1084,6 +1084,11 @@
 "description": "The standard list page token.",
 "location": "query",
 "type": "string"
+},
+"returnPartialSuccess": {
+"description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the ListOperationsResponse.unreachable field. This can only be `true` when reading across collections. For example, when `parent` is set to `\"projects/example/locations/-\"`. This field is not supported by default and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+"location": "query",
+"type": "boolean"
 }
 },
 "path": "v1/{+name}/operations",
@@ -1101,9 +1106,37 @@
 }
 }
 },
-"revision": "20250501",
+"revision": "20260514",
 "rootUrl": "https://firebaseapphosting.googleapis.com/",
 "schemas": {
+"ArchiveSource": {
+"description": "The URI of an storage archive or a signed URL to use as the build source.",
+"id": "ArchiveSource",
+"properties": {
+"author": {
+"$ref": "SourceUserMetadata",
+"deprecated": true,
+"description": "Optional. Deprecated: Not used. The author contained in the metadata of a version control change."
+},
+"description": {
+"description": "Optional. An optional message that describes the uploaded version of the source code.",
+"type": "string"
+},
+"externalSignedUri": {
+"description": "Signed URL to an archive in a storage bucket.",
+"type": "string"
+},
+"rootDirectory": {
+"description": "Optional. The directory relative to the root of the archive to use as the root for the deployed web app. Defaults to use the root of the repository if not provided. If deploying a [monorepo](https://firebase.google.com/docs/app-hosting/monorepos), this should be the directory that contains the `package.json` or `apphosting.yaml` file.",
+"type": "string"
+},
+"userStorageUri": {
+"description": "URI to an archive in Cloud Storage. The object must be a zipped (.zip) or gzipped archive file (.tar.gz) containing source to deploy.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "Backend": {
 "description": "A backend is the primary resource of App Hosting.",
 "id": "Backend",
@@ -1175,6 +1208,10 @@
 "reconciling": {
 "description": "Output only. A field that, if true, indicates that the system is working to make adjustments to the backend during a LRO.",
 "readOnly": true,
+"type": "boolean"
+},
+"requestLogsDisabled": {
+"description": "Optional. A field that, if true, indicates that incoming request logs are disabled for this backend. Incoming request logs are enabled by default.",
 "type": "boolean"
 },
 "serviceAccount": {
@@ -1301,7 +1338,9 @@
 "BUILT",
 "DEPLOYING",
 "READY",
-"FAILED"
+"FAILED",
+"SKIPPED",
+"EXPIRED"
 ],
 "enumDescriptions": [
 "The build is in an unknown state.",
@@ -1309,7 +1348,9 @@
 "The build has completed and is awaiting the next step. This may move to DEPLOYING once App Hosting starts to set up infrastructure.",
 "The infrastructure for this build is being set up.",
 "The infrastructure for this build is ready. The build may or may not be serving traffic - see `Backend.traffic` for the current state, or `Backend.traffic_statuses` for the desired state.",
-"The build has failed."
+"The build has failed.",
+"The build was skipped.",
+"The build has expired and may not be reused."
 ],
 "readOnly": true,
 "type": "string"
@@ -1332,6 +1373,10 @@
 "description": "The source for the build.",
 "id": "BuildSource",
 "properties": {
+"archive": {
+"$ref": "ArchiveSource",
+"description": "An archive source."
+},
 "codebase": {
 "$ref": "CodebaseSource",
 "description": "A codebase source."
@@ -1358,7 +1403,7 @@
 "type": "string"
 },
 "rootDirectory": {
-"description": "Optional. If `repository` is provided, the directory relative to the root of the repository to use as the root for the deployed web app.",
+"description": "Optional. If `repository` is provided, the directory relative to the root of the repository to use as the root for the deployed web app. Defaults to use the root of the repository if not provided. If deploying a [monorepo](https://firebase.google.com/docs/app-hosting/monorepos), this should be the directory that contains the `package.json` or `apphosting.yaml` file.",
 "type": "string"
 }
 },
@@ -1402,6 +1447,11 @@
 "readOnly": true,
 "type": "string"
 },
+"repository": {
+"description": "Output only. The resource name for the Developer Connect [`gitRepositoryLink`](https://cloud.google.com/developer-connect/docs/api/reference/rest/v1/projects.locations.connections.gitRepositoryLinks) used for this build, in the format: `projects/{project}/locations/{location}/connections/{connection}/gitRepositoryLinks/{repositoryLink}`",
+"readOnly": true,
+"type": "string"
+},
 "uri": {
 "description": "Output only. A URI linking to the codebase on an hosting provider's website. May not be valid if the commit has been rebased or force-pushed out of existence in the linked repository.",
 "readOnly": true,
@@ -1414,8 +1464,16 @@
 "description": "Additional configuration of the backend for this build.",
 "id": "Config",
 "properties": {
+"effectiveEnv": {
+"description": "Output only. [OUTPUT_ONLY] This field represents all environment variables employed during both the build and runtime. This list reflects the result of merging variables from all sources (Backend.override_env, Build.Config.env, YAML, defaults, system). Each variable includes its `origin`",
+"items": {
+"$ref": "EnvironmentVariable"
+},
+"readOnly": true,
+"type": "array"
+},
 "env": {
-"description": "Optional. Environment variables for this build.",
+"description": "Optional. Supplied environment variables for a specific build. Provided at Build creation time and immutable afterwards. This field is only applicable for Builds using a build image - (e.g., ContainerSource or ArchiveSource with locally_built_source) Attempts to set this for other build types will result in an error",
 "items": {
 "$ref": "EnvironmentVariable"
 },
@@ -1929,6 +1987,30 @@
 },
 "type": "array"
 },
+"origin": {
+"description": "Output only. The high-level origin category of the environment variable.",
+"enum": [
+"ORIGIN_UNSPECIFIED",
+"BACKEND_OVERRIDES",
+"BUILD_CONFIG",
+"APPHOSTING_YAML",
+"FIREBASE_SYSTEM"
+],
+"enumDescriptions": [
+"Source is unspecified.",
+"Variable was set on the backend resource (e.g. via API or Console). Represents variables from `Backend.override_env`",
+"Variable was provided specifically for the build upon creation via the `Build.Config.env` field. Only used for pre-built images.",
+"Variable is defined in apphosting.yaml file.",
+"Variable is defined provided by the firebase platform."
+],
+"readOnly": true,
+"type": "string"
+},
+"originFileName": {
+"description": "Output only. Specific detail about the source. For APPHOSTING_YAML origins, this will contain the exact filename, such as \"apphosting.yaml\" or \"apphosting.staging.yaml\".",
+"readOnly": true,
+"type": "string"
+},
 "secret": {
 "description": "A fully qualified secret version. The value of the secret will be accessed once while building the application and once per cold start of the container at runtime. The service account used by Cloud Build and by Cloud Run must each have the `secretmanager.versions.access` permission on the secret.",
 "type": "string"
@@ -1938,7 +2020,7 @@
 "type": "string"
 },
 "variable": {
-"description": "Required. The name of the environment variable. - Must be a valid environment variable name (e.g. A-Z or underscores). - May not start with \"FIREBASE\" or \"GOOGLE\". - May not be a reserved environment variable for KNative/Cloud Run",
+"description": "Required. The name of the environment variable. The environment variables reserved by [Cloud Run](https://docs.cloud.google.com/run/docs/configuring/services/environment-variables#reserved) should not be set. Additionally, variable names cannot start with \"X_FIREBASE_\".",
 "type": "string"
 }
 },
@@ -2084,6 +2166,13 @@
 "description": "A list of operations that matches the specified filter in the request.",
 "items": {
 "$ref": "Operation"
+},
+"type": "array"
+},
+"unreachable": {
+"description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections. For example, when attempting to list all resources across all supported locations.",
+"items": {
+"type": "string"
 },
 "type": "array"
 }
@@ -2303,6 +2392,33 @@
 },
 "type": "object"
 },
+"Path": {
+"description": "A file path pattern to match against.",
+"id": "Path",
+"properties": {
+"pattern": {
+"description": "Optional. The pattern to match against.",
+"type": "string"
+},
+"type": {
+"description": "Optional. The type of pattern to match against.",
+"enum": [
+"PATTERN_TYPE_UNSPECIFIED",
+"RE2",
+"GLOB",
+"PREFIX"
+],
+"enumDescriptions": [
+"The pattern type is unspecified - this is an invalid value.",
+"RE2 - regular expression (https://github.com/google/re2/wiki/Syntax).",
+"The pattern is a glob.",
+"The pattern is a prefix."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "Redirect": {
 "description": "Specifies redirect behavior for a domain.",
 "id": "Redirect",
@@ -2331,7 +2447,7 @@
 "type": "object"
 },
 "build": {
-"description": "Immutable. The name of a build that already exists. It doesn't have to be built; a rollout will wait for a build to be ready before updating traffic.",
+"description": "Required. Immutable. The name of a build that already exists. It doesn't have to be built; a rollout will wait for a build to be ready before updating traffic.",
 "type": "string"
 },
 "createTime": {
@@ -2386,7 +2502,8 @@
 "PAUSED",
 "SUCCEEDED",
 "FAILED",
-"CANCELLED"
+"CANCELLED",
+"SKIPPED"
 ],
 "enumDescriptions": [
 "The rollout is in an unknown state.",
@@ -2396,7 +2513,8 @@
 "The rollout has been paused due to either being manually paused or a PAUSED stage. This should be set while `paused = true`.",
 "The rollout has completed.",
 "The rollout has failed. See error for more information.",
-"The rollout has been cancelled."
+"The rollout has been cancelled.",
+"The rollout has been skipped."
 ],
 "readOnly": true,
 "type": "string"
@@ -2432,12 +2550,26 @@
 "format": "google-datetime",
 "readOnly": true,
 "type": "string"
+},
+"ignoredPaths": {
+"description": "Optional. A list of file paths patterns to exclude from triggering a rollout. Patterns in this list take precedence over required_paths. **Note**: All paths must be in the ignored_paths in order for the rollout to be skipped. Limited to 100 paths. Example: ``` ignored_paths: { pattern: \"foo/bar/excluded/*\", type: \"GLOB\" } ```",
+"items": {
+"$ref": "Path"
+},
+"type": "array"
+},
+"requiredPaths": {
+"description": "Optional. A list of file paths patterns that trigger a build and rollout if at least one of the changed files in the commit are present in this list. This field is optional; the rollout policy will default to triggering on all paths if both ignored_paths and required_paths are not populated. Limited to 100 paths. Example: ``` required_paths: { pattern: \"foo/bar/*\", type: \"GLOB\" } ```",
+"items": {
+"$ref": "Path"
+},
+"type": "array"
 }
 },
 "type": "object"
 },
 "RunConfig": {
-"description": "Additional configuration to apply to the Cloud Run [`service`](https://cloud.google.com/run/docs/reference/rest/v2/projects.locations.services#resource:-service).",
+"description": "Configuration applied to the Cloud Run [`service`](https://cloud.google.com/run/docs/reference/rest/v2/projects.locations.services#resource:-service).",
 "id": "RunConfig",
 "properties": {
 "concurrency": {
@@ -2486,6 +2618,32 @@
 "redirect": {
 "$ref": "Redirect",
 "description": "Optional. Redirect behavior for a domain, if provided."
+}
+},
+"type": "object"
+},
+"SourceUserMetadata": {
+"deprecated": true,
+"description": "Deprecated: Not used. Metadata for the user who started the build.",
+"id": "SourceUserMetadata",
+"properties": {
+"displayName": {
+"deprecated": true,
+"description": "Output only. Deprecated: Not used. The user-chosen displayname. May be empty.",
+"readOnly": true,
+"type": "string"
+},
+"email": {
+"deprecated": true,
+"description": "Output only. Deprecated: Not used. The account email linked to the EUC that created the build. May be a service account or other robot account.",
+"readOnly": true,
+"type": "string"
+},
+"imageUri": {
+"deprecated": true,
+"description": "Output only. Deprecated: Not used. The URI of a profile photo associated with the user who created the build.",
+"readOnly": true,
+"type": "string"
 }
 },
 "type": "object"

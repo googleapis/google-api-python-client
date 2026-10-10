@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, filter=None, orderBy=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists `AuthzExtension` resources in a given project and location.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, body=None, requestId=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -111,25 +111,28 @@ Args:
     The object takes the form of:
 
 { # `AuthzExtension` is a resource that allows traffic forwarding to a callout backend service to make an authorization decision.
-  &quot;authority&quot;: &quot;A String&quot;, # Required. The `:authority` header in the gRPC request sent from Envoy to the extension service.
+  &quot;authority&quot;: &quot;A String&quot;, # Optional. The `:authority` header in the gRPC request sent from Envoy to the extension service. It is required when the `service` field points to a backend service.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was created.
   &quot;description&quot;: &quot;A String&quot;, # Optional. A human-readable description of the resource.
   &quot;failOpen&quot;: True or False, # Optional. Determines how the proxy behaves if the call to the extension fails or times out. When set to `TRUE`, request or response processing continues without error. Any subsequent extensions in the extension chain are also executed. When set to `FALSE` or the default setting of `FALSE` is used, one of the following happens: * If response headers have not been delivered to the downstream client, a generic 500 error is returned to the client. The error response can be tailored by configuring a custom error response in the load balancer. * If response headers have been delivered, then the HTTP stream to the downstream client is reset.
+  &quot;forwardAttributes&quot;: [ # Optional. List of the Envoy attributes to forward to the extension server. The attributes provided here are included as part of the `ProcessingRequest.attributes` field (of type `map`), where the keys are the attribute names. Refer to the [documentation](https://cloud.google.com/service-extensions/docs/cel-matcher-language-reference#attributes) for the names of attributes that can be forwarded. If omitted, no attributes are sent. Each element is a string indicating the attribute name.
+    &quot;A String&quot;,
+  ],
   &quot;forwardHeaders&quot;: [ # Optional. List of the HTTP headers to forward to the extension (from the client). If omitted, all headers are sent. Each element is a string indicating the header name.
     &quot;A String&quot;,
   ],
   &quot;labels&quot;: { # Optional. Set of labels associated with the `AuthzExtension` resource. The format must comply with [the requirements for labels](/compute/docs/labeling-resources#requirements) for Google Cloud resources.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Required. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. Supported values: `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. For more information, refer to [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
+  &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Optional. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. The supported values are `INTERNAL_MANAGED` and `EXTERNAL_MANAGED`. You can omit this field for `AuthzExtensions` resources that don&#x27;t reference a backend service. For more information, see [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
   &quot;metadata&quot;: { # Optional. The metadata provided here is included as part of the `metadata_context` (of type `google.protobuf.Struct`) in the `ProcessingRequest` message sent to the extension server. The metadata is available under the namespace `com.google.authz_extension.`. The following variables are supported in the metadata Struct: `{forwarding_rule_id}` - substituted with the forwarding rule&#x27;s fully qualified resource name.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
   },
   &quot;name&quot;: &quot;A String&quot;, # Required. Identifier. Name of the `AuthzExtension` resource in the following format: `projects/{project}/locations/{location}/authzExtensions/{authz_extension}`.
-  &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}` or `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`.
+  &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension: For global AuthzExtension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`. For regional AuthzExtension, `service` must be a fully-qualified reference to one of the following: * a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}`. * a fully qualified domain name that can be resolved by the Google Cloud DNS. * `iap.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to REQUEST_AUTHZ. * `modelarmor..rep.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to CONTENT_AUTHZ.
   &quot;timeout&quot;: &quot;A String&quot;, # Required. Specifies the timeout for each individual message on the stream. The timeout must be between 10-10000 milliseconds.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was updated.
-  &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. If not specified, the default value `EXT_PROC_GRPC` is used.
+  &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. This field is supported only for regional `AuthzExtension` resources. If not specified, the default value `EXT_PROC_GRPC` is used. Global `AuthzExtension` resources use the `EXT_PROC_GRPC` wire format.
 }
 
   authzExtensionId: string, Required. User-provided ID of the `AuthzExtension` resource to be created.
@@ -214,25 +217,28 @@ Returns:
   An object of the form:
 
     { # `AuthzExtension` is a resource that allows traffic forwarding to a callout backend service to make an authorization decision.
-  &quot;authority&quot;: &quot;A String&quot;, # Required. The `:authority` header in the gRPC request sent from Envoy to the extension service.
+  &quot;authority&quot;: &quot;A String&quot;, # Optional. The `:authority` header in the gRPC request sent from Envoy to the extension service. It is required when the `service` field points to a backend service.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was created.
   &quot;description&quot;: &quot;A String&quot;, # Optional. A human-readable description of the resource.
   &quot;failOpen&quot;: True or False, # Optional. Determines how the proxy behaves if the call to the extension fails or times out. When set to `TRUE`, request or response processing continues without error. Any subsequent extensions in the extension chain are also executed. When set to `FALSE` or the default setting of `FALSE` is used, one of the following happens: * If response headers have not been delivered to the downstream client, a generic 500 error is returned to the client. The error response can be tailored by configuring a custom error response in the load balancer. * If response headers have been delivered, then the HTTP stream to the downstream client is reset.
+  &quot;forwardAttributes&quot;: [ # Optional. List of the Envoy attributes to forward to the extension server. The attributes provided here are included as part of the `ProcessingRequest.attributes` field (of type `map`), where the keys are the attribute names. Refer to the [documentation](https://cloud.google.com/service-extensions/docs/cel-matcher-language-reference#attributes) for the names of attributes that can be forwarded. If omitted, no attributes are sent. Each element is a string indicating the attribute name.
+    &quot;A String&quot;,
+  ],
   &quot;forwardHeaders&quot;: [ # Optional. List of the HTTP headers to forward to the extension (from the client). If omitted, all headers are sent. Each element is a string indicating the header name.
     &quot;A String&quot;,
   ],
   &quot;labels&quot;: { # Optional. Set of labels associated with the `AuthzExtension` resource. The format must comply with [the requirements for labels](/compute/docs/labeling-resources#requirements) for Google Cloud resources.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Required. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. Supported values: `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. For more information, refer to [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
+  &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Optional. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. The supported values are `INTERNAL_MANAGED` and `EXTERNAL_MANAGED`. You can omit this field for `AuthzExtensions` resources that don&#x27;t reference a backend service. For more information, see [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
   &quot;metadata&quot;: { # Optional. The metadata provided here is included as part of the `metadata_context` (of type `google.protobuf.Struct`) in the `ProcessingRequest` message sent to the extension server. The metadata is available under the namespace `com.google.authz_extension.`. The following variables are supported in the metadata Struct: `{forwarding_rule_id}` - substituted with the forwarding rule&#x27;s fully qualified resource name.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
   },
   &quot;name&quot;: &quot;A String&quot;, # Required. Identifier. Name of the `AuthzExtension` resource in the following format: `projects/{project}/locations/{location}/authzExtensions/{authz_extension}`.
-  &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}` or `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`.
+  &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension: For global AuthzExtension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`. For regional AuthzExtension, `service` must be a fully-qualified reference to one of the following: * a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}`. * a fully qualified domain name that can be resolved by the Google Cloud DNS. * `iap.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to REQUEST_AUTHZ. * `modelarmor..rep.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to CONTENT_AUTHZ.
   &quot;timeout&quot;: &quot;A String&quot;, # Required. Specifies the timeout for each individual message on the stream. The timeout must be between 10-10000 milliseconds.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was updated.
-  &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. If not specified, the default value `EXT_PROC_GRPC` is used.
+  &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. This field is supported only for regional `AuthzExtension` resources. If not specified, the default value `EXT_PROC_GRPC` is used. Global `AuthzExtension` resources use the `EXT_PROC_GRPC` wire format.
 }</pre>
 </div>
 
@@ -257,25 +263,28 @@ Returns:
     { # Message for response to listing `AuthzExtension` resources.
   &quot;authzExtensions&quot;: [ # The list of `AuthzExtension` resources.
     { # `AuthzExtension` is a resource that allows traffic forwarding to a callout backend service to make an authorization decision.
-      &quot;authority&quot;: &quot;A String&quot;, # Required. The `:authority` header in the gRPC request sent from Envoy to the extension service.
+      &quot;authority&quot;: &quot;A String&quot;, # Optional. The `:authority` header in the gRPC request sent from Envoy to the extension service. It is required when the `service` field points to a backend service.
       &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was created.
       &quot;description&quot;: &quot;A String&quot;, # Optional. A human-readable description of the resource.
       &quot;failOpen&quot;: True or False, # Optional. Determines how the proxy behaves if the call to the extension fails or times out. When set to `TRUE`, request or response processing continues without error. Any subsequent extensions in the extension chain are also executed. When set to `FALSE` or the default setting of `FALSE` is used, one of the following happens: * If response headers have not been delivered to the downstream client, a generic 500 error is returned to the client. The error response can be tailored by configuring a custom error response in the load balancer. * If response headers have been delivered, then the HTTP stream to the downstream client is reset.
+      &quot;forwardAttributes&quot;: [ # Optional. List of the Envoy attributes to forward to the extension server. The attributes provided here are included as part of the `ProcessingRequest.attributes` field (of type `map`), where the keys are the attribute names. Refer to the [documentation](https://cloud.google.com/service-extensions/docs/cel-matcher-language-reference#attributes) for the names of attributes that can be forwarded. If omitted, no attributes are sent. Each element is a string indicating the attribute name.
+        &quot;A String&quot;,
+      ],
       &quot;forwardHeaders&quot;: [ # Optional. List of the HTTP headers to forward to the extension (from the client). If omitted, all headers are sent. Each element is a string indicating the header name.
         &quot;A String&quot;,
       ],
       &quot;labels&quot;: { # Optional. Set of labels associated with the `AuthzExtension` resource. The format must comply with [the requirements for labels](/compute/docs/labeling-resources#requirements) for Google Cloud resources.
         &quot;a_key&quot;: &quot;A String&quot;,
       },
-      &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Required. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. Supported values: `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. For more information, refer to [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
+      &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Optional. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. The supported values are `INTERNAL_MANAGED` and `EXTERNAL_MANAGED`. You can omit this field for `AuthzExtensions` resources that don&#x27;t reference a backend service. For more information, see [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
       &quot;metadata&quot;: { # Optional. The metadata provided here is included as part of the `metadata_context` (of type `google.protobuf.Struct`) in the `ProcessingRequest` message sent to the extension server. The metadata is available under the namespace `com.google.authz_extension.`. The following variables are supported in the metadata Struct: `{forwarding_rule_id}` - substituted with the forwarding rule&#x27;s fully qualified resource name.
         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
       },
       &quot;name&quot;: &quot;A String&quot;, # Required. Identifier. Name of the `AuthzExtension` resource in the following format: `projects/{project}/locations/{location}/authzExtensions/{authz_extension}`.
-      &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}` or `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`.
+      &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension: For global AuthzExtension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`. For regional AuthzExtension, `service` must be a fully-qualified reference to one of the following: * a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}`. * a fully qualified domain name that can be resolved by the Google Cloud DNS. * `iap.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to REQUEST_AUTHZ. * `modelarmor..rep.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to CONTENT_AUTHZ.
       &quot;timeout&quot;: &quot;A String&quot;, # Required. Specifies the timeout for each individual message on the stream. The timeout must be between 10-10000 milliseconds.
       &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was updated.
-      &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. If not specified, the default value `EXT_PROC_GRPC` is used.
+      &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. This field is supported only for regional `AuthzExtension` resources. If not specified, the default value `EXT_PROC_GRPC` is used. Global `AuthzExtension` resources use the `EXT_PROC_GRPC` wire format.
     },
   ],
   &quot;nextPageToken&quot;: &quot;A String&quot;, # A token identifying a page of results that the server returns.
@@ -286,17 +295,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -309,29 +318,32 @@ Args:
     The object takes the form of:
 
 { # `AuthzExtension` is a resource that allows traffic forwarding to a callout backend service to make an authorization decision.
-  &quot;authority&quot;: &quot;A String&quot;, # Required. The `:authority` header in the gRPC request sent from Envoy to the extension service.
+  &quot;authority&quot;: &quot;A String&quot;, # Optional. The `:authority` header in the gRPC request sent from Envoy to the extension service. It is required when the `service` field points to a backend service.
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was created.
   &quot;description&quot;: &quot;A String&quot;, # Optional. A human-readable description of the resource.
   &quot;failOpen&quot;: True or False, # Optional. Determines how the proxy behaves if the call to the extension fails or times out. When set to `TRUE`, request or response processing continues without error. Any subsequent extensions in the extension chain are also executed. When set to `FALSE` or the default setting of `FALSE` is used, one of the following happens: * If response headers have not been delivered to the downstream client, a generic 500 error is returned to the client. The error response can be tailored by configuring a custom error response in the load balancer. * If response headers have been delivered, then the HTTP stream to the downstream client is reset.
+  &quot;forwardAttributes&quot;: [ # Optional. List of the Envoy attributes to forward to the extension server. The attributes provided here are included as part of the `ProcessingRequest.attributes` field (of type `map`), where the keys are the attribute names. Refer to the [documentation](https://cloud.google.com/service-extensions/docs/cel-matcher-language-reference#attributes) for the names of attributes that can be forwarded. If omitted, no attributes are sent. Each element is a string indicating the attribute name.
+    &quot;A String&quot;,
+  ],
   &quot;forwardHeaders&quot;: [ # Optional. List of the HTTP headers to forward to the extension (from the client). If omitted, all headers are sent. Each element is a string indicating the header name.
     &quot;A String&quot;,
   ],
   &quot;labels&quot;: { # Optional. Set of labels associated with the `AuthzExtension` resource. The format must comply with [the requirements for labels](/compute/docs/labeling-resources#requirements) for Google Cloud resources.
     &quot;a_key&quot;: &quot;A String&quot;,
   },
-  &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Required. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. Supported values: `INTERNAL_MANAGED`, `EXTERNAL_MANAGED`. For more information, refer to [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
+  &quot;loadBalancingScheme&quot;: &quot;A String&quot;, # Optional. All backend services and forwarding rules referenced by this extension must share the same load balancing scheme. The supported values are `INTERNAL_MANAGED` and `EXTERNAL_MANAGED`. You can omit this field for `AuthzExtensions` resources that don&#x27;t reference a backend service. For more information, see [Backend services overview](https://cloud.google.com/load-balancing/docs/backend-service).
   &quot;metadata&quot;: { # Optional. The metadata provided here is included as part of the `metadata_context` (of type `google.protobuf.Struct`) in the `ProcessingRequest` message sent to the extension server. The metadata is available under the namespace `com.google.authz_extension.`. The following variables are supported in the metadata Struct: `{forwarding_rule_id}` - substituted with the forwarding rule&#x27;s fully qualified resource name.
     &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
   },
   &quot;name&quot;: &quot;A String&quot;, # Required. Identifier. Name of the `AuthzExtension` resource in the following format: `projects/{project}/locations/{location}/authzExtensions/{authz_extension}`.
-  &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}` or `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`.
+  &quot;service&quot;: &quot;A String&quot;, # Required. The reference to the service that runs the extension. To configure a callout extension: For global AuthzExtension, `service` must be a fully-qualified reference to a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/global/backendServices/{backendService}`. For regional AuthzExtension, `service` must be a fully-qualified reference to one of the following: * a [backend service](https://cloud.google.com/compute/docs/reference/rest/v1/backendServices) in the format: `https://www.googleapis.com/compute/v1/projects/{project}/regions/{region}/backendServices/{backendService}`. * a fully qualified domain name that can be resolved by the Google Cloud DNS. * `iap.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to REQUEST_AUTHZ. * `modelarmor..rep.googleapis.com` and it can only be referenced by an AuthzPolicy with the policyProfile set to CONTENT_AUTHZ.
   &quot;timeout&quot;: &quot;A String&quot;, # Required. Specifies the timeout for each individual message on the stream. The timeout must be between 10-10000 milliseconds.
   &quot;updateTime&quot;: &quot;A String&quot;, # Output only. The timestamp when the resource was updated.
-  &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. If not specified, the default value `EXT_PROC_GRPC` is used.
+  &quot;wireFormat&quot;: &quot;A String&quot;, # Optional. The format of communication supported by the callout extension. This field is supported only for regional `AuthzExtension` resources. If not specified, the default value `EXT_PROC_GRPC` is used. Global `AuthzExtension` resources use the `EXT_PROC_GRPC` wire format.
 }
 
   requestId: string, Optional. An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server can ignore the request if it has already been completed. The server guarantees that for 60 minutes since the first request. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server ignores the second request This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported (00000000-0000-0000-0000-000000000000).
-  updateMask: string, Required. Used to specify the fields to be overwritten in the `AuthzExtension` resource by the update. The fields specified in the `update_mask` are relative to the resource, not the full request. A field is overwritten if it is in the mask. If the user does not specify a mask, then all fields are overwritten.
+  updateMask: string, Optional. Used to specify the fields to be overwritten in the `AuthzExtension` resource by the update. The fields specified in the `update_mask` are relative to the resource, not the full request. A field is overwritten if it is in the mask. If the user does not specify a mask, then all fields are overwritten.
   x__xgafv: string, V1 error format.
     Allowed values
       1 - v1 error format

@@ -17,7 +17,7 @@ import shutil
 
 import nox
 
-BLACK_VERSION = "black==22.3.0"
+BLACK_VERSION = "black==23.7.0"
 ISORT_VERSION = "isort==5.10.1"
 BLACK_PATHS = [
     "apiclient",
@@ -30,6 +30,8 @@ BLACK_PATHS = [
     "owlbot.py",
     "setup.py",
 ]
+
+DEFAULT_PYTHON_VERSION = "3.14"
 
 test_dependencies = [
     "django>=2.0.0",
@@ -45,8 +47,23 @@ test_dependencies = [
     "coverage",
 ]
 
+nox.options.sessions = [
+    "unit-3.10",
+    "unit-3.11",
+    "unit-3.12",
+    "unit-3.13",
+    "unit-3.14",
+    "unit-3.15",
+    "lint",
+    "format",
+    "scripts",
+]
 
-@nox.session(python=["3.7"])
+# Error if a python version is missing
+nox.options.error_on_missing_interpreters = True
+
+
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def lint(session):
     session.install("flake8")
     session.run(
@@ -60,7 +77,7 @@ def lint(session):
     )
 
 
-@nox.session(python="3.8")
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def format(session):
     """
     Run isort to sort imports. Then run black
@@ -80,7 +97,7 @@ def format(session):
     )
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"])
+@nox.session(python=["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"])
 @nox.parametrize(
     "oauth2client",
     [
@@ -128,7 +145,7 @@ def unit(session, oauth2client):
     )
 
 
-@nox.session(python=["3.9"])
+@nox.session(python=DEFAULT_PYTHON_VERSION)
 def scripts(session):
     session.install(*test_dependencies)
     session.install("-e", ".")

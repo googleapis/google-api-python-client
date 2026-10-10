@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#list">list(projectId, pageSize=None, pageToken=None, parent=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists existing `BuildTrigger`s.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(projectId, triggerId, body, updateMask=None, x__xgafv=None)</a></code></p>
@@ -133,7 +133,7 @@ Args:
       ],
       &quot;createTime&quot;: &quot;A String&quot;, # Time when the config was created.
       &quot;hostUri&quot;: &quot;A String&quot;, # Required. Immutable. The URI of the Bitbucket Server host. Once this field has been set, it cannot be changed. If you need to change it, please create another BitbucketServerConfig.
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name for the config.
       &quot;peeredNetwork&quot;: &quot;A String&quot;, # Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.
       &quot;peeredNetworkIpRange&quot;: &quot;A String&quot;, # Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.
       &quot;secrets&quot;: { # BitbucketServerSecrets represents the secrets in Secret Manager for a Bitbucket Server. # Required. Secret Manager secrets needed by the config.
@@ -174,6 +174,12 @@ Args:
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of this build&#x27;s approval.
     },
     &quot;artifacts&quot;: { # Artifacts produced by a build that should be uploaded upon successful completion of all build steps. # Artifacts produced by the build that should be uploaded upon successful completion of all build steps.
+      &quot;genericArtifacts&quot;: [ # Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.
+        { # Generic artifact to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;folder&quot;: &quot;A String&quot;, # Required. Path to the generic artifact in the build&#x27;s workspace to be uploaded to Artifact Registry.
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.
         { # Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.
           &quot;modulePath&quot;: &quot;A String&quot;, # Optional. The Go module&#x27;s &quot;module path&quot;. e.g. example.com/foo/v2
@@ -190,6 +196,7 @@ Args:
       &quot;mavenArtifacts&quot;: [ # A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any artifacts fail to be pushed, the build is marked FAILURE.
         { # A Maven artifact to upload to Artifact Registry upon successful completion of all build steps.
           &quot;artifactId&quot;: &quot;A String&quot;, # Maven `artifactId` value used when uploading the artifact to Artifact Registry.
+          &quot;deployFolder&quot;: &quot;A String&quot;, # Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.
           &quot;groupId&quot;: &quot;A String&quot;, # Maven `groupId` value used when uploading the artifact to Artifact Registry.
           &quot;path&quot;: &quot;A String&quot;, # Optional. Path to an artifact in the build&#x27;s workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-maven.pkg.dev/$PROJECT/$REPOSITORY&quot; Artifact in the workspace specified by path will be uploaded to Artifact Registry with this location as a prefix.
@@ -198,7 +205,7 @@ Args:
       ],
       &quot;npmPackages&quot;: [ # A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any packages fail to be pushed, the build is marked FAILURE.
         { # Npm package to upload to Artifact Registry upon successful completion of all build steps.
-          &quot;packagePath&quot;: &quot;A String&quot;, # Path to the package.json. e.g. workspace/path/to/package
+          &quot;packagePath&quot;: &quot;A String&quot;, # Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY&quot; Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.
         },
       ],
@@ -212,6 +219,15 @@ Args:
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
       },
+      &quot;oci&quot;: [ # Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any images fail to be pushed, the build is marked FAILURE.
+        { # OCI image to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;file&quot;: &quot;A String&quot;, # Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image
+          &quot;tags&quot;: [ # Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+            &quot;A String&quot;,
+          ],
+        },
+      ],
       &quot;pythonPackages&quot;: [ # A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.
         { # Python package to upload to Artifact Registry upon successful completion of all build steps. A package can encapsulate multiple objects to be uploaded to a single repository.
           &quot;paths&quot;: [ # Path globs used to match files in the build&#x27;s workspace. For Python/ Twine, this is usually `dist/*`, and sometimes additionally an `.asc` file.
@@ -242,12 +258,17 @@ Args:
     &quot;dependencies&quot;: [ # Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.
       { # A dependency that the Cloud Build worker will fetch before executing user steps.
         &quot;empty&quot;: True or False, # If set to true disable all dependency fetching (ignoring the default source as well).
+        &quot;genericArtifact&quot;: { # Represents a generic artifact as a build dependency. # Represents a generic artifact as a build dependency.
+          &quot;destPath&quot;: &quot;A String&quot;, # Required. Where the artifact files should be placed on the worker.
+          &quot;resource&quot;: &quot;A String&quot;, # Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
         &quot;gitSource&quot;: { # Represents a git repository as a build dependency. # Represents a git repository as a build dependency.
           &quot;depth&quot;: &quot;A String&quot;, # Optional. How much history should be fetched for the build (default 1, -1 for all history).
           &quot;destPath&quot;: &quot;A String&quot;, # Required. Where should the files be placed on the worker.
+          &quot;fetchTags&quot;: True or False, # Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.
           &quot;recurseSubmodules&quot;: True or False, # Optional. True if submodules should be fetched too (default false).
           &quot;repository&quot;: { # A repository for a git source. # Required. The kind of repo (url or dev connect).
-            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
             &quot;url&quot;: &quot;A String&quot;, # Location of the Git repository.
           },
           &quot;revision&quot;: &quot;A String&quot;, # Required. The revision that we will fetch the repo at.
@@ -285,9 +306,12 @@ Args:
       &quot;machineType&quot;: &quot;A String&quot;, # Compute Engine machine type on which to run the build.
       &quot;pool&quot;: { # Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information. # Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.
         &quot;name&quot;: &quot;A String&quot;, # The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}
+        &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. Worker release resolved from the release channel.
+        &quot;workerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.
       },
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # Optional. Option to specify the Pub/Sub topic to receive build status updates.
       &quot;requestedVerifyOption&quot;: &quot;A String&quot;, # Requested verifiability options.
+      &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. Worker release resolved from the release channel.
       &quot;secretEnv&quot;: [ # A list of global environment variables, which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`. These variables will be available to all build steps in this build.
         &quot;A String&quot;,
       ],
@@ -302,6 +326,7 @@ Args:
         },
       ],
       &quot;workerPool&quot;: &quot;A String&quot;, # This field deprecated; please use `pool.name` instead.
+      &quot;workerRelease&quot;: &quot;A String&quot;, # Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.
     },
     &quot;projectId&quot;: &quot;A String&quot;, # Output only. ID of the project.
     &quot;queueTtl&quot;: &quot;A String&quot;, # TTL in queue for this build. If provided and the build is enqueued longer than this value, the build will expire and the build status will be `EXPIRED`. The TTL starts ticking from create_time.
@@ -317,8 +342,44 @@ Args:
       &quot;buildStepOutputs&quot;: [ # List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can&#x27;t be substituted.
         &quot;A String&quot;,
       ],
+      &quot;buildStepResults&quot;: { # Results for build steps. step_id -&gt;
+        &quot;a_key&quot;: { # Results for a build step.
+          &quot;results&quot;: { # Results for a build step.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+        },
+      },
+      &quot;genericArtifacts&quot;: [ # Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.
+        { # A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.
+          &quot;artifactFingerprint&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Output only. The hash of the whole artifact.
+            &quot;fileHash&quot;: [ # Collection of file hashes.
+              { # Container message for hash values.
+                &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                &quot;value&quot;: &quot;A String&quot;, # The hash value.
+              },
+            ],
+          },
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
+          &quot;fileHashes&quot;: { # Output only. The file hashes that make up the generic artifact.
+            &quot;a_key&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build.
+              &quot;fileHash&quot;: [ # Collection of file hashes.
+                { # Container message for hash values.
+                  &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                  &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                },
+              ],
+            },
+          },
+          &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified artifact.
+            &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
+            &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
+          },
+          &quot;uri&quot;: &quot;A String&quot;, # Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.
         { # A Go module artifact uploaded to Artifact Registry using the GoModule directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Go Module Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -336,8 +397,10 @@ Args:
       ],
       &quot;images&quot;: [ # Container images that were built as a part of the build.
         { # An image built by the pipeline.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;digest&quot;: &quot;A String&quot;, # Docker Registry 2.0 digest.
           &quot;name&quot;: &quot;A String&quot;, # Name used to push the container image to Google Container Registry, as presented to `docker push`.
+          &quot;ociMediaType&quot;: &quot;A String&quot;, # Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.
           &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified image.
             &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
             &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
@@ -346,6 +409,7 @@ Args:
       ],
       &quot;mavenArtifacts&quot;: [ # Maven artifacts uploaded to Artifact Registry at the end of the build.
         { # A Maven artifact uploaded using the MavenArtifact directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Maven Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -363,6 +427,7 @@ Args:
       ],
       &quot;npmPackages&quot;: [ # Npm packages uploaded to Artifact Registry at the end of the build.
         { # An npm package uploaded to Artifact Registry using the NpmPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the npm package.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -381,6 +446,7 @@ Args:
       &quot;numArtifacts&quot;: &quot;A String&quot;, # Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.
       &quot;pythonPackages&quot;: [ # Python artifacts uploaded to Artifact Registry at the end of the build.
         { # Artifact uploaded using the PythonPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Python Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -516,6 +582,13 @@ Args:
           &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
+        &quot;results&quot;: [ # Declaration of results for this build step.
+          { # StepResult is the declaration of a result for a build step.
+            &quot;attestationContent&quot;: &quot;A String&quot;, # Optional. The content of the attestation to be generated.
+            &quot;attestationType&quot;: &quot;A String&quot;, # Optional. The type of attestation to be generated.
+            &quot;name&quot;: &quot;A String&quot;, # Required. The name of the result.
+          },
+        ],
         &quot;script&quot;: &quot;A String&quot;, # A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.
         &quot;secretEnv&quot;: [ # A list of environment variables which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`.
           &quot;A String&quot;,
@@ -597,45 +670,6 @@ Args:
       &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
     },
     &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
-      &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-  },
-  &quot;gitlabEnterpriseEventsConfig&quot;: { # GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received. # GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received.
-    &quot;gitlabConfig&quot;: { # GitLabConfig represents the configuration for a GitLab integration. # Output only. The GitLabConfig specified in the gitlab_config_resource field.
-      &quot;connectedRepositories&quot;: [ # Connected GitLab.com or GitLabEnterprise repositories for this config.
-        { # GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise
-          &quot;id&quot;: &quot;A String&quot;, # Required. Identifier for the repository. example: &quot;namespace/project-slug&quot;, namespace is usually the username or group ID
-          &quot;webhookId&quot;: 42, # Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.
-        },
-      ],
-      &quot;createTime&quot;: &quot;A String&quot;, # Output only. Time when the config was created.
-      &quot;enterpriseConfig&quot;: { # GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration. # Optional. GitLabEnterprise config.
-        &quot;hostUri&quot;: &quot;A String&quot;, # Immutable. The URI of the GitlabEnterprise host.
-        &quot;serviceDirectoryConfig&quot;: { # ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection. # The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance.
-          &quot;service&quot;: &quot;A String&quot;, # The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.
-        },
-        &quot;sslCa&quot;: &quot;A String&quot;, # The SSL certificate to use in requests to GitLab Enterprise instances.
-      },
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
-      &quot;secrets&quot;: { # GitLabSecrets represents the secrets in Secret Manager for a GitLab integration. # Required. Secret Manager secrets needed by the config.
-        &quot;apiAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the api access token’s secret version
-        &quot;apiKeyVersion&quot;: &quot;A String&quot;, # Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.
-        &quot;readAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the read access token’s secret version
-        &quot;webhookSecretVersion&quot;: &quot;A String&quot;, # Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.
-      },
-      &quot;username&quot;: &quot;A String&quot;, # Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.
-      &quot;webhookKey&quot;: &quot;A String&quot;, # Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.
-    },
-    &quot;gitlabConfigResource&quot;: &quot;A String&quot;, # The GitLab config resource that this trigger config maps to.
-    &quot;projectNamespace&quot;: &quot;A String&quot;, # Namespace of the GitLab project.
-    &quot;pullRequest&quot;: { # PullRequestFilter contains filter properties for matching GitHub Pull Requests. # Filter to match changes in pull requests.
-      &quot;branch&quot;: &quot;A String&quot;, # Regex of branches to match. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;commentControl&quot;: &quot;A String&quot;, # If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.
-      &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
-    },
-    &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # Filter to match changes in refs like branches, tags.
       &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
       &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
       &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
@@ -730,7 +764,7 @@ Returns:
       ],
       &quot;createTime&quot;: &quot;A String&quot;, # Time when the config was created.
       &quot;hostUri&quot;: &quot;A String&quot;, # Required. Immutable. The URI of the Bitbucket Server host. Once this field has been set, it cannot be changed. If you need to change it, please create another BitbucketServerConfig.
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name for the config.
       &quot;peeredNetwork&quot;: &quot;A String&quot;, # Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.
       &quot;peeredNetworkIpRange&quot;: &quot;A String&quot;, # Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.
       &quot;secrets&quot;: { # BitbucketServerSecrets represents the secrets in Secret Manager for a Bitbucket Server. # Required. Secret Manager secrets needed by the config.
@@ -771,6 +805,12 @@ Returns:
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of this build&#x27;s approval.
     },
     &quot;artifacts&quot;: { # Artifacts produced by a build that should be uploaded upon successful completion of all build steps. # Artifacts produced by the build that should be uploaded upon successful completion of all build steps.
+      &quot;genericArtifacts&quot;: [ # Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.
+        { # Generic artifact to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;folder&quot;: &quot;A String&quot;, # Required. Path to the generic artifact in the build&#x27;s workspace to be uploaded to Artifact Registry.
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.
         { # Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.
           &quot;modulePath&quot;: &quot;A String&quot;, # Optional. The Go module&#x27;s &quot;module path&quot;. e.g. example.com/foo/v2
@@ -787,6 +827,7 @@ Returns:
       &quot;mavenArtifacts&quot;: [ # A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any artifacts fail to be pushed, the build is marked FAILURE.
         { # A Maven artifact to upload to Artifact Registry upon successful completion of all build steps.
           &quot;artifactId&quot;: &quot;A String&quot;, # Maven `artifactId` value used when uploading the artifact to Artifact Registry.
+          &quot;deployFolder&quot;: &quot;A String&quot;, # Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.
           &quot;groupId&quot;: &quot;A String&quot;, # Maven `groupId` value used when uploading the artifact to Artifact Registry.
           &quot;path&quot;: &quot;A String&quot;, # Optional. Path to an artifact in the build&#x27;s workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-maven.pkg.dev/$PROJECT/$REPOSITORY&quot; Artifact in the workspace specified by path will be uploaded to Artifact Registry with this location as a prefix.
@@ -795,7 +836,7 @@ Returns:
       ],
       &quot;npmPackages&quot;: [ # A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any packages fail to be pushed, the build is marked FAILURE.
         { # Npm package to upload to Artifact Registry upon successful completion of all build steps.
-          &quot;packagePath&quot;: &quot;A String&quot;, # Path to the package.json. e.g. workspace/path/to/package
+          &quot;packagePath&quot;: &quot;A String&quot;, # Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY&quot; Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.
         },
       ],
@@ -809,6 +850,15 @@ Returns:
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
       },
+      &quot;oci&quot;: [ # Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any images fail to be pushed, the build is marked FAILURE.
+        { # OCI image to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;file&quot;: &quot;A String&quot;, # Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image
+          &quot;tags&quot;: [ # Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+            &quot;A String&quot;,
+          ],
+        },
+      ],
       &quot;pythonPackages&quot;: [ # A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.
         { # Python package to upload to Artifact Registry upon successful completion of all build steps. A package can encapsulate multiple objects to be uploaded to a single repository.
           &quot;paths&quot;: [ # Path globs used to match files in the build&#x27;s workspace. For Python/ Twine, this is usually `dist/*`, and sometimes additionally an `.asc` file.
@@ -839,12 +889,17 @@ Returns:
     &quot;dependencies&quot;: [ # Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.
       { # A dependency that the Cloud Build worker will fetch before executing user steps.
         &quot;empty&quot;: True or False, # If set to true disable all dependency fetching (ignoring the default source as well).
+        &quot;genericArtifact&quot;: { # Represents a generic artifact as a build dependency. # Represents a generic artifact as a build dependency.
+          &quot;destPath&quot;: &quot;A String&quot;, # Required. Where the artifact files should be placed on the worker.
+          &quot;resource&quot;: &quot;A String&quot;, # Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
         &quot;gitSource&quot;: { # Represents a git repository as a build dependency. # Represents a git repository as a build dependency.
           &quot;depth&quot;: &quot;A String&quot;, # Optional. How much history should be fetched for the build (default 1, -1 for all history).
           &quot;destPath&quot;: &quot;A String&quot;, # Required. Where should the files be placed on the worker.
+          &quot;fetchTags&quot;: True or False, # Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.
           &quot;recurseSubmodules&quot;: True or False, # Optional. True if submodules should be fetched too (default false).
           &quot;repository&quot;: { # A repository for a git source. # Required. The kind of repo (url or dev connect).
-            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
             &quot;url&quot;: &quot;A String&quot;, # Location of the Git repository.
           },
           &quot;revision&quot;: &quot;A String&quot;, # Required. The revision that we will fetch the repo at.
@@ -882,9 +937,12 @@ Returns:
       &quot;machineType&quot;: &quot;A String&quot;, # Compute Engine machine type on which to run the build.
       &quot;pool&quot;: { # Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information. # Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.
         &quot;name&quot;: &quot;A String&quot;, # The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}
+        &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. Worker release resolved from the release channel.
+        &quot;workerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.
       },
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # Optional. Option to specify the Pub/Sub topic to receive build status updates.
       &quot;requestedVerifyOption&quot;: &quot;A String&quot;, # Requested verifiability options.
+      &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. Worker release resolved from the release channel.
       &quot;secretEnv&quot;: [ # A list of global environment variables, which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`. These variables will be available to all build steps in this build.
         &quot;A String&quot;,
       ],
@@ -899,6 +957,7 @@ Returns:
         },
       ],
       &quot;workerPool&quot;: &quot;A String&quot;, # This field deprecated; please use `pool.name` instead.
+      &quot;workerRelease&quot;: &quot;A String&quot;, # Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.
     },
     &quot;projectId&quot;: &quot;A String&quot;, # Output only. ID of the project.
     &quot;queueTtl&quot;: &quot;A String&quot;, # TTL in queue for this build. If provided and the build is enqueued longer than this value, the build will expire and the build status will be `EXPIRED`. The TTL starts ticking from create_time.
@@ -914,8 +973,44 @@ Returns:
       &quot;buildStepOutputs&quot;: [ # List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can&#x27;t be substituted.
         &quot;A String&quot;,
       ],
+      &quot;buildStepResults&quot;: { # Results for build steps. step_id -&gt;
+        &quot;a_key&quot;: { # Results for a build step.
+          &quot;results&quot;: { # Results for a build step.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+        },
+      },
+      &quot;genericArtifacts&quot;: [ # Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.
+        { # A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.
+          &quot;artifactFingerprint&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Output only. The hash of the whole artifact.
+            &quot;fileHash&quot;: [ # Collection of file hashes.
+              { # Container message for hash values.
+                &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                &quot;value&quot;: &quot;A String&quot;, # The hash value.
+              },
+            ],
+          },
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
+          &quot;fileHashes&quot;: { # Output only. The file hashes that make up the generic artifact.
+            &quot;a_key&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build.
+              &quot;fileHash&quot;: [ # Collection of file hashes.
+                { # Container message for hash values.
+                  &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                  &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                },
+              ],
+            },
+          },
+          &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified artifact.
+            &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
+            &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
+          },
+          &quot;uri&quot;: &quot;A String&quot;, # Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.
         { # A Go module artifact uploaded to Artifact Registry using the GoModule directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Go Module Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -933,8 +1028,10 @@ Returns:
       ],
       &quot;images&quot;: [ # Container images that were built as a part of the build.
         { # An image built by the pipeline.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;digest&quot;: &quot;A String&quot;, # Docker Registry 2.0 digest.
           &quot;name&quot;: &quot;A String&quot;, # Name used to push the container image to Google Container Registry, as presented to `docker push`.
+          &quot;ociMediaType&quot;: &quot;A String&quot;, # Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.
           &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified image.
             &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
             &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
@@ -943,6 +1040,7 @@ Returns:
       ],
       &quot;mavenArtifacts&quot;: [ # Maven artifacts uploaded to Artifact Registry at the end of the build.
         { # A Maven artifact uploaded using the MavenArtifact directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Maven Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -960,6 +1058,7 @@ Returns:
       ],
       &quot;npmPackages&quot;: [ # Npm packages uploaded to Artifact Registry at the end of the build.
         { # An npm package uploaded to Artifact Registry using the NpmPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the npm package.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -978,6 +1077,7 @@ Returns:
       &quot;numArtifacts&quot;: &quot;A String&quot;, # Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.
       &quot;pythonPackages&quot;: [ # Python artifacts uploaded to Artifact Registry at the end of the build.
         { # Artifact uploaded using the PythonPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Python Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -1113,6 +1213,13 @@ Returns:
           &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
+        &quot;results&quot;: [ # Declaration of results for this build step.
+          { # StepResult is the declaration of a result for a build step.
+            &quot;attestationContent&quot;: &quot;A String&quot;, # Optional. The content of the attestation to be generated.
+            &quot;attestationType&quot;: &quot;A String&quot;, # Optional. The type of attestation to be generated.
+            &quot;name&quot;: &quot;A String&quot;, # Required. The name of the result.
+          },
+        ],
         &quot;script&quot;: &quot;A String&quot;, # A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.
         &quot;secretEnv&quot;: [ # A list of environment variables which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`.
           &quot;A String&quot;,
@@ -1194,45 +1301,6 @@ Returns:
       &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
     },
     &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
-      &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-  },
-  &quot;gitlabEnterpriseEventsConfig&quot;: { # GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received. # GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received.
-    &quot;gitlabConfig&quot;: { # GitLabConfig represents the configuration for a GitLab integration. # Output only. The GitLabConfig specified in the gitlab_config_resource field.
-      &quot;connectedRepositories&quot;: [ # Connected GitLab.com or GitLabEnterprise repositories for this config.
-        { # GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise
-          &quot;id&quot;: &quot;A String&quot;, # Required. Identifier for the repository. example: &quot;namespace/project-slug&quot;, namespace is usually the username or group ID
-          &quot;webhookId&quot;: 42, # Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.
-        },
-      ],
-      &quot;createTime&quot;: &quot;A String&quot;, # Output only. Time when the config was created.
-      &quot;enterpriseConfig&quot;: { # GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration. # Optional. GitLabEnterprise config.
-        &quot;hostUri&quot;: &quot;A String&quot;, # Immutable. The URI of the GitlabEnterprise host.
-        &quot;serviceDirectoryConfig&quot;: { # ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection. # The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance.
-          &quot;service&quot;: &quot;A String&quot;, # The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.
-        },
-        &quot;sslCa&quot;: &quot;A String&quot;, # The SSL certificate to use in requests to GitLab Enterprise instances.
-      },
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
-      &quot;secrets&quot;: { # GitLabSecrets represents the secrets in Secret Manager for a GitLab integration. # Required. Secret Manager secrets needed by the config.
-        &quot;apiAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the api access token’s secret version
-        &quot;apiKeyVersion&quot;: &quot;A String&quot;, # Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.
-        &quot;readAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the read access token’s secret version
-        &quot;webhookSecretVersion&quot;: &quot;A String&quot;, # Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.
-      },
-      &quot;username&quot;: &quot;A String&quot;, # Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.
-      &quot;webhookKey&quot;: &quot;A String&quot;, # Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.
-    },
-    &quot;gitlabConfigResource&quot;: &quot;A String&quot;, # The GitLab config resource that this trigger config maps to.
-    &quot;projectNamespace&quot;: &quot;A String&quot;, # Namespace of the GitLab project.
-    &quot;pullRequest&quot;: { # PullRequestFilter contains filter properties for matching GitHub Pull Requests. # Filter to match changes in pull requests.
-      &quot;branch&quot;: &quot;A String&quot;, # Regex of branches to match. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;commentControl&quot;: &quot;A String&quot;, # If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.
-      &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
-    },
-    &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # Filter to match changes in refs like branches, tags.
       &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
       &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
       &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
@@ -1355,7 +1423,7 @@ Returns:
       ],
       &quot;createTime&quot;: &quot;A String&quot;, # Time when the config was created.
       &quot;hostUri&quot;: &quot;A String&quot;, # Required. Immutable. The URI of the Bitbucket Server host. Once this field has been set, it cannot be changed. If you need to change it, please create another BitbucketServerConfig.
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name for the config.
       &quot;peeredNetwork&quot;: &quot;A String&quot;, # Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.
       &quot;peeredNetworkIpRange&quot;: &quot;A String&quot;, # Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.
       &quot;secrets&quot;: { # BitbucketServerSecrets represents the secrets in Secret Manager for a Bitbucket Server. # Required. Secret Manager secrets needed by the config.
@@ -1396,6 +1464,12 @@ Returns:
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of this build&#x27;s approval.
     },
     &quot;artifacts&quot;: { # Artifacts produced by a build that should be uploaded upon successful completion of all build steps. # Artifacts produced by the build that should be uploaded upon successful completion of all build steps.
+      &quot;genericArtifacts&quot;: [ # Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.
+        { # Generic artifact to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;folder&quot;: &quot;A String&quot;, # Required. Path to the generic artifact in the build&#x27;s workspace to be uploaded to Artifact Registry.
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.
         { # Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.
           &quot;modulePath&quot;: &quot;A String&quot;, # Optional. The Go module&#x27;s &quot;module path&quot;. e.g. example.com/foo/v2
@@ -1412,6 +1486,7 @@ Returns:
       &quot;mavenArtifacts&quot;: [ # A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any artifacts fail to be pushed, the build is marked FAILURE.
         { # A Maven artifact to upload to Artifact Registry upon successful completion of all build steps.
           &quot;artifactId&quot;: &quot;A String&quot;, # Maven `artifactId` value used when uploading the artifact to Artifact Registry.
+          &quot;deployFolder&quot;: &quot;A String&quot;, # Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.
           &quot;groupId&quot;: &quot;A String&quot;, # Maven `groupId` value used when uploading the artifact to Artifact Registry.
           &quot;path&quot;: &quot;A String&quot;, # Optional. Path to an artifact in the build&#x27;s workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-maven.pkg.dev/$PROJECT/$REPOSITORY&quot; Artifact in the workspace specified by path will be uploaded to Artifact Registry with this location as a prefix.
@@ -1420,7 +1495,7 @@ Returns:
       ],
       &quot;npmPackages&quot;: [ # A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any packages fail to be pushed, the build is marked FAILURE.
         { # Npm package to upload to Artifact Registry upon successful completion of all build steps.
-          &quot;packagePath&quot;: &quot;A String&quot;, # Path to the package.json. e.g. workspace/path/to/package
+          &quot;packagePath&quot;: &quot;A String&quot;, # Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY&quot; Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.
         },
       ],
@@ -1434,6 +1509,15 @@ Returns:
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
       },
+      &quot;oci&quot;: [ # Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any images fail to be pushed, the build is marked FAILURE.
+        { # OCI image to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;file&quot;: &quot;A String&quot;, # Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image
+          &quot;tags&quot;: [ # Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+            &quot;A String&quot;,
+          ],
+        },
+      ],
       &quot;pythonPackages&quot;: [ # A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.
         { # Python package to upload to Artifact Registry upon successful completion of all build steps. A package can encapsulate multiple objects to be uploaded to a single repository.
           &quot;paths&quot;: [ # Path globs used to match files in the build&#x27;s workspace. For Python/ Twine, this is usually `dist/*`, and sometimes additionally an `.asc` file.
@@ -1464,12 +1548,17 @@ Returns:
     &quot;dependencies&quot;: [ # Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.
       { # A dependency that the Cloud Build worker will fetch before executing user steps.
         &quot;empty&quot;: True or False, # If set to true disable all dependency fetching (ignoring the default source as well).
+        &quot;genericArtifact&quot;: { # Represents a generic artifact as a build dependency. # Represents a generic artifact as a build dependency.
+          &quot;destPath&quot;: &quot;A String&quot;, # Required. Where the artifact files should be placed on the worker.
+          &quot;resource&quot;: &quot;A String&quot;, # Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
         &quot;gitSource&quot;: { # Represents a git repository as a build dependency. # Represents a git repository as a build dependency.
           &quot;depth&quot;: &quot;A String&quot;, # Optional. How much history should be fetched for the build (default 1, -1 for all history).
           &quot;destPath&quot;: &quot;A String&quot;, # Required. Where should the files be placed on the worker.
+          &quot;fetchTags&quot;: True or False, # Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.
           &quot;recurseSubmodules&quot;: True or False, # Optional. True if submodules should be fetched too (default false).
           &quot;repository&quot;: { # A repository for a git source. # Required. The kind of repo (url or dev connect).
-            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
             &quot;url&quot;: &quot;A String&quot;, # Location of the Git repository.
           },
           &quot;revision&quot;: &quot;A String&quot;, # Required. The revision that we will fetch the repo at.
@@ -1507,9 +1596,12 @@ Returns:
       &quot;machineType&quot;: &quot;A String&quot;, # Compute Engine machine type on which to run the build.
       &quot;pool&quot;: { # Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information. # Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.
         &quot;name&quot;: &quot;A String&quot;, # The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}
+        &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. Worker release resolved from the release channel.
+        &quot;workerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.
       },
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # Optional. Option to specify the Pub/Sub topic to receive build status updates.
       &quot;requestedVerifyOption&quot;: &quot;A String&quot;, # Requested verifiability options.
+      &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. Worker release resolved from the release channel.
       &quot;secretEnv&quot;: [ # A list of global environment variables, which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`. These variables will be available to all build steps in this build.
         &quot;A String&quot;,
       ],
@@ -1524,6 +1616,7 @@ Returns:
         },
       ],
       &quot;workerPool&quot;: &quot;A String&quot;, # This field deprecated; please use `pool.name` instead.
+      &quot;workerRelease&quot;: &quot;A String&quot;, # Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.
     },
     &quot;projectId&quot;: &quot;A String&quot;, # Output only. ID of the project.
     &quot;queueTtl&quot;: &quot;A String&quot;, # TTL in queue for this build. If provided and the build is enqueued longer than this value, the build will expire and the build status will be `EXPIRED`. The TTL starts ticking from create_time.
@@ -1539,8 +1632,44 @@ Returns:
       &quot;buildStepOutputs&quot;: [ # List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can&#x27;t be substituted.
         &quot;A String&quot;,
       ],
+      &quot;buildStepResults&quot;: { # Results for build steps. step_id -&gt;
+        &quot;a_key&quot;: { # Results for a build step.
+          &quot;results&quot;: { # Results for a build step.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+        },
+      },
+      &quot;genericArtifacts&quot;: [ # Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.
+        { # A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.
+          &quot;artifactFingerprint&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Output only. The hash of the whole artifact.
+            &quot;fileHash&quot;: [ # Collection of file hashes.
+              { # Container message for hash values.
+                &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                &quot;value&quot;: &quot;A String&quot;, # The hash value.
+              },
+            ],
+          },
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
+          &quot;fileHashes&quot;: { # Output only. The file hashes that make up the generic artifact.
+            &quot;a_key&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build.
+              &quot;fileHash&quot;: [ # Collection of file hashes.
+                { # Container message for hash values.
+                  &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                  &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                },
+              ],
+            },
+          },
+          &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified artifact.
+            &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
+            &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
+          },
+          &quot;uri&quot;: &quot;A String&quot;, # Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.
         { # A Go module artifact uploaded to Artifact Registry using the GoModule directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Go Module Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -1558,8 +1687,10 @@ Returns:
       ],
       &quot;images&quot;: [ # Container images that were built as a part of the build.
         { # An image built by the pipeline.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;digest&quot;: &quot;A String&quot;, # Docker Registry 2.0 digest.
           &quot;name&quot;: &quot;A String&quot;, # Name used to push the container image to Google Container Registry, as presented to `docker push`.
+          &quot;ociMediaType&quot;: &quot;A String&quot;, # Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.
           &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified image.
             &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
             &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
@@ -1568,6 +1699,7 @@ Returns:
       ],
       &quot;mavenArtifacts&quot;: [ # Maven artifacts uploaded to Artifact Registry at the end of the build.
         { # A Maven artifact uploaded using the MavenArtifact directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Maven Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -1585,6 +1717,7 @@ Returns:
       ],
       &quot;npmPackages&quot;: [ # Npm packages uploaded to Artifact Registry at the end of the build.
         { # An npm package uploaded to Artifact Registry using the NpmPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the npm package.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -1603,6 +1736,7 @@ Returns:
       &quot;numArtifacts&quot;: &quot;A String&quot;, # Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.
       &quot;pythonPackages&quot;: [ # Python artifacts uploaded to Artifact Registry at the end of the build.
         { # Artifact uploaded using the PythonPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Python Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -1738,6 +1872,13 @@ Returns:
           &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
+        &quot;results&quot;: [ # Declaration of results for this build step.
+          { # StepResult is the declaration of a result for a build step.
+            &quot;attestationContent&quot;: &quot;A String&quot;, # Optional. The content of the attestation to be generated.
+            &quot;attestationType&quot;: &quot;A String&quot;, # Optional. The type of attestation to be generated.
+            &quot;name&quot;: &quot;A String&quot;, # Required. The name of the result.
+          },
+        ],
         &quot;script&quot;: &quot;A String&quot;, # A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.
         &quot;secretEnv&quot;: [ # A list of environment variables which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`.
           &quot;A String&quot;,
@@ -1819,45 +1960,6 @@ Returns:
       &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
     },
     &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
-      &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-  },
-  &quot;gitlabEnterpriseEventsConfig&quot;: { # GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received. # GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received.
-    &quot;gitlabConfig&quot;: { # GitLabConfig represents the configuration for a GitLab integration. # Output only. The GitLabConfig specified in the gitlab_config_resource field.
-      &quot;connectedRepositories&quot;: [ # Connected GitLab.com or GitLabEnterprise repositories for this config.
-        { # GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise
-          &quot;id&quot;: &quot;A String&quot;, # Required. Identifier for the repository. example: &quot;namespace/project-slug&quot;, namespace is usually the username or group ID
-          &quot;webhookId&quot;: 42, # Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.
-        },
-      ],
-      &quot;createTime&quot;: &quot;A String&quot;, # Output only. Time when the config was created.
-      &quot;enterpriseConfig&quot;: { # GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration. # Optional. GitLabEnterprise config.
-        &quot;hostUri&quot;: &quot;A String&quot;, # Immutable. The URI of the GitlabEnterprise host.
-        &quot;serviceDirectoryConfig&quot;: { # ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection. # The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance.
-          &quot;service&quot;: &quot;A String&quot;, # The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.
-        },
-        &quot;sslCa&quot;: &quot;A String&quot;, # The SSL certificate to use in requests to GitLab Enterprise instances.
-      },
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
-      &quot;secrets&quot;: { # GitLabSecrets represents the secrets in Secret Manager for a GitLab integration. # Required. Secret Manager secrets needed by the config.
-        &quot;apiAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the api access token’s secret version
-        &quot;apiKeyVersion&quot;: &quot;A String&quot;, # Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.
-        &quot;readAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the read access token’s secret version
-        &quot;webhookSecretVersion&quot;: &quot;A String&quot;, # Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.
-      },
-      &quot;username&quot;: &quot;A String&quot;, # Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.
-      &quot;webhookKey&quot;: &quot;A String&quot;, # Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.
-    },
-    &quot;gitlabConfigResource&quot;: &quot;A String&quot;, # The GitLab config resource that this trigger config maps to.
-    &quot;projectNamespace&quot;: &quot;A String&quot;, # Namespace of the GitLab project.
-    &quot;pullRequest&quot;: { # PullRequestFilter contains filter properties for matching GitHub Pull Requests. # Filter to match changes in pull requests.
-      &quot;branch&quot;: &quot;A String&quot;, # Regex of branches to match. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;commentControl&quot;: &quot;A String&quot;, # If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.
-      &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
-    },
-    &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # Filter to match changes in refs like branches, tags.
       &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
       &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
       &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
@@ -1964,7 +2066,7 @@ Returns:
           ],
           &quot;createTime&quot;: &quot;A String&quot;, # Time when the config was created.
           &quot;hostUri&quot;: &quot;A String&quot;, # Required. Immutable. The URI of the Bitbucket Server host. Once this field has been set, it cannot be changed. If you need to change it, please create another BitbucketServerConfig.
-          &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
+          &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name for the config.
           &quot;peeredNetwork&quot;: &quot;A String&quot;, # Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.
           &quot;peeredNetworkIpRange&quot;: &quot;A String&quot;, # Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.
           &quot;secrets&quot;: { # BitbucketServerSecrets represents the secrets in Secret Manager for a Bitbucket Server. # Required. Secret Manager secrets needed by the config.
@@ -2005,6 +2107,12 @@ Returns:
           &quot;state&quot;: &quot;A String&quot;, # Output only. The state of this build&#x27;s approval.
         },
         &quot;artifacts&quot;: { # Artifacts produced by a build that should be uploaded upon successful completion of all build steps. # Artifacts produced by the build that should be uploaded upon successful completion of all build steps.
+          &quot;genericArtifacts&quot;: [ # Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.
+            { # Generic artifact to upload to Artifact Registry upon successful completion of all build steps.
+              &quot;folder&quot;: &quot;A String&quot;, # Required. Path to the generic artifact in the build&#x27;s workspace to be uploaded to Artifact Registry.
+              &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION
+            },
+          ],
           &quot;goModules&quot;: [ # Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.
             { # Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.
               &quot;modulePath&quot;: &quot;A String&quot;, # Optional. The Go module&#x27;s &quot;module path&quot;. e.g. example.com/foo/v2
@@ -2021,6 +2129,7 @@ Returns:
           &quot;mavenArtifacts&quot;: [ # A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any artifacts fail to be pushed, the build is marked FAILURE.
             { # A Maven artifact to upload to Artifact Registry upon successful completion of all build steps.
               &quot;artifactId&quot;: &quot;A String&quot;, # Maven `artifactId` value used when uploading the artifact to Artifact Registry.
+              &quot;deployFolder&quot;: &quot;A String&quot;, # Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.
               &quot;groupId&quot;: &quot;A String&quot;, # Maven `groupId` value used when uploading the artifact to Artifact Registry.
               &quot;path&quot;: &quot;A String&quot;, # Optional. Path to an artifact in the build&#x27;s workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
               &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-maven.pkg.dev/$PROJECT/$REPOSITORY&quot; Artifact in the workspace specified by path will be uploaded to Artifact Registry with this location as a prefix.
@@ -2029,7 +2138,7 @@ Returns:
           ],
           &quot;npmPackages&quot;: [ # A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any packages fail to be pushed, the build is marked FAILURE.
             { # Npm package to upload to Artifact Registry upon successful completion of all build steps.
-              &quot;packagePath&quot;: &quot;A String&quot;, # Path to the package.json. e.g. workspace/path/to/package
+              &quot;packagePath&quot;: &quot;A String&quot;, # Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.
               &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY&quot; Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.
             },
           ],
@@ -2043,6 +2152,15 @@ Returns:
               &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
             },
           },
+          &quot;oci&quot;: [ # Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any images fail to be pushed, the build is marked FAILURE.
+            { # OCI image to upload to Artifact Registry upon successful completion of all build steps.
+              &quot;file&quot;: &quot;A String&quot;, # Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar
+              &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image
+              &quot;tags&quot;: [ # Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+                &quot;A String&quot;,
+              ],
+            },
+          ],
           &quot;pythonPackages&quot;: [ # A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.
             { # Python package to upload to Artifact Registry upon successful completion of all build steps. A package can encapsulate multiple objects to be uploaded to a single repository.
               &quot;paths&quot;: [ # Path globs used to match files in the build&#x27;s workspace. For Python/ Twine, this is usually `dist/*`, and sometimes additionally an `.asc` file.
@@ -2073,12 +2191,17 @@ Returns:
         &quot;dependencies&quot;: [ # Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.
           { # A dependency that the Cloud Build worker will fetch before executing user steps.
             &quot;empty&quot;: True or False, # If set to true disable all dependency fetching (ignoring the default source as well).
+            &quot;genericArtifact&quot;: { # Represents a generic artifact as a build dependency. # Represents a generic artifact as a build dependency.
+              &quot;destPath&quot;: &quot;A String&quot;, # Required. Where the artifact files should be placed on the worker.
+              &quot;resource&quot;: &quot;A String&quot;, # Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+            },
             &quot;gitSource&quot;: { # Represents a git repository as a build dependency. # Represents a git repository as a build dependency.
               &quot;depth&quot;: &quot;A String&quot;, # Optional. How much history should be fetched for the build (default 1, -1 for all history).
               &quot;destPath&quot;: &quot;A String&quot;, # Required. Where should the files be placed on the worker.
+              &quot;fetchTags&quot;: True or False, # Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.
               &quot;recurseSubmodules&quot;: True or False, # Optional. True if submodules should be fetched too (default false).
               &quot;repository&quot;: { # A repository for a git source. # Required. The kind of repo (url or dev connect).
-                &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+                &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
                 &quot;url&quot;: &quot;A String&quot;, # Location of the Git repository.
               },
               &quot;revision&quot;: &quot;A String&quot;, # Required. The revision that we will fetch the repo at.
@@ -2116,9 +2239,12 @@ Returns:
           &quot;machineType&quot;: &quot;A String&quot;, # Compute Engine machine type on which to run the build.
           &quot;pool&quot;: { # Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information. # Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.
             &quot;name&quot;: &quot;A String&quot;, # The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}
+            &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. Worker release resolved from the release channel.
+            &quot;workerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.
           },
           &quot;pubsubTopic&quot;: &quot;A String&quot;, # Optional. Option to specify the Pub/Sub topic to receive build status updates.
           &quot;requestedVerifyOption&quot;: &quot;A String&quot;, # Requested verifiability options.
+          &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. Worker release resolved from the release channel.
           &quot;secretEnv&quot;: [ # A list of global environment variables, which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`. These variables will be available to all build steps in this build.
             &quot;A String&quot;,
           ],
@@ -2133,6 +2259,7 @@ Returns:
             },
           ],
           &quot;workerPool&quot;: &quot;A String&quot;, # This field deprecated; please use `pool.name` instead.
+          &quot;workerRelease&quot;: &quot;A String&quot;, # Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.
         },
         &quot;projectId&quot;: &quot;A String&quot;, # Output only. ID of the project.
         &quot;queueTtl&quot;: &quot;A String&quot;, # TTL in queue for this build. If provided and the build is enqueued longer than this value, the build will expire and the build status will be `EXPIRED`. The TTL starts ticking from create_time.
@@ -2148,8 +2275,44 @@ Returns:
           &quot;buildStepOutputs&quot;: [ # List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can&#x27;t be substituted.
             &quot;A String&quot;,
           ],
+          &quot;buildStepResults&quot;: { # Results for build steps. step_id -&gt;
+            &quot;a_key&quot;: { # Results for a build step.
+              &quot;results&quot;: { # Results for a build step.
+                &quot;a_key&quot;: &quot;A String&quot;,
+              },
+            },
+          },
+          &quot;genericArtifacts&quot;: [ # Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.
+            { # A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.
+              &quot;artifactFingerprint&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Output only. The hash of the whole artifact.
+                &quot;fileHash&quot;: [ # Collection of file hashes.
+                  { # Container message for hash values.
+                    &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                    &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                  },
+                ],
+              },
+              &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
+              &quot;fileHashes&quot;: { # Output only. The file hashes that make up the generic artifact.
+                &quot;a_key&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build.
+                  &quot;fileHash&quot;: [ # Collection of file hashes.
+                    { # Container message for hash values.
+                      &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                      &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                    },
+                  ],
+                },
+              },
+              &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified artifact.
+                &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
+                &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
+              },
+              &quot;uri&quot;: &quot;A String&quot;, # Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+            },
+          ],
           &quot;goModules&quot;: [ # Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.
             { # A Go module artifact uploaded to Artifact Registry using the GoModule directive.
+              &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
               &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Go Module Artifact.
                 &quot;fileHash&quot;: [ # Collection of file hashes.
                   { # Container message for hash values.
@@ -2167,8 +2330,10 @@ Returns:
           ],
           &quot;images&quot;: [ # Container images that were built as a part of the build.
             { # An image built by the pipeline.
+              &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
               &quot;digest&quot;: &quot;A String&quot;, # Docker Registry 2.0 digest.
               &quot;name&quot;: &quot;A String&quot;, # Name used to push the container image to Google Container Registry, as presented to `docker push`.
+              &quot;ociMediaType&quot;: &quot;A String&quot;, # Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.
               &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified image.
                 &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
                 &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
@@ -2177,6 +2342,7 @@ Returns:
           ],
           &quot;mavenArtifacts&quot;: [ # Maven artifacts uploaded to Artifact Registry at the end of the build.
             { # A Maven artifact uploaded using the MavenArtifact directive.
+              &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
               &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Maven Artifact.
                 &quot;fileHash&quot;: [ # Collection of file hashes.
                   { # Container message for hash values.
@@ -2194,6 +2360,7 @@ Returns:
           ],
           &quot;npmPackages&quot;: [ # Npm packages uploaded to Artifact Registry at the end of the build.
             { # An npm package uploaded to Artifact Registry using the NpmPackage directive.
+              &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
               &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the npm package.
                 &quot;fileHash&quot;: [ # Collection of file hashes.
                   { # Container message for hash values.
@@ -2212,6 +2379,7 @@ Returns:
           &quot;numArtifacts&quot;: &quot;A String&quot;, # Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.
           &quot;pythonPackages&quot;: [ # Python artifacts uploaded to Artifact Registry at the end of the build.
             { # Artifact uploaded using the PythonPackage directive.
+              &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
               &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Python Artifact.
                 &quot;fileHash&quot;: [ # Collection of file hashes.
                   { # Container message for hash values.
@@ -2347,6 +2515,13 @@ Returns:
               &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
               &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
             },
+            &quot;results&quot;: [ # Declaration of results for this build step.
+              { # StepResult is the declaration of a result for a build step.
+                &quot;attestationContent&quot;: &quot;A String&quot;, # Optional. The content of the attestation to be generated.
+                &quot;attestationType&quot;: &quot;A String&quot;, # Optional. The type of attestation to be generated.
+                &quot;name&quot;: &quot;A String&quot;, # Required. The name of the result.
+              },
+            ],
             &quot;script&quot;: &quot;A String&quot;, # A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.
             &quot;secretEnv&quot;: [ # A list of environment variables which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`.
               &quot;A String&quot;,
@@ -2433,45 +2608,6 @@ Returns:
           &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
         },
       },
-      &quot;gitlabEnterpriseEventsConfig&quot;: { # GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received. # GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received.
-        &quot;gitlabConfig&quot;: { # GitLabConfig represents the configuration for a GitLab integration. # Output only. The GitLabConfig specified in the gitlab_config_resource field.
-          &quot;connectedRepositories&quot;: [ # Connected GitLab.com or GitLabEnterprise repositories for this config.
-            { # GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise
-              &quot;id&quot;: &quot;A String&quot;, # Required. Identifier for the repository. example: &quot;namespace/project-slug&quot;, namespace is usually the username or group ID
-              &quot;webhookId&quot;: 42, # Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.
-            },
-          ],
-          &quot;createTime&quot;: &quot;A String&quot;, # Output only. Time when the config was created.
-          &quot;enterpriseConfig&quot;: { # GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration. # Optional. GitLabEnterprise config.
-            &quot;hostUri&quot;: &quot;A String&quot;, # Immutable. The URI of the GitlabEnterprise host.
-            &quot;serviceDirectoryConfig&quot;: { # ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection. # The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance.
-              &quot;service&quot;: &quot;A String&quot;, # The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.
-            },
-            &quot;sslCa&quot;: &quot;A String&quot;, # The SSL certificate to use in requests to GitLab Enterprise instances.
-          },
-          &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
-          &quot;secrets&quot;: { # GitLabSecrets represents the secrets in Secret Manager for a GitLab integration. # Required. Secret Manager secrets needed by the config.
-            &quot;apiAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the api access token’s secret version
-            &quot;apiKeyVersion&quot;: &quot;A String&quot;, # Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.
-            &quot;readAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the read access token’s secret version
-            &quot;webhookSecretVersion&quot;: &quot;A String&quot;, # Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.
-          },
-          &quot;username&quot;: &quot;A String&quot;, # Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.
-          &quot;webhookKey&quot;: &quot;A String&quot;, # Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.
-        },
-        &quot;gitlabConfigResource&quot;: &quot;A String&quot;, # The GitLab config resource that this trigger config maps to.
-        &quot;projectNamespace&quot;: &quot;A String&quot;, # Namespace of the GitLab project.
-        &quot;pullRequest&quot;: { # PullRequestFilter contains filter properties for matching GitHub Pull Requests. # Filter to match changes in pull requests.
-          &quot;branch&quot;: &quot;A String&quot;, # Regex of branches to match. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-          &quot;commentControl&quot;: &quot;A String&quot;, # If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.
-          &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
-        },
-        &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # Filter to match changes in refs like branches, tags.
-          &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-          &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
-          &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-        },
-      },
       &quot;id&quot;: &quot;A String&quot;, # Output only. Unique identifier of the trigger.
       &quot;ignoredFiles&quot;: [ # ignored_files and included_files are file glob matches using https://golang.org/pkg/path/filepath/#Match extended with support for &quot;**&quot;. If ignored_files and changed files are both empty, then they are not used to determine whether or not to trigger a build. If ignored_files is not empty, then we ignore any files that match any of the ignored_file globs. If the change has no files that are outside of the ignored_files globs, then we do not trigger a build.
         &quot;A String&quot;,
@@ -2539,17 +2675,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -2579,7 +2715,7 @@ Args:
       ],
       &quot;createTime&quot;: &quot;A String&quot;, # Time when the config was created.
       &quot;hostUri&quot;: &quot;A String&quot;, # Required. Immutable. The URI of the Bitbucket Server host. Once this field has been set, it cannot be changed. If you need to change it, please create another BitbucketServerConfig.
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name for the config.
       &quot;peeredNetwork&quot;: &quot;A String&quot;, # Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.
       &quot;peeredNetworkIpRange&quot;: &quot;A String&quot;, # Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.
       &quot;secrets&quot;: { # BitbucketServerSecrets represents the secrets in Secret Manager for a Bitbucket Server. # Required. Secret Manager secrets needed by the config.
@@ -2620,6 +2756,12 @@ Args:
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of this build&#x27;s approval.
     },
     &quot;artifacts&quot;: { # Artifacts produced by a build that should be uploaded upon successful completion of all build steps. # Artifacts produced by the build that should be uploaded upon successful completion of all build steps.
+      &quot;genericArtifacts&quot;: [ # Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.
+        { # Generic artifact to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;folder&quot;: &quot;A String&quot;, # Required. Path to the generic artifact in the build&#x27;s workspace to be uploaded to Artifact Registry.
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.
         { # Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.
           &quot;modulePath&quot;: &quot;A String&quot;, # Optional. The Go module&#x27;s &quot;module path&quot;. e.g. example.com/foo/v2
@@ -2636,6 +2778,7 @@ Args:
       &quot;mavenArtifacts&quot;: [ # A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any artifacts fail to be pushed, the build is marked FAILURE.
         { # A Maven artifact to upload to Artifact Registry upon successful completion of all build steps.
           &quot;artifactId&quot;: &quot;A String&quot;, # Maven `artifactId` value used when uploading the artifact to Artifact Registry.
+          &quot;deployFolder&quot;: &quot;A String&quot;, # Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.
           &quot;groupId&quot;: &quot;A String&quot;, # Maven `groupId` value used when uploading the artifact to Artifact Registry.
           &quot;path&quot;: &quot;A String&quot;, # Optional. Path to an artifact in the build&#x27;s workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-maven.pkg.dev/$PROJECT/$REPOSITORY&quot; Artifact in the workspace specified by path will be uploaded to Artifact Registry with this location as a prefix.
@@ -2644,7 +2787,7 @@ Args:
       ],
       &quot;npmPackages&quot;: [ # A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any packages fail to be pushed, the build is marked FAILURE.
         { # Npm package to upload to Artifact Registry upon successful completion of all build steps.
-          &quot;packagePath&quot;: &quot;A String&quot;, # Path to the package.json. e.g. workspace/path/to/package
+          &quot;packagePath&quot;: &quot;A String&quot;, # Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY&quot; Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.
         },
       ],
@@ -2658,6 +2801,15 @@ Args:
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
       },
+      &quot;oci&quot;: [ # Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any images fail to be pushed, the build is marked FAILURE.
+        { # OCI image to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;file&quot;: &quot;A String&quot;, # Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image
+          &quot;tags&quot;: [ # Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+            &quot;A String&quot;,
+          ],
+        },
+      ],
       &quot;pythonPackages&quot;: [ # A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.
         { # Python package to upload to Artifact Registry upon successful completion of all build steps. A package can encapsulate multiple objects to be uploaded to a single repository.
           &quot;paths&quot;: [ # Path globs used to match files in the build&#x27;s workspace. For Python/ Twine, this is usually `dist/*`, and sometimes additionally an `.asc` file.
@@ -2688,12 +2840,17 @@ Args:
     &quot;dependencies&quot;: [ # Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.
       { # A dependency that the Cloud Build worker will fetch before executing user steps.
         &quot;empty&quot;: True or False, # If set to true disable all dependency fetching (ignoring the default source as well).
+        &quot;genericArtifact&quot;: { # Represents a generic artifact as a build dependency. # Represents a generic artifact as a build dependency.
+          &quot;destPath&quot;: &quot;A String&quot;, # Required. Where the artifact files should be placed on the worker.
+          &quot;resource&quot;: &quot;A String&quot;, # Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
         &quot;gitSource&quot;: { # Represents a git repository as a build dependency. # Represents a git repository as a build dependency.
           &quot;depth&quot;: &quot;A String&quot;, # Optional. How much history should be fetched for the build (default 1, -1 for all history).
           &quot;destPath&quot;: &quot;A String&quot;, # Required. Where should the files be placed on the worker.
+          &quot;fetchTags&quot;: True or False, # Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.
           &quot;recurseSubmodules&quot;: True or False, # Optional. True if submodules should be fetched too (default false).
           &quot;repository&quot;: { # A repository for a git source. # Required. The kind of repo (url or dev connect).
-            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
             &quot;url&quot;: &quot;A String&quot;, # Location of the Git repository.
           },
           &quot;revision&quot;: &quot;A String&quot;, # Required. The revision that we will fetch the repo at.
@@ -2731,9 +2888,12 @@ Args:
       &quot;machineType&quot;: &quot;A String&quot;, # Compute Engine machine type on which to run the build.
       &quot;pool&quot;: { # Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information. # Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.
         &quot;name&quot;: &quot;A String&quot;, # The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}
+        &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. Worker release resolved from the release channel.
+        &quot;workerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.
       },
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # Optional. Option to specify the Pub/Sub topic to receive build status updates.
       &quot;requestedVerifyOption&quot;: &quot;A String&quot;, # Requested verifiability options.
+      &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. Worker release resolved from the release channel.
       &quot;secretEnv&quot;: [ # A list of global environment variables, which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`. These variables will be available to all build steps in this build.
         &quot;A String&quot;,
       ],
@@ -2748,6 +2908,7 @@ Args:
         },
       ],
       &quot;workerPool&quot;: &quot;A String&quot;, # This field deprecated; please use `pool.name` instead.
+      &quot;workerRelease&quot;: &quot;A String&quot;, # Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.
     },
     &quot;projectId&quot;: &quot;A String&quot;, # Output only. ID of the project.
     &quot;queueTtl&quot;: &quot;A String&quot;, # TTL in queue for this build. If provided and the build is enqueued longer than this value, the build will expire and the build status will be `EXPIRED`. The TTL starts ticking from create_time.
@@ -2763,8 +2924,44 @@ Args:
       &quot;buildStepOutputs&quot;: [ # List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can&#x27;t be substituted.
         &quot;A String&quot;,
       ],
+      &quot;buildStepResults&quot;: { # Results for build steps. step_id -&gt;
+        &quot;a_key&quot;: { # Results for a build step.
+          &quot;results&quot;: { # Results for a build step.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+        },
+      },
+      &quot;genericArtifacts&quot;: [ # Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.
+        { # A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.
+          &quot;artifactFingerprint&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Output only. The hash of the whole artifact.
+            &quot;fileHash&quot;: [ # Collection of file hashes.
+              { # Container message for hash values.
+                &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                &quot;value&quot;: &quot;A String&quot;, # The hash value.
+              },
+            ],
+          },
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
+          &quot;fileHashes&quot;: { # Output only. The file hashes that make up the generic artifact.
+            &quot;a_key&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build.
+              &quot;fileHash&quot;: [ # Collection of file hashes.
+                { # Container message for hash values.
+                  &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                  &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                },
+              ],
+            },
+          },
+          &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified artifact.
+            &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
+            &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
+          },
+          &quot;uri&quot;: &quot;A String&quot;, # Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.
         { # A Go module artifact uploaded to Artifact Registry using the GoModule directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Go Module Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -2782,8 +2979,10 @@ Args:
       ],
       &quot;images&quot;: [ # Container images that were built as a part of the build.
         { # An image built by the pipeline.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;digest&quot;: &quot;A String&quot;, # Docker Registry 2.0 digest.
           &quot;name&quot;: &quot;A String&quot;, # Name used to push the container image to Google Container Registry, as presented to `docker push`.
+          &quot;ociMediaType&quot;: &quot;A String&quot;, # Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.
           &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified image.
             &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
             &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
@@ -2792,6 +2991,7 @@ Args:
       ],
       &quot;mavenArtifacts&quot;: [ # Maven artifacts uploaded to Artifact Registry at the end of the build.
         { # A Maven artifact uploaded using the MavenArtifact directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Maven Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -2809,6 +3009,7 @@ Args:
       ],
       &quot;npmPackages&quot;: [ # Npm packages uploaded to Artifact Registry at the end of the build.
         { # An npm package uploaded to Artifact Registry using the NpmPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the npm package.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -2827,6 +3028,7 @@ Args:
       &quot;numArtifacts&quot;: &quot;A String&quot;, # Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.
       &quot;pythonPackages&quot;: [ # Python artifacts uploaded to Artifact Registry at the end of the build.
         { # Artifact uploaded using the PythonPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Python Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -2962,6 +3164,13 @@ Args:
           &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
+        &quot;results&quot;: [ # Declaration of results for this build step.
+          { # StepResult is the declaration of a result for a build step.
+            &quot;attestationContent&quot;: &quot;A String&quot;, # Optional. The content of the attestation to be generated.
+            &quot;attestationType&quot;: &quot;A String&quot;, # Optional. The type of attestation to be generated.
+            &quot;name&quot;: &quot;A String&quot;, # Required. The name of the result.
+          },
+        ],
         &quot;script&quot;: &quot;A String&quot;, # A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.
         &quot;secretEnv&quot;: [ # A list of environment variables which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`.
           &quot;A String&quot;,
@@ -3043,45 +3252,6 @@ Args:
       &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
     },
     &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
-      &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-  },
-  &quot;gitlabEnterpriseEventsConfig&quot;: { # GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received. # GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received.
-    &quot;gitlabConfig&quot;: { # GitLabConfig represents the configuration for a GitLab integration. # Output only. The GitLabConfig specified in the gitlab_config_resource field.
-      &quot;connectedRepositories&quot;: [ # Connected GitLab.com or GitLabEnterprise repositories for this config.
-        { # GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise
-          &quot;id&quot;: &quot;A String&quot;, # Required. Identifier for the repository. example: &quot;namespace/project-slug&quot;, namespace is usually the username or group ID
-          &quot;webhookId&quot;: 42, # Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.
-        },
-      ],
-      &quot;createTime&quot;: &quot;A String&quot;, # Output only. Time when the config was created.
-      &quot;enterpriseConfig&quot;: { # GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration. # Optional. GitLabEnterprise config.
-        &quot;hostUri&quot;: &quot;A String&quot;, # Immutable. The URI of the GitlabEnterprise host.
-        &quot;serviceDirectoryConfig&quot;: { # ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection. # The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance.
-          &quot;service&quot;: &quot;A String&quot;, # The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.
-        },
-        &quot;sslCa&quot;: &quot;A String&quot;, # The SSL certificate to use in requests to GitLab Enterprise instances.
-      },
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
-      &quot;secrets&quot;: { # GitLabSecrets represents the secrets in Secret Manager for a GitLab integration. # Required. Secret Manager secrets needed by the config.
-        &quot;apiAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the api access token’s secret version
-        &quot;apiKeyVersion&quot;: &quot;A String&quot;, # Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.
-        &quot;readAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the read access token’s secret version
-        &quot;webhookSecretVersion&quot;: &quot;A String&quot;, # Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.
-      },
-      &quot;username&quot;: &quot;A String&quot;, # Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.
-      &quot;webhookKey&quot;: &quot;A String&quot;, # Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.
-    },
-    &quot;gitlabConfigResource&quot;: &quot;A String&quot;, # The GitLab config resource that this trigger config maps to.
-    &quot;projectNamespace&quot;: &quot;A String&quot;, # Namespace of the GitLab project.
-    &quot;pullRequest&quot;: { # PullRequestFilter contains filter properties for matching GitHub Pull Requests. # Filter to match changes in pull requests.
-      &quot;branch&quot;: &quot;A String&quot;, # Regex of branches to match. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;commentControl&quot;: &quot;A String&quot;, # If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.
-      &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
-    },
-    &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # Filter to match changes in refs like branches, tags.
       &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
       &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
       &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
@@ -3176,7 +3346,7 @@ Returns:
       ],
       &quot;createTime&quot;: &quot;A String&quot;, # Time when the config was created.
       &quot;hostUri&quot;: &quot;A String&quot;, # Required. Immutable. The URI of the Bitbucket Server host. Once this field has been set, it cannot be changed. If you need to change it, please create another BitbucketServerConfig.
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
+      &quot;name&quot;: &quot;A String&quot;, # Identifier. The resource name for the config.
       &quot;peeredNetwork&quot;: &quot;A String&quot;, # Optional. The network to be used when reaching out to the Bitbucket Server instance. The VPC network must be enabled for private service connection. This should be set if the Bitbucket Server instance is hosted on-premises and not reachable by public internet. If this field is left empty, no network peering will occur and calls to the Bitbucket Server instance will be made over the public internet. Must be in the format `projects/{project}/global/networks/{network}`, where {project} is a project number or id and {network} is the name of a VPC network in the project.
       &quot;peeredNetworkIpRange&quot;: &quot;A String&quot;, # Immutable. IP range within the peered network. This is specified in CIDR notation with a slash and the subnet prefix size. You can optionally specify an IP address before the subnet prefix value. e.g. `192.168.0.0/29` would specify an IP range starting at 192.168.0.0 with a 29 bit prefix size. `/16` would specify a prefix size of 16 bits, with an automatically determined IP within the peered VPC. If unspecified, a value of `/24` will be used. The field only has an effect if peered_network is set.
       &quot;secrets&quot;: { # BitbucketServerSecrets represents the secrets in Secret Manager for a Bitbucket Server. # Required. Secret Manager secrets needed by the config.
@@ -3217,6 +3387,12 @@ Returns:
       &quot;state&quot;: &quot;A String&quot;, # Output only. The state of this build&#x27;s approval.
     },
     &quot;artifacts&quot;: { # Artifacts produced by a build that should be uploaded upon successful completion of all build steps. # Artifacts produced by the build that should be uploaded upon successful completion of all build steps.
+      &quot;genericArtifacts&quot;: [ # Optional. A list of generic artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. If any artifacts fail to be pushed, the build is marked FAILURE.
+        { # Generic artifact to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;folder&quot;: &quot;A String&quot;, # Required. Path to the generic artifact in the build&#x27;s workspace to be uploaded to Artifact Registry.
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the generic artifact to, in the form projects/$PROJECT/locations/$LOCATION/repositories/$REPO/packages/$PACKAGE/versions/$VERSION
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. A list of Go modules to be uploaded to Artifact Registry upon successful completion of all build steps. If any objects fail to be pushed, the build is marked FAILURE.
         { # Go module to upload to Artifact Registry upon successful completion of all build steps. A module refers to all dependencies in a go.mod file.
           &quot;modulePath&quot;: &quot;A String&quot;, # Optional. The Go module&#x27;s &quot;module path&quot;. e.g. example.com/foo/v2
@@ -3233,6 +3409,7 @@ Returns:
       &quot;mavenArtifacts&quot;: [ # A list of Maven artifacts to be uploaded to Artifact Registry upon successful completion of all build steps. Artifacts in the workspace matching specified paths globs will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any artifacts fail to be pushed, the build is marked FAILURE.
         { # A Maven artifact to upload to Artifact Registry upon successful completion of all build steps.
           &quot;artifactId&quot;: &quot;A String&quot;, # Maven `artifactId` value used when uploading the artifact to Artifact Registry.
+          &quot;deployFolder&quot;: &quot;A String&quot;, # Optional. Path to a folder containing the files to upload to Artifact Registry. This can be either an absolute path, e.g. `/workspace/my-app/target/`, or a relative path from /workspace, e.g. `my-app/target/`. This field is mutually exclusive with the `path` field.
           &quot;groupId&quot;: &quot;A String&quot;, # Maven `groupId` value used when uploading the artifact to Artifact Registry.
           &quot;path&quot;: &quot;A String&quot;, # Optional. Path to an artifact in the build&#x27;s workspace to be uploaded to Artifact Registry. This can be either an absolute path, e.g. /workspace/my-app/target/my-app-1.0.SNAPSHOT.jar or a relative path from /workspace, e.g. my-app/target/my-app-1.0.SNAPSHOT.jar.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-maven.pkg.dev/$PROJECT/$REPOSITORY&quot; Artifact in the workspace specified by path will be uploaded to Artifact Registry with this location as a prefix.
@@ -3241,7 +3418,7 @@ Returns:
       ],
       &quot;npmPackages&quot;: [ # A list of npm packages to be uploaded to Artifact Registry upon successful completion of all build steps. Npm packages in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any packages fail to be pushed, the build is marked FAILURE.
         { # Npm package to upload to Artifact Registry upon successful completion of all build steps.
-          &quot;packagePath&quot;: &quot;A String&quot;, # Path to the package.json. e.g. workspace/path/to/package
+          &quot;packagePath&quot;: &quot;A String&quot;, # Optional. Path to the package.json. e.g. workspace/path/to/package Only one of `archive` or `package_path` can be specified.
           &quot;repository&quot;: &quot;A String&quot;, # Artifact Registry repository, in the form &quot;https://$REGION-npm.pkg.dev/$PROJECT/$REPOSITORY&quot; Npm package in the workspace specified by path will be zipped and uploaded to Artifact Registry with this location as a prefix.
         },
       ],
@@ -3255,6 +3432,15 @@ Returns:
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
       },
+      &quot;oci&quot;: [ # Optional. A list of OCI images to be uploaded to Artifact Registry upon successful completion of all build steps. OCI images in the specified paths will be uploaded to the specified Artifact Registry repository using the builder service account&#x27;s credentials. If any images fail to be pushed, the build is marked FAILURE.
+        { # OCI image to upload to Artifact Registry upon successful completion of all build steps.
+          &quot;file&quot;: &quot;A String&quot;, # Required. Path on the local file system where to find the container to upload. e.g. /workspace/my-image.tar
+          &quot;registryPath&quot;: &quot;A String&quot;, # Required. Registry path to upload the container to. e.g. us-east1-docker.pkg.dev/my-project/my-repo/my-image
+          &quot;tags&quot;: [ # Optional. Tags to apply to the uploaded image. e.g. latest, 1.0.0
+            &quot;A String&quot;,
+          ],
+        },
+      ],
       &quot;pythonPackages&quot;: [ # A list of Python packages to be uploaded to Artifact Registry upon successful completion of all build steps. The build service account credentials will be used to perform the upload. If any objects fail to be pushed, the build is marked FAILURE.
         { # Python package to upload to Artifact Registry upon successful completion of all build steps. A package can encapsulate multiple objects to be uploaded to a single repository.
           &quot;paths&quot;: [ # Path globs used to match files in the build&#x27;s workspace. For Python/ Twine, this is usually `dist/*`, and sometimes additionally an `.asc` file.
@@ -3285,12 +3471,17 @@ Returns:
     &quot;dependencies&quot;: [ # Optional. Dependencies that the Cloud Build worker will fetch before executing user steps.
       { # A dependency that the Cloud Build worker will fetch before executing user steps.
         &quot;empty&quot;: True or False, # If set to true disable all dependency fetching (ignoring the default source as well).
+        &quot;genericArtifact&quot;: { # Represents a generic artifact as a build dependency. # Represents a generic artifact as a build dependency.
+          &quot;destPath&quot;: &quot;A String&quot;, # Required. Where the artifact files should be placed on the worker.
+          &quot;resource&quot;: &quot;A String&quot;, # Required. The location to download the artifact files from. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
         &quot;gitSource&quot;: { # Represents a git repository as a build dependency. # Represents a git repository as a build dependency.
           &quot;depth&quot;: &quot;A String&quot;, # Optional. How much history should be fetched for the build (default 1, -1 for all history).
           &quot;destPath&quot;: &quot;A String&quot;, # Required. Where should the files be placed on the worker.
+          &quot;fetchTags&quot;: True or False, # Optional. True if remote tags should be fetched too (default false). Note: when depth is 1 (default), git fetch only retrieves tags pointing to commits within the shallow boundary. Set depth to -1 to fetch all historical tags.
           &quot;recurseSubmodules&quot;: True or False, # Optional. True if submodules should be fetched too (default false).
           &quot;repository&quot;: { # A repository for a git source. # Required. The kind of repo (url or dev connect).
-            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link or the url that matches a repository link in the current project, formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
+            &quot;developerConnect&quot;: &quot;A String&quot;, # The Developer Connect Git repository link formatted as `projects/*/locations/*/connections/*/gitRepositoryLink/*`
             &quot;url&quot;: &quot;A String&quot;, # Location of the Git repository.
           },
           &quot;revision&quot;: &quot;A String&quot;, # Required. The revision that we will fetch the repo at.
@@ -3328,9 +3519,12 @@ Returns:
       &quot;machineType&quot;: &quot;A String&quot;, # Compute Engine machine type on which to run the build.
       &quot;pool&quot;: { # Details about how a build should be executed on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information. # Optional. Specification for execution on a `WorkerPool`. See [running builds in a private pool](https://cloud.google.com/build/docs/private-pools/run-builds-in-private-pool) for more information.
         &quot;name&quot;: &quot;A String&quot;, # The `WorkerPool` resource to execute the build on. You must have `cloudbuild.workerpools.use` on the project hosting the WorkerPool. Format projects/{project}/locations/{location}/workerPools/{workerPoolId}
+        &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. Worker release resolved from the release channel.
+        &quot;workerRelease&quot;: &quot;A String&quot;, # Output only. OUTPUT_ONLY. The release or release channel used to run the Build. This is set to the same value as `PrivatePoolV1Config.WorkerConfig.worker_release` for the UI to easily access.
       },
       &quot;pubsubTopic&quot;: &quot;A String&quot;, # Optional. Option to specify the Pub/Sub topic to receive build status updates.
       &quot;requestedVerifyOption&quot;: &quot;A String&quot;, # Requested verifiability options.
+      &quot;resolvedWorkerRelease&quot;: &quot;A String&quot;, # Output only. Worker release resolved from the release channel.
       &quot;secretEnv&quot;: [ # A list of global environment variables, which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`. These variables will be available to all build steps in this build.
         &quot;A String&quot;,
       ],
@@ -3345,6 +3539,7 @@ Returns:
         },
       ],
       &quot;workerPool&quot;: &quot;A String&quot;, # This field deprecated; please use `pool.name` instead.
+      &quot;workerRelease&quot;: &quot;A String&quot;, # Optional. Option to specify which release or release channel (rapid|regular|stable) to use to run this build.
     },
     &quot;projectId&quot;: &quot;A String&quot;, # Output only. ID of the project.
     &quot;queueTtl&quot;: &quot;A String&quot;, # TTL in queue for this build. If provided and the build is enqueued longer than this value, the build will expire and the build status will be `EXPIRED`. The TTL starts ticking from create_time.
@@ -3360,8 +3555,44 @@ Returns:
       &quot;buildStepOutputs&quot;: [ # List of build step outputs, produced by builder images, in the order corresponding to build step indices. [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders) can produce this output by writing to `$BUILDER_OUTPUT/output`. Only the first 50KB of data is stored. Note that the `$BUILDER_OUTPUT` variable is read-only and can&#x27;t be substituted.
         &quot;A String&quot;,
       ],
+      &quot;buildStepResults&quot;: { # Results for build steps. step_id -&gt;
+        &quot;a_key&quot;: { # Results for a build step.
+          &quot;results&quot;: { # Results for a build step.
+            &quot;a_key&quot;: &quot;A String&quot;,
+          },
+        },
+      },
+      &quot;genericArtifacts&quot;: [ # Output only. Generic artifacts uploaded to Artifact Registry at the end of the build.
+        { # A generic artifact uploaded to Artifact Registry using the GenericArtifact directive.
+          &quot;artifactFingerprint&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Output only. The hash of the whole artifact.
+            &quot;fileHash&quot;: [ # Collection of file hashes.
+              { # Container message for hash values.
+                &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                &quot;value&quot;: &quot;A String&quot;, # The hash value.
+              },
+            ],
+          },
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
+          &quot;fileHashes&quot;: { # Output only. The file hashes that make up the generic artifact.
+            &quot;a_key&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build.
+              &quot;fileHash&quot;: [ # Collection of file hashes.
+                { # Container message for hash values.
+                  &quot;type&quot;: &quot;A String&quot;, # The type of hash that was performed.
+                  &quot;value&quot;: &quot;A String&quot;, # The hash value.
+                },
+              ],
+            },
+          },
+          &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified artifact.
+            &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
+            &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
+          },
+          &quot;uri&quot;: &quot;A String&quot;, # Output only. URI of the uploaded artifact. Ex: projects/p1/locations/us/repositories/r1/packages/p1/versions/v1
+        },
+      ],
       &quot;goModules&quot;: [ # Optional. Go module artifacts uploaded to Artifact Registry at the end of the build.
         { # A Go module artifact uploaded to Artifact Registry using the GoModule directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Go Module Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -3379,8 +3610,10 @@ Returns:
       ],
       &quot;images&quot;: [ # Container images that were built as a part of the build.
         { # An image built by the pipeline.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;digest&quot;: &quot;A String&quot;, # Docker Registry 2.0 digest.
           &quot;name&quot;: &quot;A String&quot;, # Name used to push the container image to Google Container Registry, as presented to `docker push`.
+          &quot;ociMediaType&quot;: &quot;A String&quot;, # Output only. The OCI media type of the artifact. Non-OCI images, such as Docker images, will have an unspecified value.
           &quot;pushTiming&quot;: { # Start and end times for a build execution phase. # Output only. Stores timing information for pushing the specified image.
             &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
             &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
@@ -3389,6 +3622,7 @@ Returns:
       ],
       &quot;mavenArtifacts&quot;: [ # Maven artifacts uploaded to Artifact Registry at the end of the build.
         { # A Maven artifact uploaded using the MavenArtifact directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Maven Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -3406,6 +3640,7 @@ Returns:
       ],
       &quot;npmPackages&quot;: [ # Npm packages uploaded to Artifact Registry at the end of the build.
         { # An npm package uploaded to Artifact Registry using the NpmPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the npm package.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -3424,6 +3659,7 @@ Returns:
       &quot;numArtifacts&quot;: &quot;A String&quot;, # Number of non-container artifacts uploaded to Cloud Storage. Only populated when artifacts are uploaded to Cloud Storage.
       &quot;pythonPackages&quot;: [ # Python artifacts uploaded to Artifact Registry at the end of the build.
         { # Artifact uploaded using the PythonPackage directive.
+          &quot;artifactRegistryPackage&quot;: &quot;A String&quot;, # Output only. Path to the artifact in Artifact Registry.
           &quot;fileHashes&quot;: { # Container message for hashes of byte content of files, used in SourceProvenance messages to verify integrity of source input to the build. # Hash types and values of the Python Artifact.
             &quot;fileHash&quot;: [ # Collection of file hashes.
               { # Container message for hash values.
@@ -3559,6 +3795,13 @@ Returns:
           &quot;endTime&quot;: &quot;A String&quot;, # End of time span.
           &quot;startTime&quot;: &quot;A String&quot;, # Start of time span.
         },
+        &quot;results&quot;: [ # Declaration of results for this build step.
+          { # StepResult is the declaration of a result for a build step.
+            &quot;attestationContent&quot;: &quot;A String&quot;, # Optional. The content of the attestation to be generated.
+            &quot;attestationType&quot;: &quot;A String&quot;, # Optional. The type of attestation to be generated.
+            &quot;name&quot;: &quot;A String&quot;, # Required. The name of the result.
+          },
+        ],
         &quot;script&quot;: &quot;A String&quot;, # A shell script to be executed in the step. When script is provided, the user cannot specify the entrypoint or args.
         &quot;secretEnv&quot;: [ # A list of environment variables which are encrypted using a Cloud Key Management Service crypto key. These values must be specified in the build&#x27;s `Secret`.
           &quot;A String&quot;,
@@ -3640,45 +3883,6 @@ Returns:
       &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
     },
     &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # filter to match changes in refs like branches, tags.
-      &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
-      &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-    },
-  },
-  &quot;gitlabEnterpriseEventsConfig&quot;: { # GitLabEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab event is received. # GitLabEnterpriseEventsConfig describes the configuration of a trigger that creates a build whenever a GitLab Enterprise event is received.
-    &quot;gitlabConfig&quot;: { # GitLabConfig represents the configuration for a GitLab integration. # Output only. The GitLabConfig specified in the gitlab_config_resource field.
-      &quot;connectedRepositories&quot;: [ # Connected GitLab.com or GitLabEnterprise repositories for this config.
-        { # GitLabRepositoryId identifies a specific repository hosted on GitLab.com or GitLabEnterprise
-          &quot;id&quot;: &quot;A String&quot;, # Required. Identifier for the repository. example: &quot;namespace/project-slug&quot;, namespace is usually the username or group ID
-          &quot;webhookId&quot;: 42, # Output only. The ID of the webhook that was created for receiving events from this repo. We only create and manage a single webhook for each repo.
-        },
-      ],
-      &quot;createTime&quot;: &quot;A String&quot;, # Output only. Time when the config was created.
-      &quot;enterpriseConfig&quot;: { # GitLabEnterpriseConfig represents the configuration for a GitLabEnterprise integration. # Optional. GitLabEnterprise config.
-        &quot;hostUri&quot;: &quot;A String&quot;, # Immutable. The URI of the GitlabEnterprise host.
-        &quot;serviceDirectoryConfig&quot;: { # ServiceDirectoryConfig represents Service Directory configuration for a SCM host connection. # The Service Directory configuration to be used when reaching out to the GitLab Enterprise instance.
-          &quot;service&quot;: &quot;A String&quot;, # The Service Directory service name. Format: projects/{project}/locations/{location}/namespaces/{namespace}/services/{service}.
-        },
-        &quot;sslCa&quot;: &quot;A String&quot;, # The SSL certificate to use in requests to GitLab Enterprise instances.
-      },
-      &quot;name&quot;: &quot;A String&quot;, # The resource name for the config.
-      &quot;secrets&quot;: { # GitLabSecrets represents the secrets in Secret Manager for a GitLab integration. # Required. Secret Manager secrets needed by the config.
-        &quot;apiAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the api access token’s secret version
-        &quot;apiKeyVersion&quot;: &quot;A String&quot;, # Required. Immutable. API Key that will be attached to webhook requests from GitLab to Cloud Build.
-        &quot;readAccessTokenVersion&quot;: &quot;A String&quot;, # Required. The resource name for the read access token’s secret version
-        &quot;webhookSecretVersion&quot;: &quot;A String&quot;, # Required. Immutable. The resource name for the webhook secret’s secret version. Once this field has been set, it cannot be changed. If you need to change it, please create another GitLabConfig.
-      },
-      &quot;username&quot;: &quot;A String&quot;, # Username of the GitLab.com or GitLab Enterprise account Cloud Build will use.
-      &quot;webhookKey&quot;: &quot;A String&quot;, # Output only. UUID included in webhook requests. The UUID is used to look up the corresponding config.
-    },
-    &quot;gitlabConfigResource&quot;: &quot;A String&quot;, # The GitLab config resource that this trigger config maps to.
-    &quot;projectNamespace&quot;: &quot;A String&quot;, # Namespace of the GitLab project.
-    &quot;pullRequest&quot;: { # PullRequestFilter contains filter properties for matching GitHub Pull Requests. # Filter to match changes in pull requests.
-      &quot;branch&quot;: &quot;A String&quot;, # Regex of branches to match. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
-      &quot;commentControl&quot;: &quot;A String&quot;, # If CommentControl is enabled, depending on the setting, builds may not fire until a repository writer comments `/gcbrun` on a pull request or `/gcbrun` is in the pull request description. Only PR comments that contain `/gcbrun` will trigger builds. If CommentControl is set to disabled, comments with `/gcbrun` from a user with repository write permission or above will still trigger builds to run.
-      &quot;invertRegex&quot;: True or False, # If true, branches that do NOT match the git_ref will trigger a build.
-    },
-    &quot;push&quot;: { # Push contains filter properties for matching GitHub git pushes. # Filter to match changes in refs like branches, tags.
       &quot;branch&quot;: &quot;A String&quot;, # Regexes matching branches to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax
       &quot;invertRegex&quot;: True or False, # When true, only trigger a build if the revision regex does NOT match the git_ref regex.
       &quot;tag&quot;: &quot;A String&quot;, # Regexes matching tags to build. The syntax of the regular expressions accepted is the syntax accepted by RE2 and described at https://github.com/google/re2/wiki/Syntax

@@ -135,7 +135,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "batch.projects.locations.list",
@@ -144,7 +144,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -546,6 +546,11 @@
 "description": "The standard list page token.",
 "location": "query",
 "type": "string"
+},
+"returnPartialSuccess": {
+"description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the ListOperationsResponse.unreachable field. This can only be `true` when reading across collections. For example, when `parent` is set to `\"projects/example/locations/-\"`. This field is not supported by default and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+"location": "query",
+"type": "boolean"
 }
 },
 "path": "v1/{+name}/operations",
@@ -595,7 +600,7 @@
 }
 }
 },
-"revision": "20250519",
+"revision": "20260723",
 "rootUrl": "https://batch.googleapis.com/",
 "schemas": {
 "Accelerator": {
@@ -1298,19 +1303,25 @@
 "PROVISIONING_MODEL_UNSPECIFIED",
 "STANDARD",
 "SPOT",
-"PREEMPTIBLE"
+"PREEMPTIBLE",
+"RESERVATION_BOUND",
+"FLEX_START"
 ],
 "enumDeprecated": [
 false,
 false,
 false,
-true
+true,
+false,
+false
 ],
 "enumDescriptions": [
 "Unspecified.",
 "Standard VM.",
 "SPOT VM.",
-"Preemptible VM (PVM). Above SPOT VM is the preferable model for preemptible VM instances: the old preemptible VM model (indicated by this field) is the older model, and has been migrated to use the SPOT model as the underlying technology. This old model will still be supported."
+"Preemptible VM (PVM). Above SPOT VM is the preferable model for preemptible VM instances: the old preemptible VM model (indicated by this field) is the older model, and has been migrated to use the SPOT model as the underlying technology. This old model will still be supported.",
+"Bound to the lifecycle of the reservation in which it is provisioned.",
+"Instance is provisioned with DWS Flex Start and has limited max run duration."
 ],
 "type": "string"
 },
@@ -1366,19 +1377,25 @@ true
 "PROVISIONING_MODEL_UNSPECIFIED",
 "STANDARD",
 "SPOT",
-"PREEMPTIBLE"
+"PREEMPTIBLE",
+"RESERVATION_BOUND",
+"FLEX_START"
 ],
 "enumDeprecated": [
 false,
 false,
 false,
-true
+true,
+false,
+false
 ],
 "enumDescriptions": [
 "Unspecified.",
 "Standard VM.",
 "SPOT VM.",
-"Preemptible VM (PVM). Above SPOT VM is the preferable model for preemptible VM instances: the old preemptible VM model (indicated by this field) is the older model, and has been migrated to use the SPOT model as the underlying technology. This old model will still be supported."
+"Preemptible VM (PVM). Above SPOT VM is the preferable model for preemptible VM instances: the old preemptible VM model (indicated by this field) is the older model, and has been migrated to use the SPOT model as the underlying technology. This old model will still be supported.",
+"Bound to the lifecycle of the reservation in which it is provisioned.",
+"Instance is provisioned with DWS Flex Start and has limited max run duration."
 ],
 "type": "string"
 },
@@ -1621,6 +1638,13 @@ true
 "$ref": "Operation"
 },
 "type": "array"
+},
+"unreachable": {
+"description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections. For example, when attempting to list all resources across all supported locations.",
+"items": {
+"type": "string"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -1688,7 +1712,7 @@ true
 "id": "LocationPolicy",
 "properties": {
 "allowedLocations": {
-"description": "A list of allowed location names represented by internal URLs. Each location can be a region or a zone. Only one region or multiple zones in one region is supported now. For example, [\"regions/us-central1\"] allow VMs in any zones in region us-central1. [\"zones/us-central1-a\", \"zones/us-central1-c\"] only allow VMs in zones us-central1-a and us-central1-c. Mixing locations from different regions would cause errors. For example, [\"regions/us-central1\", \"zones/us-central1-a\", \"zones/us-central1-b\", \"zones/us-west1-a\"] contains locations from two distinct regions: us-central1 and us-west1. This combination will trigger an error.",
+"description": "A list of location names that are allowed for the job's VMs formatted as URLs. Each location can be a region or a zone, but you can only specify one region or multiple zones in one region per job. For example, `[\"regions/us-central1\"]` allow VMs in any zones in region `us-central1`, and `[\"zones/us-central1-a\", \"zones/us-central1-c\"]` only allow VMs in zones `us-central1-a` and `us-central1-c`. However, `[\"regions/us-central1\", \"zones/us-central1-a\", \"zones/us-central1-b\", \"zones/us-west1-a\"]` causes an error because it contains multiple regions (`us-central1` and `us-west1`). The specified region or zones must be in the same region in which the job is created starting on the following dates: + For projects that have successfully submitted before July 31, 2026 at least one job that uses the `allowedLocations[]` field with any region or zones outside of the job's location, the changes are starting on _June 30, 2027_. + For all other projects, the changes are starting on _July 31, 2026_. For example, for job `projects/123/locations/us-central1/jobs/jobid`, the specified region or zones must be in `us-central1`. Using a different region (e.g. `regions/us-west1`) or a zone not in `us-central1` (e.g. `zones/us-west1-a`) causes an error.",
 "items": {
 "type": "string"
 },
@@ -1816,6 +1840,22 @@ true
 "properties": {
 "network": {
 "description": "The URL of an existing network resource. You can specify the network as a full or partial URL. For example, the following are all valid URLs: * https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network} * projects/{project}/global/networks/{network} * global/networks/{network}",
+"type": "string"
+},
+"nicType": {
+"description": "Optional. The NIC type of the network interface.",
+"enum": [
+"NIC_TYPE_UNSPECIFIED",
+"GVNIC",
+"IRDMA",
+"MRDMA"
+],
+"enumDescriptions": [
+"No type specified.",
+"GVNIC",
+"IRDMA",
+"MRDMA"
+],
 "type": "string"
 },
 "noExternalIpAddress": {

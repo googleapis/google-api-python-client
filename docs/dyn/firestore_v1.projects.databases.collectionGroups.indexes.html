@@ -90,7 +90,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, filter=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists composite indexes.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <h3>Method Details</h3>
 <div class="method">
@@ -107,14 +107,27 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # Cloud Firestore indexes enable simple and complex queries against documents in a database.
+{ # Cloud Firestore indexes enable simple and complex queries against documents in a database. In Standard edition databases, single-field indexes are managed using the google.firestore.admin.v1.Field resource, and composite indexes are managed using the google.firestore.admin.v1.Index resource. In Enterprise edition databases, both single-field and composite indexes are managed using the google.firestore.admin.v1.Index resource.
   &quot;apiScope&quot;: &quot;A String&quot;, # The API scope supported by this index.
   &quot;density&quot;: &quot;A String&quot;, # Immutable. The density configuration of the index.
-  &quot;fields&quot;: [ # The fields supported by this index. For composite indexes, this requires a minimum of 2 and a maximum of 100 fields. The last field entry is always for the field path `__name__`. If, on creation, `__name__` was not specified as the last field, it will be added automatically with the same direction as that of the last field defined. If the final field in a composite index is not directional, the `__name__` will be ordered ASCENDING (unless explicitly specified). For single field indexes, this will always be exactly one entry with a field path equal to the field path of the associated field.
+  &quot;fields&quot;: [ # The fields supported by this index. At most 100 fields may be specified. In Standard edition databases only: - At least 2 fields must be specified. - The last field entry is always for the field path `__name__`. If, on creation, `__name__` was not specified as the last field, it will be added automatically with the same direction as that of the last field defined. If the final field in the index is not directional, the `__name__` will be ordered ASCENDING (unless explicitly specified).
     { # A field in an index. The field_path describes which field is indexed, the value_mode describes how the field value is indexed.
       &quot;arrayConfig&quot;: &quot;A String&quot;, # Indicates that this field supports operations on `array_value`s.
       &quot;fieldPath&quot;: &quot;A String&quot;, # Can be __name__. For single field indexes, this must match the name of the field or may be omitted.
       &quot;order&quot;: &quot;A String&quot;, # Indicates that this field supports ordering by the specified order or comparing using =, !=, &lt;, &lt;=, &gt;, &gt;=.
+      &quot;searchConfig&quot;: { # The configuration for how to index a field for search. # Indicates that this field supports search operations.
+        &quot;geoSpec&quot;: { # The specification for how to build a geo search index for a field. # Optional. The specification for building a geo search index for a field.
+          &quot;geoJsonIndexingDisabled&quot;: True or False, # Optional. Disables geoJSON indexing for the field. By default, geoJSON points are indexed. Firestore GeoPoints are indexed regardless of the value of this field.
+        },
+        &quot;textSpec&quot;: { # The specification for how to build a text search index for a field. # Optional. The specification for building a text search index for a field.
+          &quot;indexSpecs&quot;: [ # Required. Specifications for how the field should be indexed. Repeated so that the field can be indexed in multiple ways.
+            { # Specification of how the field should be indexed for search text indexes.
+              &quot;indexType&quot;: &quot;A String&quot;, # Required. How to index the text field value.
+              &quot;matchType&quot;: &quot;A String&quot;, # Required. How to match the text field value.
+            },
+          ],
+        },
+      },
       &quot;vectorConfig&quot;: { # The index configuration to support vector search operations # Indicates that this field supports nearest neighbor and distance operations on vector.
         &quot;dimension&quot;: 42, # Required. The vector dimension this configuration applies to. The resulting index will only include vectors of this dimension, and can be used for vector search with the same dimension.
         &quot;flat&quot;: { # An index that stores vectors in a flat data structure, and supports exhaustive search. # Indicates the vector index is a flat index.
@@ -123,10 +136,15 @@ Args:
     },
   ],
   &quot;multikey&quot;: True or False, # Optional. Whether the index is multikey. By default, the index is not multikey. For non-multikey indexes, none of the paths in the index definition reach or traverse an array, except via an explicit array index. For multikey indexes, at most one of the paths in the index definition reach or traverse an array, except via an explicit array index. Violations will result in errors. Note this field only applies to index with MONGODB_COMPATIBLE_API ApiScope.
-  &quot;name&quot;: &quot;A String&quot;, # Output only. A server defined name for this index. The form of this name for composite indexes will be: `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{composite_index_id}` For single field indexes, this field will be empty.
+  &quot;name&quot;: &quot;A String&quot;, # A server-defined name for this index. Output only. When used in the google.firestore.admin.v1.Index resource, the value is of the form: `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{index_id}` When used in the google.firestore.admin.v1.Field resource, the value is empty.
   &quot;queryScope&quot;: &quot;A String&quot;, # Indexes with a collection query scope specified allow queries against a collection that is the child of a specific document, specified at query time, and that has the same collection ID. Indexes with a collection group query scope specified allow queries against all collections descended from a specific document, specified at query time, and that have the same collection ID as this index.
-  &quot;shardCount&quot;: 42, # Optional. The number of shards for the index.
+  &quot;searchIndexOptions&quot;: { # Options for search indexes at the definition level. # Optional. Options for search indexes that are at the index definition level. This field is only currently supported for indexes with MONGODB_COMPATIBLE_API ApiScope.
+    &quot;textLanguage&quot;: &quot;A String&quot;, # Optional. The language to use for text search indexes. Used as the default language if not overridden at the document level by specifying the `text_language_override_field`. The language is specified as a BCP 47 language code. For indexes with MONGODB_COMPATIBLE_API ApiScope: If unspecified, the default language is English. For indexes with `ANY_API` ApiScope: If unspecified, the default behavior is autodetect.
+    &quot;textLanguageOverrideFieldPath&quot;: &quot;A String&quot;, # Optional. The field in the document that specifies which language to use for that specific document. For indexes with MONGODB_COMPATIBLE_API ApiScope: if unspecified, the language is taken from the &quot;language&quot; field if it exists or from `text_language` if it does not.
+  },
+  &quot;shardCount&quot;: 42, # Optional. The number of physical shards for the index. In Cloud Firestore, data and index entries are stored in contiguous, ordered key ranges called splits. While document keys within a collection are hashed to distribute write traffic across splits, secondary index entries are ordered lexicographically by their indexed field values. When an index contains fields with sequential or monotonically increasing or decreasing values (such as timestamps or auto-incrementing IDs), every incoming index write targets the boundary of the index keyspace on a single split. Because sequential writes continuously advance to the newest split at the edge of the range, automatic load-based splitting cannot divide the write traffic across storage servers. Under high write rates, this concentration creates an append hotspot on that single split, resulting in elevated write latency, contention errors, and transaction aborts. Sharded indexes solve this write bottleneck by hash partitioning the secondary index keyspace. When `shard_count` is configured to N, Firestore automatically prepends a virtual computed shard field (with values from 0 to N-1) as the leading field of the index. This splits a single sequential key range into N independent key ranges, uniformly scattering adjacent writes across distinct splits and storage servers to enable linear write scaling. Query trade-offs: Hash partitioning trades query performance for write throughput. Because matching index entries are scattered across all shards, queries executing against a sharded index cannot read from a single contiguous range. The query engine must fan out parallel seeks across all N shards and merge the ordered results. Even index point lookups and queries with `LIMIT 1` must seek across all N shards. Sizing and best practices: - Indexes cannot be updated in-place. `shard_count` is immutable once an index is created; to &quot;reshard&quot; an index, create a new index with the desired `shard_count` and delete the original index. - Use sharded indexes only for indexes experiencing write bottlenecks (typically exceeding 500-1,000 writes/sec) on sequential or timestamp fields. - Do not shard indexes on uniformly distributed fields (such as UUIDs or hash tokens), where writes naturally spread across splits without sharding. Sharding uniform indexes adds query overhead without improving write throughput. - Do not shard read-heavy or low-write collections. - Size `shard_count` based on expected peak write throughput. Because a single split sustains roughly 500-1,000 writes/sec on sequential keys, estimate `shard_count ≈ ceil(peak_write_qps / 500)`. - e.g., 4 for up to ~2,000-4,000 writes/sec, 16 for up to ~10,000+ writes/sec. - Setting an excessively high shard count produces diminishing write returns while needlessly increasing read latency and seek costs. If &lt;= 1, the index is unsharded (1 physical shard).
   &quot;state&quot;: &quot;A String&quot;, # Output only. The serving state of the index.
+  &quot;unique&quot;: True or False, # Optional. Whether it is an unique index. Unique index ensures all values for the indexed field(s) are unique across documents.
 }
 
   x__xgafv: string, V1 error format.
@@ -190,14 +208,27 @@ Args:
 Returns:
   An object of the form:
 
-    { # Cloud Firestore indexes enable simple and complex queries against documents in a database.
+    { # Cloud Firestore indexes enable simple and complex queries against documents in a database. In Standard edition databases, single-field indexes are managed using the google.firestore.admin.v1.Field resource, and composite indexes are managed using the google.firestore.admin.v1.Index resource. In Enterprise edition databases, both single-field and composite indexes are managed using the google.firestore.admin.v1.Index resource.
   &quot;apiScope&quot;: &quot;A String&quot;, # The API scope supported by this index.
   &quot;density&quot;: &quot;A String&quot;, # Immutable. The density configuration of the index.
-  &quot;fields&quot;: [ # The fields supported by this index. For composite indexes, this requires a minimum of 2 and a maximum of 100 fields. The last field entry is always for the field path `__name__`. If, on creation, `__name__` was not specified as the last field, it will be added automatically with the same direction as that of the last field defined. If the final field in a composite index is not directional, the `__name__` will be ordered ASCENDING (unless explicitly specified). For single field indexes, this will always be exactly one entry with a field path equal to the field path of the associated field.
+  &quot;fields&quot;: [ # The fields supported by this index. At most 100 fields may be specified. In Standard edition databases only: - At least 2 fields must be specified. - The last field entry is always for the field path `__name__`. If, on creation, `__name__` was not specified as the last field, it will be added automatically with the same direction as that of the last field defined. If the final field in the index is not directional, the `__name__` will be ordered ASCENDING (unless explicitly specified).
     { # A field in an index. The field_path describes which field is indexed, the value_mode describes how the field value is indexed.
       &quot;arrayConfig&quot;: &quot;A String&quot;, # Indicates that this field supports operations on `array_value`s.
       &quot;fieldPath&quot;: &quot;A String&quot;, # Can be __name__. For single field indexes, this must match the name of the field or may be omitted.
       &quot;order&quot;: &quot;A String&quot;, # Indicates that this field supports ordering by the specified order or comparing using =, !=, &lt;, &lt;=, &gt;, &gt;=.
+      &quot;searchConfig&quot;: { # The configuration for how to index a field for search. # Indicates that this field supports search operations.
+        &quot;geoSpec&quot;: { # The specification for how to build a geo search index for a field. # Optional. The specification for building a geo search index for a field.
+          &quot;geoJsonIndexingDisabled&quot;: True or False, # Optional. Disables geoJSON indexing for the field. By default, geoJSON points are indexed. Firestore GeoPoints are indexed regardless of the value of this field.
+        },
+        &quot;textSpec&quot;: { # The specification for how to build a text search index for a field. # Optional. The specification for building a text search index for a field.
+          &quot;indexSpecs&quot;: [ # Required. Specifications for how the field should be indexed. Repeated so that the field can be indexed in multiple ways.
+            { # Specification of how the field should be indexed for search text indexes.
+              &quot;indexType&quot;: &quot;A String&quot;, # Required. How to index the text field value.
+              &quot;matchType&quot;: &quot;A String&quot;, # Required. How to match the text field value.
+            },
+          ],
+        },
+      },
       &quot;vectorConfig&quot;: { # The index configuration to support vector search operations # Indicates that this field supports nearest neighbor and distance operations on vector.
         &quot;dimension&quot;: 42, # Required. The vector dimension this configuration applies to. The resulting index will only include vectors of this dimension, and can be used for vector search with the same dimension.
         &quot;flat&quot;: { # An index that stores vectors in a flat data structure, and supports exhaustive search. # Indicates the vector index is a flat index.
@@ -206,10 +237,15 @@ Returns:
     },
   ],
   &quot;multikey&quot;: True or False, # Optional. Whether the index is multikey. By default, the index is not multikey. For non-multikey indexes, none of the paths in the index definition reach or traverse an array, except via an explicit array index. For multikey indexes, at most one of the paths in the index definition reach or traverse an array, except via an explicit array index. Violations will result in errors. Note this field only applies to index with MONGODB_COMPATIBLE_API ApiScope.
-  &quot;name&quot;: &quot;A String&quot;, # Output only. A server defined name for this index. The form of this name for composite indexes will be: `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{composite_index_id}` For single field indexes, this field will be empty.
+  &quot;name&quot;: &quot;A String&quot;, # A server-defined name for this index. Output only. When used in the google.firestore.admin.v1.Index resource, the value is of the form: `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{index_id}` When used in the google.firestore.admin.v1.Field resource, the value is empty.
   &quot;queryScope&quot;: &quot;A String&quot;, # Indexes with a collection query scope specified allow queries against a collection that is the child of a specific document, specified at query time, and that has the same collection ID. Indexes with a collection group query scope specified allow queries against all collections descended from a specific document, specified at query time, and that have the same collection ID as this index.
-  &quot;shardCount&quot;: 42, # Optional. The number of shards for the index.
+  &quot;searchIndexOptions&quot;: { # Options for search indexes at the definition level. # Optional. Options for search indexes that are at the index definition level. This field is only currently supported for indexes with MONGODB_COMPATIBLE_API ApiScope.
+    &quot;textLanguage&quot;: &quot;A String&quot;, # Optional. The language to use for text search indexes. Used as the default language if not overridden at the document level by specifying the `text_language_override_field`. The language is specified as a BCP 47 language code. For indexes with MONGODB_COMPATIBLE_API ApiScope: If unspecified, the default language is English. For indexes with `ANY_API` ApiScope: If unspecified, the default behavior is autodetect.
+    &quot;textLanguageOverrideFieldPath&quot;: &quot;A String&quot;, # Optional. The field in the document that specifies which language to use for that specific document. For indexes with MONGODB_COMPATIBLE_API ApiScope: if unspecified, the language is taken from the &quot;language&quot; field if it exists or from `text_language` if it does not.
+  },
+  &quot;shardCount&quot;: 42, # Optional. The number of physical shards for the index. In Cloud Firestore, data and index entries are stored in contiguous, ordered key ranges called splits. While document keys within a collection are hashed to distribute write traffic across splits, secondary index entries are ordered lexicographically by their indexed field values. When an index contains fields with sequential or monotonically increasing or decreasing values (such as timestamps or auto-incrementing IDs), every incoming index write targets the boundary of the index keyspace on a single split. Because sequential writes continuously advance to the newest split at the edge of the range, automatic load-based splitting cannot divide the write traffic across storage servers. Under high write rates, this concentration creates an append hotspot on that single split, resulting in elevated write latency, contention errors, and transaction aborts. Sharded indexes solve this write bottleneck by hash partitioning the secondary index keyspace. When `shard_count` is configured to N, Firestore automatically prepends a virtual computed shard field (with values from 0 to N-1) as the leading field of the index. This splits a single sequential key range into N independent key ranges, uniformly scattering adjacent writes across distinct splits and storage servers to enable linear write scaling. Query trade-offs: Hash partitioning trades query performance for write throughput. Because matching index entries are scattered across all shards, queries executing against a sharded index cannot read from a single contiguous range. The query engine must fan out parallel seeks across all N shards and merge the ordered results. Even index point lookups and queries with `LIMIT 1` must seek across all N shards. Sizing and best practices: - Indexes cannot be updated in-place. `shard_count` is immutable once an index is created; to &quot;reshard&quot; an index, create a new index with the desired `shard_count` and delete the original index. - Use sharded indexes only for indexes experiencing write bottlenecks (typically exceeding 500-1,000 writes/sec) on sequential or timestamp fields. - Do not shard indexes on uniformly distributed fields (such as UUIDs or hash tokens), where writes naturally spread across splits without sharding. Sharding uniform indexes adds query overhead without improving write throughput. - Do not shard read-heavy or low-write collections. - Size `shard_count` based on expected peak write throughput. Because a single split sustains roughly 500-1,000 writes/sec on sequential keys, estimate `shard_count ≈ ceil(peak_write_qps / 500)`. - e.g., 4 for up to ~2,000-4,000 writes/sec, 16 for up to ~10,000+ writes/sec. - Setting an excessively high shard count produces diminishing write returns while needlessly increasing read latency and seek costs. If &lt;= 1, the index is unsharded (1 physical shard).
   &quot;state&quot;: &quot;A String&quot;, # Output only. The serving state of the index.
+  &quot;unique&quot;: True or False, # Optional. Whether it is an unique index. Unique index ensures all values for the indexed field(s) are unique across documents.
 }</pre>
 </div>
 
@@ -232,14 +268,27 @@ Returns:
 
     { # The response for FirestoreAdmin.ListIndexes.
   &quot;indexes&quot;: [ # The requested indexes.
-    { # Cloud Firestore indexes enable simple and complex queries against documents in a database.
+    { # Cloud Firestore indexes enable simple and complex queries against documents in a database. In Standard edition databases, single-field indexes are managed using the google.firestore.admin.v1.Field resource, and composite indexes are managed using the google.firestore.admin.v1.Index resource. In Enterprise edition databases, both single-field and composite indexes are managed using the google.firestore.admin.v1.Index resource.
       &quot;apiScope&quot;: &quot;A String&quot;, # The API scope supported by this index.
       &quot;density&quot;: &quot;A String&quot;, # Immutable. The density configuration of the index.
-      &quot;fields&quot;: [ # The fields supported by this index. For composite indexes, this requires a minimum of 2 and a maximum of 100 fields. The last field entry is always for the field path `__name__`. If, on creation, `__name__` was not specified as the last field, it will be added automatically with the same direction as that of the last field defined. If the final field in a composite index is not directional, the `__name__` will be ordered ASCENDING (unless explicitly specified). For single field indexes, this will always be exactly one entry with a field path equal to the field path of the associated field.
+      &quot;fields&quot;: [ # The fields supported by this index. At most 100 fields may be specified. In Standard edition databases only: - At least 2 fields must be specified. - The last field entry is always for the field path `__name__`. If, on creation, `__name__` was not specified as the last field, it will be added automatically with the same direction as that of the last field defined. If the final field in the index is not directional, the `__name__` will be ordered ASCENDING (unless explicitly specified).
         { # A field in an index. The field_path describes which field is indexed, the value_mode describes how the field value is indexed.
           &quot;arrayConfig&quot;: &quot;A String&quot;, # Indicates that this field supports operations on `array_value`s.
           &quot;fieldPath&quot;: &quot;A String&quot;, # Can be __name__. For single field indexes, this must match the name of the field or may be omitted.
           &quot;order&quot;: &quot;A String&quot;, # Indicates that this field supports ordering by the specified order or comparing using =, !=, &lt;, &lt;=, &gt;, &gt;=.
+          &quot;searchConfig&quot;: { # The configuration for how to index a field for search. # Indicates that this field supports search operations.
+            &quot;geoSpec&quot;: { # The specification for how to build a geo search index for a field. # Optional. The specification for building a geo search index for a field.
+              &quot;geoJsonIndexingDisabled&quot;: True or False, # Optional. Disables geoJSON indexing for the field. By default, geoJSON points are indexed. Firestore GeoPoints are indexed regardless of the value of this field.
+            },
+            &quot;textSpec&quot;: { # The specification for how to build a text search index for a field. # Optional. The specification for building a text search index for a field.
+              &quot;indexSpecs&quot;: [ # Required. Specifications for how the field should be indexed. Repeated so that the field can be indexed in multiple ways.
+                { # Specification of how the field should be indexed for search text indexes.
+                  &quot;indexType&quot;: &quot;A String&quot;, # Required. How to index the text field value.
+                  &quot;matchType&quot;: &quot;A String&quot;, # Required. How to match the text field value.
+                },
+              ],
+            },
+          },
           &quot;vectorConfig&quot;: { # The index configuration to support vector search operations # Indicates that this field supports nearest neighbor and distance operations on vector.
             &quot;dimension&quot;: 42, # Required. The vector dimension this configuration applies to. The resulting index will only include vectors of this dimension, and can be used for vector search with the same dimension.
             &quot;flat&quot;: { # An index that stores vectors in a flat data structure, and supports exhaustive search. # Indicates the vector index is a flat index.
@@ -248,10 +297,15 @@ Returns:
         },
       ],
       &quot;multikey&quot;: True or False, # Optional. Whether the index is multikey. By default, the index is not multikey. For non-multikey indexes, none of the paths in the index definition reach or traverse an array, except via an explicit array index. For multikey indexes, at most one of the paths in the index definition reach or traverse an array, except via an explicit array index. Violations will result in errors. Note this field only applies to index with MONGODB_COMPATIBLE_API ApiScope.
-      &quot;name&quot;: &quot;A String&quot;, # Output only. A server defined name for this index. The form of this name for composite indexes will be: `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{composite_index_id}` For single field indexes, this field will be empty.
+      &quot;name&quot;: &quot;A String&quot;, # A server-defined name for this index. Output only. When used in the google.firestore.admin.v1.Index resource, the value is of the form: `projects/{project_id}/databases/{database_id}/collectionGroups/{collection_id}/indexes/{index_id}` When used in the google.firestore.admin.v1.Field resource, the value is empty.
       &quot;queryScope&quot;: &quot;A String&quot;, # Indexes with a collection query scope specified allow queries against a collection that is the child of a specific document, specified at query time, and that has the same collection ID. Indexes with a collection group query scope specified allow queries against all collections descended from a specific document, specified at query time, and that have the same collection ID as this index.
-      &quot;shardCount&quot;: 42, # Optional. The number of shards for the index.
+      &quot;searchIndexOptions&quot;: { # Options for search indexes at the definition level. # Optional. Options for search indexes that are at the index definition level. This field is only currently supported for indexes with MONGODB_COMPATIBLE_API ApiScope.
+        &quot;textLanguage&quot;: &quot;A String&quot;, # Optional. The language to use for text search indexes. Used as the default language if not overridden at the document level by specifying the `text_language_override_field`. The language is specified as a BCP 47 language code. For indexes with MONGODB_COMPATIBLE_API ApiScope: If unspecified, the default language is English. For indexes with `ANY_API` ApiScope: If unspecified, the default behavior is autodetect.
+        &quot;textLanguageOverrideFieldPath&quot;: &quot;A String&quot;, # Optional. The field in the document that specifies which language to use for that specific document. For indexes with MONGODB_COMPATIBLE_API ApiScope: if unspecified, the language is taken from the &quot;language&quot; field if it exists or from `text_language` if it does not.
+      },
+      &quot;shardCount&quot;: 42, # Optional. The number of physical shards for the index. In Cloud Firestore, data and index entries are stored in contiguous, ordered key ranges called splits. While document keys within a collection are hashed to distribute write traffic across splits, secondary index entries are ordered lexicographically by their indexed field values. When an index contains fields with sequential or monotonically increasing or decreasing values (such as timestamps or auto-incrementing IDs), every incoming index write targets the boundary of the index keyspace on a single split. Because sequential writes continuously advance to the newest split at the edge of the range, automatic load-based splitting cannot divide the write traffic across storage servers. Under high write rates, this concentration creates an append hotspot on that single split, resulting in elevated write latency, contention errors, and transaction aborts. Sharded indexes solve this write bottleneck by hash partitioning the secondary index keyspace. When `shard_count` is configured to N, Firestore automatically prepends a virtual computed shard field (with values from 0 to N-1) as the leading field of the index. This splits a single sequential key range into N independent key ranges, uniformly scattering adjacent writes across distinct splits and storage servers to enable linear write scaling. Query trade-offs: Hash partitioning trades query performance for write throughput. Because matching index entries are scattered across all shards, queries executing against a sharded index cannot read from a single contiguous range. The query engine must fan out parallel seeks across all N shards and merge the ordered results. Even index point lookups and queries with `LIMIT 1` must seek across all N shards. Sizing and best practices: - Indexes cannot be updated in-place. `shard_count` is immutable once an index is created; to &quot;reshard&quot; an index, create a new index with the desired `shard_count` and delete the original index. - Use sharded indexes only for indexes experiencing write bottlenecks (typically exceeding 500-1,000 writes/sec) on sequential or timestamp fields. - Do not shard indexes on uniformly distributed fields (such as UUIDs or hash tokens), where writes naturally spread across splits without sharding. Sharding uniform indexes adds query overhead without improving write throughput. - Do not shard read-heavy or low-write collections. - Size `shard_count` based on expected peak write throughput. Because a single split sustains roughly 500-1,000 writes/sec on sequential keys, estimate `shard_count ≈ ceil(peak_write_qps / 500)`. - e.g., 4 for up to ~2,000-4,000 writes/sec, 16 for up to ~10,000+ writes/sec. - Setting an excessively high shard count produces diminishing write returns while needlessly increasing read latency and seek costs. If &lt;= 1, the index is unsharded (1 physical shard).
       &quot;state&quot;: &quot;A String&quot;, # Output only. The serving state of the index.
+      &quot;unique&quot;: True or False, # Optional. Whether it is an unique index. Unique index ensures all values for the indexed field(s) are unique across documents.
     },
   ],
   &quot;nextPageToken&quot;: &quot;A String&quot;, # A page token that may be used to request another page of results. If blank, this is the last page.
@@ -259,17 +313,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 </body></html>

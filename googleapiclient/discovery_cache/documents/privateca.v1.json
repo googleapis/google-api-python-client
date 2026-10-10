@@ -135,7 +135,7 @@
 ]
 },
 "list": {
-"description": "Lists information about the supported locations for this service.",
+"description": "Lists information about the supported locations for this service. This method lists locations based on the resource scope provided in the ListLocationsRequest.name field: * **Global locations**: If `name` is empty, the method lists the public locations available to all projects. * **Project-specific locations**: If `name` follows the format `projects/{project}`, the method lists locations visible to that specific project. This includes public, private, or other project-specific locations enabled for the project. For gRPC and client library implementations, the resource name is passed as the `name` field. For direct service calls, the resource name is incorporated into the request path based on the specific service implementation and version.",
 "flatPath": "v1/projects/{projectsId}/locations",
 "httpMethod": "GET",
 "id": "privateca.projects.locations.list",
@@ -144,7 +144,7 @@
 ],
 "parameters": {
 "extraLocationTypes": {
-"description": "Optional. A list of extra location types that should be used as conditions for controlling the visibility of the locations.",
+"description": "Optional. Do not use this field unless explicitly documented otherwise. This is primarily for internal usage.",
 "location": "query",
 "repeated": true,
 "type": "string"
@@ -1128,7 +1128,7 @@
 "type": "string"
 },
 "parent": {
-"description": "Required. The resource name of the location associated with the Certificates, in the format `projects/*/locations/*/caPools/*`.",
+"description": "Required. The resource name of the parent associated with the Certificates, in the format `projects/*/locations/*/caPools/*`. The parent resource name can be in one of two forms: 1. **Specific CA Pool:** To list certificates within a single CA Pool: `projects/*/locations/*/caPools/*` 2. **All CA Pools in a Location:** To list certificates across *all* CA Pools in a given project and location, use the wildcard character (`-`) in place of the CA Pool ID. Example: `projects/*/locations/*/caPools/-`",
 "location": "path",
 "pattern": "^projects/[^/]+/locations/[^/]+/caPools/[^/]+$",
 "required": true,
@@ -1594,6 +1594,11 @@
 "description": "The standard list page token.",
 "location": "query",
 "type": "string"
+},
+"returnPartialSuccess": {
+"description": "When set to `true`, operations that are reachable are returned as normal, and those that are unreachable are returned in the ListOperationsResponse.unreachable field. This can only be `true` when reading across collections. For example, when `parent` is set to `\"projects/example/locations/-\"`. This field is not supported by default and will result in an `UNIMPLEMENTED` error if set unless explicitly documented otherwise in service or product specific documentation.",
+"location": "query",
+"type": "boolean"
 }
 },
 "path": "v1/{+name}/operations",
@@ -1611,7 +1616,7 @@
 }
 }
 },
-"revision": "20250326",
+"revision": "20260529",
 "rootUrl": "https://privateca.googleapis.com/",
 "schemas": {
 "AccessUrls": {
@@ -1662,6 +1667,47 @@
 "rsa": {
 "$ref": "RsaKeyType",
 "description": "Represents an allowed RSA key type."
+}
+},
+"type": "object"
+},
+"AttributeTypeAndValue": {
+"description": "AttributeTypeAndValue specifies an attribute type and value. It can use either a OID or enum value to specify the attribute type.",
+"id": "AttributeTypeAndValue",
+"properties": {
+"objectId": {
+"$ref": "ObjectId",
+"description": "Object ID for an attribute type of an attribute and value pair."
+},
+"type": {
+"description": "The attribute type of the attribute and value pair.",
+"enum": [
+"ATTRIBUTE_TYPE_UNSPECIFIED",
+"COMMON_NAME",
+"COUNTRY_CODE",
+"ORGANIZATION",
+"ORGANIZATIONAL_UNIT",
+"LOCALITY",
+"PROVINCE",
+"STREET_ADDRESS",
+"POSTAL_CODE"
+],
+"enumDescriptions": [
+"Attribute type is unspecified.",
+"The \"common name\" of the subject.",
+"The country code of the subject.",
+"The organization of the subject.",
+"The organizational unit of the subject.",
+"The locality or city of the subject.",
+"The province, territory, or regional state of the subject.",
+"The street address of the subject.",
+"The postal code of the subject."
+],
+"type": "string"
+},
+"value": {
+"description": "The value for the attribute type.",
+"type": "string"
 }
 },
 "type": "object"
@@ -1756,6 +1802,10 @@
 "description": "A CaPool represents a group of CertificateAuthorities that form a trust anchor. A CaPool can be used to manage issuance policies for one or more CertificateAuthority resources and to rotate CA certificates in and out of the trust anchor.",
 "id": "CaPool",
 "properties": {
+"encryptionSpec": {
+"$ref": "EncryptionSpec",
+"description": "Optional. When EncryptionSpec is provided, the Subject, SubjectAltNames, and the PEM-encoded certificate fields will be encrypted at rest."
+},
 "issuancePolicy": {
 "$ref": "IssuancePolicy",
 "description": "Optional. The IssuancePolicy to control how Certificates will be issued from this CaPool."
@@ -1872,6 +1922,11 @@
 "description": "Immutable. A pem-encoded X.509 certificate signing request (CSR).",
 "type": "string"
 },
+"requestedNotBeforeTime": {
+"description": "Optional. The requested not_before_time of this Certificate. This field may only be set if the CaPool.IssuancePolicy.allow_requester_specified_not_before_time field is set to true for the issuing CaPool. If this field is specified, the certificate will be issued with this 'not_before_time'. If this is not specified, the 'not_before_time' will be set to the issuance time or issuance time minus backdate_duration depending on the CaPool configuration.",
+"format": "google-datetime",
+"type": "string"
+},
 "revocationDetails": {
 "$ref": "RevocationDetails",
 "description": "Output only. Details regarding the revocation of this Certificate. This Certificate is considered revoked if and only if this field is present.",
@@ -1882,11 +1937,13 @@
 "enum": [
 "SUBJECT_REQUEST_MODE_UNSPECIFIED",
 "DEFAULT",
+"RDN_SEQUENCE",
 "REFLECTED_SPIFFE"
 ],
 "enumDescriptions": [
 "Not specified.",
 "The default mode used in most cases. Indicates that the certificate's Subject and/or SubjectAltNames are specified in the certificate request. This mode requires the caller to have the `privateca.certificates.create` permission.",
+"A mode used to get an accurate representation of the Subject field's distinguished name. Indicates that the certificate's Subject and/or SubjectAltNames are specified in the certificate request. When parsing a PEM CSR this mode will maintain the sequence of RDNs found in the CSR's subject field in the issued Certificate. This mode requires the caller to have the `privateca.certificates.create` permission.",
 "A mode reserved for special cases. Indicates that the certificate should have one SPIFFE SubjectAltNames set by the service based on the caller's identity. This mode will ignore any explicitly specified Subject and/or SubjectAltNames in the certificate request. This mode requires the caller to have the `privateca.certificates.createForSelf` permission."
 ],
 "type": "string"
@@ -2380,6 +2437,17 @@
 },
 "type": "object"
 },
+"EncryptionSpec": {
+"description": "The configuration used for encrypting data at rest.",
+"id": "EncryptionSpec",
+"properties": {
+"cloudKmsKey": {
+"description": "The resource name for a Cloud KMS key in the format `projects/*/locations/*/keyRings/*/cryptoKeys/*`.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "Expr": {
 "description": "Represents a textual expression in the Common Expression Language (CEL) syntax. CEL is a C-like expression language. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec. Example (Comparison): title: \"Summary size limit\" description: \"Determines if a summary is less than 100 chars\" expression: \"document.summary.size() < 100\" Example (Equality): title: \"Requestor is owner\" description: \"Determines if requestor is the document owner\" expression: \"document.owner == request.auth.claims.email\" Example (Logic): title: \"Public documents\" description: \"Determine whether the document should be publicly visible\" expression: \"document.type != 'private' && document.type != 'internal'\" Example (Data Manipulation): title: \"Notification string\" description: \"Create a notification string with a timestamp.\" expression: \"'New message received at ' + string(document.create_time)\" The exact variables and functions that may be referenced within an expression are determined by the service that evaluates it. See the service documentation for additional information.",
 "id": "Expr",
@@ -2490,6 +2558,10 @@
 "description": "Defines controls over all certificate issuance within a CaPool.",
 "id": "IssuancePolicy",
 "properties": {
+"allowRequesterSpecifiedNotBeforeTime": {
+"description": "Optional. If set to true, allows requesters to specify the requested_not_before_time field when creating a Certificate. Certificates requested with this option enabled will have a 'not_before_time' equal to the value specified in the request. The 'not_after_time' will be adjusted to preserve the requested lifetime. The maximum time that a certificate can be backdated with these options is 48 hours in the past. This option cannot be set if backdate_duration is set.",
+"type": "boolean"
+},
 "allowedIssuanceModes": {
 "$ref": "IssuanceModes",
 "description": "Optional. If specified, then only methods allowed in the IssuanceModes may be used to issue Certificates."
@@ -2502,7 +2574,7 @@
 "type": "array"
 },
 "backdateDuration": {
-"description": "Optional. The duration to backdate all certificates issued from this CaPool. If not set, the certificates will be issued with a not_before_time of the issuance time (i.e. the current time). If set, the certificates will be issued with a not_before_time of the issuance time minus the backdate_duration. The not_after_time will be adjusted to preserve the requested lifetime. The backdate_duration must be less than or equal to 48 hours.",
+"description": "Optional. If set, all certificates issued from this CaPool will be backdated by this duration. The 'not_before_time' will be the issuance time minus this backdate_duration, and the 'not_after_time' will be adjusted to preserve the requested lifetime. The maximum duration that a certificate can be backdated with these options is 48 hours in the past. This option cannot be set if allow_requester_specified_not_before_time is set.",
 "format": "google-duration",
 "type": "string"
 },
@@ -2796,6 +2868,13 @@
 "$ref": "Operation"
 },
 "type": "array"
+},
+"unreachable": {
+"description": "Unordered list. Unreachable resources. Populated when the request sets `ListOperationsRequest.return_partial_success` and reads across collections. For example, when attempting to list all resources across all supported locations.",
+"items": {
+"type": "string"
+},
+"type": "array"
 }
 },
 "type": "object"
@@ -3079,33 +3158,16 @@
 },
 "type": "object"
 },
-"ReconciliationOperationMetadata": {
-"description": "Operation metadata returned by the CLH during resource state reconciliation.",
-"id": "ReconciliationOperationMetadata",
+"RelativeDistinguishedName": {
+"description": "RelativeDistinguishedName specifies a relative distinguished name which will be used to build a distinguished name.",
+"id": "RelativeDistinguishedName",
 "properties": {
-"deleteResource": {
-"deprecated": true,
-"description": "DEPRECATED. Use exclusive_action instead.",
-"type": "boolean"
+"attributes": {
+"description": "Attributes describes the attribute value assertions in the RDN.",
+"items": {
+"$ref": "AttributeTypeAndValue"
 },
-"exclusiveAction": {
-"description": "Excluisive action returned by the CLH.",
-"enum": [
-"UNKNOWN_REPAIR_ACTION",
-"DELETE",
-"RETRY"
-],
-"enumDeprecated": [
-false,
-true,
-false
-],
-"enumDescriptions": [
-"Unknown repair action.",
-"The resource has to be deleted. When using this bit, the CLH should fail the operation. DEPRECATED. Instead use DELETE_RESOURCE OperationSignal in SideChannel.",
-"This resource could not be repaired but the repair should be tried again at a later time. This can happen if there is a dependency that needs to be resolved first- e.g. if a parent resource must be repaired before a child resource."
-],
-"type": "string"
+"type": "array"
 }
 },
 "type": "object"
@@ -3317,6 +3379,13 @@ false
 "province": {
 "description": "The province, territory, or regional state of the subject.",
 "type": "string"
+},
+"rdnSequence": {
+"description": "This field can be used in place of the named subject fields.",
+"items": {
+"$ref": "RelativeDistinguishedName"
+},
+"type": "array"
 },
 "streetAddress": {
 "description": "The street address of the subject.",

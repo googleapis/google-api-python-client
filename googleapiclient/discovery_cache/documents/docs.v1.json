@@ -177,6 +177,23 @@
 "documentId"
 ],
 "parameters": {
+"commentsViewMode": {
+"description": "The comments view mode to apply to the document. This allows viewing the document with comments omitted or included. If one is not specified, COMMENTS_VIEW_MODE_OMITTED is used. If you set comments_view_mode to any value, you must also set include_tabs_content to `true` or use a field mask that references the Document.tabs field (or any subfield). If you set comments_view_mode to COMMENTS_VIEW_MODE_INCLUDED, you must also explicitly set suggestions_view_mode to SUGGESTIONS_INLINE. If you set comments_view_mode to COMMENTS_VIEW_MODE_INCLUDED or COMMENTS_VIEW_MODE_DEFAULT_FOR_CURRENT_ACCESS, you may not set suggestions_view_mode to PREVIEW_WITHOUT_SUGGESTIONS or PREVIEW_SUGGESTIONS_ACCEPTED. [Developer Preview](https://developers.google.com/workspace/preview).",
+"enum": [
+"COMMENTS_VIEW_MODE_UNSPECIFIED",
+"COMMENTS_VIEW_MODE_DEFAULT_FOR_CURRENT_ACCESS",
+"COMMENTS_VIEW_MODE_OMITTED",
+"COMMENTS_VIEW_MODE_INCLUDED"
+],
+"enumDescriptions": [
+"The CommentsViewMode is unspecified. COMMENTS_VIEW_MODE_OMITTED is applied.",
+"The CommentsViewMode applied to the returned document depends on the user's current access level. If the user only has view access, COMMENTS_VIEW_MODE_OMITTED is applied. Otherwise, COMMENTS_VIEW_MODE_INCLUDED is applied.",
+"The returned document has comments omitted.",
+"The returned document has comments included. Requests to retrieve a document using this mode will return a 403 error if the user does not have permission to view comments. When set, suggestions_view_mode must also be set to SUGGESTIONS_INLINE. Returns a 400 bad request error otherwise."
+],
+"location": "query",
+"type": "string"
+},
 "documentId": {
 "description": "The ID of the document to retrieve.",
 "location": "path",
@@ -184,7 +201,7 @@
 "type": "string"
 },
 "includeTabsContent": {
-"description": "Whether to populate the Document.tabs field instead of the text content fields like `body` and `documentStyle` on Document. - When `True`: Document content populates in the Document.tabs field instead of the text content fields in Document. - When `False`: The content of the document's first tab populates the content fields in Document excluding Document.tabs. If a document has only one tab, then that tab is used to populate the document content. Document.tabs will be empty.",
+"description": "Whether to populate the `Document.tabs` field instead of the text content fields like `body` and `documentStyle` on `Document`. - When `true`: Document content populates in the `Document.tabs` field instead of the text content fields in `Document`. - When `false`: The content of the document's first tab populates the content fields in `Document` excluding `Document.tabs`. If a document has only one tab, then that tab is used to populate the document content. `Document.tabs` will be empty. If you use a field mask that references the `Document.tabs` field (or any subfield), the API implicitly treats the request as if you set `include_tabs_content` to `true`.",
 "location": "query",
 "type": "boolean"
 },
@@ -221,9 +238,72 @@
 }
 }
 },
-"revision": "20250325",
+"revision": "20260928",
 "rootUrl": "https://docs.googleapis.com/",
 "schemas": {
+"AcceptSuggestionRequest": {
+"description": "Accepts a suggestion. Returns a 403 forbidden error if the requesting user does not have edit access to the document. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "AcceptSuggestionRequest",
+"properties": {
+"suggestionId": {
+"description": "The ID of the suggestion.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"AddCommentReplyRequest": {
+"description": "Inserts a reply Post into a CommentThread or SuggestionThread. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "AddCommentReplyRequest",
+"properties": {
+"commentId": {
+"description": "The ID of the CommentThread to add the reply to.",
+"type": "string"
+},
+"post": {
+"$ref": "Post",
+"description": "The Post representing the reply."
+},
+"suggestionId": {
+"description": "The ID of the SuggestionThread to add the reply to.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"AddCommentReplyResponse": {
+"description": "Response message for adding a reply. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "AddCommentReplyResponse",
+"properties": {
+"post": {
+"$ref": "Post",
+"description": "The newly-inserted reply Post."
+}
+},
+"type": "object"
+},
+"AddDocumentTabRequest": {
+"description": "Adds a document tab. When a tab is added at a given index, all subsequent tabs' indexes are incremented.",
+"id": "AddDocumentTabRequest",
+"properties": {
+"tabProperties": {
+"$ref": "TabProperties",
+"description": "The properties of the tab to add. All properties are optional."
+}
+},
+"type": "object"
+},
+"AddDocumentTabResponse": {
+"description": "The result of adding a document tab.",
+"id": "AddDocumentTabResponse",
+"properties": {
+"tabProperties": {
+"$ref": "TabProperties",
+"description": "The properties of the newly added tab."
+}
+},
+"type": "object"
+},
 "AutoText": {
 "description": "A ParagraphElement representing a spot in the text that's dynamically replaced with content that can change over time, like a page number.",
 "id": "AutoText",
@@ -314,6 +394,22 @@
 "description": "Response message from a BatchUpdateDocument request.",
 "id": "BatchUpdateDocumentResponse",
 "properties": {
+"commentUpdateState": {
+"description": "Whether comment updates were applied in the batch request. [Developer Preview](https://developers.google.com/workspace/preview).",
+"enum": [
+"COMMENT_UPDATE_STATE_UNSPECIFIED",
+"NO_UPDATES_REQUESTED",
+"ALL_SAVED",
+"ALL_FAILED_UNKNOWN_REASON"
+],
+"enumDescriptions": [
+"The status of comment updates is unspecified.",
+"No comment updates were requested in the batch request.",
+"All requested comment updates were applied in the batch request.",
+"All requested comment updates failed."
+],
+"type": "string"
+},
 "documentId": {
 "description": "The ID of the document to which the updates were applied to.",
 "type": "string"
@@ -322,6 +418,13 @@
 "description": "The reply of the updates. This maps 1:1 with the updates, although replies to some requests may be empty.",
 "items": {
 "$ref": "Response"
+},
+"type": "array"
+},
+"suggestionResponses": {
+"description": "The suggestions which were affected by each update. This maps 1:1 with the updates. [Developer Preview](https://developers.google.com/workspace/preview).",
+"items": {
+"$ref": "SuggestionResponse"
 },
 "type": "array"
 },
@@ -439,6 +542,94 @@
 "textStyle": {
 "$ref": "TextStyle",
 "description": "The text style of this ColumnBreak. Similar to text content, like text runs and footnote references, the text style of a column break can affect content layout as well as the styling of text inserted next to it."
+}
+},
+"type": "object"
+},
+"CommentAnchor": {
+"description": "One or more locations in the document that are tied to CommentThreads with the same anchorId. Note: Multiple anchors may refer to the same location. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "CommentAnchor",
+"properties": {
+"anchorId": {
+"description": "The ID of the comment anchor.",
+"type": "string"
+},
+"ranges": {
+"description": "A collection of Ranges in the document which are tied to this anchor.",
+"items": {
+"$ref": "Range"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"CommentThread": {
+"description": "Represents a single comment thread. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "CommentThread",
+"properties": {
+"anchorId": {
+"description": "The ID of the CommentAnchor in the document that this thread is tied to. Multiple comment threads may be anchored to the same CommentAnchor.",
+"type": "string"
+},
+"commentId": {
+"description": "The unique ID of the comment thread.",
+"type": "string"
+},
+"headPost": {
+"$ref": "Post",
+"description": "The first post in the thread."
+},
+"plainTextQuote": {
+"description": "The quoted text from the document when the comment was created, formatted as plain-text.",
+"type": "string"
+},
+"replies": {
+"description": "Replies to the head post.",
+"items": {
+"$ref": "Post"
+},
+"type": "array"
+},
+"status": {
+"description": "Whether the thread is open or resolved.",
+"enum": [
+"STATUS_UNSPECIFIED",
+"OPEN",
+"RESOLVED"
+],
+"enumDescriptions": [
+"Default value. This value is unused.",
+"The comment thread is open.",
+"The comment thread is resolved."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"CreateDropdownDefinitionRequest": {
+"description": "Creates a new DropdownDefinition in the document.",
+"id": "CreateDropdownDefinitionRequest",
+"properties": {
+"dropdownDefinition": {
+"$ref": "DropdownDefinition",
+"description": "Required. The DropdownDefinition to create."
+},
+"tabId": {
+"description": "The ID of the tab to create the dropdown definition in. When omitted, the request is applied to the first tab. In a document containing a single tab: - If provided, must match the singular tab's ID. - If omitted, the request applies to the singular tab. In a document containing multiple tabs: - If provided, the request applies to the specified tab. - If omitted, the request applies to the first tab in the document.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"CreateDropdownDefinitionResponse": {
+"description": "Response message for creating a dropdown definition.",
+"id": "CreateDropdownDefinitionResponse",
+"properties": {
+"dropdownDefinition": {
+"$ref": "DropdownDefinition",
+"description": "The newly-created DropdownDefinition."
 }
 },
 "type": "object"
@@ -673,6 +864,171 @@
 },
 "type": "object"
 },
+"DateElement": {
+"description": "A date instance mentioned in a document.",
+"id": "DateElement",
+"properties": {
+"dateElementProperties": {
+"$ref": "DateElementProperties",
+"description": "The properties of this DateElement."
+},
+"dateId": {
+"description": "Output only. The unique ID of this date.",
+"readOnly": true,
+"type": "string"
+},
+"suggestedDateElementPropertiesChanges": {
+"additionalProperties": {
+"$ref": "SuggestedDateElementProperties"
+},
+"description": "The suggested changes to the date element properties, keyed by suggestion ID.",
+"type": "object"
+},
+"suggestedDeletionIds": {
+"description": "IDs for suggestions that remove this date from the document. A DateElement might have multiple deletion IDs if, for example, multiple users suggest deleting it. If empty, then this date isn't suggested for deletion.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"suggestedInsertionIds": {
+"description": "IDs for suggestions that insert this date into the document. A DateElement might have multiple insertion IDs if it's a nested suggested change (a suggestion within a suggestion made by a different user, for example). If empty, then this date isn't a suggested insertion.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"suggestedTextStyleChanges": {
+"additionalProperties": {
+"$ref": "SuggestedTextStyle"
+},
+"description": "The suggested text style changes to this DateElement, keyed by suggestion ID.",
+"type": "object"
+},
+"textStyle": {
+"$ref": "TextStyle",
+"description": "The text style of this DateElement."
+}
+},
+"type": "object"
+},
+"DateElementProperties": {
+"description": "Properties of a DateElement.",
+"id": "DateElementProperties",
+"properties": {
+"dateFormat": {
+"description": "Determines how the date part of the DateElement will be displayed in the document. If unset, the default value is DATE_FORMAT_MONTH_DAY_YEAR_ABBREVIATED, indicating the DateElement will be formatted as `MMM d, y` in `en`, or locale specific equivalent.",
+"enum": [
+"DATE_FORMAT_UNSPECIFIED",
+"DATE_FORMAT_CUSTOM",
+"DATE_FORMAT_MONTH_DAY_ABBREVIATED",
+"DATE_FORMAT_MONTH_DAY_FULL",
+"DATE_FORMAT_MONTH_DAY_YEAR_ABBREVIATED",
+"DATE_FORMAT_ISO8601"
+],
+"enumDescriptions": [
+"The date format is unspecified.",
+"Output only. The date format is imported from an external source.",
+"The date format is an abbreviated month followed by the day. For example, \"Jan 1\".",
+"The date format is a month followed by the day. For example, \"January 01\".",
+"The date format is an abbreviated month followed by the day and the year. For example, \"Jan 1, 1970\".",
+"The date format is in ISO 8601 format. For example, \"1970-01-01\"."
+],
+"type": "string"
+},
+"displayText": {
+"description": "Output only. Indicates how the DateElement is displayed in the document.",
+"type": "string"
+},
+"locale": {
+"description": "The language code of the DateElement. For example, `en`. If unset, the default locale is `en`. Limited to the following locales: `af`, `am`, `ar`, `as`, `az`, `be`, `bg`, `bn`, `ca`, `cs`, `da`, `de`, `el`, `en`, `en-CA`, `en-GB`, `es`, `es-419`, `et`, `eu`, `fa`, `fi`, `fil`, `fr`, `fr-CA`, `gl`, `gu`, `hi`, `hr`, `hu`, `hy`, `id`, `is`, `it`, `iw`, `ja`, `ka`, `kk`, `km`, `kn`, `ko`, `lo`, `lt`, `lv`, `mk`, `ml`, `mn`, `mr`, `ms`, `ne`, `nl`, `no`, `or`, `pa`, `pl`, `pt-BR`, `pt-PT`, `ro`, `ru`, `si`, `sk`, `sl`, `sq`, `sr`, `sv`, `sw`, `ta`, `te`, `th`, `tr`, `uk`, `ur`, `uz`, `vi`, `zh-CN`, `zh-HK`, `zh-TW`, `zu`, `cy`, `my`.",
+"type": "string"
+},
+"timeFormat": {
+"description": "Determines how the time part of the DateElement will be displayed in the document. If unset, the default value is TIME_FORMAT_DISABLED, indicating no time should be shown.",
+"enum": [
+"TIME_FORMAT_UNSPECIFIED",
+"TIME_FORMAT_DISABLED",
+"TIME_FORMAT_HOUR_MINUTE",
+"TIME_FORMAT_HOUR_MINUTE_TIMEZONE"
+],
+"enumDescriptions": [
+"The time format is unspecified.",
+"Indicates that the date does not have a time.",
+"The time format shows the hour and minute. For example, \"Jan 1, 1970 12:00 PM\".",
+"The time format shows the hour, minute, and timezone. For example, \"Jan 1, 1970 12:00 PM UTC\"."
+],
+"type": "string"
+},
+"timeZoneId": {
+"description": "The time zone of the DateElement, as defined by the Unicode Common Locale Data Repository (CLDR) project. For example, `America/New_York`. If unset, the default time zone is `etc/UTC`.",
+"type": "string"
+},
+"timestamp": {
+"description": "The point in time to represent, in seconds and nanoseconds since Unix epoch: January 1, 1970 at midnight UTC. Timestamp is expected to be in UTC. If time_zone_id is set, the timestamp is adjusted according to the time zone. For example, a timestamp of `18000` with a date format of `DATE_FORMAT_ISO8601` and time format of `TIME_FORMAT_HOUR_MINUTE` would be displayed as `1970-01-01 5:00 AM`. A timestamp of `18000` with date format of `DATE_FORMAT_ISO8601`, time format of `TIME_FORMAT_HOUR_MINUTE`, and time zone set to `America/New_York` will instead be `1970-01-01 12:00 AM`.",
+"format": "google-datetime",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DateElementPropertiesSuggestionState": {
+"description": "A mask that indicates which of the fields on the base DateElementProperties have been changed in this suggestion. For any field set to true, there's a new suggested value.",
+"id": "DateElementPropertiesSuggestionState",
+"properties": {
+"dateFormatSuggested": {
+"description": "Indicates if there was a suggested change to date_format.",
+"type": "boolean"
+},
+"localeSuggested": {
+"description": "Indicates if there was a suggested change to locale.",
+"type": "boolean"
+},
+"timeFormatSuggested": {
+"description": "Indicates if there was a suggested change to time_format.",
+"type": "boolean"
+},
+"timeZoneIdSuggested": {
+"description": "Indicates if there was a suggested change to time_zone_id.",
+"type": "boolean"
+},
+"timestampSuggested": {
+"description": "Indicates if there was a suggested change to timestamp.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
+"DeleteCommentReplyRequest": {
+"description": "Deletes a reply Post from a CommentThread or SuggestionThread. Returns a 400 bad request error if: - The requesting user is not the author of the post. - The reply post contains an action. - The reply post contains an assignee. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "DeleteCommentReplyRequest",
+"properties": {
+"commentId": {
+"description": "The ID of the CommentThread which the post belongs to.",
+"type": "string"
+},
+"postId": {
+"description": "The ID of the reply Post being deleted.",
+"type": "string"
+},
+"suggestionId": {
+"description": "The ID of the SuggestionThread which the post belongs to.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DeleteCommentRequest": {
+"description": "Deletes a CommentThread. Returns a 400 bad request error if the requesting user is not the author of the headPost. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "DeleteCommentRequest",
+"properties": {
+"commentId": {
+"description": "The ID of the CommentThread that is being deleted.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "DeleteContentRangeRequest": {
 "description": "Deletes content from the document.",
 "id": "DeleteContentRangeRequest",
@@ -680,6 +1036,21 @@
 "range": {
 "$ref": "Range",
 "description": "The range of content to delete. Deleting text that crosses a paragraph boundary may result in changes to paragraph styles, lists, positioned objects and bookmarks as the two paragraphs are merged. Attempting to delete certain ranges can result in an invalid document structure in which case a 400 bad request error is returned. Some examples of invalid delete requests include: * Deleting one code unit of a surrogate pair. * Deleting the last newline character of a Body, Header, Footer, Footnote, TableCell or TableOfContents. * Deleting the start or end of a Table, TableOfContents or Equation without deleting the entire element. * Deleting the newline character before a Table, TableOfContents or SectionBreak without deleting the element. * Deleting individual rows or cells of a table. Deleting the content within a table cell is allowed."
+}
+},
+"type": "object"
+},
+"DeleteDropdownDefinitionRequest": {
+"description": "Deletes a DropdownDefinition. If the dropdown definition is referenced by any dropdown instances (chips) in the document, a 400 bad request error is returned.",
+"id": "DeleteDropdownDefinitionRequest",
+"properties": {
+"dropdownDefinitionId": {
+"description": "The ID of the DropdownDefinition to delete.",
+"type": "string"
+},
+"tabId": {
+"description": "The ID of the tab that contains the dropdown definition to delete. When omitted, the request is applied to the first tab. In a document containing a single tab: - If provided, must match the singular tab's ID. - If omitted, the request applies to the singular tab. In a document containing multiple tabs: - If provided, the request applies to the specified tab. - If omitted, the request applies to the first tab in the document.",
+"type": "string"
 }
 },
 "type": "object"
@@ -759,6 +1130,28 @@
 },
 "type": "object"
 },
+"DeleteSuggestionRequest": {
+"description": "Deletes a suggestion. Returns a 403 forbidden error if the requesting user is not the author of the suggestion. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "DeleteSuggestionRequest",
+"properties": {
+"suggestionId": {
+"description": "The ID of the suggestion.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DeleteTabRequest": {
+"description": "Deletes a tab. If the tab has child tabs, they are deleted as well.",
+"id": "DeleteTabRequest",
+"properties": {
+"tabId": {
+"description": "The ID of the tab to delete.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "DeleteTableColumnRequest": {
 "description": "Deletes a column from a table.",
 "id": "DeleteTableColumnRequest",
@@ -812,6 +1205,29 @@
 "body": {
 "$ref": "Body",
 "description": "Output only. The main body of the document. Legacy field: Instead, use Document.tabs.documentTab.body, which exposes the actual document content from all tabs when the includeTabsContent parameter is set to `true`. If `false` or unset, this field contains information about the first tab in the document."
+},
+"comments": {
+"description": "Output only. The comments associated with the document. Only populated if the commentsViewMode parameter is set to require comments (such as `COMMENTS_VIEW_MODE_INCLUDED`). [Developer Preview](https://developers.google.com/workspace/preview).",
+"items": {
+"$ref": "CommentThread"
+},
+"type": "array"
+},
+"commentsViewMode": {
+"description": "Output only. The comments view mode applied to the document. [Developer Preview](https://developers.google.com/workspace/preview).",
+"enum": [
+"COMMENTS_VIEW_MODE_UNSPECIFIED",
+"COMMENTS_VIEW_MODE_DEFAULT_FOR_CURRENT_ACCESS",
+"COMMENTS_VIEW_MODE_OMITTED",
+"COMMENTS_VIEW_MODE_INCLUDED"
+],
+"enumDescriptions": [
+"The CommentsViewMode is unspecified. COMMENTS_VIEW_MODE_OMITTED is applied.",
+"The CommentsViewMode applied to the returned document depends on the user's current access level. If the user only has view access, COMMENTS_VIEW_MODE_OMITTED is applied. Otherwise, COMMENTS_VIEW_MODE_INCLUDED is applied.",
+"The returned document has comments omitted.",
+"The returned document has comments included. Requests to retrieve a document using this mode will return a 403 error if the user does not have permission to view comments. When set, suggestions_view_mode must also be set to SUGGESTIONS_INLINE. Returns a 400 bad request error otherwise."
+],
+"type": "string"
 },
 "documentId": {
 "description": "Output only. The ID of the document.",
@@ -892,6 +1308,13 @@
 "description": "Output only. The suggested changes to the named styles of the document, keyed by suggestion ID. Legacy field: Instead, use Document.tabs.documentTab.suggestedNamedStylesChanges, which exposes the actual document content from all tabs when the includeTabsContent parameter is set to `true`. If `false` or unset, this field contains information about the first tab in the document.",
 "type": "object"
 },
+"suggestions": {
+"description": "Output only. The suggestions associated with the document. Only populated if the commentsViewMode parameter is set to require comments (such as `COMMENTS_VIEW_MODE_INCLUDED`). [Developer Preview](https://developers.google.com/workspace/preview).",
+"items": {
+"$ref": "SuggestionThread"
+},
+"type": "array"
+},
 "suggestionsViewMode": {
 "description": "Output only. The suggestions view mode applied to the document. Note: When editing a document, changes must be based on a document with SUGGESTIONS_INLINE.",
 "enum": [
@@ -909,7 +1332,7 @@
 "type": "string"
 },
 "tabs": {
-"description": "Tabs that are part of a document. Tabs can contain child tabs, a tab nested within another tab. Child tabs are represented by the Tab.childTabs field.",
+"description": "Output only. Tabs that are part of a document. Tabs can contain child tabs, a tab nested within another tab. Child tabs are represented by the Tab.childTabs field.",
 "items": {
 "$ref": "Tab"
 },
@@ -917,6 +1340,27 @@
 },
 "title": {
 "description": "The title of the document.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DocumentFormat": {
+"description": "Represents document-level format settings.",
+"id": "DocumentFormat",
+"properties": {
+"documentMode": {
+"description": "Whether the document has pages or is pageless.",
+"enum": [
+"DOCUMENT_MODE_UNSPECIFIED",
+"PAGES",
+"PAGELESS"
+],
+"enumDescriptions": [
+"The document mode is unspecified.",
+"The document has pages.",
+"The document is pageless."
+],
 "type": "string"
 }
 },
@@ -931,76 +1375,80 @@
 "description": "The background of the document. Documents cannot have a transparent background color."
 },
 "defaultFooterId": {
-"description": "The ID of the default footer. If not set, there's no default footer. This property is read-only.",
+"description": "The ID of the default footer. If not set, there's no default footer. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "defaultHeaderId": {
-"description": "The ID of the default header. If not set, there's no default header. This property is read-only.",
+"description": "The ID of the default header. If not set, there's no default header. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
+"documentFormat": {
+"$ref": "DocumentFormat",
+"description": "Specifies document-level format settings, such as the document mode (pages vs pageless)."
+},
 "evenPageFooterId": {
-"description": "The ID of the footer used only for even pages. The value of use_even_page_header_footer determines whether to use the default_footer_id or this value for the footer on even pages. If not set, there's no even page footer. This property is read-only.",
+"description": "The ID of the footer used only for even pages. The value of use_even_page_header_footer determines whether to use the default_footer_id or this value for the footer on even pages. If not set, there's no even page footer. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "evenPageHeaderId": {
-"description": "The ID of the header used only for even pages. The value of use_even_page_header_footer determines whether to use the default_header_id or this value for the header on even pages. If not set, there's no even page header. This property is read-only.",
+"description": "The ID of the header used only for even pages. The value of use_even_page_header_footer determines whether to use the default_header_id or this value for the header on even pages. If not set, there's no even page header. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "firstPageFooterId": {
-"description": "The ID of the footer used only for the first page. If not set then a unique footer for the first page does not exist. The value of use_first_page_header_footer determines whether to use the default_footer_id or this value for the footer on the first page. If not set, there's no first page footer. This property is read-only.",
+"description": "The ID of the footer used only for the first page. If not set then a unique footer for the first page does not exist. The value of use_first_page_header_footer determines whether to use the default_footer_id or this value for the footer on the first page. If not set, there's no first page footer. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "firstPageHeaderId": {
-"description": "The ID of the header used only for the first page. If not set then a unique header for the first page does not exist. The value of use_first_page_header_footer determines whether to use the default_header_id or this value for the header on the first page. If not set, there's no first page header. This property is read-only.",
+"description": "The ID of the header used only for the first page. If not set then a unique header for the first page does not exist. The value of use_first_page_header_footer determines whether to use the default_header_id or this value for the header on the first page. If not set, there's no first page header. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "flipPageOrientation": {
-"description": "Optional. Indicates whether to flip the dimensions of the page_size, which allows changing the page orientation between portrait and landscape.",
+"description": "Optional. Indicates whether to flip the dimensions of the page_size, which allows changing the page orientation between portrait and landscape. If DocumentMode is PAGELESS, this property will not be rendered.",
 "type": "boolean"
 },
 "marginBottom": {
 "$ref": "Dimension",
-"description": "The bottom page margin. Updating the bottom page margin on the document style clears the bottom page margin on all section styles."
+"description": "The bottom page margin. Updating the bottom page margin on the document style clears the bottom page margin on all section styles. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "marginFooter": {
 "$ref": "Dimension",
-"description": "The amount of space between the bottom of the page and the contents of the footer."
+"description": "The amount of space between the bottom of the page and the contents of the footer. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "marginHeader": {
 "$ref": "Dimension",
-"description": "The amount of space between the top of the page and the contents of the header."
+"description": "The amount of space between the top of the page and the contents of the header. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "marginLeft": {
 "$ref": "Dimension",
-"description": "The left page margin. Updating the left page margin on the document style clears the left page margin on all section styles. It may also cause columns to resize in all sections."
+"description": "The left page margin. Updating the left page margin on the document style clears the left page margin on all section styles. It may also cause columns to resize in all sections. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "marginRight": {
 "$ref": "Dimension",
-"description": "The right page margin. Updating the right page margin on the document style clears the right page margin on all section styles. It may also cause columns to resize in all sections."
+"description": "The right page margin. Updating the right page margin on the document style clears the right page margin on all section styles. It may also cause columns to resize in all sections. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "marginTop": {
 "$ref": "Dimension",
-"description": "The top page margin. Updating the top page margin on the document style clears the top page margin on all section styles."
+"description": "The top page margin. Updating the top page margin on the document style clears the top page margin on all section styles. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "pageNumberStart": {
-"description": "The page number from which to start counting the number of pages.",
+"description": "The page number from which to start counting the number of pages. If DocumentMode is PAGELESS, this property will not be rendered.",
 "format": "int32",
 "type": "integer"
 },
 "pageSize": {
 "$ref": "Size",
-"description": "The size of a page in the document."
+"description": "The size of a page in the document. If DocumentMode is PAGELESS, this property will not be rendered."
 },
 "useCustomHeaderFooterMargins": {
-"description": "Indicates whether DocumentStyle margin_header, SectionStyle margin_header and DocumentStyle margin_footer, SectionStyle margin_footer are respected. When false, the default values in the Docs editor for header and footer margin is used. This property is read-only.",
+"description": "Indicates whether DocumentStyle margin_header, SectionStyle margin_header and DocumentStyle margin_footer, SectionStyle margin_footer are respected. When false, the default values in the Docs editor for header and footer margin is used. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "boolean"
 },
 "useEvenPageHeaderFooter": {
-"description": "Indicates whether to use the even page header / footer IDs for the even pages.",
+"description": "Indicates whether to use the even page header / footer IDs for the even pages. If DocumentMode is PAGELESS, this property will not be rendered.",
 "type": "boolean"
 },
 "useFirstPageHeaderFooter": {
-"description": "Indicates whether to use the first page header / footer IDs for the first page.",
+"description": "Indicates whether to use the first page header / footer IDs for the first page. If DocumentMode is PAGELESS, this property will not be rendered.",
 "type": "boolean"
 }
 },
@@ -1097,9 +1545,23 @@
 "$ref": "Body",
 "description": "The main body of the document tab."
 },
+"commentAnchors": {
+"additionalProperties": {
+"$ref": "CommentAnchor"
+},
+"description": "The comment anchors in a document tab, keyed by anchor ID. Only populated if the commentsViewMode parameter is set to require comments (such as `COMMENTS_VIEW_MODE_INCLUDED`). [Developer Preview](https://developers.google.com/workspace/preview).",
+"type": "object"
+},
 "documentStyle": {
 "$ref": "DocumentStyle",
 "description": "The style of the document tab."
+},
+"dropdownDefinitions": {
+"additionalProperties": {
+"$ref": "DropdownDefinition"
+},
+"description": "The dropdown definitions in a document tab, keyed by dropdown definition ID.",
+"type": "object"
 },
 "footers": {
 "additionalProperties": {
@@ -1167,6 +1629,165 @@
 },
 "description": "The suggested changes to the named styles of the document tab, keyed by suggestion ID.",
 "type": "object"
+}
+},
+"type": "object"
+},
+"Dropdown": {
+"description": "A dropdown in the document. The chip is displayed as a dropdown menu that allows users to select an option from a configurable list of options.",
+"id": "Dropdown",
+"properties": {
+"dropdownId": {
+"description": "The ID of this dropdown.",
+"type": "string"
+},
+"dropdownProperties": {
+"$ref": "DropdownProperties",
+"description": "The properties of this dropdown."
+},
+"suggestedDeletionIds": {
+"description": "IDs for suggestions that remove this dropdown from the document. If empty, then this dropdown isn't suggested for deletion.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"suggestedDropdownPropertiesChanges": {
+"additionalProperties": {
+"$ref": "SuggestedDropdownProperties"
+},
+"description": "The suggested properties changes to this dropdown, keyed by suggestion ID.",
+"type": "object"
+},
+"suggestedInsertionIds": {
+"description": "IDs for suggestions that insert this dropdown into the document. If empty, then this dropdown isn't a suggested insertion.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"suggestedTextStyleChanges": {
+"additionalProperties": {
+"$ref": "SuggestedTextStyle"
+},
+"description": "The suggested text style changes to this dropdown, keyed by suggestion ID.",
+"type": "object"
+},
+"textStyle": {
+"$ref": "TextStyle",
+"description": "The text style of this dropdown."
+}
+},
+"type": "object"
+},
+"DropdownDefinition": {
+"description": "A dropdown definition in the document.",
+"id": "DropdownDefinition",
+"properties": {
+"dropdownDefinitionId": {
+"description": "The ID of this dropdown definition. If you specify an ID, it must be unique among all IDs in the tab. The ID must start with `kix.` and match regex `^kix\\.[a-zA-Z0-9_-]{2,14}$` (length 6-18 chars). If you don't specify an ID, a unique one is generated.",
+"type": "string"
+},
+"dropdownDefinitionProperties": {
+"$ref": "DropdownDefinitionProperties",
+"description": "The properties of this dropdown definition."
+},
+"suggestedDeletionId": {
+"description": "ID for suggestion that deletes this dropdown definition.",
+"type": "string"
+},
+"suggestedDropdownDefinitionPropertiesChanges": {
+"additionalProperties": {
+"$ref": "SuggestedDropdownDefinitionProperties"
+},
+"description": "Suggested property changes to this definition, keyed by suggestion ID.",
+"type": "object"
+},
+"suggestedInsertionId": {
+"description": "ID for suggestion that inserts this dropdown definition.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DropdownDefinitionProperties": {
+"description": "Properties of a dropdown definition.",
+"id": "DropdownDefinitionProperties",
+"properties": {
+"options": {
+"description": "The list of options defined by this dropdown definition. A dropdown definition must have at least 2 options and at most 50 options.",
+"items": {
+"$ref": "DropdownOption"
+},
+"type": "array"
+},
+"title": {
+"description": "The title of the dropdown definition.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DropdownDefinitionPropertiesSuggestionState": {
+"description": "A mask that indicates which of the fields on the base DropdownDefinitionProperties have been changed in this suggestion. For any field set to true, there's a new suggested value.",
+"id": "DropdownDefinitionPropertiesSuggestionState",
+"properties": {
+"optionsSuggested": {
+"description": "Indicates if there was a suggested change to options.",
+"type": "boolean"
+},
+"titleSuggested": {
+"description": "Indicates if there was a suggested change to title.",
+"type": "boolean"
+}
+},
+"type": "object"
+},
+"DropdownOption": {
+"description": "An option in a Dropdown.",
+"id": "DropdownOption",
+"properties": {
+"displayValue": {
+"description": "The display value of this dropdown option.",
+"type": "string"
+},
+"optionId": {
+"description": "The ID of this dropdown option. If you specify an ID, it must be unique among all options in this dropdown definition. The ID must start with `dropdownItem.` and match regex `^dropdownItem\\.[a-zA-Z0-9_-]{2,14}$` (length 15-27 chars). If you don't specify an ID, a unique one is generated.",
+"type": "string"
+},
+"textStyle": {
+"$ref": "TextStyle",
+"description": "The text style of this dropdown option. Currently, only the `foreground_color` and `background_color` properties are supported. If other properties are set, a 400 bad request error is returned."
+}
+},
+"type": "object"
+},
+"DropdownProperties": {
+"description": "Properties specific to a dropdown.",
+"id": "DropdownProperties",
+"properties": {
+"displayValue": {
+"description": "The human-readable display text of the currently selected item. This field is populated by the server based on the dropdown definition and the selected option ID. It may differ from `DropdownOption.display_value` if the underlying option definition was modified or deleted, or during pending suggested changes.",
+"type": "string"
+},
+"dropdownDefinitionId": {
+"description": "The ID of the DropdownDefinition that defines the options for this dropdown.",
+"type": "string"
+},
+"selectedOptionId": {
+"description": "The ID of the selected option in this dropdown.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"DropdownPropertiesSuggestionState": {
+"description": "A mask that indicates which of the fields on the base DropdownProperties have been changed in this suggestion. For any field set to true, there's a new suggested value.",
+"id": "DropdownPropertiesSuggestionState",
+"properties": {
+"selectedOptionIdSuggested": {
+"description": "Indicates if there was a suggested change to selected_option_id.",
+"type": "boolean"
 }
 },
 "type": "object"
@@ -1693,6 +2314,89 @@
 },
 "type": "object"
 },
+"InsertCommentRequest": {
+"description": "Inserts a CommentThread into the document. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "InsertCommentRequest",
+"properties": {
+"assigneeEmailAddress": {
+"description": "Optional. The email address of the assignee of the comment. Leave empty for a non-assigned comment. May not exceed 2048 UTF-8 code units.",
+"type": "string"
+},
+"content": {
+"description": "The text of the comment, as plain text. This text content will be handled similarly to comments created in the Docs editor. It will have similar behaviors for formatting, notifications, etc. This field cannot be empty, and must not exceed 2048 UTF-8 code units.",
+"type": "string"
+},
+"range": {
+"$ref": "Range",
+"description": "The Range in the document that is tied to this comment."
+}
+},
+"type": "object"
+},
+"InsertCommentResponse": {
+"description": "Response message for inserting a comment. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "InsertCommentResponse",
+"properties": {
+"commentThread": {
+"$ref": "CommentThread",
+"description": "The newly-inserted comment thread."
+}
+},
+"type": "object"
+},
+"InsertDateRequest": {
+"description": "Inserts a date at the specified location.",
+"id": "InsertDateRequest",
+"properties": {
+"dateElementProperties": {
+"$ref": "DateElementProperties",
+"description": "The properties of the date to insert."
+},
+"endOfSegmentLocation": {
+"$ref": "EndOfSegmentLocation",
+"description": "Inserts the date at the end of the given header, footer or document body."
+},
+"location": {
+"$ref": "Location",
+"description": "Inserts the date at a specific index in the document. The date must be inserted inside the bounds of an existing Paragraph. For instance, it cannot be inserted at a table's start index (i.e. between an existing table and its preceding paragraph)."
+}
+},
+"type": "object"
+},
+"InsertDropdownRequest": {
+"description": "Inserts a Dropdown at the specified location.",
+"id": "InsertDropdownRequest",
+"properties": {
+"dropdownDefinitionId": {
+"description": "Required. The DropdownDefinition ID.",
+"type": "string"
+},
+"endOfSegmentLocation": {
+"$ref": "EndOfSegmentLocation",
+"description": "The EndOfSegmentLocation in the document to insert the dropdown at."
+},
+"location": {
+"$ref": "Location",
+"description": "The Location in the document to insert the dropdown at."
+},
+"selectedOptionId": {
+"description": "Optional initial value for the dropdown. If this field is not specified, the new dropdown will default to selecting the first option defined in the dropdown definition. If this field is specified but does not reference a valid option in the dropdown definition, a 400 bad request error is returned.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"InsertDropdownResponse": {
+"description": "The result of inserting a Dropdown.",
+"id": "InsertDropdownResponse",
+"properties": {
+"dropdown": {
+"$ref": "Dropdown",
+"description": "The newly-inserted Dropdown."
+}
+},
+"type": "object"
+},
 "InsertInlineImageRequest": {
 "description": "Inserts an InlineObject containing an image at the given location.",
 "id": "InsertInlineImageRequest",
@@ -1749,6 +2453,44 @@
 "location": {
 "$ref": "Location",
 "description": "Inserts the page break at a specific index in the document. The page break must be inserted inside the bounds of an existing Paragraph. For instance, it cannot be inserted at a table's start index (i.e. between the table and its preceding paragraph). Page breaks cannot be inserted inside a table, equation, footnote, header or footer. Since page breaks can only be inserted inside the body, the segment ID field must be empty."
+}
+},
+"type": "object"
+},
+"InsertPersonRequest": {
+"description": "Inserts a person mention.",
+"id": "InsertPersonRequest",
+"properties": {
+"endOfSegmentLocation": {
+"$ref": "EndOfSegmentLocation",
+"description": "Inserts the person mention at the end of a header, footer, footnote or the document body."
+},
+"location": {
+"$ref": "Location",
+"description": "Inserts the person mention at a specific index in the document. The person mention must be inserted inside the bounds of an existing Paragraph. For instance, it cannot be inserted at a table's start index (i.e. between the table and its preceding paragraph). Person mentions cannot be inserted inside an equation."
+},
+"personProperties": {
+"$ref": "PersonProperties",
+"description": "The properties of the person mention to insert."
+}
+},
+"type": "object"
+},
+"InsertRichLinkRequest": {
+"description": "Inserts a RichLink at the specified location.",
+"id": "InsertRichLinkRequest",
+"properties": {
+"endOfSegmentLocation": {
+"$ref": "EndOfSegmentLocation",
+"description": "Inserts the rich link at the end of a header, footer, footnote or the document body."
+},
+"location": {
+"$ref": "Location",
+"description": "Inserts the rich link at a specific index in the document. The rich link must be inserted inside the bounds of an existing Paragraph. For instance, it cannot be inserted at a table's start index (i.e. between the table and its preceding paragraph). The rich link cannot be inserted inside an equation."
+},
+"richLinkProperties": {
+"$ref": "RichLinkProperties",
+"description": "The properties of the rich link to insert."
 }
 },
 "type": "object"
@@ -2416,6 +3158,14 @@
 "$ref": "ColumnBreak",
 "description": "A column break paragraph element."
 },
+"dateElement": {
+"$ref": "DateElement",
+"description": "A paragraph element that represents a date."
+},
+"dropdown": {
+"$ref": "Dropdown",
+"description": "A paragraph element that represents a dropdown menu."
+},
 "endIndex": {
 "description": "The zero-base end index of this paragraph element, exclusive, in UTF-16 code units.",
 "format": "int32",
@@ -2756,13 +3506,11 @@
 "id": "PersonProperties",
 "properties": {
 "email": {
-"description": "Output only. The email address linked to this Person. This field is always present.",
-"readOnly": true,
+"description": "The email address linked to this Person. This field is always present.",
 "type": "string"
 },
 "name": {
-"description": "Output only. The name of the person if it's displayed in the link text instead of the person's email address.",
-"readOnly": true,
+"description": "The name of the person if it's displayed in the link text instead of the person's email address.",
 "type": "string"
 }
 },
@@ -2903,6 +3651,114 @@
 },
 "type": "object"
 },
+"Post": {
+"description": "Represents a single post in a comment or suggestion thread. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "Post",
+"properties": {
+"assigneeEmail": {
+"description": "Optional. The email of the user who is being newly assigned to the thread as part of this post. Returns a 400 bad request error if: - The parent thread is a CommentThread whose headPost does not have an assignee. - The parent thread is a SuggestionThread. - commentAction is specified as `RESOLVE` or `REOPEN`. - `assigneeEmail` exceeds 2048 UTF-8 code units.",
+"type": "string"
+},
+"author": {
+"$ref": "PostAuthor",
+"description": "Output only. The user who created the post."
+},
+"commentAction": {
+"description": "Optional. The action type for comment posts.",
+"enum": [
+"COMMENT_ACTION_TYPE_UNSPECIFIED",
+"NO_COMMENT_ACTION_CHANGE",
+"RESOLVE",
+"REOPEN"
+],
+"enumDescriptions": [
+"Default value. This value is unused.",
+"No action change in this post.",
+"This post resolves the thread.",
+"This post reopens the thread."
+],
+"type": "string"
+},
+"content": {
+"description": "The content of the post. Required to be non-empty if commentAction is not `RESOLVE` or `REOPEN`. This text content will be handled similarly to comments created in the Docs editor. It will have similar behaviors for formatting, notifications, etc. May not exceed 2048 UTF-8 code units.",
+"type": "string"
+},
+"contentHtml": {
+"description": "Output only. The content of the post as HTML.",
+"type": "string"
+},
+"createTime": {
+"description": "Output only. The time the post was created.",
+"format": "google-datetime",
+"type": "string"
+},
+"deleted": {
+"description": "Output only. Whether the post is deleted. If `true`, content and author fields will be empty.",
+"type": "boolean"
+},
+"fromCopiedDocument": {
+"description": "Output only. Whether the post is from a copied document. This field cannot be set directly by callers.",
+"type": "boolean"
+},
+"fromDocumentComparison": {
+"description": "Output only. Whether the post is from a document comparison. This field cannot be set directly by callers.",
+"type": "boolean"
+},
+"fromImportedDocument": {
+"description": "Output only. Whether the post is from an imported document. This field cannot be set directly by callers.",
+"type": "boolean"
+},
+"postId": {
+"description": "Output only. The unique ID of the post.",
+"type": "string"
+},
+"suggestionAction": {
+"description": "Output only. The action type for suggestion posts.",
+"enum": [
+"SUGGESTION_ACTION_TYPE_UNSPECIFIED",
+"NO_SUGGESTION_ACTION_CHANGE",
+"ACCEPT",
+"REJECT"
+],
+"enumDescriptions": [
+"Default value. This value is unused.",
+"No action change in this post.",
+"This post accepts the suggestion.",
+"This post rejects the suggestion."
+],
+"type": "string"
+},
+"updateTime": {
+"description": "Output only. The time the post was last updated.",
+"format": "google-datetime",
+"type": "string"
+}
+},
+"type": "object"
+},
+"PostAuthor": {
+"description": "Represents a user who authored a comment or suggestion post. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "PostAuthor",
+"properties": {
+"anonymous": {
+"description": "Whether the user is anonymous.",
+"type": "boolean"
+},
+"displayName": {
+"description": "The display name of the user. May be absent if the author is anonymous.",
+"type": "string"
+},
+"me": {
+"description": "Whether the user is the authenticated user making the request.",
+"type": "boolean"
+},
+"user": {
+"description": "The resource name of the post author user, which can also be used to identify the user in the [Google People API](https://developers.google.com/people/api/rest/v1/people). Format: `users/{user}`. Will not be populated if the anonymous field is `true` or if the post is from an imported document.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "Range": {
 "description": "Specifies a contiguous range of text.",
 "id": "Range",
@@ -2923,6 +3779,17 @@
 },
 "tabId": {
 "description": "The tab that contains this range. When omitted, the request applies to the first tab. In a document containing a single tab: - If provided, must match the singular tab's ID. - If omitted, the request applies to the singular tab. In a document containing multiple tabs: - If provided, the request applies to the specified tab. - If omitted, the request applies to the first tab in the document.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"RejectSuggestionRequest": {
+"description": "Rejects a suggestion. Returns a 403 forbidden error if the requesting user does not have edit access to the document and is not the author of the suggestion. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "RejectSuggestionRequest",
+"properties": {
+"suggestionId": {
+"description": "The ID of the suggestion.",
 "type": "string"
 }
 },
@@ -3017,6 +3884,22 @@
 "description": "A single update to apply to a document.",
 "id": "Request",
 "properties": {
+"acceptSuggestion": {
+"$ref": "AcceptSuggestionRequest",
+"description": "Accepts a suggestion. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"addCommentReply": {
+"$ref": "AddCommentReplyRequest",
+"description": "Adds a reply to a CommentThread or SuggestionThread. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"addDocumentTab": {
+"$ref": "AddDocumentTabRequest",
+"description": "Adds a document tab."
+},
+"createDropdownDefinition": {
+"$ref": "CreateDropdownDefinitionRequest",
+"description": "Creates a DropdownDefinition."
+},
 "createFooter": {
 "$ref": "CreateFooterRequest",
 "description": "Creates a footer."
@@ -3037,9 +3920,21 @@
 "$ref": "CreateParagraphBulletsRequest",
 "description": "Creates bullets for paragraphs."
 },
+"deleteComment": {
+"$ref": "DeleteCommentRequest",
+"description": "Deletes a CommentThread. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"deleteCommentReply": {
+"$ref": "DeleteCommentReplyRequest",
+"description": "Deletes a reply Post from a CommentThread or SuggestionThread. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
 "deleteContentRange": {
 "$ref": "DeleteContentRangeRequest",
 "description": "Deletes content from the document."
+},
+"deleteDropdownDefinition": {
+"$ref": "DeleteDropdownDefinitionRequest",
+"description": "Deletes a DropdownDefinition."
 },
 "deleteFooter": {
 "$ref": "DeleteFooterRequest",
@@ -3061,6 +3956,14 @@
 "$ref": "DeletePositionedObjectRequest",
 "description": "Deletes a positioned object from the document."
 },
+"deleteSuggestion": {
+"$ref": "DeleteSuggestionRequest",
+"description": "Deletes a suggestion. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"deleteTab": {
+"$ref": "DeleteTabRequest",
+"description": "Deletes a document tab."
+},
 "deleteTableColumn": {
 "$ref": "DeleteTableColumnRequest",
 "description": "Deletes a column from a table."
@@ -3069,6 +3972,18 @@
 "$ref": "DeleteTableRowRequest",
 "description": "Deletes a row from a table."
 },
+"insertComment": {
+"$ref": "InsertCommentRequest",
+"description": "Inserts a CommentThread into the document. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"insertDate": {
+"$ref": "InsertDateRequest",
+"description": "Inserts a date."
+},
+"insertDropdown": {
+"$ref": "InsertDropdownRequest",
+"description": "Inserts a Dropdown at the specified location."
+},
 "insertInlineImage": {
 "$ref": "InsertInlineImageRequest",
 "description": "Inserts an inline image at the specified location."
@@ -3076,6 +3991,14 @@
 "insertPageBreak": {
 "$ref": "InsertPageBreakRequest",
 "description": "Inserts a page break at the specified location."
+},
+"insertPerson": {
+"$ref": "InsertPersonRequest",
+"description": "Inserts a person mention."
+},
+"insertRichLink": {
+"$ref": "InsertRichLinkRequest",
+"description": "Insert a rich link."
 },
 "insertSectionBreak": {
 "$ref": "InsertSectionBreakRequest",
@@ -3105,6 +4028,10 @@
 "$ref": "PinTableHeaderRowsRequest",
 "description": "Updates the number of pinned header rows in a table."
 },
+"rejectSuggestion": {
+"$ref": "RejectSuggestionRequest",
+"description": "Rejects a suggestion. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
 "replaceAllText": {
 "$ref": "ReplaceAllTextRequest",
 "description": "Replaces all instances of the specified text."
@@ -3121,9 +4048,29 @@
 "$ref": "UnmergeTableCellsRequest",
 "description": "Unmerges cells in a table."
 },
+"updateCommentPost": {
+"$ref": "UpdateCommentPostRequest",
+"description": "Updates an existing post (head post or reply) of a CommentThread or SuggestionThread. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
 "updateDocumentStyle": {
 "$ref": "UpdateDocumentStyleRequest",
 "description": "Updates the style of the document."
+},
+"updateDocumentTabProperties": {
+"$ref": "UpdateDocumentTabPropertiesRequest",
+"description": "Updates the properties of a document tab."
+},
+"updateDropdownDefinitionProperties": {
+"$ref": "UpdateDropdownDefinitionPropertiesRequest",
+"description": "Updates the properties of a DropdownDefinition."
+},
+"updateDropdownProperties": {
+"$ref": "UpdateDropdownPropertiesRequest",
+"description": "Updates the properties of a Dropdown."
+},
+"updateNamedStyle": {
+"$ref": "UpdateNamedStyleRequest",
+"description": "Updates a named style."
 },
 "updateParagraphStyle": {
 "$ref": "UpdateParagraphStyleRequest",
@@ -3156,6 +4103,18 @@
 "description": "A single response from an update.",
 "id": "Response",
 "properties": {
+"addCommentReply": {
+"$ref": "AddCommentReplyResponse",
+"description": "The result of adding a reply to a comment or suggestion. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"addDocumentTab": {
+"$ref": "AddDocumentTabResponse",
+"description": "The result of adding a document tab."
+},
+"createDropdownDefinition": {
+"$ref": "CreateDropdownDefinitionResponse",
+"description": "The result of creating a dropdown definition."
+},
 "createFooter": {
 "$ref": "CreateFooterResponse",
 "description": "The result of creating a footer."
@@ -3171,6 +4130,14 @@
 "createNamedRange": {
 "$ref": "CreateNamedRangeResponse",
 "description": "The result of creating a named range."
+},
+"insertComment": {
+"$ref": "InsertCommentResponse",
+"description": "The result of inserting a comment. [Developer Preview](https://developers.google.com/workspace/preview)."
+},
+"insertDropdown": {
+"$ref": "InsertDropdownResponse",
+"description": "The result of inserting a dropdown."
 },
 "insertInlineImage": {
 "$ref": "InsertInlineImageResponse",
@@ -3256,18 +4223,15 @@
 "id": "RichLinkProperties",
 "properties": {
 "mimeType": {
-"description": "Output only. The [MIME type](https://developers.google.com/drive/api/v3/mime-types) of the RichLink, if there's one (for example, when it's a file in Drive).",
-"readOnly": true,
+"description": "The [MIME type](https://developers.google.com/drive/api/v3/mime-types) of the RichLink, if there's one (for example, when it's a file in Drive).",
 "type": "string"
 },
 "title": {
-"description": "Output only. The title of the RichLink as displayed in the link. This title matches the title of the linked resource at the time of the insertion or last update of the link. This field is always present.",
-"readOnly": true,
+"description": "The title of the RichLink as displayed in the link. This title matches the title of the linked resource at the time of the insertion or last update of the link. This field is always present.",
 "type": "string"
 },
 "uri": {
-"description": "Output only. The URI to the RichLink. This is always present.",
-"readOnly": true,
+"description": "The URI to the RichLink. This is always present.",
 "type": "string"
 }
 },
@@ -3353,59 +4317,59 @@
 "type": "string"
 },
 "defaultFooterId": {
-"description": "The ID of the default footer. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's default_footer_id. This property is read-only.",
+"description": "The ID of the default footer. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's default_footer_id. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "defaultHeaderId": {
-"description": "The ID of the default header. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's default_header_id. This property is read-only.",
+"description": "The ID of the default header. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's default_header_id. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "evenPageFooterId": {
-"description": "The ID of the footer used only for even pages. If the value of DocumentStyle's use_even_page_header_footer is true, this value is used for the footers on even pages in the section. If it is false, the footers on even pages use the default_footer_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's even_page_footer_id. This property is read-only.",
+"description": "The ID of the footer used only for even pages. If the value of DocumentStyle's use_even_page_header_footer is true, this value is used for the footers on even pages in the section. If it is false, the footers on even pages use the default_footer_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's even_page_footer_id. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "evenPageHeaderId": {
-"description": "The ID of the header used only for even pages. If the value of DocumentStyle's use_even_page_header_footer is true, this value is used for the headers on even pages in the section. If it is false, the headers on even pages use the default_header_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's even_page_header_id. This property is read-only.",
+"description": "The ID of the header used only for even pages. If the value of DocumentStyle's use_even_page_header_footer is true, this value is used for the headers on even pages in the section. If it is false, the headers on even pages use the default_header_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's even_page_header_id. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "firstPageFooterId": {
-"description": "The ID of the footer used only for the first page of the section. If use_first_page_header_footer is true, this value is used for the footer on the first page of the section. If it's false, the footer on the first page of the section uses the default_footer_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's first_page_footer_id. This property is read-only.",
+"description": "The ID of the footer used only for the first page of the section. If use_first_page_header_footer is true, this value is used for the footer on the first page of the section. If it's false, the footer on the first page of the section uses the default_footer_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's first_page_footer_id. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "firstPageHeaderId": {
-"description": "The ID of the header used only for the first page of the section. If use_first_page_header_footer is true, this value is used for the header on the first page of the section. If it's false, the header on the first page of the section uses the default_header_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's first_page_header_id. This property is read-only.",
+"description": "The ID of the header used only for the first page of the section. If use_first_page_header_footer is true, this value is used for the header on the first page of the section. If it's false, the header on the first page of the section uses the default_header_id. If unset, the value inherits from the previous SectionBreak's SectionStyle. If the value is unset in the first SectionBreak, it inherits from DocumentStyle's first_page_header_id. If DocumentMode is PAGELESS, this property will not be rendered. This property is read-only.",
 "type": "string"
 },
 "flipPageOrientation": {
-"description": "Optional. Indicates whether to flip the dimensions of DocumentStyle's page_size for this section, which allows changing the page orientation between portrait and landscape. If unset, the value inherits from DocumentStyle's flip_page_orientation. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error.",
+"description": "Optional. Indicates whether to flip the dimensions of DocumentStyle's page_size for this section, which allows changing the page orientation between portrait and landscape. If unset, the value inherits from DocumentStyle's flip_page_orientation. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error.",
 "type": "boolean"
 },
 "marginBottom": {
 "$ref": "Dimension",
-"description": "The bottom page margin of the section. If unset, the value defaults to margin_bottom from DocumentStyle. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
+"description": "The bottom page margin of the section. If unset, the value defaults to margin_bottom from DocumentStyle. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
 },
 "marginFooter": {
 "$ref": "Dimension",
-"description": "The footer margin of the section. If unset, the value defaults to margin_footer from DocumentStyle. If updated, use_custom_header_footer_margins is set to true on DocumentStyle. The value of use_custom_header_footer_margins on DocumentStyle indicates if a footer margin is being respected for this section When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
+"description": "The footer margin of the section. If unset, the value defaults to margin_footer from DocumentStyle. If updated, use_custom_header_footer_margins is set to true on DocumentStyle. The value of use_custom_header_footer_margins on DocumentStyle indicates if a footer margin is being respected for this section If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
 },
 "marginHeader": {
 "$ref": "Dimension",
-"description": "The header margin of the section. If unset, the value defaults to margin_header from DocumentStyle. If updated, use_custom_header_footer_margins is set to true on DocumentStyle. The value of use_custom_header_footer_margins on DocumentStyle indicates if a header margin is being respected for this section. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
+"description": "The header margin of the section. If unset, the value defaults to margin_header from DocumentStyle. If updated, use_custom_header_footer_margins is set to true on DocumentStyle. The value of use_custom_header_footer_margins on DocumentStyle indicates if a header margin is being respected for this section. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
 },
 "marginLeft": {
 "$ref": "Dimension",
-"description": "The left page margin of the section. If unset, the value defaults to margin_left from DocumentStyle. Updating the left margin causes columns in this section to resize. Since the margin affects column width, it's applied before column properties. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
+"description": "The left page margin of the section. If unset, the value defaults to margin_left from DocumentStyle. Updating the left margin causes columns in this section to resize. Since the margin affects column width, it's applied before column properties. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
 },
 "marginRight": {
 "$ref": "Dimension",
-"description": "The right page margin of the section. If unset, the value defaults to margin_right from DocumentStyle. Updating the right margin causes columns in this section to resize. Since the margin affects column width, it's applied before column properties. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
+"description": "The right page margin of the section. If unset, the value defaults to margin_right from DocumentStyle. Updating the right margin causes columns in this section to resize. Since the margin affects column width, it's applied before column properties. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
 },
 "marginTop": {
 "$ref": "Dimension",
-"description": "The top page margin of the section. If unset, the value defaults to margin_top from DocumentStyle. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
+"description": "The top page margin of the section. If unset, the value defaults to margin_top from DocumentStyle. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error."
 },
 "pageNumberStart": {
-"description": "The page number from which to start counting the number of pages for this section. If unset, page numbering continues from the previous section. If the value is unset in the first SectionBreak, refer to DocumentStyle's page_number_start. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error.",
+"description": "The page number from which to start counting the number of pages for this section. If unset, page numbering continues from the previous section. If the value is unset in the first SectionBreak, refer to DocumentStyle's page_number_start. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error.",
 "format": "int32",
 "type": "integer"
 },
@@ -3424,7 +4388,7 @@
 "type": "string"
 },
 "useFirstPageHeaderFooter": {
-"description": "Indicates whether to use the first page header / footer IDs for the first page of the section. If unset, it inherits from DocumentStyle's use_first_page_header_footer for the first section. If the value is unset for subsequent sectors, it should be interpreted as false. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error.",
+"description": "Indicates whether to use the first page header / footer IDs for the first page of the section. If unset, it inherits from DocumentStyle's use_first_page_header_footer for the first section. If the value is unset for subsequent sectors, it should be interpreted as false. If DocumentMode is PAGELESS, this property will not be rendered. When updating this property, setting a concrete value is required. Unsetting this property results in a 400 bad request error.",
 "type": "boolean"
 }
 },
@@ -3580,6 +4544,21 @@
 },
 "type": "object"
 },
+"SuggestedDateElementProperties": {
+"description": "A suggested change to a DateElementProperties.",
+"id": "SuggestedDateElementProperties",
+"properties": {
+"dateElementProperties": {
+"$ref": "DateElementProperties",
+"description": "DateElementProperties that only includes the changes made in this suggestion. This can be used along with the date_element_properties_suggestion_state to see which fields have changed and their new values."
+},
+"dateElementPropertiesSuggestionState": {
+"$ref": "DateElementPropertiesSuggestionState",
+"description": "A mask that indicates which of the fields on the base DateElementProperties have been changed in this suggestion."
+}
+},
+"type": "object"
+},
 "SuggestedDocumentStyle": {
 "description": "A suggested change to the DocumentStyle.",
 "id": "SuggestedDocumentStyle",
@@ -3591,6 +4570,36 @@
 "documentStyleSuggestionState": {
 "$ref": "DocumentStyleSuggestionState",
 "description": "A mask that indicates which of the fields on the base DocumentStyle have been changed in this suggestion."
+}
+},
+"type": "object"
+},
+"SuggestedDropdownDefinitionProperties": {
+"description": "A suggested change to dropdown definition properties.",
+"id": "SuggestedDropdownDefinitionProperties",
+"properties": {
+"dropdownDefinitionProperties": {
+"$ref": "DropdownDefinitionProperties",
+"description": "A DropdownDefinitionProperties that only includes the changes made in this suggestion. This can be used along with the dropdown_definition_properties_suggestion_state to see which fields have changed and their new values."
+},
+"dropdownDefinitionPropertiesSuggestionState": {
+"$ref": "DropdownDefinitionPropertiesSuggestionState",
+"description": "A mask that indicates which of the fields on the base DropdownDefinitionProperties have been changed in this suggestion."
+}
+},
+"type": "object"
+},
+"SuggestedDropdownProperties": {
+"description": "A suggested change to dropdown properties.",
+"id": "SuggestedDropdownProperties",
+"properties": {
+"dropdownProperties": {
+"$ref": "DropdownProperties",
+"description": "A DropdownProperties that only includes the changes made in this suggestion. This can be used along with the dropdown_properties_suggestion_state to see which fields have changed and their new values."
+},
+"dropdownPropertiesSuggestionState": {
+"$ref": "DropdownPropertiesSuggestionState",
+"description": "A mask that indicates which of the fields on the base DropdownProperties have been changed in this suggestion."
 }
 },
 "type": "object"
@@ -3715,6 +4724,94 @@
 },
 "type": "object"
 },
+"SuggestionResponse": {
+"description": "The suggestions which were affected by a given update. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "SuggestionResponse",
+"properties": {
+"acceptedSuggestionIds": {
+"description": "The IDs of suggestions which were accepted during the update.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"createdSuggestionIds": {
+"description": "The IDs of suggestions which were created during the update.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"deletedSuggestionIds": {
+"description": "The IDs of suggestions which were deleted during the update.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"rejectedSuggestionIds": {
+"description": "The IDs of suggestions which were rejected during the update.",
+"items": {
+"type": "string"
+},
+"type": "array"
+},
+"updatedSummarySuggestionIds": {
+"description": "The IDs of suggestions whose summaries were updated during the update.",
+"items": {
+"type": "string"
+},
+"type": "array"
+}
+},
+"type": "object"
+},
+"SuggestionThread": {
+"description": "Represents a single suggestion thread. Suggestion threads are created as a byproduct of saving changes to the document while in suggestion mode, and cannot be created directly. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "SuggestionThread",
+"properties": {
+"headPost": {
+"$ref": "Post",
+"description": "The first post in the thread."
+},
+"replies": {
+"description": "Replies to the head post.",
+"items": {
+"$ref": "Post"
+},
+"type": "array"
+},
+"status": {
+"description": "Whether the thread is open, accepted, or rejected.",
+"enum": [
+"STATUS_UNSPECIFIED",
+"OPEN",
+"ACCEPTED",
+"REJECTED"
+],
+"enumDescriptions": [
+"Default value. This value is unused.",
+"The suggestion thread is open.",
+"The suggestion thread is accepted.",
+"The suggestion thread is rejected."
+],
+"type": "string"
+},
+"suggestionId": {
+"description": "The unique ID of the suggestion.",
+"type": "string"
+},
+"summaryHtml": {
+"description": "Summary of the suggested differences in the document, in HTML. May be empty.",
+"type": "string"
+},
+"summaryText": {
+"description": "Summary of the suggested differences in the document, in plain text. May be empty.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "Tab": {
 "description": "A tab in a document.",
 "id": "Tab",
@@ -3741,6 +4838,10 @@
 "description": "Properties of a tab.",
 "id": "TabProperties",
 "properties": {
+"iconEmoji": {
+"description": "Optional. The emoji icon displayed with the tab. A valid emoji icon is represented by a non-empty Unicode string. Any set of characters that don't represent a single emoji is invalid. If an emoji is invalid, a 400 bad request error is returned. If this value is unset or empty, the tab will display the default tab icon.",
+"type": "string"
+},
 "index": {
 "description": "The zero-based index of the tab within the parent.",
 "format": "int32",
@@ -3756,7 +4857,7 @@
 "type": "string"
 },
 "tabId": {
-"description": "Output only. The ID of the tab. This field can't be changed.",
+"description": "The immutable ID of the tab.",
 "type": "string"
 },
 "title": {
@@ -4404,6 +5505,29 @@
 },
 "type": "object"
 },
+"UpdateCommentPostRequest": {
+"description": "Updates a Post in a CommentThread or SuggestionThread. Returns a 400 bad request error if: - The post is the headPost of a SuggestionThread. - The requesting user is not the author of the post. [Developer Preview](https://developers.google.com/workspace/preview).",
+"id": "UpdateCommentPostRequest",
+"properties": {
+"commentId": {
+"description": "The ID of the CommentThread which the post belongs to.",
+"type": "string"
+},
+"content": {
+"description": "The new text of the comment, as plain text. This text content will be handled similarly to comments created in the Docs editor. It will have similar behaviors for formatting, notifications, etc. This field cannot be empty, and must not exceed 2048 UTF-8 code units.",
+"type": "string"
+},
+"postId": {
+"description": "The ID of the post being updated.",
+"type": "string"
+},
+"suggestionId": {
+"description": "The ID of the SuggestionThread which the post belongs to.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "UpdateDocumentStyleRequest": {
 "description": "Updates the DocumentStyle.",
 "id": "UpdateDocumentStyleRequest",
@@ -4419,6 +5543,97 @@
 },
 "tabId": {
 "description": "The tab that contains the style to update. When omitted, the request applies to the first tab. In a document containing a single tab: - If provided, must match the singular tab's ID. - If omitted, the request applies to the singular tab. In a document containing multiple tabs: - If provided, the request applies to the specified tab. - If not provided, the request applies to the first tab in the document.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"UpdateDocumentTabPropertiesRequest": {
+"description": "Update the properties of a document tab.",
+"id": "UpdateDocumentTabPropertiesRequest",
+"properties": {
+"fields": {
+"description": "The fields that should be updated. At least one field must be specified. The root `tab_properties` is implied and should not be specified. A single `\"*\"` can be used as short-hand for listing every field.",
+"format": "google-fieldmask",
+"type": "string"
+},
+"tabProperties": {
+"$ref": "TabProperties",
+"description": "The tab properties to update."
+}
+},
+"type": "object"
+},
+"UpdateDropdownDefinitionPropertiesRequest": {
+"description": "Updates the properties of a DropdownDefinition.",
+"id": "UpdateDropdownDefinitionPropertiesRequest",
+"properties": {
+"dropdownDefinitionId": {
+"description": "The ID of the DropdownDefinition to update.",
+"type": "string"
+},
+"dropdownDefinitionProperties": {
+"$ref": "DropdownDefinitionProperties",
+"description": "The properties to update."
+},
+"fields": {
+"description": "The fields that should be updated. At least one field must be specified. The root `dropdown_definition_properties` is implied and should not be specified. A single `\"*\"` can be used as short-hand for listing every field. When `dropdown_definition_properties.options` is included in the field mask, the full, complete list of desired options must be provided in `dropdown_definition_properties.options`.",
+"format": "google-fieldmask",
+"type": "string"
+},
+"selectedOptionIdReplacements": {
+"additionalProperties": {
+"type": "string"
+},
+"description": "A map of option IDs to their replacements, used to automatically reassign orphaned Dropdown chips when an option is deleted. The keys are the IDs of the options being deleted, and the values are the IDs of their replacement options. If an option being deleted is selected in one or more Dropdown chips in the document, a replacement entry for that option must be provided in this map, and the replacement option ID must exist in the updated DropdownDefinition. If a replacement is required but not provided, a 400 bad request error is returned. Options being deleted that are not selected in any Dropdown chips do not require a replacement. For example, if option A is being replaced by option B, the map should be `{\"A\": \"B\"}`.",
+"type": "object"
+},
+"tabId": {
+"description": "The ID of the tab that contains the dropdown definition to update. When omitted, the request is applied to the first tab. In a document containing a single tab: - If provided, must match the singular tab's ID. - If omitted, the request applies to the singular tab. In a document containing multiple tabs: - If provided, the request applies to the specified tab. - If omitted, the request applies to the first tab in the document.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"UpdateDropdownPropertiesRequest": {
+"description": "Updates the properties of a Dropdown.",
+"id": "UpdateDropdownPropertiesRequest",
+"properties": {
+"dropdownId": {
+"description": "Required. The Dropdown ID.",
+"type": "string"
+},
+"dropdownProperties": {
+"$ref": "DropdownProperties",
+"description": "The properties to update."
+},
+"fields": {
+"description": "The fields that should be updated. At least one field must be specified. The root `dropdown_properties` is implied and should not be specified. A single `\"*\"` can be used as short-hand for listing every field.",
+"format": "google-fieldmask",
+"type": "string"
+},
+"tabId": {
+"description": "The ID of the tab that contains the dropdown to update. When omitted, the request is applied to the first tab. In a document containing a single tab: - If provided, must match the singular tab's ID. - If omitted, the request applies to the singular tab. In a document containing multiple tabs: - If provided, the request applies to the specified tab. - If omitted, the request applies to the first tab in the document.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"UpdateNamedStyleRequest": {
+"description": "Updates a named style.",
+"id": "UpdateNamedStyleRequest",
+"properties": {
+"fields": {
+"description": "The NamedStyle fields that should be updated. At least `named_style_type` must be specified. The root `named_style` is implied and should not be specified. A single `\"*\"` can be used as short-hand for listing every field. For example, to update the text style to bold, set `fields` to include `\"text_style\"` and `\"text_style.bold\"`. To update the paragraph style's alignment property, set `fields` to include `\"paragraph_style\"` and `\"paragraph_style.alignment\"`. To reset a property to its default value, include its field name in the field mask but leave the field itself unset. Specifying `\"text_style\"` or `\"paragraph_style\"` with an empty TextStyle or ParagraphStyle will reset all of its nested fields.",
+"format": "google-fieldmask",
+"type": "string"
+},
+"namedStyle": {
+"$ref": "NamedStyle",
+"description": "The document style to update."
+},
+"tabId": {
+"description": "The document tab to update. By default, the update is applied to the first tab.",
 "type": "string"
 }
 },
@@ -4590,6 +5805,20 @@
 },
 "targetRevisionId": {
 "description": "The optional target revision ID of the document the write request is applied to. If collaborator changes have occurred after the document was read using the API, the changes produced by this write request are applied against the collaborator changes. This results in a new revision of the document that incorporates both the collaborator changes and the changes in the request, with the Docs server resolving conflicting changes. When using target revision ID, the API client can be thought of as another collaborator of the document. The target revision ID can only be used to write to recent versions of a document. If the target revision is too far behind the latest revision, the request is not processed and returns a 400 bad request error. The request should be tried again after retrieving the latest version of the document. Usually a revision ID remains valid for use as a target revision for several minutes after it's read, but for frequently edited documents this window might be shorter.",
+"type": "string"
+},
+"writeMode": {
+"description": "How the request updates should be applied to the document. If unspecified, the request updates will be applied as normal edits. [Developer Preview](https://developers.google.com/workspace/preview).",
+"enum": [
+"WRITE_MODE_UNSPECIFIED",
+"EDIT",
+"SUGGEST"
+],
+"enumDescriptions": [
+"The write mode is unspecified. Defaults to EDIT behavior.",
+"Apply all updates as normal edits.",
+"Apply all updates as suggestions. [Developer Preview](https://developers.google.com/workspace/preview)."
+],
 "type": "string"
 }
 },
