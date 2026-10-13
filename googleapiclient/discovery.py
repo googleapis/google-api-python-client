@@ -62,7 +62,11 @@ except ImportError:
 
 # Local imports
 from googleapiclient import _auth, mimeparse
-from googleapiclient._helpers import _add_query_parameter, positional
+from googleapiclient._helpers import (
+    _add_query_parameter,
+    _redact_sensitive_url,
+    positional,
+)
 from googleapiclient.errors import (
     HttpError,
     InvalidJsonError,
@@ -432,7 +436,7 @@ def _retrieve_discovery_doc(
         actual_url = _add_query_parameter(url, "userIp", os.environ["REMOTE_ADDR"])
     if developerKey:
         actual_url = _add_query_parameter(url, "key", developerKey)
-    logger.debug("URL being requested: GET %s", actual_url)
+    logger.debug("URL being requested: GET %s", _redact_sensitive_url(actual_url))
 
     # Execute this request with retries build into HttpRequest
     # Note that it will already raise an error if we don't get a 2xx response
@@ -1263,7 +1267,9 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                     ) % multipart_boundary
                     url = _add_query_parameter(url, "uploadType", "multipart")
 
-        logger.debug("URL being requested: %s %s" % (httpMethod, url))
+        logger.debug(
+            "URL being requested: %s %s" % (httpMethod, _redact_sensitive_url(url))
+        )
         return self._requestBuilder(
             self._http,
             model.response,
@@ -1383,7 +1389,10 @@ def createNextMethod(
             request.uri = _add_query_parameter(
                 request.uri, pageTokenName, nextPageToken
             )
-            logger.debug("Next page request URL: %s %s" % (methodName, request.uri))
+            logger.debug(
+                "Next page request URL: %s %s"
+                % (methodName, _redact_sensitive_url(request.uri))
+            )
         else:
             # Replace pageToken value in request body
             model = self._model
