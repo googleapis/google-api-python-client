@@ -69,7 +69,9 @@ def get_static_doc(serviceName, version):
     doc_name = "{}.{}.json".format(serviceName, version)
 
     try:
-        with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), "r") as f:
+        with open(
+            os.path.join(DISCOVERY_DOC_DIR, doc_name), "r", encoding="utf-8"
+        ) as f:
             content = f.read()
     except FileNotFoundError:
         # File does not exist. Nothing to do here.
