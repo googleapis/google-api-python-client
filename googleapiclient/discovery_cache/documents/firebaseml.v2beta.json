@@ -206,7 +206,7 @@
 }
 }
 },
-"revision": "20260830",
+"revision": "20261011",
 "rootUrl": "https://firebaseml.googleapis.com/",
 "schemas": {
 "Date": {
@@ -371,6 +371,20 @@
 "$ref": "GoogleCloudAiplatformV1beta1AudioTranscriptionConfigLanguageHints",
 "deprecated": true,
 "description": "Optional. Deprecated: Use top-level `language_codes` instead. Specifies one or more languages in the audio."
+},
+"mode": {
+"description": "Optional. Configures transcription mode. Supported values: `VERBATIM`, `SMART`. If unspecified, defaults to `VERBATIM` transcription. In `SMART` mode, the model performs disfluency removal (eliminating filler words, repetitions, and false starts), light grammatical cleanup, automatic formatting (paragraphs, bullet points, numbered lists), and minor user edits (inline self-corrections). Timestamps and diarization are incompatible with mode `SMART`.",
+"enum": [
+"MODE_UNSPECIFIED",
+"VERBATIM",
+"SMART"
+],
+"enumDescriptions": [
+"Unspecified transcription mode.",
+"Verbatim transcription mode.",
+"Smart transcription mode."
+],
+"type": "string"
 },
 "wordTimestamp": {
 "description": "Optional. Configures word-level timestamp generation.",
@@ -603,6 +617,12 @@
 "description": "Output only. The content of the candidate.",
 "readOnly": true
 },
+"continuationToken": {
+"description": "Output only. An optional opaque continuation token returned when `finish_reason` is `CONTINUATION`. Clients can pass this token in a subsequent `GenerateContentRequest` to continue generation.",
+"format": "byte",
+"readOnly": true,
+"type": "string"
+},
 "finishMessage": {
 "description": "Output only. Describes the reason the model stopped generating tokens in more detail. This field is returned only when `finish_reason` is set.",
 "readOnly": true,
@@ -627,7 +647,9 @@
 "IMAGE_RECITATION",
 "IMAGE_OTHER",
 "UNEXPECTED_TOOL_CALL",
-"NO_IMAGE"
+"NO_IMAGE",
+"MALFORMED_RESPONSE",
+"CONTINUATION"
 ],
 "enumDescriptions": [
 "The finish reason is unspecified.",
@@ -646,7 +668,9 @@
 "The generated image may be a recitation from a source.",
 "The image generation stopped for a reason not otherwise specified.",
 "The model generated a function call that is semantically invalid. This can happen, for example, if function calling is not enabled or the generated function is not in the function declaration.",
-"The model was expected to generate an image, but didn't."
+"The model was expected to generate an image, but didn't.",
+"Finishes due to malformed response.",
+"Token generation was stopped because the response reached the per-request token limit, but generation is not yet complete. The model response can be continued via a subsequent request using the returned `continuation_token`."
 ],
 "readOnly": true,
 "type": "string"
@@ -1254,6 +1278,11 @@
 "$ref": "GoogleCloudAiplatformV1beta1Content"
 },
 "type": "array"
+},
+"continuationToken": {
+"description": "Optional. An opaque continuation token used to resume generation from a previous `GenerateContent` or `StreamGenerateContent` response that stopped with `finish_reason` set to `CONTINUATION`.",
+"format": "byte",
+"type": "string"
 },
 "generationConfig": {
 "$ref": "GoogleCloudAiplatformV1beta1GenerationConfig",
@@ -2359,7 +2388,7 @@
 "type": "object"
 },
 "GoogleCloudAiplatformV1beta1Part": {
-"description": "A datatype containing media that is part of a multi-part Content message. A `Part` consists of data which has an associated datatype. A `Part` can only contain one of the accepted types in `Part.data`. For media types that are not text, `Part` must have a fixed IANA MIME type identifying the type and subtype of the media if `inline_data` or `file_data` field is filled with raw bytes.",
+"description": "A datatype containing media that is part of a multi-part Content message. A `Part` consists of data which has an associated datatype. A `Part` must contain one of the accepted types in `Part.data`. For media types that are not text, `Part` must have a fixed IANA MIME type identifying the type and subtype of the media if `inline_data` or `file_data` field is filled with raw bytes.",
 "id": "GoogleCloudAiplatformV1beta1Part",
 "properties": {
 "audioTranscription": {
@@ -2407,6 +2436,10 @@
 "mediaResolution": {
 "$ref": "GoogleCloudAiplatformV1beta1PartMediaResolution",
 "description": "per part media resolution. Media resolution for the input media."
+},
+"speechMetadata": {
+"$ref": "GoogleCloudAiplatformV1beta1SpeechMetadata",
+"description": "Optional. Turn-level metadata for speech generation (e.g. Daikon speaker/style). May be set alongside `text` to attach speaker and style information to a text part."
 },
 "text": {
 "description": "Optional. The text content of the part. When sent from the VSCode Gemini Code Assist extension, references to @mentioned items will be converted to markdown boldface text. For example `@my-repo` will be converted to and sent as `**my-repo**` by the IDE agent.",
@@ -3170,6 +3203,21 @@ false
 },
 "type": "object"
 },
+"GoogleCloudAiplatformV1beta1SpeechMetadata": {
+"description": "Structured Metadata Sub-Message for Part",
+"id": "GoogleCloudAiplatformV1beta1SpeechMetadata",
+"properties": {
+"speaker": {
+"description": "Optional. Identifies which speaker is speaking this turn.",
+"type": "string"
+},
+"style": {
+"description": "Optional. Natural language description of the vocal style (e.g., \"cheerful\").",
+"type": "string"
+}
+},
+"type": "object"
+},
 "GoogleCloudAiplatformV1beta1TextResponseFormat": {
 "description": "Configuration for text-specific output formatting.",
 "id": "GoogleCloudAiplatformV1beta1TextResponseFormat",
@@ -3257,15 +3305,42 @@ false
 "type": "object"
 },
 "GoogleCloudAiplatformV1beta1ToolComputerUse": {
-"description": "Tool to support computer use.",
+"description": "A tool that enables the model to interact directly with a computer environment.",
 "id": "GoogleCloudAiplatformV1beta1ToolComputerUse",
 "properties": {
+"disabledSafetyPolicies": {
+"description": "Optional. A list of safety policies to disable for the computer use tool.",
+"items": {
+"enum": [
+"SAFETY_POLICY_UNSPECIFIED",
+"FINANCIAL_TRANSACTIONS",
+"SENSITIVE_DATA_MODIFICATION",
+"COMMUNICATION_TOOL",
+"ACCOUNT_CREATION",
+"DATA_MODIFICATION",
+"USER_CONSENT_MANAGEMENT",
+"LEGAL_TERMS_AND_AGREEMENTS"
+],
+"enumDescriptions": [
+"The safety policy is unspecified.",
+"Policy that restricts financial transactions.",
+"Policy that restricts modification of sensitive data.",
+"Policy that restricts the use of communication tools.",
+"Policy that restricts the creation of accounts.",
+"Policy that restricts general data modification.",
+"Policy that restricts user consent management.",
+"Policy that restricts interaction with legal terms and agreements."
+],
+"type": "string"
+},
+"type": "array"
+},
 "enablePromptInjectionDetection": {
-"description": "Optional. Enables the prompt injection detection check on computer-use request.",
+"description": "Optional. Whether to enable the prompt injection detection check on the computer use request.",
 "type": "boolean"
 },
 "environment": {
-"description": "Required. The environment being operated.",
+"description": "Required. The target environment where the computer use tool operates.",
 "enum": [
 "ENVIRONMENT_UNSPECIFIED",
 "ENVIRONMENT_BROWSER",
@@ -3273,15 +3348,15 @@ false
 "ENVIRONMENT_DESKTOP"
 ],
 "enumDescriptions": [
-"Defaults to browser.",
-"Operates in a web browser.",
-"Operates in a mobile environment.",
-"Operates in a desktop environment."
+"The environment is unspecified.",
+"The tool operates in a web browser.",
+"The tool operates in a mobile environment.",
+"The tool operates in a desktop environment."
 ],
 "type": "string"
 },
 "excludedPredefinedFunctions": {
-"description": "Optional. By default, [predefined functions](https://cloud.google.com/vertex-ai/generative-ai/docs/computer-use#supported-actions) are included in the final model call. Some of them can be explicitly excluded from being automatically included. This can serve two purposes: 1. Using a more restricted / different action space. 2. Improving the definitions / instructions of predefined functions.",
+"description": "Optional. A list of predefined functions to explicitly exclude from the model call. By default, [predefined functions](https://cloud.google.com/vertex-ai/generative-ai/docs/computer-use#supported-actions) are included. Excluding functions allows for a more restricted action space or custom definitions for predefined functions.",
 "items": {
 "type": "string"
 },
@@ -3667,6 +3742,10 @@ false
 "replicatedVoiceConfig": {
 "$ref": "GoogleCloudAiplatformV1beta1ReplicatedVoiceConfig",
 "description": "Optional. The configuration for a replicated voice. This enables users to replicate a voice from an audio sample."
+},
+"voice": {
+"description": "Optional. The speaker identifier for synthesis. Supported formats: * Speaker name for prebuilt voices (for example, `Orus` or `Kore`). * Voice ID for stored voices (for example, `voice_xxx`). * Voice replication key (for example, `voicekey_xxx`).",
+"type": "string"
 }
 },
 "type": "object"

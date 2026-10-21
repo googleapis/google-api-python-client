@@ -1866,7 +1866,7 @@
 }
 }
 },
-"revision": "20260816",
+"revision": "20261005",
 "rootUrl": "https://saasservicemgmt.googleapis.com/",
 "schemas": {
 "Aggregate": {
@@ -1885,12 +1885,27 @@
 },
 "type": "object"
 },
+"AppParams": {
+"description": "AppParams contains the parameters for creating an AppHub Application.",
+"id": "AppParams",
+"properties": {
+"group": {
+"description": "Optional. Grouping used to construct the name of the AppHub Application. Multiple UnitKinds can specify the same group to use the same Application across their respective units. Corresponds to the app_boundary_id in the ADC composite ApplicationTemplate. Defaults to UnitKind.name",
+"type": "string"
+},
+"scope": {
+"$ref": "Scope",
+"description": "Optional. Corresponds to the scope in the ADC composite ApplicationTemplate. Defaults to TYPE_REGIONAL."
+}
+},
+"type": "object"
+},
 "Blueprint": {
-"description": "Blueprints are OCI Images that contain all of the artifacts needed to provision a unit. Metadata such as, type of the engine used to actuate the blueprint (e.g. terraform, helm etc) and version will come from the image manifest. If the hostname is omitted, it will be assumed to be the regional path to Artifact Registry (eg. us-east1-docker.pkg.dev).",
+"description": "Blueprints are OCI Images that contain all of the artifacts needed to provision a unit. Metadata such as, type of the engine used to actuate the blueprint (Terraform, for example) and version will come from the image manifest. If the hostname is omitted, it will be assumed to be the regional path to Artifact Registry (eg. us-east1-docker.pkg.dev).",
 "id": "Blueprint",
 "properties": {
 "engine": {
-"description": "Output only. Type of the engine used to actuate the blueprint. e.g. terraform, helm etc.",
+"description": "Output only. Type of the engine used to actuate the blueprint. (Terraform, for example)",
 "readOnly": true,
 "type": "string"
 },
@@ -1900,6 +1915,45 @@
 },
 "version": {
 "description": "Output only. Version metadata if present on the blueprint.",
+"readOnly": true,
+"type": "string"
+}
+},
+"type": "object"
+},
+"ComponentRef": {
+"description": "ComponentRef represents a reference to a component resource.",
+"id": "ComponentRef",
+"properties": {
+"component": {
+"description": "Optional. Name of the component in composite.Components",
+"type": "string"
+},
+"compositeRef": {
+"$ref": "CompositeRef",
+"description": "Optional. Reference to the Composite ApplicationTemplate."
+},
+"revision": {
+"description": "Optional. Revision of the component. If the component does not have a revision, this field will be explicitly set to the revision of the composite ApplicationTemplate.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"CompositeRef": {
+"description": "CompositeRef represents a reference to a composite resource.",
+"id": "CompositeRef",
+"properties": {
+"applicationTemplate": {
+"description": "Required. Reference to the ApplicationTemplate resource.",
+"type": "string"
+},
+"revision": {
+"description": "Optional. Revision of the ApplicationTemplate to use. Changes to revision will trigger manual resynchronization. If empty, ApplicationTemplate will be ignored.",
+"type": "string"
+},
+"syncOperation": {
+"description": "Output only. Reference to on-going AppTemplate import and replication operation (i.e. the operation_id for the long-running operation). This field is opaque for external usage.",
 "readOnly": true,
 "type": "string"
 }
@@ -1957,17 +2011,6 @@
 "description": "Optional. The maximum percentage of units allowed to fail (0, 100] within a location without pausing the rollout.",
 "format": "int32",
 "type": "integer"
-}
-},
-"type": "object"
-},
-"FlagUpdate": {
-"description": "FlagUpdate is a UnitOperation that pushes new flag values to Units.",
-"id": "FlagUpdate",
-"properties": {
-"flagRelease": {
-"description": "Required. Flag release being applied by UnitOperation.",
-"type": "string"
 }
 },
 "type": "object"
@@ -2281,7 +2324,7 @@
 "type": "object"
 },
 "Release": {
-"description": "A new version to be propagated and deployed to units. This includes pointers to packaged blueprints for actuation (e.g Helm or Terraform configuration packages) via artifact registry.",
+"description": "A new version to be propagated and deployed to units. This includes pointers to packaged blueprints for actuation via Artifact Registry.",
 "id": "Release",
 "properties": {
 "annotations": {
@@ -2290,6 +2333,11 @@
 },
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
+},
+"applicationTemplateComponent": {
+"$ref": "ComponentRef",
+"description": "Output only. Reference to component and revision in a composite ApplicationTemplate.",
+"readOnly": true
 },
 "blueprint": {
 "$ref": "Blueprint",
@@ -2417,10 +2465,6 @@
 "etag": {
 "description": "Output only. An opaque value that uniquely identifies a version or generation of a resource. It can be used to confirm that the client and server agree on the ordering of a resource being written.",
 "readOnly": true,
-"type": "string"
-},
-"flagRelease": {
-"description": "Optional. Immutable. Name of the FlagRelease to be rolled out to the target Units. Release and FlagRelease are mutually exclusive. Note: `release` comment needs to be adjusted to mention that \"Release and FlagRelease are mutually exclusive\" when visibility restriction will be lifted.",
 "type": "string"
 },
 "labels": {
@@ -2599,11 +2643,11 @@
 "type": "string"
 },
 "unitFilter": {
-"description": "Optional. CEL(https://github.com/google/cel-spec) formatted filter string against Unit. The filter will be applied to determine the eligible unit population. This filter can only reduce, but not expand the scope of the rollout.",
+"description": "Optional. [CEL](https://github.com/google/cel-spec) formatted filter string against Unit. The filter will be applied to determine the eligible unit population. This filter can only reduce, but not expand the scope of the rollout.",
 "type": "string"
 },
 "unitKind": {
-"description": "Required. Immutable. UnitKind that this rollout kind corresponds to. Rollouts stemming from this rollout kind will target the units of this unit kind. In other words, this defines the population of target units to be upgraded by rollouts.",
+"description": "Optional. Immutable. UnitKind that this rollout kind corresponds to. Rollouts stemming from this rollout kind will target the units of this unit kind. In other words, this defines the population of target units to be upgraded by rollouts.",
 "type": "string"
 },
 "unitUpdatePacing": {
@@ -2675,6 +2719,15 @@
 },
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
+},
+"applicationTemplate": {
+"$ref": "CompositeRef",
+"description": "Optional. Reference to composite ApplicationTemplate. When specified, the template components will be imported into their equivalent UnitKind, Release and Blueprint resources. Deleted references will not delete imported resources. Should only be specified on source regions, and be unspecified on replica regions."
+},
+"blueprintRepo": {
+"description": "Output only. Name of repository in Artifact Registry for system-generated Blueprints, eg. Blueprints of imported ApplicationTemplates.",
+"readOnly": true,
+"type": "string"
 },
 "conditions": {
 "description": "Output only. A set of conditions which indicate the various conditions this resource can have.",
@@ -2820,6 +2873,27 @@ false
 },
 "type": "object"
 },
+"Scope": {
+"description": "Scope of an application.",
+"id": "Scope",
+"properties": {
+"type": {
+"description": "Required. Scope Type.",
+"enum": [
+"TYPE_UNSPECIFIED",
+"TYPE_REGIONAL",
+"TYPE_GLOBAL"
+],
+"enumDescriptions": [
+"Unspecified type.",
+"Regional type.",
+"Global type."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "Status": {
 "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
 "id": "Status",
@@ -2922,7 +2996,7 @@ false
 "type": "object"
 },
 "Unit": {
-"description": "A unit of deployment that has its lifecycle via a CRUD API using an actuation engine under the hood (e.g. based on Terraform, Helm or a custom implementation provided by a service producer). A building block of a SaaS Tenant.",
+"description": "A unit of deployment that has its lifecycle via a CRUD API using an actuation engine under the hood (e.g. based on Terraform, or a custom implementation provided by a service producer). A building block of a SaaS Tenant.",
 "id": "Unit",
 "properties": {
 "annotations": {
@@ -2931,6 +3005,10 @@ false
 },
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
+},
+"application": {
+"description": "Optional. Reference to the AppHub Application this unit belongs to. All resources deployed in this Unit will be associated with the specified Application.",
+"type": "string"
 },
 "conditions": {
 "description": "Optional. Output only. A set of conditions which indicate the various conditions this resource can have.",
@@ -2966,14 +3044,6 @@ false
 "description": "Output only. An opaque value that uniquely identifies a version or generation of a resource. It can be used to confirm that the client and server agree on the ordering of a resource being written.",
 "readOnly": true,
 "type": "string"
-},
-"flagRevisions": {
-"description": "Optional. Output only. Flag revisions used by this Unit.",
-"items": {
-"type": "string"
-},
-"readOnly": true,
-"type": "array"
 },
 "inputVariables": {
 "description": "Optional. Output only. Indicates the current input variables deployed by the unit",
@@ -3021,7 +3091,7 @@ false
 "type": "array"
 },
 "outputVariables": {
-"description": "Optional. Output only. Set of key/value pairs corresponding to output variables from execution of actuation templates. The variables are declared in actuation configs (e.g in helm chart or terraform) and the values are fetched and returned by the actuation engine upon completion of execution.",
+"description": "Optional. Output only. Set of key/value pairs corresponding to output variables from execution of actuation templates. The variables are declared in actuation configs (in Terraform for example) and the values are fetched and returned by the actuation engine upon completion of execution.",
 "items": {
 "$ref": "UnitVariable"
 },
@@ -3215,6 +3285,14 @@ false
 "description": "Optional. Annotations is an unstructured key-value map stored with a resource that may be set by external tools to store and retrieve arbitrary metadata. They are not queryable and should be preserved when modifying objects. More info: https://kubernetes.io/docs/user-guide/annotations",
 "type": "object"
 },
+"appParams": {
+"$ref": "AppParams",
+"description": "Optional. AppParams contains the parameters for creating an AppHub Application."
+},
+"applicationTemplateComponent": {
+"$ref": "ComponentRef",
+"description": "Optional. Reference to component and revision in a composite ApplicationTemplate."
+},
 "boundaryType": {
 "description": "Optional. Output only. BoundaryType describes the type of boundary the Unit Kind represents.",
 "enum": [
@@ -3236,15 +3314,14 @@ false
 "readOnly": true,
 "type": "string"
 },
-"defaultFlagRevisions": {
-"description": "Optional. Default revisions of flags for this UnitKind. Newly created units will use the flag default_flag_revisions present at the time of creation.",
-"items": {
-"type": "string"
-},
-"type": "array"
-},
 "defaultRelease": {
 "description": "Optional. A reference to the Release object to use as default for creating new units of this UnitKind (optional). If not specified, a new unit must explicitly reference which release to use for its creation.",
+"type": "string"
+},
+"deleteTime": {
+"description": "Output only. The timestamp when the resource was marked for deletion (deletion is an asynchronous operation).",
+"format": "google-datetime",
+"readOnly": true,
 "type": "string"
 },
 "dependencies": {
@@ -3371,10 +3448,6 @@ false
 "description": "Output only. An opaque value that uniquely identifies a version or generation of a resource. It can be used to confirm that the client and server agree on the ordering of a resource being written.",
 "readOnly": true,
 "type": "string"
-},
-"flagUpdate": {
-"$ref": "FlagUpdate",
-"description": "Optional. Flag update operation."
 },
 "labels": {
 "additionalProperties": {

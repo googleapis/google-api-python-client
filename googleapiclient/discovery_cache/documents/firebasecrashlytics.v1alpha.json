@@ -308,6 +308,11 @@
 "repeated": true,
 "type": "string"
 },
+"filterExpression": {
+"description": "Optional. Filters events by custom keys (https://firebase.google.com/docs/crashlytics/customize-crash-reports#add-keys). Supported forms: * Equality: `custom_keys.level = \"vip\"` or `custom_keys.level:\"vip\"` * Presence: `custom_keys.level:*` * OR across values of one key: `custom_keys.level = \"vip\" OR custom_keys.level = \"enterprise\"` * AND across different keys: `custom_keys.level = \"vip\" AND custom_keys.region = \"us\"` Keys are case-sensitive. Keys and values containing spaces must be double-quoted, for example `custom_keys.\"app state\" = \"background\"`. OR across different keys, repeating a key within an AND, NOT, and comparators other than `=` and `:` are rejected with INVALID_ARGUMENT. Wildcards are not supported in values; use `custom_keys.:*` to match events that set a key to any value. This filter expression applies in addition to the `filter` field above. The syntax is a subset of AIP-160 (https://google.aip.dev/160).",
+"location": "query",
+"type": "string"
+},
 "pageSize": {
 "description": "Optional. The maximum number of events per page. If omitted, defaults to 10.",
 "format": "int32",
@@ -711,6 +716,21 @@
 "location": "query",
 "type": "string"
 },
+"metricsMode": {
+"description": "Optional. Controls whether metrics are raw observed values (mobile and web) or extrapolated values (web only). If omitted, defaults to OBSERVED.",
+"enum": [
+"METRICS_MODE_UNSPECIFIED",
+"METRICS_MODE_OBSERVED",
+"METRICS_MODE_EXTRAPOLATED"
+],
+"enumDescriptions": [
+"Unknown.",
+"Raw counts of the events, sessions, and users that were actually collected.",
+"Web only. Estimated event counts based on the per-session sampling rate recorded on each event."
+],
+"location": "query",
+"type": "string"
+},
 "name": {
 "description": "Required. The report name. Format: \"projects/{project}/apps/{app_id}/reports/{report}\".",
 "location": "path",
@@ -719,13 +739,28 @@
 "type": "string"
 },
 "pageSize": {
-"description": "Optional. The maximum number of result groups to return. If omitted, defaults to 25.",
+"description": "Optional. The maximum number of result groups to return. The maximum value is 100; values above 100 will be coerced to 100. If omitted, defaults to 25.",
 "format": "int32",
 "location": "query",
 "type": "integer"
 },
 "pageToken": {
 "description": "Optional. A page token, received from a previous call. The page token is only valid for the exact same set of filters, which must also be sent in subsequent requests. This token is valid for 10 minutes after the first request.",
+"location": "query",
+"type": "string"
+},
+"view": {
+"description": "Optional. Response view. If not set, defaults to `REPORT_VIEW_FULL`.",
+"enum": [
+"REPORT_VIEW_UNSPECIFIED",
+"REPORT_VIEW_BASIC",
+"REPORT_VIEW_FULL"
+],
+"enumDescriptions": [
+"The default / unset value. The API will default to `REPORT_VIEW_BASIC` view for `ListReports` and `REPORT_VIEW_FULL` for `GetReport`.",
+"Only includes the report `display_name` and optional `usage`. This is the default view for `ListReports`.",
+"Includes all fields on report. This is the default view for `GetReport`."
+],
 "location": "query",
 "type": "string"
 }
@@ -753,6 +788,21 @@
 "location": "path",
 "pattern": "^projects/[^/]+/apps/[^/]+$",
 "required": true,
+"type": "string"
+},
+"view": {
+"description": "Optional. Response view. If not set, defaults to `REPORT_VIEW_BASIC`. `REPORT_VIEW_FULL` is not supported for list operations.",
+"enum": [
+"REPORT_VIEW_UNSPECIFIED",
+"REPORT_VIEW_BASIC",
+"REPORT_VIEW_FULL"
+],
+"enumDescriptions": [
+"The default / unset value. The API will default to `REPORT_VIEW_BASIC` view for `ListReports` and `REPORT_VIEW_FULL` for `GetReport`.",
+"Only includes the report `display_name` and optional `usage`. This is the default view for `ListReports`.",
+"Includes all fields on report. This is the default view for `GetReport`."
+],
+"location": "query",
 "type": "string"
 }
 },
@@ -802,7 +852,7 @@
 }
 }
 },
-"revision": "20260710",
+"revision": "20261012",
 "rootUrl": "https://firebasecrashlytics.googleapis.com/",
 "schemas": {
 "BatchGetEventsResponse": {
@@ -889,6 +939,23 @@
 },
 "displayVersion": {
 "description": "Browser display version number.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"CustomAttribute": {
+"description": "Developer-provided custom key-value pair metadata.",
+"id": "CustomAttribute",
+"properties": {
+"key": {
+"description": "Output only. Custom attribute key name.",
+"readOnly": true,
+"type": "string"
+},
+"value": {
+"description": "Output only. Custom attribute value.",
+"readOnly": true,
 "type": "string"
 }
 },
@@ -1298,6 +1365,16 @@
 "description": "A set of computed metric values for a time interval",
 "id": "IntervalMetrics",
 "properties": {
+"crashFreeSessionsPercentage": {
+"description": "Mobile only. Percentage of crash-free sessions. (total_sessions_count - impacted_sessions_count) / total_sessions_count * 100.",
+"format": "float",
+"type": "number"
+},
+"crashFreeUsersPercentage": {
+"description": "Mobile only. Percentage of crash-free users. (total_users_count - impacted_users_count) / total_users_count * 100",
+"format": "float",
+"type": "number"
+},
 "endTime": {
 "description": "The end of the interval covered by the computation.",
 "format": "google-datetime",
@@ -1308,19 +1385,35 @@
 "format": "int64",
 "type": "string"
 },
+"impactedSessionsCount": {
+"description": "The number of distinct sessions in the set of events.",
+"format": "int64",
+"type": "string"
+},
 "impactedUsersCount": {
 "description": "The number of distinct users in the set of events.",
 "format": "int64",
 "type": "string"
 },
 "sessionsCount": {
-"description": "The number of distinct sessions in the set of events.",
+"deprecated": true,
+"description": "Deprecated: Prefer `impacted_sessions_count`. The number of distinct sessions in the set of events.",
 "format": "int64",
 "type": "string"
 },
 "startTime": {
 "description": "The start of the interval covered by the computation.",
 "format": "google-datetime",
+"type": "string"
+},
+"totalSessionsCount": {
+"description": "The number of distinct sessions.",
+"format": "int64",
+"type": "string"
+},
+"totalUsersCount": {
+"description": "The number of distinct users.",
+"format": "int64",
 "type": "string"
 }
 },
@@ -1717,6 +1810,10 @@
 "browser": {
 "$ref": "Browser",
 "description": "Browser metrics group."
+},
+"customAttribute": {
+"$ref": "CustomAttribute",
+"description": "Custom attribute metrics group."
 },
 "device": {
 "$ref": "Device",
