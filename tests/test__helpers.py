@@ -149,3 +149,44 @@ class Test_parse_unique_urlencoded(unittest.TestCase):
         content = "a=b&a=d"
         with self.assertRaises(ValueError):
             _helpers.parse_unique_urlencoded(content)
+
+
+class Test_redact_sensitive_url(unittest.TestCase):
+    def test_redacts_key(self):
+        url = "https://www.googleapis.com/foo?key=SECRET&alt=json"
+        self.assertEqual(
+            _helpers._redact_sensitive_url(url),
+            "https://www.googleapis.com/foo?key=REDACTED&alt=json",
+        )
+
+    def test_redacts_key_at_end(self):
+        url = "https://www.googleapis.com/foo?alt=json&key=SECRET"
+        self.assertEqual(
+            _helpers._redact_sensitive_url(url),
+            "https://www.googleapis.com/foo?alt=json&key=REDACTED",
+        )
+
+    def test_redacts_key_before_fragment(self):
+        url = "https://www.googleapis.com/foo?key=SECRET#frag"
+        self.assertEqual(
+            _helpers._redact_sensitive_url(url),
+            "https://www.googleapis.com/foo?key=REDACTED#frag",
+        )
+
+    def test_case_insensitive(self):
+        url = "https://www.googleapis.com/foo?Key=SECRET"
+        self.assertEqual(
+            _helpers._redact_sensitive_url(url),
+            "https://www.googleapis.com/foo?Key=REDACTED",
+        )
+
+    def test_does_not_touch_similar_param_names(self):
+        url = "https://www.googleapis.com/foo?apikey=KEEP&key2=KEEP"
+        self.assertEqual(_helpers._redact_sensitive_url(url), url)
+
+    def test_no_key(self):
+        url = "https://www.googleapis.com/foo?alt=json"
+        self.assertEqual(_helpers._redact_sensitive_url(url), url)
+
+    def test_non_string_returned_unchanged(self):
+        self.assertIsNone(_helpers._redact_sensitive_url(None))
