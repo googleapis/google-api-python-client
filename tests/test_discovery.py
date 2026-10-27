@@ -652,6 +652,22 @@ class DiscoveryFromDocument(unittest.TestCase):
         # application default credentials were used.
         self.assertNotIsInstance(plus._http, google_auth_httplib2.AuthorizedHttp)
 
+    def test_developer_key_not_logged(self):
+        discovery = read_datafile("plus.json")
+        plus = build_from_document(
+            discovery,
+            base="https://www.googleapis.com/",
+            developerKey="SECRET_DEVELOPER_KEY",
+        )
+        with self.assertLogs("googleapiclient.discovery", level="DEBUG") as cm:
+            request = plus.activities().list(collection="public", userId="me")
+        logged = "\n".join(cm.output)
+        self.assertIn("URL being requested", logged)
+        self.assertNotIn("SECRET_DEVELOPER_KEY", logged)
+        self.assertIn("key=REDACTED", logged)
+        # The real request still carries the key; only the log line is redacted.
+        self.assertIn("key=SECRET_DEVELOPER_KEY", request.uri)
+
     def test_building_with_context_manager(self):
         discovery = read_datafile("plus.json")
         with mock.patch("httplib2.Http") as http:

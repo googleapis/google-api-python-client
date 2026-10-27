@@ -181,7 +181,7 @@ def _retry_request(
                 num_retries,
                 req_type,
                 method,
-                uri,
+                util._redact_sensitive_url(uri),
                 resp.status if resp else exception,
             )
             sleep(sleep_time)
@@ -1157,7 +1157,12 @@ class HttpRequest(object):
                 self._sleep(self._rand() * 2**retry_num)
                 LOGGER.warning(
                     "Retry #%d for media upload: %s %s, following status: %d"
-                    % (retry_num, self.method, self.uri, resp.status)
+                    % (
+                        retry_num,
+                        self.method,
+                        util._redact_sensitive_url(self.uri),
+                        resp.status,
+                    )
                 )
 
             try:
