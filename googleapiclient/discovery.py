@@ -1128,7 +1128,7 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
                 else:
                     pvalues = kwargs[name]
                 for pvalue in pvalues:
-                    if re.match(regex, pvalue) is None:
+                    if re.fullmatch(regex, pvalue) is None:
                         raise TypeError(
                             'Parameter "%s" value "%s" does not match the pattern "%s"'
                             % (name, pvalue, regex)
