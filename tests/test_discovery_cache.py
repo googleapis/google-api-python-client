@@ -18,10 +18,12 @@
 """Discovery document cache tests."""
 
 import datetime
+import os
+import tempfile
 import unittest
 from unittest import mock
 
-from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
+from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE, get_static_doc
 
 try:
     from googleapiclient.discovery_cache.file_cache import Cache as FileCache
@@ -59,3 +61,19 @@ class FileCacheTest(unittest.TestCase):
 
         # Make sure the content is expired
         self.assertEqual(None, cache.get(first_url))
+
+
+class GetStaticDocTest(unittest.TestCase):
+    def test_reads_discovery_document_as_utf8(self):
+        # The packaged discovery documents are UTF-8 and must be decoded as
+        # such regardless of the host's locale encoding.
+        content = '{"description": "\u201cquoted\u201d"}'
+        with tempfile.TemporaryDirectory() as doc_dir:
+            with open(
+                os.path.join(doc_dir, "fake.v1.json"), "w", encoding="utf-8"
+            ) as f:
+                f.write(content)
+            with mock.patch(
+                "googleapiclient.discovery_cache.DISCOVERY_DOC_DIR", new=doc_dir
+            ):
+                self.assertEqual(content, get_static_doc("fake", "v1"))
