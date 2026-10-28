@@ -495,13 +495,6 @@ class Utilities(unittest.TestCase):
         self.assertEqual(parameters.enum_params, {})
 
 
-class Discovery(unittest.TestCase):
-    def test_discovery_http_is_closed(self):
-        http = HttpMock(datafile("malformed.json"), {"status": "200"})
-        service = build("plus", "v1", credentials=mock.sentinel.credentials)
-        http.close.assert_called_once()
-
-
 class DiscoveryErrors(unittest.TestCase):
     def test_tests_should_be_run_with_strict_positional_enforcement(self):
         try:
@@ -1549,6 +1542,21 @@ class DiscoveryFromFileCache(unittest.TestCase):
 
 
 class Discovery(unittest.TestCase):
+    @mock.patch("httplib2.Http")
+    def test_discovery_http_is_closed(self, mock_http_class):
+        mock_http = mock_http_class.return_value
+        mock_http.request.return_value = (
+            httplib2.Response({"status": "200"}),
+            read_datafile("plus.json", "rb"),
+        )
+        build(
+            "plus",
+            "v1",
+            credentials=mock.Mock(spec=google.auth.credentials.Credentials),
+            static_discovery=False,
+        )
+        mock_http.close.assert_called_once()
+
     def test_method_error_checking(self):
         self.http = HttpMock(datafile("plus.json"), {"status": "200"})
         plus = build("plus", "v1", http=self.http, static_discovery=False)
