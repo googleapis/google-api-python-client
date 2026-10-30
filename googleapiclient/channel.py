@@ -72,6 +72,7 @@ Example of unsubscribing.
 from __future__ import absolute_import
 
 import datetime
+import hmac
 import uuid
 
 from googleapiclient import _helpers as util
@@ -94,6 +95,7 @@ CHANNEL_PARAMS = {
 }
 
 X_GOOG_CHANNEL_ID = "X-GOOG-CHANNEL-ID"
+X_GOOG_CHANNEL_TOKEN = "X-GOOG-CHANNEL-TOKEN"
 X_GOOG_MESSAGE_NUMBER = "X-GOOG-MESSAGE-NUMBER"
 X_GOOG_RESOURCE_STATE = "X-GOOG-RESOURCE-STATE"
 X_GOOG_RESOURCE_URI = "X-GOOG-RESOURCE-URI"
@@ -105,6 +107,12 @@ def _upper_header_keys(headers):
     for k, v in headers.items():
         new_headers[k.upper()] = v
     return new_headers
+
+
+def _to_bytes(value):
+    if isinstance(value, bytes):
+        return value
+    return value.encode("utf-8")
 
 
 class Notification(object):
@@ -261,7 +269,9 @@ def notification_from_headers(channel, headers):
       A Notification object.
 
     Raises:
-      errors.InvalidNotificationError if the notification is invalid.
+      errors.InvalidNotificationError if the notification is invalid, including
+        when the channel id or, if the channel was created with a token, the
+        channel token does not match.
       ValueError if the X-GOOG-MESSAGE-NUMBER can't be converted to an int.
     """
     headers = _upper_header_keys(headers)
@@ -270,12 +280,25 @@ def notification_from_headers(channel, headers):
         raise errors.InvalidNotificationError(
             "Channel id mismatch: %s != %s" % (channel.id, channel_id)
         )
-    else:
-        message_number = int(headers[X_GOOG_MESSAGE_NUMBER])
-        state = headers[X_GOOG_RESOURCE_STATE]
-        resource_uri = headers[X_GOOG_RESOURCE_URI]
-        resource_id = headers[X_GOOG_RESOURCE_ID]
-        return Notification(message_number, state, resource_uri, resource_id)
+    # When a channel was created with a token, that token is the shared secret
+    # that authenticates a notification as originating from Google. The channel
+    # id is echoed in every delivery and is not secret, so verifying it alone
+    # lets anyone who learns the id forge notifications. Verify the token here,
+    # using a constant-time comparison to avoid leaking it via timing. Either
+    # side may be str or bytes depending on the web framework, so both are
+    # normalized to bytes before comparing.
+    if channel.token:
+        received_token = headers.get(X_GOOG_CHANNEL_TOKEN)
+        if received_token is None or not hmac.compare_digest(
+            _to_bytes(received_token), _to_bytes(channel.token)
+        ):
+            raise errors.InvalidNotificationError("Channel token mismatch")
+
+    message_number = int(headers[X_GOOG_MESSAGE_NUMBER])
+    state = headers[X_GOOG_RESOURCE_STATE]
+    resource_uri = headers[X_GOOG_RESOURCE_URI]
+    resource_id = headers[X_GOOG_RESOURCE_ID]
+    return Notification(message_number, state, resource_uri, resource_id)
 
 
 @util.positional(2)
