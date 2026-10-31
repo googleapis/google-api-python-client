@@ -1502,9 +1502,12 @@ class Resource(object):
     def _add_basic_methods(self, resourceDesc, rootDesc, schema):
         # If this is the root Resource, add a new_batch_http_request() method.
         if resourceDesc == rootDesc:
-            batch_uri = "%s%s" % (
-                rootDesc["rootUrl"],
-                rootDesc.get("batchPath", "batch"),
+            # batchPath is relative to rootUrl, but the host must come from the
+            # base URL so the batch follows the universe domain, api_endpoint
+            # and mTLS endpoint the same way every other request does.
+            batch_uri = _fix_up_media_path_base_url(
+                "%s%s" % (rootDesc["rootUrl"], rootDesc.get("batchPath", "batch")),
+                self._baseUrl,
             )
 
             def new_batch_http_request(callback=None):

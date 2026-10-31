@@ -722,6 +722,20 @@ class DiscoveryFromDocument(unittest.TestCase):
 
         self.assertEqual(plus._baseUrl, api_endpoint)
 
+    def test_batch_request_uses_api_endpoint_override(self):
+        discovery = read_datafile("zoo.json")
+        api_endpoint = "https://foo.googleapis.com/zoo/v1/"
+        zoo = build_from_document(
+            discovery,
+            client_options={"api_endpoint": api_endpoint},
+            credentials=self.MOCK_CREDENTIALS,
+        )
+        batch_request = zoo.new_batch_http_request()
+
+        self.assertEqual(
+            batch_request._batch_uri, "https://foo.googleapis.com/batchZoo"
+        )
+
     def test_scopes_from_client_options(self):
         discovery = read_datafile("plus.json")
 
@@ -982,6 +996,29 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
                                 )
                                 self.assertIsNotNone(plus)
                                 self.assertEqual(plus._baseUrl, base_url)
+
+    def test_batch_request_uses_mtls_endpoint(self):
+        discovery = read_datafile("zoo.json")
+
+        with mock.patch.dict("os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": "always"}):
+            with mock.patch.dict(
+                "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": "true"}
+            ):
+                zoo = build_from_document(
+                    discovery,
+                    credentials=self.MOCK_CREDENTIALS,
+                    client_options={
+                        "client_encrypted_cert_source": self.client_encrypted_cert_source
+                    },
+                )
+                batch_request = zoo.new_batch_http_request()
+
+                self.assertEqual(
+                    zoo._baseUrl, "https://www.mtls.googleapis.com/zoo/v1/"
+                )
+                self.assertEqual(
+                    batch_request._batch_uri, "https://www.mtls.googleapis.com/batchZoo"
+                )
 
     @parameterized.expand(
         [
@@ -2851,6 +2888,23 @@ class Universe(unittest.TestCase):
                 )
 
             assert tasks._universe_domain == fake_universe
+
+        def test_batch_request_uses_universe_domain(self):
+            fake_universe = "foo.com"
+            credentials = mock.Mock(universe_domain=fake_universe)
+            discovery = read_datafile("zoo.json")
+
+            zoo = build_from_document(
+                discovery,
+                credentials=credentials,
+                client_options=google.api_core.client_options.ClientOptions(
+                    universe_domain=fake_universe
+                ),
+            )
+            batch_request = zoo.new_batch_http_request()
+
+            assert zoo._baseUrl == "https://www.foo.com/zoo/v1/"
+            assert batch_request._batch_uri == "https://www.foo.com/batchZoo"
 
     else:
         if hasattr(google.api_core.client_options.ClientOptions, "universe_domain"):
