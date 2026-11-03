@@ -1805,7 +1805,7 @@ class Discovery(unittest.TestCase):
         self.assertEqual(b"PNG", request.body[1:4])
         assertUrisEqual(
             self,
-            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json",
+            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json&prettyPrint=false",
             request.uri,
         )
 
@@ -1826,7 +1826,7 @@ class Discovery(unittest.TestCase):
         self.assertEqual(b"PNG", request.body[1:4])
         assertUrisEqual(
             self,
-            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json",
+            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=media&alt=json&prettyPrint=false",
             request.uri,
         )
 
@@ -1875,7 +1875,7 @@ class Discovery(unittest.TestCase):
         )
         assertUrisEqual(
             self,
-            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=multipart&alt=json",
+            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=multipart&alt=json&prettyPrint=false",
             request.uri,
         )
 
@@ -2021,7 +2021,7 @@ class Discovery(unittest.TestCase):
         request = zoo.animals().insert(media_body=media_upload, body=None)
         assertUrisEqual(
             self,
-            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=resumable&alt=json",
+            "https://www.googleapis.com/upload/zoo/v1/animals?uploadType=resumable&alt=json&prettyPrint=false",
             request.uri,
         )
 
