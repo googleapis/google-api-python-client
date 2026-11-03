@@ -68,6 +68,11 @@ def get_static_doc(serviceName, version):
     content = None
     doc_name = "{}.{}.json".format(serviceName, version)
 
+    # serviceName and version identify an API, they are not paths. Only look
+    # for the document directly inside of DISCOVERY_DOC_DIR.
+    if os.path.basename(doc_name) != doc_name:
+        return content
+
     try:
         with open(os.path.join(DISCOVERY_DOC_DIR, doc_name), "r") as f:
             content = f.read()
