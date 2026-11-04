@@ -135,7 +135,7 @@ def positional(max_positional_args):
         return positional_decorator
     else:
         args, _, _, defaults, _, _, _ = inspect.getfullargspec(max_positional_args)
-        return positional(len(args) - len(defaults))(max_positional_args)
+        return positional(len(args) - len(defaults or ()))(max_positional_args)
 
 
 def parse_unique_urlencoded(content):
