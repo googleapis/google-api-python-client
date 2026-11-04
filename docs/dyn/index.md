@@ -543,6 +543,10 @@
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastream_v1alpha1.html)
 
 
+## deepreview
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/deepreview_v1.html)
+
+
 ## deploymentmanager
 * [alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/deploymentmanager_alpha.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/deploymentmanager_v2.html)
@@ -559,6 +563,7 @@
 
 
 ## devicerun
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/devicerun_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/devicerun_v1alpha.html)
 
 
@@ -592,6 +597,7 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v3.html)
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v4.html)
+* [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v5.html)
 
 
 ## dlp
