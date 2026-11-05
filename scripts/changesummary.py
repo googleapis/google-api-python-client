@@ -459,7 +459,7 @@ class ChangeSummary:
                 # Get the string in the `Summary` column for the current api and
                 # append it to `verbose_changes`. The `Summary` column contains
                 # the conventional commit message. Use pandas.Series.iloc[0] to
-                # retrieve only the first elemnt, since all the values in the
+                # retrieve only the first element, since all the values in the
                 # summary column are the same for a given API.
                 verbose_changes.append(summary_df[current_api_filter].Summary.iloc[0])
 
