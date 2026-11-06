@@ -18,7 +18,4 @@ __author__ = "afshar@google.com (Ali Afshar)"
 
 from googleapiclient import _helpers as util
 
-
-def setup_package():
-    """Run on testing package."""
-    util.positional_parameters_enforcement = "EXCEPTION"
+util.positional_parameters_enforcement = util.POSITIONAL_EXCEPTION
