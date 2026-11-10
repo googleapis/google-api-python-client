@@ -24,6 +24,9 @@ set -eo pipefail
 # Enables `**` to include files nested inside sub-folders
 shopt -s globstar
 
+export PROJECT_ROOT=$(realpath $(dirname "${BASH_SOURCE[0]}")/..)
+cd "${PROJECT_ROOT}"
+
 # Run periodic samples tests at latest release
 if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"periodic"* ]]; then
     # preserving the test runner implementation.

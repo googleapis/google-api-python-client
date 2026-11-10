@@ -4,7 +4,7 @@ The 2.0 release of `google-api-python-client` includes a substantial reliability
 improvement, compared with 1.x, as discovery documents are now cached in the library 
 rather than fetched dynamically. It is highly recommended to upgrade from v1.x to v2.x.
 
-Only python 3.7 and newer is supported. If you are not able to upgrade python, then
+Only python 3.10 and newer is supported. If you are not able to upgrade python, then
 please continue to use version 1.x as we will continue supporting python 2.7+ in
 [v1](https://github.com/googleapis/google-api-python-client/tree/v1).
 

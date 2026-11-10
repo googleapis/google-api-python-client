@@ -110,7 +110,7 @@ h1, h2, h3 {
   <code><a href="#list">list(parent, filter=None, orderBy=None, pageSize=None, pageToken=None, x__xgafv=None)</a></code></p>
 <p class="firstline">Lists all Sessions by their parent DataStore.</p>
 <p class="toc_element">
-  <code><a href="#list_next">list_next()</a></code></p>
+  <code><a href="#list_next">list_next(previous_request, previous_response)</a></code></p>
 <p class="firstline">Retrieves the next page of results.</p>
 <p class="toc_element">
   <code><a href="#patch">patch(name, body=None, updateMask=None, x__xgafv=None)</a></code></p>
@@ -299,6 +299,9 @@ Args:
         &quot;assistSkippedReasons&quot;: [ # Reasons for not answering the assist call.
           &quot;A String&quot;,
         ],
+        &quot;connectorDisplayNames&quot;: { # Output only. Maps an internal connector agent name (the machine identifier embedded in tool names, e.g. `custom_mcp__agent`) to the connector&#x27;s human-readable display name. Populated at serving time for custom MCP / agent gateway connectors so user-facing surfaces (e.g. the tool-call chip) can show the connector name instead of its internal identifier. Empty when there are no such connectors.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
         &quot;customerPolicyEnforcementResult&quot;: { # Customer policy enforcement results. Contains the results of the various policy checks, like the banned phrases or the Model Armor checks. # Optional. The field contains information about the various policy checks&#x27; results like the banned phrases or the Model Armor checks. This field is populated only if the assist call was skipped due to a policy violation.
           &quot;policyResults&quot;: [ # Customer policy enforcement results. Populated only if the assist call was skipped due to a policy violation. It contains results from those filters that blocked the processing of the query.
             { # Customer policy enforcement result for a single policy type.
@@ -321,7 +324,8 @@ Args:
               },
             },
           ],
-          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If only one policy blocked the processing, the verdict is BLOCK.
+          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If at least one policy blocked the processing, the verdict is BLOCK. If no policy blocked the processing but at least one flagged it, the verdict is FLAG.
+          &quot;violationSource&quot;: &quot;A String&quot;, # Output only. The source of the violation.
         },
         &quot;name&quot;: &quot;A String&quot;, # Immutable. Identifier. Resource name of the `AssistAnswer`. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/sessions/{session}/assistAnswers/{assist_answer}` This field must be a UTF-8 encoded string with a length limit of 1024 characters.
         &quot;replies&quot;: [ # Replies of the assistant.
@@ -367,6 +371,9 @@ Args:
               &quot;textGroundingMetadata&quot;: { # Grounding details for text sources. # Metadata for grounding based on text sources.
                 &quot;references&quot;: [ # References for the grounded text.
                   { # Referenced content and related document metadata.
+                    &quot;chunkMetadata&quot;: { # Output only. Generic structured chunk metadata from upstream data source connectors.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
                     &quot;codeSnippet&quot;: &quot;A String&quot;, # Chunk of code snippet from the referenced document.
                     &quot;content&quot;: &quot;A String&quot;, # Referenced text content.
                     &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
@@ -405,6 +412,9 @@ Args:
           },
         ],
         &quot;state&quot;: &quot;A String&quot;, # State of the answer generation.
+        &quot;toolDisplayNames&quot;: { # Output only. Maps a tool name (for example, `Internal-KB-Search` or `custom_mcp__agent__Internal-KB-Search`) to its human-readable display title (for example, `@Internal-KB Search`), populated from MCP tool `title` or `annotations.title` metadata so user-facing surfaces can display the tool title instead of the raw function declaration identifier. Empty when no tool display titles are present.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
       },
       &quot;live&quot;: True or False, # Optional. Indicates whether this turn is a live turn.
       &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
@@ -439,6 +449,10 @@ Args:
             },
             &quot;text&quot;: &quot;A String&quot;, # Text content.
             &quot;uiJsonPayload&quot;: &quot;A String&quot;, # This field is expected to be a ui message in JSON format. As of Q1 2026, ui_json_payload is only supported for A2UI messages.
+            &quot;userSuppliedSobiArtifactReference&quot;: { # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. Rendered by the client as an attachment chip on the user turn&#x27;s bubble. The file itself is stored on the task&#x27;s `AgentArtifact` list; the client resolves full metadata (source URI, size, ...) for download or preview by calling `GetTask` on the Sobi Task API and matching `AgentArtifact.name` against `file_name`. Only `file_name` and `mime_type` appear on this wire deliberately: the backing `gs://` or Drive URI is not exposed to conversation-history readers. Same variant is used for both byte-uploaded and Drive-picked files -- &quot;user attached a file&quot; is one concept regardless of source. # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. See `UserSuppliedSobiArtifactReference` above.
+              &quot;fileName&quot;: &quot;A String&quot;, # Required. Client-supplied filename. Unique per task within the user-supplied artifact set (UI dedupes before upload). Doubles as the artifact identifier used to look up the artifact on `Task.artifacts`. The `_name` suffix is deliberate and the AIP-122 lint is suppressed: this field is not a resource name (which is what AIP-122 reserves the bare `name` for). It is the literal filename, and it serves as the join key against `AgentArtifact.name` on the backing Sobi task -- a structural role that `title` or `display_name` would not communicate to a client picking what to send. The internal mirror (`cloud/ml/discoveryengine/schema/assistant.proto`) uses the same field name so the round-trip converter stays name-for-name.
+              &quot;mimeType&quot;: &quot;A String&quot;, # Optional. IANA MIME type. Used for icon/preview rendering.
+            },
           },
         ],
         &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
@@ -630,6 +644,9 @@ Returns:
         &quot;assistSkippedReasons&quot;: [ # Reasons for not answering the assist call.
           &quot;A String&quot;,
         ],
+        &quot;connectorDisplayNames&quot;: { # Output only. Maps an internal connector agent name (the machine identifier embedded in tool names, e.g. `custom_mcp__agent`) to the connector&#x27;s human-readable display name. Populated at serving time for custom MCP / agent gateway connectors so user-facing surfaces (e.g. the tool-call chip) can show the connector name instead of its internal identifier. Empty when there are no such connectors.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
         &quot;customerPolicyEnforcementResult&quot;: { # Customer policy enforcement results. Contains the results of the various policy checks, like the banned phrases or the Model Armor checks. # Optional. The field contains information about the various policy checks&#x27; results like the banned phrases or the Model Armor checks. This field is populated only if the assist call was skipped due to a policy violation.
           &quot;policyResults&quot;: [ # Customer policy enforcement results. Populated only if the assist call was skipped due to a policy violation. It contains results from those filters that blocked the processing of the query.
             { # Customer policy enforcement result for a single policy type.
@@ -652,7 +669,8 @@ Returns:
               },
             },
           ],
-          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If only one policy blocked the processing, the verdict is BLOCK.
+          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If at least one policy blocked the processing, the verdict is BLOCK. If no policy blocked the processing but at least one flagged it, the verdict is FLAG.
+          &quot;violationSource&quot;: &quot;A String&quot;, # Output only. The source of the violation.
         },
         &quot;name&quot;: &quot;A String&quot;, # Immutable. Identifier. Resource name of the `AssistAnswer`. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/sessions/{session}/assistAnswers/{assist_answer}` This field must be a UTF-8 encoded string with a length limit of 1024 characters.
         &quot;replies&quot;: [ # Replies of the assistant.
@@ -698,6 +716,9 @@ Returns:
               &quot;textGroundingMetadata&quot;: { # Grounding details for text sources. # Metadata for grounding based on text sources.
                 &quot;references&quot;: [ # References for the grounded text.
                   { # Referenced content and related document metadata.
+                    &quot;chunkMetadata&quot;: { # Output only. Generic structured chunk metadata from upstream data source connectors.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
                     &quot;codeSnippet&quot;: &quot;A String&quot;, # Chunk of code snippet from the referenced document.
                     &quot;content&quot;: &quot;A String&quot;, # Referenced text content.
                     &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
@@ -736,6 +757,9 @@ Returns:
           },
         ],
         &quot;state&quot;: &quot;A String&quot;, # State of the answer generation.
+        &quot;toolDisplayNames&quot;: { # Output only. Maps a tool name (for example, `Internal-KB-Search` or `custom_mcp__agent__Internal-KB-Search`) to its human-readable display title (for example, `@Internal-KB Search`), populated from MCP tool `title` or `annotations.title` metadata so user-facing surfaces can display the tool title instead of the raw function declaration identifier. Empty when no tool display titles are present.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
       },
       &quot;live&quot;: True or False, # Optional. Indicates whether this turn is a live turn.
       &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
@@ -770,6 +794,10 @@ Returns:
             },
             &quot;text&quot;: &quot;A String&quot;, # Text content.
             &quot;uiJsonPayload&quot;: &quot;A String&quot;, # This field is expected to be a ui message in JSON format. As of Q1 2026, ui_json_payload is only supported for A2UI messages.
+            &quot;userSuppliedSobiArtifactReference&quot;: { # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. Rendered by the client as an attachment chip on the user turn&#x27;s bubble. The file itself is stored on the task&#x27;s `AgentArtifact` list; the client resolves full metadata (source URI, size, ...) for download or preview by calling `GetTask` on the Sobi Task API and matching `AgentArtifact.name` against `file_name`. Only `file_name` and `mime_type` appear on this wire deliberately: the backing `gs://` or Drive URI is not exposed to conversation-history readers. Same variant is used for both byte-uploaded and Drive-picked files -- &quot;user attached a file&quot; is one concept regardless of source. # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. See `UserSuppliedSobiArtifactReference` above.
+              &quot;fileName&quot;: &quot;A String&quot;, # Required. Client-supplied filename. Unique per task within the user-supplied artifact set (UI dedupes before upload). Doubles as the artifact identifier used to look up the artifact on `Task.artifacts`. The `_name` suffix is deliberate and the AIP-122 lint is suppressed: this field is not a resource name (which is what AIP-122 reserves the bare `name` for). It is the literal filename, and it serves as the join key against `AgentArtifact.name` on the backing Sobi task -- a structural role that `title` or `display_name` would not communicate to a client picking what to send. The internal mirror (`cloud/ml/discoveryengine/schema/assistant.proto`) uses the same field name so the round-trip converter stays name-for-name.
+              &quot;mimeType&quot;: &quot;A String&quot;, # Optional. IANA MIME type. Used for icon/preview rendering.
+            },
           },
         ],
         &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
@@ -986,6 +1014,9 @@ Returns:
         &quot;assistSkippedReasons&quot;: [ # Reasons for not answering the assist call.
           &quot;A String&quot;,
         ],
+        &quot;connectorDisplayNames&quot;: { # Output only. Maps an internal connector agent name (the machine identifier embedded in tool names, e.g. `custom_mcp__agent`) to the connector&#x27;s human-readable display name. Populated at serving time for custom MCP / agent gateway connectors so user-facing surfaces (e.g. the tool-call chip) can show the connector name instead of its internal identifier. Empty when there are no such connectors.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
         &quot;customerPolicyEnforcementResult&quot;: { # Customer policy enforcement results. Contains the results of the various policy checks, like the banned phrases or the Model Armor checks. # Optional. The field contains information about the various policy checks&#x27; results like the banned phrases or the Model Armor checks. This field is populated only if the assist call was skipped due to a policy violation.
           &quot;policyResults&quot;: [ # Customer policy enforcement results. Populated only if the assist call was skipped due to a policy violation. It contains results from those filters that blocked the processing of the query.
             { # Customer policy enforcement result for a single policy type.
@@ -1008,7 +1039,8 @@ Returns:
               },
             },
           ],
-          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If only one policy blocked the processing, the verdict is BLOCK.
+          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If at least one policy blocked the processing, the verdict is BLOCK. If no policy blocked the processing but at least one flagged it, the verdict is FLAG.
+          &quot;violationSource&quot;: &quot;A String&quot;, # Output only. The source of the violation.
         },
         &quot;name&quot;: &quot;A String&quot;, # Immutable. Identifier. Resource name of the `AssistAnswer`. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/sessions/{session}/assistAnswers/{assist_answer}` This field must be a UTF-8 encoded string with a length limit of 1024 characters.
         &quot;replies&quot;: [ # Replies of the assistant.
@@ -1054,6 +1086,9 @@ Returns:
               &quot;textGroundingMetadata&quot;: { # Grounding details for text sources. # Metadata for grounding based on text sources.
                 &quot;references&quot;: [ # References for the grounded text.
                   { # Referenced content and related document metadata.
+                    &quot;chunkMetadata&quot;: { # Output only. Generic structured chunk metadata from upstream data source connectors.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
                     &quot;codeSnippet&quot;: &quot;A String&quot;, # Chunk of code snippet from the referenced document.
                     &quot;content&quot;: &quot;A String&quot;, # Referenced text content.
                     &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
@@ -1092,6 +1127,9 @@ Returns:
           },
         ],
         &quot;state&quot;: &quot;A String&quot;, # State of the answer generation.
+        &quot;toolDisplayNames&quot;: { # Output only. Maps a tool name (for example, `Internal-KB-Search` or `custom_mcp__agent__Internal-KB-Search`) to its human-readable display title (for example, `@Internal-KB Search`), populated from MCP tool `title` or `annotations.title` metadata so user-facing surfaces can display the tool title instead of the raw function declaration identifier. Empty when no tool display titles are present.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
       },
       &quot;live&quot;: True or False, # Optional. Indicates whether this turn is a live turn.
       &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
@@ -1126,6 +1164,10 @@ Returns:
             },
             &quot;text&quot;: &quot;A String&quot;, # Text content.
             &quot;uiJsonPayload&quot;: &quot;A String&quot;, # This field is expected to be a ui message in JSON format. As of Q1 2026, ui_json_payload is only supported for A2UI messages.
+            &quot;userSuppliedSobiArtifactReference&quot;: { # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. Rendered by the client as an attachment chip on the user turn&#x27;s bubble. The file itself is stored on the task&#x27;s `AgentArtifact` list; the client resolves full metadata (source URI, size, ...) for download or preview by calling `GetTask` on the Sobi Task API and matching `AgentArtifact.name` against `file_name`. Only `file_name` and `mime_type` appear on this wire deliberately: the backing `gs://` or Drive URI is not exposed to conversation-history readers. Same variant is used for both byte-uploaded and Drive-picked files -- &quot;user attached a file&quot; is one concept regardless of source. # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. See `UserSuppliedSobiArtifactReference` above.
+              &quot;fileName&quot;: &quot;A String&quot;, # Required. Client-supplied filename. Unique per task within the user-supplied artifact set (UI dedupes before upload). Doubles as the artifact identifier used to look up the artifact on `Task.artifacts`. The `_name` suffix is deliberate and the AIP-122 lint is suppressed: this field is not a resource name (which is what AIP-122 reserves the bare `name` for). It is the literal filename, and it serves as the join key against `AgentArtifact.name` on the backing Sobi task -- a structural role that `title` or `display_name` would not communicate to a client picking what to send. The internal mirror (`cloud/ml/discoveryengine/schema/assistant.proto`) uses the same field name so the round-trip converter stays name-for-name.
+              &quot;mimeType&quot;: &quot;A String&quot;, # Optional. IANA MIME type. Used for icon/preview rendering.
+            },
           },
         ],
         &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
@@ -1147,7 +1189,7 @@ Returns:
 Args:
   parent: string, Required. The data store resource name. Format: `projects/{project}/locations/{location}/collections/{collection}/dataStores/{data_store_id}` (required)
   filter: string, A comma-separated list of fields to filter by, in EBNF grammar. The supported fields are: * `user_pseudo_id` * `state` * `display_name` * `starred` * `is_pinned` * `labels` * `create_time` * `update_time` * `collaborative_project` Examples: * `user_pseudo_id = some_id` * `display_name = &quot;some_name&quot;` * `starred = true` * `is_pinned=true AND (NOT labels:hidden)` * `create_time &gt; &quot;1970-01-01T12:00:00Z&quot;` * `collaborative_project = &quot;projects/123/locations/global/collections/default_collection/engines/&quot; &quot;default_engine/collaborative_projects/cp1&quot;`
-  orderBy: string, A comma-separated list of fields to order by, sorted in ascending order. Use &quot;desc&quot; after a field name for descending. Supported fields: * `update_time` * `create_time` * `session_name` * `is_pinned` Example: * `update_time desc` * `create_time` * `is_pinned desc,update_time desc`: list sessions by is_pinned first, then by update_time.
+  orderBy: string, A comma-separated list of fields to order by, sorted in ascending order. Use &quot;desc&quot; after a field name for descending. Supported fields: * `update_time` * `create_time` * `session_name` * `is_pinned` * `display_name` Example: * `update_time desc` * `create_time` * `is_pinned desc,update_time desc`: list sessions by is_pinned first, then by update_time.
   pageSize: integer, Maximum number of results to return. If unspecified, defaults to 50. Max allowed value is 1000.
   pageToken: string, A page token, received from a previous `ListSessions` call. Provide this to retrieve the subsequent page.
   x__xgafv: string, V1 error format.
@@ -1330,6 +1372,9 @@ Returns:
             &quot;assistSkippedReasons&quot;: [ # Reasons for not answering the assist call.
               &quot;A String&quot;,
             ],
+            &quot;connectorDisplayNames&quot;: { # Output only. Maps an internal connector agent name (the machine identifier embedded in tool names, e.g. `custom_mcp__agent`) to the connector&#x27;s human-readable display name. Populated at serving time for custom MCP / agent gateway connectors so user-facing surfaces (e.g. the tool-call chip) can show the connector name instead of its internal identifier. Empty when there are no such connectors.
+              &quot;a_key&quot;: &quot;A String&quot;,
+            },
             &quot;customerPolicyEnforcementResult&quot;: { # Customer policy enforcement results. Contains the results of the various policy checks, like the banned phrases or the Model Armor checks. # Optional. The field contains information about the various policy checks&#x27; results like the banned phrases or the Model Armor checks. This field is populated only if the assist call was skipped due to a policy violation.
               &quot;policyResults&quot;: [ # Customer policy enforcement results. Populated only if the assist call was skipped due to a policy violation. It contains results from those filters that blocked the processing of the query.
                 { # Customer policy enforcement result for a single policy type.
@@ -1352,7 +1397,8 @@ Returns:
                   },
                 },
               ],
-              &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If only one policy blocked the processing, the verdict is BLOCK.
+              &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If at least one policy blocked the processing, the verdict is BLOCK. If no policy blocked the processing but at least one flagged it, the verdict is FLAG.
+              &quot;violationSource&quot;: &quot;A String&quot;, # Output only. The source of the violation.
             },
             &quot;name&quot;: &quot;A String&quot;, # Immutable. Identifier. Resource name of the `AssistAnswer`. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/sessions/{session}/assistAnswers/{assist_answer}` This field must be a UTF-8 encoded string with a length limit of 1024 characters.
             &quot;replies&quot;: [ # Replies of the assistant.
@@ -1398,6 +1444,9 @@ Returns:
                   &quot;textGroundingMetadata&quot;: { # Grounding details for text sources. # Metadata for grounding based on text sources.
                     &quot;references&quot;: [ # References for the grounded text.
                       { # Referenced content and related document metadata.
+                        &quot;chunkMetadata&quot;: { # Output only. Generic structured chunk metadata from upstream data source connectors.
+                          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                        },
                         &quot;codeSnippet&quot;: &quot;A String&quot;, # Chunk of code snippet from the referenced document.
                         &quot;content&quot;: &quot;A String&quot;, # Referenced text content.
                         &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
@@ -1436,6 +1485,9 @@ Returns:
               },
             ],
             &quot;state&quot;: &quot;A String&quot;, # State of the answer generation.
+            &quot;toolDisplayNames&quot;: { # Output only. Maps a tool name (for example, `Internal-KB-Search` or `custom_mcp__agent__Internal-KB-Search`) to its human-readable display title (for example, `@Internal-KB Search`), populated from MCP tool `title` or `annotations.title` metadata so user-facing surfaces can display the tool title instead of the raw function declaration identifier. Empty when no tool display titles are present.
+              &quot;a_key&quot;: &quot;A String&quot;,
+            },
           },
           &quot;live&quot;: True or False, # Optional. Indicates whether this turn is a live turn.
           &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
@@ -1470,6 +1522,10 @@ Returns:
                 },
                 &quot;text&quot;: &quot;A String&quot;, # Text content.
                 &quot;uiJsonPayload&quot;: &quot;A String&quot;, # This field is expected to be a ui message in JSON format. As of Q1 2026, ui_json_payload is only supported for A2UI messages.
+                &quot;userSuppliedSobiArtifactReference&quot;: { # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. Rendered by the client as an attachment chip on the user turn&#x27;s bubble. The file itself is stored on the task&#x27;s `AgentArtifact` list; the client resolves full metadata (source URI, size, ...) for download or preview by calling `GetTask` on the Sobi Task API and matching `AgentArtifact.name` against `file_name`. Only `file_name` and `mime_type` appear on this wire deliberately: the backing `gs://` or Drive URI is not exposed to conversation-history readers. Same variant is used for both byte-uploaded and Drive-picked files -- &quot;user attached a file&quot; is one concept regardless of source. # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. See `UserSuppliedSobiArtifactReference` above.
+                  &quot;fileName&quot;: &quot;A String&quot;, # Required. Client-supplied filename. Unique per task within the user-supplied artifact set (UI dedupes before upload). Doubles as the artifact identifier used to look up the artifact on `Task.artifacts`. The `_name` suffix is deliberate and the AIP-122 lint is suppressed: this field is not a resource name (which is what AIP-122 reserves the bare `name` for). It is the literal filename, and it serves as the join key against `AgentArtifact.name` on the backing Sobi task -- a structural role that `title` or `display_name` would not communicate to a client picking what to send. The internal mirror (`cloud/ml/discoveryengine/schema/assistant.proto`) uses the same field name so the round-trip converter stays name-for-name.
+                  &quot;mimeType&quot;: &quot;A String&quot;, # Optional. IANA MIME type. Used for icon/preview rendering.
+                },
               },
             ],
             &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
@@ -1487,17 +1543,17 @@ Returns:
 </div>
 
 <div class="method">
-    <code class="details" id="list_next">list_next()</code>
+    <code class="details" id="list_next">list_next(previous_request, previous_response)</code>
   <pre>Retrieves the next page of results.
 
-        Args:
-          previous_request: The request for the previous page. (required)
-          previous_response: The response from the request for the previous page. (required)
+Args:
+  previous_request: The request for the previous page. (required)
+  previous_response: The response from the request for the previous page. (required)
 
-        Returns:
-          A request object that you can call &#x27;execute()&#x27; on to request the next
-          page. Returns None if there are no more items in the collection.
-        </pre>
+Returns:
+  A request object that you can call &#x27;execute()&#x27; on to request the next
+  page. Returns None if there are no more items in the collection.
+</pre>
 </div>
 
 <div class="method">
@@ -1678,6 +1734,9 @@ Args:
         &quot;assistSkippedReasons&quot;: [ # Reasons for not answering the assist call.
           &quot;A String&quot;,
         ],
+        &quot;connectorDisplayNames&quot;: { # Output only. Maps an internal connector agent name (the machine identifier embedded in tool names, e.g. `custom_mcp__agent`) to the connector&#x27;s human-readable display name. Populated at serving time for custom MCP / agent gateway connectors so user-facing surfaces (e.g. the tool-call chip) can show the connector name instead of its internal identifier. Empty when there are no such connectors.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
         &quot;customerPolicyEnforcementResult&quot;: { # Customer policy enforcement results. Contains the results of the various policy checks, like the banned phrases or the Model Armor checks. # Optional. The field contains information about the various policy checks&#x27; results like the banned phrases or the Model Armor checks. This field is populated only if the assist call was skipped due to a policy violation.
           &quot;policyResults&quot;: [ # Customer policy enforcement results. Populated only if the assist call was skipped due to a policy violation. It contains results from those filters that blocked the processing of the query.
             { # Customer policy enforcement result for a single policy type.
@@ -1700,7 +1759,8 @@ Args:
               },
             },
           ],
-          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If only one policy blocked the processing, the verdict is BLOCK.
+          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If at least one policy blocked the processing, the verdict is BLOCK. If no policy blocked the processing but at least one flagged it, the verdict is FLAG.
+          &quot;violationSource&quot;: &quot;A String&quot;, # Output only. The source of the violation.
         },
         &quot;name&quot;: &quot;A String&quot;, # Immutable. Identifier. Resource name of the `AssistAnswer`. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/sessions/{session}/assistAnswers/{assist_answer}` This field must be a UTF-8 encoded string with a length limit of 1024 characters.
         &quot;replies&quot;: [ # Replies of the assistant.
@@ -1746,6 +1806,9 @@ Args:
               &quot;textGroundingMetadata&quot;: { # Grounding details for text sources. # Metadata for grounding based on text sources.
                 &quot;references&quot;: [ # References for the grounded text.
                   { # Referenced content and related document metadata.
+                    &quot;chunkMetadata&quot;: { # Output only. Generic structured chunk metadata from upstream data source connectors.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
                     &quot;codeSnippet&quot;: &quot;A String&quot;, # Chunk of code snippet from the referenced document.
                     &quot;content&quot;: &quot;A String&quot;, # Referenced text content.
                     &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
@@ -1784,6 +1847,9 @@ Args:
           },
         ],
         &quot;state&quot;: &quot;A String&quot;, # State of the answer generation.
+        &quot;toolDisplayNames&quot;: { # Output only. Maps a tool name (for example, `Internal-KB-Search` or `custom_mcp__agent__Internal-KB-Search`) to its human-readable display title (for example, `@Internal-KB Search`), populated from MCP tool `title` or `annotations.title` metadata so user-facing surfaces can display the tool title instead of the raw function declaration identifier. Empty when no tool display titles are present.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
       },
       &quot;live&quot;: True or False, # Optional. Indicates whether this turn is a live turn.
       &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
@@ -1818,6 +1884,10 @@ Args:
             },
             &quot;text&quot;: &quot;A String&quot;, # Text content.
             &quot;uiJsonPayload&quot;: &quot;A String&quot;, # This field is expected to be a ui message in JSON format. As of Q1 2026, ui_json_payload is only supported for A2UI messages.
+            &quot;userSuppliedSobiArtifactReference&quot;: { # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. Rendered by the client as an attachment chip on the user turn&#x27;s bubble. The file itself is stored on the task&#x27;s `AgentArtifact` list; the client resolves full metadata (source URI, size, ...) for download or preview by calling `GetTask` on the Sobi Task API and matching `AgentArtifact.name` against `file_name`. Only `file_name` and `mime_type` appear on this wire deliberately: the backing `gs://` or Drive URI is not exposed to conversation-history readers. Same variant is used for both byte-uploaded and Drive-picked files -- &quot;user attached a file&quot; is one concept regardless of source. # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. See `UserSuppliedSobiArtifactReference` above.
+              &quot;fileName&quot;: &quot;A String&quot;, # Required. Client-supplied filename. Unique per task within the user-supplied artifact set (UI dedupes before upload). Doubles as the artifact identifier used to look up the artifact on `Task.artifacts`. The `_name` suffix is deliberate and the AIP-122 lint is suppressed: this field is not a resource name (which is what AIP-122 reserves the bare `name` for). It is the literal filename, and it serves as the join key against `AgentArtifact.name` on the backing Sobi task -- a structural role that `title` or `display_name` would not communicate to a client picking what to send. The internal mirror (`cloud/ml/discoveryengine/schema/assistant.proto`) uses the same field name so the round-trip converter stays name-for-name.
+              &quot;mimeType&quot;: &quot;A String&quot;, # Optional. IANA MIME type. Used for icon/preview rendering.
+            },
           },
         ],
         &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.
@@ -2009,6 +2079,9 @@ Returns:
         &quot;assistSkippedReasons&quot;: [ # Reasons for not answering the assist call.
           &quot;A String&quot;,
         ],
+        &quot;connectorDisplayNames&quot;: { # Output only. Maps an internal connector agent name (the machine identifier embedded in tool names, e.g. `custom_mcp__agent`) to the connector&#x27;s human-readable display name. Populated at serving time for custom MCP / agent gateway connectors so user-facing surfaces (e.g. the tool-call chip) can show the connector name instead of its internal identifier. Empty when there are no such connectors.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
         &quot;customerPolicyEnforcementResult&quot;: { # Customer policy enforcement results. Contains the results of the various policy checks, like the banned phrases or the Model Armor checks. # Optional. The field contains information about the various policy checks&#x27; results like the banned phrases or the Model Armor checks. This field is populated only if the assist call was skipped due to a policy violation.
           &quot;policyResults&quot;: [ # Customer policy enforcement results. Populated only if the assist call was skipped due to a policy violation. It contains results from those filters that blocked the processing of the query.
             { # Customer policy enforcement result for a single policy type.
@@ -2031,7 +2104,8 @@ Returns:
               },
             },
           ],
-          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If only one policy blocked the processing, the verdict is BLOCK.
+          &quot;verdict&quot;: &quot;A String&quot;, # Final verdict of the customer policy enforcement. If at least one policy blocked the processing, the verdict is BLOCK. If no policy blocked the processing but at least one flagged it, the verdict is FLAG.
+          &quot;violationSource&quot;: &quot;A String&quot;, # Output only. The source of the violation.
         },
         &quot;name&quot;: &quot;A String&quot;, # Immutable. Identifier. Resource name of the `AssistAnswer`. Format: `projects/{project}/locations/{location}/collections/{collection}/engines/{engine}/sessions/{session}/assistAnswers/{assist_answer}` This field must be a UTF-8 encoded string with a length limit of 1024 characters.
         &quot;replies&quot;: [ # Replies of the assistant.
@@ -2077,6 +2151,9 @@ Returns:
               &quot;textGroundingMetadata&quot;: { # Grounding details for text sources. # Metadata for grounding based on text sources.
                 &quot;references&quot;: [ # References for the grounded text.
                   { # Referenced content and related document metadata.
+                    &quot;chunkMetadata&quot;: { # Output only. Generic structured chunk metadata from upstream data source connectors.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
                     &quot;codeSnippet&quot;: &quot;A String&quot;, # Chunk of code snippet from the referenced document.
                     &quot;content&quot;: &quot;A String&quot;, # Referenced text content.
                     &quot;documentMetadata&quot;: { # Document metadata. # Document metadata.
@@ -2115,6 +2192,9 @@ Returns:
           },
         ],
         &quot;state&quot;: &quot;A String&quot;, # State of the answer generation.
+        &quot;toolDisplayNames&quot;: { # Output only. Maps a tool name (for example, `Internal-KB-Search` or `custom_mcp__agent__Internal-KB-Search`) to its human-readable display title (for example, `@Internal-KB Search`), populated from MCP tool `title` or `annotations.title` metadata so user-facing surfaces can display the tool title instead of the raw function declaration identifier. Empty when no tool display titles are present.
+          &quot;a_key&quot;: &quot;A String&quot;,
+        },
       },
       &quot;live&quot;: True or False, # Optional. Indicates whether this turn is a live turn.
       &quot;query&quot;: { # Defines a user inputed query. # Optional. The user query. May not be set if this turn is merely regenerating an answer to a different turn
@@ -2149,6 +2229,10 @@ Returns:
             },
             &quot;text&quot;: &quot;A String&quot;, # Text content.
             &quot;uiJsonPayload&quot;: &quot;A String&quot;, # This field is expected to be a ui message in JSON format. As of Q1 2026, ui_json_payload is only supported for A2UI messages.
+            &quot;userSuppliedSobiArtifactReference&quot;: { # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. Rendered by the client as an attachment chip on the user turn&#x27;s bubble. The file itself is stored on the task&#x27;s `AgentArtifact` list; the client resolves full metadata (source URI, size, ...) for download or preview by calling `GetTask` on the Sobi Task API and matching `AgentArtifact.name` against `file_name`. Only `file_name` and `mime_type` appear on this wire deliberately: the backing `gs://` or Drive URI is not exposed to conversation-history readers. Same variant is used for both byte-uploaded and Drive-picked files -- &quot;user attached a file&quot; is one concept regardless of source. # Reference to a user-supplied file attached to a long-running-agent (Sobi) task. See `UserSuppliedSobiArtifactReference` above.
+              &quot;fileName&quot;: &quot;A String&quot;, # Required. Client-supplied filename. Unique per task within the user-supplied artifact set (UI dedupes before upload). Doubles as the artifact identifier used to look up the artifact on `Task.artifacts`. The `_name` suffix is deliberate and the AIP-122 lint is suppressed: this field is not a resource name (which is what AIP-122 reserves the bare `name` for). It is the literal filename, and it serves as the join key against `AgentArtifact.name` on the backing Sobi task -- a structural role that `title` or `display_name` would not communicate to a client picking what to send. The internal mirror (`cloud/ml/discoveryengine/schema/assistant.proto`) uses the same field name so the round-trip converter stays name-for-name.
+              &quot;mimeType&quot;: &quot;A String&quot;, # Optional. IANA MIME type. Used for icon/preview rendering.
+            },
           },
         ],
         &quot;queryId&quot;: &quot;A String&quot;, # Output only. Unique Id for the query.

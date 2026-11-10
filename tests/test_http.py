@@ -32,6 +32,7 @@ import os
 import random
 import socket
 import ssl
+import tempfile
 import time
 import unittest
 from unittest import mock
@@ -42,6 +43,7 @@ import httplib2
 from googleapiclient.discovery import build
 from googleapiclient.errors import BatchError, HttpError, InvalidChunkSizeError
 from googleapiclient.http import (
+    DEFAULT_CHUNK_SIZE,
     MAX_URI_LENGTH,
     BatchHttpRequest,
     HttpMock,
@@ -1727,6 +1729,164 @@ class TestHttpBuild(unittest.TestCase):
     def test_build_http_default_308_is_excluded_as_redirect(self):
         http = build_http()
         self.assertTrue(308 not in http.redirect_codes)
+
+
+class TestMediaUploadSerialization(unittest.TestCase):
+    """Tests input validation and safe reconstruction behavior for MediaUpload.
+
+    Covers mitigations for CWE-502 (Deserialization of Untrusted Data) and validates
+    that arbitrary reflection and file manipulation vectors are strictly blocked.
+    """
+
+    def test_deserialize_untrusted_class_raises_value_error(self):
+        """Verify that MediaUpload.new_from_json strictly rejects untrusted classes."""
+        cases = [
+            # Security test: Reject arbitrary standard library / built-in modules.
+            # Prevents untrusted JSON from importing modules like 'os' or looking up
+            # dangerous callables (e.g. 'os.system').
+            ("os", "system"),
+            # Security test: Reject non-upload classes in googleapiclient.http.
+            # Even if the module name is valid, non-MediaUpload classes like
+            # HttpRequest must be rejected to prevent unexpected dispatch.
+            ("googleapiclient.http", "HttpRequest"),
+            # Security test: Reject arbitrary external modules from sys.path.
+            # Prevents untrusted JSON from triggering dynamic __import__() on modules
+            # that might exist in /tmp, shared volumes, or writable site-packages (RCE).
+            ("nonexistent_module", "CustomClass"),
+        ]
+        for module, class_name in cases:
+            with self.subTest(module=module, class_name=class_name):
+                payload = json.dumps({"_module": module, "_class": class_name})
+                with self.assertRaisesRegex(
+                    ValueError, "Refusing to deserialize untrusted class"
+                ):
+                    MediaUpload.new_from_json(payload)
+
+    def test_deserialize_invalid_filename_raises_value_error(self):
+        """Verify that MediaFileUpload.from_json rejects malformed filenames.
+
+        Guards against type confusion and null-byte injection during filename parsing.
+        """
+        cases = [
+            None,
+            "",
+            123,
+            "/path/with/\x00/nullbyte",
+        ]
+        for invalid_filename in cases:
+            with self.subTest(invalid_filename=invalid_filename):
+                payload = json.dumps(
+                    {
+                        "_module": "googleapiclient.http",
+                        "_class": "MediaFileUpload",
+                        "_filename": invalid_filename,
+                        "_mimetype": "text/plain",
+                        "_chunksize": 1048576,
+                        "_resumable": True,
+                    }
+                )
+                with self.assertRaisesRegex(
+                    ValueError, "Invalid or missing '_filename'"
+                ):
+                    MediaUpload.new_from_json(payload)
+
+    def test_deserialize_valid_media_file_upload_roundtrip(self):
+        """Verify legitimate MediaFileUpload roundtrip serialization.
+
+        Ensures that valid MediaFileUpload instances continue to serialize and
+        reconstruct correctly without breaking backwards compatibility.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "test.txt")
+            with open(test_file, "wb") as f:
+                f.write(b"valid content")
+
+            upload = MediaFileUpload(test_file, mimetype="text/plain", resumable=True)
+            serialized = upload.to_json()
+
+            deserialized = MediaUpload.new_from_json(serialized)
+            self.assertIsInstance(deserialized, MediaFileUpload)
+            self.assertEqual(deserialized.getbytes(0, 13), b"valid content")
+
+    def test_deserialize_media_file_upload_default_fallbacks(self):
+        """Verify fallback handling when _chunksize or _resumable are missing/null."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "test.txt")
+            with open(test_file, "wb") as f:
+                f.write(b"fallback test content")
+
+            # Payload omitting _chunksize and _resumable (or with explicit null values)
+            payload = json.dumps(
+                {
+                    "_module": "googleapiclient.http",
+                    "_class": "MediaFileUpload",
+                    "_filename": test_file,
+                    "_chunksize": None,
+                    "_resumable": None,
+                }
+            )
+
+            deserialized = MediaUpload.new_from_json(payload)
+            self.assertIsInstance(deserialized, MediaFileUpload)
+            self.assertEqual(deserialized.chunksize(), DEFAULT_CHUNK_SIZE)
+            self.assertFalse(deserialized.resumable())
+            self.assertEqual(deserialized.getbytes(0, 21), b"fallback test content")
+
+    def test_deserialize_invalid_field_types_raises_value_error(self):
+        """Verify that MediaFileUpload.from_json rejects invalid field types."""
+        cases = [
+            # Invalid _chunksize
+            ({"_chunksize": "not_an_int"}, "'_chunksize' must be an integer."),
+            ({"_chunksize": True}, "'_chunksize' must be an integer."),
+            ({"_chunksize": 1.5}, "'_chunksize' must be an integer."),
+            # Invalid _resumable
+            ({"_resumable": "true"}, "'_resumable' must be a boolean."),
+            ({"_resumable": 1}, "'_resumable' must be a boolean."),
+            # Invalid _mimetype
+            ({"_mimetype": 123}, "'_mimetype' must be a string."),
+            ({"_mimetype": False}, "'_mimetype' must be a string."),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = os.path.join(tmpdir, "test.txt")
+            with open(test_file, "wb") as f:
+                f.write(b"content")
+
+            for override, error_msg in cases:
+                with self.subTest(override=override):
+                    data = {
+                        "_module": "googleapiclient.http",
+                        "_class": "MediaFileUpload",
+                        "_filename": test_file,
+                        "_chunksize": DEFAULT_CHUNK_SIZE,
+                        "_resumable": True,
+                        "_mimetype": "text/plain",
+                    }
+                    data.update(override)
+                    payload = json.dumps(data)
+                    with self.assertRaisesRegex(ValueError, error_msg):
+                        MediaUpload.new_from_json(payload)
+
+    def test_deserialize_non_dict_payload_raises_value_error(self):
+        """Verify that non-dictionary JSON payloads raise ValueError."""
+        cases = [
+            "[]",
+            '"string_payload"',
+            "123",
+            "true",
+            "null",
+        ]
+        for payload in cases:
+            with self.subTest(payload=payload):
+                with self.assertRaisesRegex(
+                    ValueError, "Serialized MediaUpload data must be a JSON object."
+                ):
+                    MediaUpload.new_from_json(payload)
+
+                with self.assertRaisesRegex(
+                    ValueError, "Serialized MediaFileUpload data must be a JSON object."
+                ):
+                    MediaFileUpload.from_json(payload)
 
 
 if __name__ == "__main__":

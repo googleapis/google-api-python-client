@@ -957,23 +957,31 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
             with mock.patch.dict(
                 "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
             ):
+                # Clear CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE so its fallback in
+                # google-auth (often "true" in Cloud SDK environments) does not bypass
+                # certificate_config.json auto-discovery.
                 with mock.patch.dict(
-                    "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+                    "os.environ",
+                    {
+                        "GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert,
+                        "CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE": "",
+                    },
                 ):
                     with mock.patch("builtins.open", m):
-                        with mock.patch.dict(
-                            "os.environ",
-                            {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename},
-                        ):
-                            plus = build_from_document(
-                                discovery,
-                                credentials=self.MOCK_CREDENTIALS,
-                                client_options={
-                                    "client_encrypted_cert_source": self.client_encrypted_cert_source
-                                },
-                            )
-                            self.assertIsNotNone(plus)
-                            self.assertEqual(plus._baseUrl, base_url)
+                        with mock.patch("os.path.exists", return_value=True):
+                            with mock.patch.dict(
+                                "os.environ",
+                                {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename},
+                            ):
+                                plus = build_from_document(
+                                    discovery,
+                                    credentials=self.MOCK_CREDENTIALS,
+                                    client_options={
+                                        "client_encrypted_cert_source": self.client_encrypted_cert_source
+                                    },
+                                )
+                                self.assertIsNotNone(plus)
+                                self.assertEqual(plus._baseUrl, base_url)
 
     @parameterized.expand(
         [
@@ -1105,22 +1113,30 @@ class DiscoveryFromDocumentMutualTLS(unittest.TestCase):
             with mock.patch.dict(
                 "os.environ", {"GOOGLE_API_USE_MTLS_ENDPOINT": use_mtls_env}
             ):
+                # Clear CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE so its fallback in
+                # google-auth (often "true" in Cloud SDK environments) does not bypass
+                # certificate_config.json auto-discovery.
                 with mock.patch.dict(
-                    "os.environ", {"GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert}
+                    "os.environ",
+                    {
+                        "GOOGLE_API_USE_CLIENT_CERTIFICATE": use_client_cert,
+                        "CLOUDSDK_CONTEXT_AWARE_USE_CLIENT_CERTIFICATE": "",
+                    },
                 ):
                     with mock.patch("builtins.open", m):
-                        with mock.patch.dict(
-                            "os.environ",
-                            {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename},
-                        ):
-                            plus = build_from_document(
-                                discovery,
-                                credentials=self.MOCK_CREDENTIALS,
-                                adc_cert_path=self.ADC_CERT_PATH,
-                                adc_key_path=self.ADC_KEY_PATH,
-                            )
-                            self.assertIsNotNone(plus)
-                            self.assertEqual(plus._baseUrl, base_url)
+                        with mock.patch("os.path.exists", return_value=True):
+                            with mock.patch.dict(
+                                "os.environ",
+                                {"GOOGLE_API_CERTIFICATE_CONFIG": config_filename},
+                            ):
+                                plus = build_from_document(
+                                    discovery,
+                                    credentials=self.MOCK_CREDENTIALS,
+                                    adc_cert_path=self.ADC_CERT_PATH,
+                                    adc_key_path=self.ADC_KEY_PATH,
+                                )
+                                self.assertIsNotNone(plus)
+                                self.assertEqual(plus._baseUrl, base_url)
 
     @parameterized.expand(
         [
@@ -1418,9 +1434,7 @@ class DiscoveryFromAppEngineCache(unittest.TestCase):
                 return self.mocked_api
             return self.orig_import(name, *args, **kwargs)
 
-        import_fullname = "__builtin__.__import__"
-        if sys.version_info[0] >= 3:
-            import_fullname = "builtins.__import__"
+        import_fullname = "builtins.__import__"
 
         with mock.patch(import_fullname, side_effect=import_mock):
             namespace = "google-api-client"

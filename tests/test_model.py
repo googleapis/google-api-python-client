@@ -64,7 +64,7 @@ TEST_CASES = [
 
 class TestPatch(unittest.TestCase):
     def test_patch(self):
-        for (msg, orig, mod, expected_patch) in TEST_CASES:
+        for msg, orig, mod, expected_patch in TEST_CASES:
             self.assertEqual(expected_patch, makepatch(orig, mod), msg=msg)
 
 

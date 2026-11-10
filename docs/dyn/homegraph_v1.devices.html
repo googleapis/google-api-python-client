@@ -105,6 +105,7 @@ Args:
 
 { # Request type for the [`Query`](#google.home.graph.v1.HomeGraphApiService.Query) call.
   &quot;agentUserId&quot;: &quot;A String&quot;, # Required. Third-party user ID.
+  &quot;deviceView&quot;: &quot;A String&quot;, # Optional. Specifies the type of device data to be returned in the response. This allows callers to request traditional Smart Home traits, Unified Device Data Model (UDDM) traits, or both. If unspecified, defaults to `SMART_HOME_TRAIT_ONLY`.
   &quot;includeDeviceMetadata&quot;: True or False, # Optional. If true, the response will include device metadata in the device_metadata field.
   &quot;inputs&quot;: [ # Required. Inputs containing third-party device IDs for which to get the device states.
     { # Device ID inputs to QueryRequest.
@@ -142,6 +143,34 @@ Returns:
         &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
       },
     },
+    &quot;homeTraitPayload&quot;: { # Map of device IDs to their Unified Device Data Model (UDDM) or JSON trait payloads. This field is populated when `device_view` is set to `HOME_TRAIT_ONLY`, `HOME_TRAIT_AND_SMART_HOME_TRAIT`, or `JSON_TRAIT_ONLY`.
+      &quot;a_key&quot;: { # Container for UDDM or JSON trait data associated with a device.
+        &quot;rootComponent&quot;: { # Component of a provider device. # The root component of the device as reported by the provider.
+          &quot;childComponents&quot;: [ # Optional. Child components.
+            # Object with schema name: Component
+          ],
+          &quot;deviceTypes&quot;: [ # Required. List of Device types associated with this component. Supported device types are defined in cs//depot/google3/home/homeservicelayer/uddm/types/uddm_device_types.proto and the type string is the enum name, for example: ON_OFF_LIGHT =&gt; &quot;ON_OFF_LIGHT&quot;.
+            &quot;A String&quot;,
+          ],
+          &quot;id&quot;: &quot;A String&quot;, # Required. ID of the component from the device provider.
+          &quot;traitData&quot;: [ # Required. List of trait data associated with the component.
+            { # Contains the trait payload for a single trait.
+              &quot;commitTime&quot;: &quot;A String&quot;, # Other metadata for the trait. The time the client update was committed in the server.
+              &quot;jsonTrait&quot;: { # Represents a dynamic JSON trait state payload that conforms to `json_trait_schema.md`. This message is used for Category 2 (vendor Matter clusters) and Category 3 (non-Matter capabilities) traits across all wire and internal paths, and for Category 1 traits on external JSON-only wire paths (for example, `Query` with `JSON_TRAIT_ONLY`). # Contains the dynamic JSON trait payload.
+                &quot;data&quot;: { # Optional. Holds the trait attributes, which conform to the trait&#x27;s registered JSON Schema.
+                  &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                },
+                &quot;id&quot;: &quot;A String&quot;, # Required. Identifies the trait by its canonical four-segment capability ID, `capability...`: * Standard or Google Matter (Category 1): `capability.matter.standard.` or `capability.matter.google.`, for example `capability.matter.standard.Thermostat`. * Vendor Matter (Category 2): `capability.matter..`. * Non-Matter (Category 3, from any provider including Google): `capability.generic..`, for example `capability.generic.acme.Warranty`.
+              },
+              &quot;providerUpdateTime&quot;: &quot;A String&quot;, # The custom timestamp supplied by the provider during a ReportStateAndNotification update (if provided). This field is returned as part of the `QueryResponse`.
+              &quot;trait&quot;: { # The Provider Home API trait payload.
+                &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
+              },
+            },
+          ],
+        },
+      },
+    },
   },
   &quot;requestId&quot;: &quot;A String&quot;, # Request ID used for debugging. Copied from the request.
 }</pre>
@@ -155,7 +184,7 @@ Args:
   body: object, The request body.
     The object takes the form of:
 
-{ # Request type for the [`ReportStateAndNotification`](#google.home.graph.v1.HomeGraphApiService.ReportStateAndNotification) call. It may include states, notifications, or both. States and notifications are defined per `device_id` (for example, &quot;123&quot; and &quot;456&quot; in the following example). Example: ```json { &quot;requestId&quot;: &quot;ff36a3cc-ec34-11e6-b1a0-64510650abcf&quot;, &quot;agentUserId&quot;: &quot;1234&quot;, &quot;payload&quot;: { &quot;devices&quot;: { &quot;states&quot;: { &quot;123&quot;: { &quot;on&quot;: true }, &quot;456&quot;: { &quot;on&quot;: true, &quot;brightness&quot;: 10 }, }, } } } ```
+{ # Request type for the [`ReportStateAndNotification`](#google.home.graph.v1.HomeGraphApiService.ReportStateAndNotification) call. It may include states, notifications, home_traits, home_events, or any combination thereof. Smart Home Device Traits (SHDT) `states` and `notifications` are defined per `device_id` (for example, &quot;123&quot; and &quot;456&quot; in the following example). Google Home Traits `home_traits` and `home_events` are lists of updates or events, each associated with a `device_id` (for example, &quot;789&quot; in the following example). Example: ```json { &quot;requestId&quot;: &quot;ff36a3cc-ec34-11e6-b1a0-64510650abcf&quot;, &quot;agentUserId&quot;: &quot;1234&quot;, &quot;payload&quot;: { &quot;devices&quot;: { &quot;states&quot;: { &quot;123&quot;: { &quot;on&quot;: true }, &quot;456&quot;: { &quot;on&quot;: true, &quot;brightness&quot;: 10 }, }, &quot;homeTraits&quot;: [ { &quot;deviceId&quot;: &quot;789&quot;, &quot;components&quot;: [ { &quot;componentId&quot;: &quot;main&quot;, &quot;traitData&quot;: [ { &quot;trait&quot;: { &quot;@type&quot;: &quot;type.googleapis.com/home.graph.v1.OnOffTrait&quot;, &quot;onOff&quot;: true } } ] } ] } ], &quot;homeEvents&quot;: [ { &quot;deviceId&quot;: &quot;789&quot;, &quot;events&quot;: [ { &quot;componentId&quot;: &quot;main&quot;, &quot;events&quot;: [ { &quot;eventId&quot;: &quot;event-123&quot;, &quot;eventTime&quot;: &quot;2026-01-01T00:00:00Z&quot;, &quot;event&quot;: { &quot;@type&quot;: &quot;type.googleapis.com/home.graph.v1.DoorbellPressTrait.DoorbellPressedEvent&quot; } } ] } ] } ] } } } ```
   &quot;agentUserId&quot;: &quot;A String&quot;, # Required. Third-party user ID.
   &quot;eventId&quot;: &quot;A String&quot;, # Unique identifier per event (for example, a doorbell press).
   &quot;followUpToken&quot;: &quot;A String&quot;, # Deprecated.
@@ -166,14 +195,20 @@ Args:
           &quot;deviceId&quot;: &quot;A String&quot;, # Required. / Unique identifier for the device.
           &quot;events&quot;: [ # Required. List of events for the item.
             { # Contains a set of events for a specific component.
-              &quot;componentId&quot;: &quot;A String&quot;, # Optional. The ID of the provider component if the events are associated with a specific component. Optional for WHDM events, required for UDDM events.
+              &quot;componentId&quot;: &quot;A String&quot;, # Optional. The ID of the provider component if the events are associated with a specific component. Optional for WHDM events, required for UDDM and JSON events.
               &quot;events&quot;: [ # Required. List of events associated with the component.
                 { # Contains the details for a single event.
-                  &quot;event&quot;: { # Required. The actual event payload.
+                  &quot;event&quot;: { # Optional. The actual event payload.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
                   },
                   &quot;eventId&quot;: &quot;A String&quot;, # Required. The unique event ID from the device provider.
                   &quot;eventTime&quot;: &quot;A String&quot;, # Required. The timestamp of the event.
+                  &quot;jsonTraitEvent&quot;: { # Represents a dynamic JSON event payload that conforms to `json_trait_schema.md`. # Optional. Contains the dynamic JSON trait event payload.
+                    &quot;data&quot;: { # Optional. Holds the event payload fields, which conform to the event&#x27;s registered JSON Schema.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
+                    &quot;id&quot;: &quot;A String&quot;, # Required. Identifies the event as `.`, where `` is the PascalCase key in the schema&#x27;s `x-capability-info.events`, for example `capability.matter.standard.DoorLock.LockOperation` or `capability.generic.acme.Warranty.ClaimUpdated`.
+                  },
                 },
               ],
             },
@@ -187,7 +222,15 @@ Args:
               &quot;componentId&quot;: &quot;A String&quot;, # Required. ID of the component from the device provider.
               &quot;traitData&quot;: [ # Required. The updated trait data for the component.
                 { # Contains the trait payload for a single trait.
-                  &quot;trait&quot;: { # Optional. The Home API trait payload.
+                  &quot;commitTime&quot;: &quot;A String&quot;, # Other metadata for the trait. The time the client update was committed in the server.
+                  &quot;jsonTrait&quot;: { # Represents a dynamic JSON trait state payload that conforms to `json_trait_schema.md`. This message is used for Category 2 (vendor Matter clusters) and Category 3 (non-Matter capabilities) traits across all wire and internal paths, and for Category 1 traits on external JSON-only wire paths (for example, `Query` with `JSON_TRAIT_ONLY`). # Contains the dynamic JSON trait payload.
+                    &quot;data&quot;: { # Optional. Holds the trait attributes, which conform to the trait&#x27;s registered JSON Schema.
+                      &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+                    },
+                    &quot;id&quot;: &quot;A String&quot;, # Required. Identifies the trait by its canonical four-segment capability ID, `capability...`: * Standard or Google Matter (Category 1): `capability.matter.standard.` or `capability.matter.google.`, for example `capability.matter.standard.Thermostat`. * Vendor Matter (Category 2): `capability.matter..`. * Non-Matter (Category 3, from any provider including Google): `capability.generic..`, for example `capability.generic.acme.Warranty`.
+                  },
+                  &quot;providerUpdateTime&quot;: &quot;A String&quot;, # The custom timestamp supplied by the provider during a ReportStateAndNotification update (if provided). This field is returned as part of the `QueryResponse`.
+                  &quot;trait&quot;: { # The Provider Home API trait payload.
                     &quot;a_key&quot;: &quot;&quot;, # Properties of the object. Contains field @type with type URL.
                   },
                 },
@@ -217,6 +260,11 @@ Returns:
   An object of the form:
 
     { # Response type for the [`ReportStateAndNotification`](#google.home.graph.v1.HomeGraphApiService.ReportStateAndNotification) call.
+  &quot;deviceResults&quot;: { # Map from agent device ID to the result of reporting state and notifications. This is only populated for UDDM updates for now.
+    &quot;a_key&quot;: { # Result of reporting state and notifications for a single device.
+      &quot;homeTraitCommitTime&quot;: &quot;A String&quot;, # The trait commit timestamp of the state update in Home Graph.
+    },
+  },
   &quot;requestId&quot;: &quot;A String&quot;, # Request ID copied from ReportStateAndNotificationRequest.
 }</pre>
 </div>

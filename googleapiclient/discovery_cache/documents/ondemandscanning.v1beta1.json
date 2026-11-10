@@ -344,7 +344,7 @@
 }
 }
 },
-"revision": "20260511",
+"revision": "20261030",
 "rootUrl": "https://ondemandscanning.googleapis.com/",
 "schemas": {
 "AISkillAnalysisOccurrence": {
@@ -359,8 +359,22 @@
 "type": "array"
 },
 "maxSeverity": {
-"description": "Maximum severity found among findings.",
+"description": "Maximum severity found among findings. Per scanner verdict details.",
+"enum": [
+"SEVERITY_UNSPECIFIED",
+"CRITICAL",
+"HIGH"
+],
+"enumDescriptions": [
+"Unspecified severity.",
+"Critical severity.",
+"High severity."
+],
 "type": "string"
+},
+"perScannerVerdict": {
+"$ref": "PerScannerVerdict",
+"description": "Per scanner verdict."
 },
 "skillName": {
 "description": "Name of the skill that produced this analysis.",
@@ -840,6 +854,24 @@
 "No impact (N). Defined in CVSS v2, v3, v4.",
 "Partial impact (P). Defined in CVSS v2.",
 "Complete impact (C). Defined in CVSS v2."
+],
+"type": "string"
+},
+"exploitMaturity": {
+"description": "Exploit Maturity (E). Defined in CVSS v4.",
+"enum": [
+"EXPLOIT_MATURITY_UNSPECIFIED",
+"EXPLOIT_MATURITY_NOT_DEFINED",
+"EXPLOIT_MATURITY_ATTACKED",
+"EXPLOIT_MATURITY_POC",
+"EXPLOIT_MATURITY_UNREPORTED"
+],
+"enumDescriptions": [
+"Unspecified.",
+"Exploit maturity: Not defined (E:X). Defined in CVSS v4.",
+"Exploit maturity: Attacked (E:A). Defined in CVSS v4.",
+"Exploit maturity: Proof-of-concept (E:P). Defined in CVSS v4.",
+"Exploit maturity: Unreported (E:U). Defined in CVSS v4."
 ],
 "type": "string"
 },
@@ -1383,6 +1415,106 @@
 },
 "type": "object"
 },
+"Exploitability": {
+"description": "Exploitability information for a vulnerability. This data can be used across multiple sources, including, but not limited to a top-level vulnerability, a package occurrence, or a package file location.",
+"id": "Exploitability",
+"properties": {
+"signals": {
+"description": "Individual exploitability signals from various sources.",
+"items": {
+"$ref": "ExploitabilitySignal"
+},
+"type": "array"
+},
+"summary": {
+"$ref": "ExploitabilitySummary",
+"description": "Rollup summary of the exploitability signals."
+}
+},
+"type": "object"
+},
+"ExploitabilitySignal": {
+"description": "A single exploitability signal from a specific source (e.g., an upstream advisory, a customer VEX document, or an internal build analysis).",
+"id": "ExploitabilitySignal",
+"properties": {
+"rationale": {
+"description": "Human-readable explanation of this signal.",
+"type": "string"
+},
+"source": {
+"description": "Identifier of the signal source.",
+"type": "string"
+},
+"vexJustification": {
+"description": "Justification for why the vulnerability is not exploitable.",
+"enum": [
+"JUSTIFICATION_TYPE_UNSPECIFIED",
+"COMPONENT_NOT_PRESENT",
+"VULNERABLE_CODE_NOT_PRESENT",
+"VULNERABLE_CODE_NOT_IN_EXECUTE_PATH",
+"VULNERABLE_CODE_CANNOT_BE_CONTROLLED_BY_ADVERSARY",
+"INLINE_MITIGATIONS_ALREADY_EXIST"
+],
+"enumDescriptions": [
+"JUSTIFICATION_TYPE_UNSPECIFIED.",
+"The vulnerable component is not present in the product.",
+"The vulnerable code is not present. Typically this case occurs when source code is configured or built in a way that excludes the vulnerable code.",
+"The vulnerable code can not be executed. Typically this case occurs when the product includes the vulnerable code but does not call or use the vulnerable code.",
+"The vulnerable code cannot be controlled by an attacker to exploit the vulnerability.",
+"The product includes built-in protections or features that prevent exploitation of the vulnerability. These built-in protections cannot be subverted by the attacker and cannot be configured or disabled by the user. These mitigations completely prevent exploitation based on known attack vectors."
+],
+"type": "string"
+},
+"vexStatus": {
+"description": "The VEX status asserted by this signal.",
+"enum": [
+"STATE_UNSPECIFIED",
+"AFFECTED",
+"NOT_AFFECTED",
+"FIXED",
+"UNDER_INVESTIGATION"
+],
+"enumDescriptions": [
+"No state is specified.",
+"This product is known to be affected by this vulnerability.",
+"This product is known to be not affected by this vulnerability.",
+"This product contains a fix for this vulnerability.",
+"It is not known yet whether these versions are or are not affected by the vulnerability. However, it is still under investigation."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"ExploitabilitySummary": {
+"description": "Rollup summary of exploitability across signals.",
+"id": "ExploitabilitySummary",
+"properties": {
+"rationale": {
+"description": "Human-readable explanation of the summary.",
+"type": "string"
+},
+"vexStatus": {
+"description": "The rolled-up VEX status. Usually, this should result in an AFFECTED or NOT_AFFECTED vex status.",
+"enum": [
+"STATE_UNSPECIFIED",
+"AFFECTED",
+"NOT_AFFECTED",
+"FIXED",
+"UNDER_INVESTIGATION"
+],
+"enumDescriptions": [
+"No state is specified.",
+"This product is known to be affected by this vulnerability.",
+"This product is known to be not affected by this vulnerability.",
+"This product contains a fix for this vulnerability.",
+"It is not known yet whether these versions are or are not affected by the vulnerability. However, it is still under investigation."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "File": {
 "id": "File",
 "properties": {
@@ -1439,16 +1571,44 @@
 "description": "Category of the finding.",
 "type": "string"
 },
+"details": {
+"description": "Description of the finding category.",
+"type": "string"
+},
 "location": {
 "$ref": "FindingLocation",
 "description": "Location (path and line) where the finding was detected."
 },
 "scanner": {
 "description": "Scanner determines which engine (e.g. static, llm) emitted the finding.",
+"enum": [
+"SCANNER_UNSPECIFIED",
+"STATIC",
+"LLM",
+"WS_POLICY",
+"GOOGLE_ANTIVIRUS"
+],
+"enumDescriptions": [
+"Unspecified scanner.",
+"Static scanner.",
+"LLM scanner.",
+"WS_POLICY scanner.",
+"Google AntiVirus Service scanner."
+],
 "type": "string"
 },
 "severity": {
 "description": "Severity of the finding.",
+"enum": [
+"SEVERITY_UNSPECIFIED",
+"CRITICAL",
+"HIGH"
+],
+"enumDescriptions": [
+"Unspecified severity.",
+"Critical severity.",
+"High severity."
+],
 "type": "string"
 }
 },
@@ -1574,10 +1734,32 @@
 },
 "type": "object"
 },
+"GrafeasV1LayerAttribute": {
+"description": "LayerAttribute represents a single attribute (such as a tag) that applies to a layer, along with the plugin that generated it.",
+"id": "GrafeasV1LayerAttribute",
+"properties": {
+"plugin": {
+"description": "The name of the plugin that generated this attribute.",
+"type": "string"
+},
+"value": {
+"description": "The value of the attribute, with a meaning defined by the plugin.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "GrafeasV1LayerDetails": {
 "description": "Details about the layer a package was found in.",
 "id": "GrafeasV1LayerDetails",
 "properties": {
+"attributes": {
+"description": "Attributes that apply to the layer, such as buildpacks metadata.",
+"items": {
+"$ref": "GrafeasV1LayerAttribute"
+},
+"type": "array"
+},
 "baseImages": {
 "description": "The base images the layer is found within.",
 "items": {
@@ -1849,6 +2031,34 @@
 },
 "type": "object"
 },
+"IngestionSource": {
+"description": "Indicates where an extracted package originates from.",
+"id": "IngestionSource",
+"properties": {
+"attachmentUri": {
+"description": "The attachment URI that this package was extracted from.",
+"type": "string"
+},
+"resourceUrl": {
+"description": "The resource URL of the resource that was scanned to find this package.",
+"type": "string"
+},
+"source": {
+"enum": [
+"SOURCE_UNSPECIFIED",
+"DOCKER_IMAGE",
+"SBOM_ATTACHMENT"
+],
+"enumDescriptions": [
+"",
+"",
+""
+],
+"type": "string"
+}
+},
+"type": "object"
+},
 "Justification": {
 "description": "Justification provides the justification when the state of the assessment if NOT_AFFECTED.",
 "id": "Justification",
@@ -1918,10 +2128,32 @@
 },
 "type": "object"
 },
+"LayerAttribute": {
+"description": "An attribute attached to a layer by a plugin.",
+"id": "LayerAttribute",
+"properties": {
+"plugin": {
+"description": "The name of the plugin that generated this attribute.",
+"type": "string"
+},
+"value": {
+"description": "The value of the attribute, with a meaning defined by the plugin.",
+"type": "string"
+}
+},
+"type": "object"
+},
 "LayerDetails": {
 "description": "Details about the layer a package was found in.",
 "id": "LayerDetails",
 "properties": {
+"attributes": {
+"description": "Attributes attached to this layer by plugins.",
+"items": {
+"$ref": "LayerAttribute"
+},
+"type": "array"
+},
 "baseImages": {
 "description": "The base images the layer is found within.",
 "items": {
@@ -2039,6 +2271,119 @@
 "type": "string"
 },
 "url": {
+"type": "string"
+}
+},
+"type": "object"
+},
+"MaliciousContentLLMResult": {
+"description": "Result of Malicious Content LLM scan.",
+"id": "MaliciousContentLLMResult",
+"properties": {
+"maxSeverity": {
+"description": "Tracks max severity found.",
+"enum": [
+"SEVERITY_UNSPECIFIED",
+"CRITICAL",
+"HIGH"
+],
+"enumDescriptions": [
+"Unspecified severity.",
+"Critical severity.",
+"High severity."
+],
+"type": "string"
+},
+"modelId": {
+"description": "The base name of the model that performed the scan.",
+"type": "string"
+},
+"scanStatus": {
+"description": "Status of the scan.",
+"enum": [
+"SCAN_STATUS_UNSPECIFIED",
+"PERFORMED",
+"NOT_PERFORMED"
+],
+"enumDescriptions": [
+"Unspecified scan status.",
+"Scan was performed.",
+"Scan was not performed."
+],
+"type": "string"
+},
+"tokenUsage": {
+"$ref": "TokenUsage",
+"description": "Telemetry metrics tracking token usage for the AI scan."
+}
+},
+"type": "object"
+},
+"MaliciousContentStaticResult": {
+"description": "Result of Malicious Content Static scan.",
+"id": "MaliciousContentStaticResult",
+"properties": {
+"maxSeverity": {
+"description": "Tracks max severity found.",
+"enum": [
+"SEVERITY_UNSPECIFIED",
+"CRITICAL",
+"HIGH"
+],
+"enumDescriptions": [
+"Unspecified severity.",
+"Critical severity.",
+"High severity."
+],
+"type": "string"
+},
+"scanStatus": {
+"description": "Status of the scan.",
+"enum": [
+"SCAN_STATUS_UNSPECIFIED",
+"PERFORMED",
+"NOT_PERFORMED"
+],
+"enumDescriptions": [
+"Unspecified scan status.",
+"Scan was performed.",
+"Scan was not performed."
+],
+"type": "string"
+}
+},
+"type": "object"
+},
+"MalwareScanResult": {
+"description": "Result of Malware scan.",
+"id": "MalwareScanResult",
+"properties": {
+"scanStatus": {
+"description": "Status of the scan.",
+"enum": [
+"SCAN_STATUS_UNSPECIFIED",
+"PERFORMED",
+"NOT_PERFORMED"
+],
+"enumDescriptions": [
+"Unspecified scan status.",
+"Scan was performed.",
+"Scan was not performed."
+],
+"type": "string"
+},
+"verdict": {
+"description": "Verdict of the scan.",
+"enum": [
+"VERDICT_UNSPECIFIED",
+"PASSED",
+"FAILED"
+],
+"enumDescriptions": [
+"Unspecified verdict.",
+"Scanner passed.",
+"Scanner failed."
+],
 "type": "string"
 }
 },
@@ -2314,11 +2659,21 @@
 "description": "HashDigest stores the SHA512 hash digest of the jar file if the package is of type Maven. This field will be unset for non Maven packages.",
 "type": "string"
 },
+"ingestionSources": {
+"description": "The list of sources that were scanned to find this package. This can be a Docker image, an SBOM attachment, or both, for example.",
+"items": {
+"$ref": "IngestionSource"
+},
+"type": "array"
+},
 "layerDetails": {
-"$ref": "LayerDetails"
+"$ref": "LayerDetails",
+"deprecated": true,
+"description": "Deprecated: Layer details are captured per file location in FileLocation.layer_details. Top-level layer details is not persisted."
 },
 "licenses": {
-"description": "The list of licenses found that are related to a given package. Note that licenses may also be stored on the BinarySourceInfo. If there is no BinarySourceInfo (because there's no concept of source vs binary), then it will be stored here, while if there are BinarySourceInfos, it will be stored there, as one source can have multiple binaries with different licenses.",
+"deprecated": true,
+"description": "Deprecated: Top-level licenses is not persisted in the legacy Packages table. Licenses are captured in BinarySourceInfo or PackagesV2.",
 "items": {
 "type": "string"
 },
@@ -2430,6 +2785,11 @@
 "readOnly": true,
 "type": "string"
 },
+"exploitability": {
+"$ref": "Exploitability",
+"description": "Output only. Exploitability signals and summary for this package issue.",
+"readOnly": true
+},
 "fileLocation": {
 "description": "The location at which this package was found.",
 "items": {
@@ -2528,6 +2888,28 @@
 },
 "version": {
 "type": "string"
+}
+},
+"type": "object"
+},
+"PerScannerVerdict": {
+"id": "PerScannerVerdict",
+"properties": {
+"maliciousContentLlmResult": {
+"$ref": "MaliciousContentLLMResult",
+"description": "Malicious Content LLM scan result."
+},
+"maliciousContentStaticResult": {
+"$ref": "MaliciousContentStaticResult",
+"description": "Malicious Content Static scan result."
+},
+"malwareScan": {
+"$ref": "MalwareScanResult",
+"description": "Malware scan result."
+},
+"workspacePolicy": {
+"$ref": "WorkspacePolicyResult",
+"description": "Workspace Policy scan result."
 }
 },
 "type": "object"
@@ -3234,6 +3616,38 @@
 },
 "type": "object"
 },
+"TokenUsage": {
+"description": "Token usage associated with an AI scan.",
+"id": "TokenUsage",
+"properties": {
+"cacheCount": {
+"description": "Cache matched tokens for implicit cache.",
+"format": "int64",
+"type": "string"
+},
+"candidateCount": {
+"description": "Tokens in the model response.",
+"format": "int64",
+"type": "string"
+},
+"promptCount": {
+"description": "Tokens in the user request.",
+"format": "int64",
+"type": "string"
+},
+"thinkingCount": {
+"description": "Tokens in the thinking output.",
+"format": "int64",
+"type": "string"
+},
+"toolUsePromptCount": {
+"description": "Prompt tokens for using tools.",
+"format": "int64",
+"type": "string"
+}
+},
+"type": "object"
+},
 "UpgradeDistribution": {
 "description": "The Upgrade Distribution represents metadata about the Upgrade for each operating system (CPE). Some distributions have additional metadata around updates, classifying them into various categories and severities.",
 "id": "UpgradeDistribution",
@@ -3403,6 +3817,10 @@
 "$ref": "CVSS",
 "description": "The cvss v2 score for the vulnerability."
 },
+"cvssV4": {
+"$ref": "CVSS",
+"description": "The cvss v4 score for the vulnerability."
+},
 "cvssVersion": {
 "description": "Output only. CVSS version used to populate cvss_score and severity.",
 "enum": [
@@ -3442,6 +3860,11 @@
 "Critical severity."
 ],
 "type": "string"
+},
+"exploitability": {
+"$ref": "Exploitability",
+"description": "Output only. Rollup of exploitability across all PackageIssues in this occurrence.",
+"readOnly": true
 },
 "extraDetails": {
 "description": "Occurrence-specific extra details about the vulnerability.",
@@ -3544,6 +3967,41 @@
 },
 "title": {
 "description": "The localized title of the update.",
+"type": "string"
+}
+},
+"type": "object"
+},
+"WorkspacePolicyResult": {
+"description": "Result of Workspace Policy scan.",
+"id": "WorkspacePolicyResult",
+"properties": {
+"scanStatus": {
+"description": "Status of the scan.",
+"enum": [
+"SCAN_STATUS_UNSPECIFIED",
+"PERFORMED",
+"NOT_PERFORMED"
+],
+"enumDescriptions": [
+"Unspecified scan status.",
+"Scan was performed.",
+"Scan was not performed."
+],
+"type": "string"
+},
+"verdict": {
+"description": "Verdict of the scan.",
+"enum": [
+"VERDICT_UNSPECIFIED",
+"PASSED",
+"FAILED"
+],
+"enumDescriptions": [
+"Unspecified verdict.",
+"Scanner passed.",
+"Scanner failed."
+],
 "type": "string"
 }
 },
