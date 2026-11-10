@@ -1,6 +1,6 @@
 # Authentication Overview
 
-This document is an overview of how authentication, authorization, and accounting are accomplished. For all API calls, your application needs to be authenticated. When an API accesses a user's private data, your application must also be authorized by the user to access the data. For example, accessing a public Google+ post would not require user authorization, but accessing a user's private calendar would. Also, for quota and billing purposes, all API calls involve accounting. This document summarizes the protocols used by Google APIs and provides links to more information.
+This document is an overview of how authentication, authorization, and accounting are accomplished. For all API calls, your application needs to be authenticated. When an API accesses a user's private data, your application must also be authorized by the user to access the data. For example, accessing public API data would not require user authorization, but accessing a user's private calendar would. Also, for quota and billing purposes, all API calls involve accounting. This document summarizes the protocols used by Google APIs and provides links to more information.
 
 ## Access types
 
