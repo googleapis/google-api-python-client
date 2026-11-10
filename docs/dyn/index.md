@@ -160,10 +160,6 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/appsmarket_v2.html)
 
 
-## area120tables
-* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/area120tables_v1alpha1.html)
-
-
 ## areainsights
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/areainsights_v1.html)
 
@@ -417,6 +413,11 @@
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudtrace_v1.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudtrace_v2.html)
 * [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudtrace_v2beta1.html)
+
+
+## colaboratory
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/colaboratory_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/colaboratory_v1beta.html)
 
 
 ## composer
