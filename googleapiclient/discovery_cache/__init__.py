@@ -16,8 +16,11 @@
 
 from __future__ import absolute_import
 
+import getpass
 import logging
 import os
+import stat
+import tempfile
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,6 +28,57 @@ DISCOVERY_DOC_MAX_AGE = 60 * 60 * 24  # 1 day
 DISCOVERY_DOC_DIR = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "documents"
 )
+
+_CACHE_SUBDIR_PREFIX = "google-api-python-client-discovery-cache-"
+
+
+def _get_cache_directory():
+    """Return a private, per-user directory for file based discovery caches.
+
+    The file based discovery cache was historically written to a fixed,
+    world-predictable file name directly in the shared system temporary
+    directory (for example ``/tmp`` on Linux, which is writable by every
+    local user). Any local user could pre-create, replace, read, or symlink
+    that file and poison the cached discovery document. Because a discovery
+    document controls ``rootUrl``, a poisoned entry redirects every later
+    authenticated request, including the caller's OAuth credentials, to an
+    attacker chosen host.
+
+    Keep the cache inside a per-user directory created with ``0o700`` so
+    other local users cannot access it, and refuse to use the directory when
+    it is not a regular directory owned by the current user with no access
+    for group or others.
+    """
+    if hasattr(os, "getuid"):
+        suffix = str(os.getuid())
+    else:
+        try:
+            raw = getpass.getuser()
+        except Exception:
+            raw = ""
+        suffix = "".join(c for c in raw if c.isalnum() or c in "._-") or "default"
+
+    cache_dir = os.path.join(tempfile.gettempdir(), _CACHE_SUBDIR_PREFIX + suffix)
+    os.makedirs(cache_dir, exist_ok=True)
+
+    if hasattr(os, "getuid"):
+        try:
+            os.chmod(cache_dir, 0o700)
+        except OSError:
+            pass
+        info = os.lstat(cache_dir)
+        if (
+            not stat.S_ISDIR(info.st_mode)
+            or info.st_uid != os.getuid()
+            or info.st_mode & 0o077
+        ):
+            raise OSError(
+                "Refusing to use discovery cache directory %r: it must be a "
+                "directory owned by the current user with no group or other "
+                "access" % cache_dir
+            )
+
+    return cache_dir
 
 
 def autodetect():

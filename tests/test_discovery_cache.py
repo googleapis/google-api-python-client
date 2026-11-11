@@ -18,15 +18,48 @@
 """Discovery document cache tests."""
 
 import datetime
+import os
+import stat
+import tempfile
 import unittest
 from unittest import mock
 
-from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
+from googleapiclient.discovery_cache import (
+    _CACHE_SUBDIR_PREFIX,
+    DISCOVERY_DOC_MAX_AGE,
+    _get_cache_directory,
+)
 
 try:
     from googleapiclient.discovery_cache.file_cache import Cache as FileCache
 except ImportError:
     FileCache = None
+
+
+class CacheDirectoryTest(unittest.TestCase):
+    def test_cache_directory_is_private_and_contained(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch("tempfile.gettempdir", return_value=tmp):
+                cache_dir = _get_cache_directory()
+            # The cache lives in a dedicated subdirectory, not directly under
+            # the shared temporary directory with a predictable file name.
+            self.assertEqual(os.path.dirname(cache_dir), tmp)
+            self.assertTrue(os.path.isdir(cache_dir))
+            if hasattr(os, "getuid"):
+                info = os.stat(cache_dir)
+                self.assertEqual(stat.S_IMODE(info.st_mode), 0o700)
+                self.assertEqual(info.st_uid, os.getuid())
+
+    @unittest.skipUnless(hasattr(os, "getuid"), "POSIX permission check")
+    def test_rejects_symlinked_cache_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = os.path.join(tmp, "attacker")
+            os.mkdir(target)
+            link = os.path.join(tmp, _CACHE_SUBDIR_PREFIX + str(os.getuid()))
+            os.symlink(target, link)
+            with mock.patch("tempfile.gettempdir", return_value=tmp):
+                with self.assertRaises(OSError):
+                    _get_cache_directory()
 
 
 @unittest.skipIf(FileCache is None, "FileCache unavailable.")
