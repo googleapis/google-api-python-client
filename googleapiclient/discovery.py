@@ -208,6 +208,7 @@ def build(
     num_retries=1,
     static_discovery=None,
     always_use_jwt_access=False,
+    generate_docstrings=True,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -269,6 +270,11 @@ def build(
       always_use_jwt_access: Boolean, whether always use self signed JWT for service
         account credentials. This only applies to
         google.oauth2.service_account.Credentials.
+      generate_docstrings: Boolean, whether to generate docstrings for the
+        methods on the returned Resource. Generating them expands every method's
+        request and response schema, which is slow and memory hungry for large
+        APIs. Set to False if you never read the docstrings, e.g. in a server
+        that builds a service per request.
 
     Returns:
       A Resource object with methods for interacting with the service.
@@ -325,6 +331,7 @@ def build(
                 adc_cert_path=adc_cert_path,
                 adc_key_path=adc_key_path,
                 always_use_jwt_access=always_use_jwt_access,
+                generate_docstrings=generate_docstrings,
             )
             break  # exit if a service was created
         except HttpError as e:
@@ -475,6 +482,7 @@ def build_from_document(
     adc_cert_path=None,
     adc_key_path=None,
     always_use_jwt_access=False,
+    generate_docstrings=True,
 ):
     """Create a Resource for interacting with an API.
 
@@ -527,6 +535,11 @@ def build_from_document(
       always_use_jwt_access: Boolean, whether always use self signed JWT for service
         account credentials. This only applies to
         google.oauth2.service_account.Credentials.
+      generate_docstrings: Boolean, whether to generate docstrings for the
+        methods on the returned Resource. Generating them expands every method's
+        request and response schema, which is slow and memory hungry for large
+        APIs. Set to False if you never read the docstrings, e.g. in a server
+        that builds a service per request.
 
     Returns:
       A Resource object with methods for interacting with the service.
@@ -737,6 +750,7 @@ def build_from_document(
         rootDesc=service,
         schema=schema,
         universe_domain=universe_domain,
+        generate_docstrings=generate_docstrings,
     )
 
 
@@ -1074,7 +1088,7 @@ class ResourceMethodParameters(object):
                     self.query_params.remove(name)
 
 
-def createMethod(methodName, methodDesc, rootDesc, schema):
+def createMethod(methodName, methodDesc, rootDesc, schema, generate_docstrings=True):
     """Creates a method for attaching to a Resource.
 
     Args:
@@ -1083,6 +1097,10 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         describes the method.
       rootDesc: object, the entire deserialized discovery document.
       schema: object, mapping of schema names to schema descriptions.
+      generate_docstrings: Boolean, whether to build the method's docstring from
+        the discovery document. Setting this to False skips expanding the
+        request/response schemas, which is the expensive part of building a
+        service and is only useful when reading help().
     """
     methodName = fix_method_name(methodName)
     (
@@ -1275,6 +1293,10 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
             resumable=resumable,
         )
 
+    if not generate_docstrings:
+        # Leave method without a docstring, nothing was generated for it.
+        return (methodName, method)
+
     docs = [methodDesc.get("description", DEFAULT_METHOD_DOC), "\n\n"]
     if len(parameters.argmap) > 0:
         docs.append("Args:\n")
@@ -1414,6 +1436,7 @@ class Resource(object):
         rootDesc,
         schema,
         universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else "",
+        generate_docstrings=True,
     ):
         """Build a Resource from the API description.
 
@@ -1433,6 +1456,10 @@ class Resource(object):
           schema: object, mapping of schema names to schema descriptions.
           universe_domain: string, the universe for the API. The default universe
           is "googleapis.com".
+          generate_docstrings: Boolean, whether to generate method docstrings
+              from the discovery document. Set to False to skip expanding the
+              request/response schemas for every method, which saves a lot of
+              memory and time when the docstrings are never read.
         """
         self._dynamic_attrs = []
 
@@ -1446,6 +1473,7 @@ class Resource(object):
         self._schema = schema
         self._universe_domain = universe_domain
         self._credentials_validated = False
+        self._generate_docstrings = generate_docstrings
 
         self._set_service_methods()
 
@@ -1529,7 +1557,11 @@ class Resource(object):
         if "methods" in resourceDesc:
             for methodName, methodDesc in resourceDesc["methods"].items():
                 fixedMethodName, method = createMethod(
-                    methodName, methodDesc, rootDesc, schema
+                    methodName,
+                    methodDesc,
+                    rootDesc,
+                    schema,
+                    generate_docstrings=self._generate_docstrings,
                 )
                 self._set_dynamic_attr(
                     fixedMethodName, method.__get__(self, self.__class__)
@@ -1538,7 +1570,11 @@ class Resource(object):
                 # change when it sees that the method name ends in _media.
                 if methodDesc.get("supportsMediaDownload", False):
                     fixedMethodName, method = createMethod(
-                        methodName + "_media", methodDesc, rootDesc, schema
+                        methodName + "_media",
+                        methodDesc,
+                        rootDesc,
+                        schema,
+                        generate_docstrings=self._generate_docstrings,
                     )
                     self._set_dynamic_attr(
                         fixedMethodName, method.__get__(self, self.__class__)
@@ -1569,6 +1605,7 @@ class Resource(object):
                         rootDesc=rootDesc,
                         schema=schema,
                         universe_domain=self._universe_domain,
+                        generate_docstrings=self._generate_docstrings,
                     )
 
                 setattr(methodResource, "__doc__", "A collection resource.")
