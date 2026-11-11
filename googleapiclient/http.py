@@ -1738,7 +1738,7 @@ class RequestMockBuilder(object):
       googleapiclient.discovery.build("plus", "v1", requestBuilder=requestBuilder)
 
     Methods that you do not supply a response for will return a
-    200 OK with an empty string as the response content or raise an excpetion
+    200 OK with an empty string as the response content or raise an exception
     if check_unexpected is set to True. The methodId is taken from the rpcName
     in the discovery document.
 

@@ -282,7 +282,7 @@ def build(
     # The default value for `static_discovery` depends on the value of
     # `discoveryServiceUrl`. `static_discovery` will default to `True` when
     # `discoveryServiceUrl` is also not provided, otherwise it will default to
-    # `False`. This is added for backwards compatability with
+    # `False`. This is added for backwards compatibility with
     # google-api-python-client 1.x which does not support the `static_discovery`
     # parameter.
     if static_discovery is None:
@@ -709,7 +709,7 @@ def build_from_document(
                 )
 
             # Switch to mTLS endpoint, if environment variable is "always", or
-            # environment varibable is "auto" and client cert exists.
+            # environment variable is "auto" and client cert exists.
             if use_mtls_endpoint == "always" or (
                 use_mtls_endpoint == "auto" and client_cert_to_use
             ):
