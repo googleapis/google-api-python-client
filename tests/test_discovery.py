@@ -34,6 +34,7 @@ import os
 import pickle
 import re
 import sys
+import tempfile
 import unittest
 from unittest import mock
 import urllib
@@ -83,7 +84,7 @@ from googleapiclient.discovery import (
     build_from_document,
     key2param,
 )
-from googleapiclient.discovery_cache import DISCOVERY_DOC_MAX_AGE
+from googleapiclient.discovery_cache import DISCOVERY_DOC_DIR, DISCOVERY_DOC_MAX_AGE
 from googleapiclient.discovery_cache.base import Cache
 from googleapiclient.errors import (
     HttpError,
@@ -1498,6 +1499,23 @@ class DiscoveryFromStaticDocument(unittest.TestCase):
     def test_unknown_api_when_static_discovery_true(self):
         with self.assertRaises(UnknownApiNameOrVersion):
             build("doesnotexist", "v3", cache_discovery=False, static_discovery=True)
+
+    def test_static_discovery_does_not_read_outside_of_documents_dir(self):
+        http = HttpMockSequence([({"status": "400"}, "")])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "zoo.v1.json"), "w") as f:
+                f.write(read_datafile("zoo.json"))
+            outside = os.path.join(tmpdir, "zoo")
+            # Both an absolute path and one relative to the bundled documents.
+            for name in (outside, os.path.relpath(outside, DISCOVERY_DOC_DIR)):
+                with self.assertRaises(UnknownApiNameOrVersion):
+                    build(
+                        name,
+                        "v1",
+                        http=http,
+                        cache_discovery=False,
+                        static_discovery=True,
+                    )
 
 
 class DictCache(Cache):
