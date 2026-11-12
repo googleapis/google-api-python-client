@@ -101,6 +101,7 @@ class TestNotification(unittest.TestCase):
     def test_notification_from_headers(self):
         headers = {
             "X-GoOG-CHANNEL-ID": "myid",
+            "X-Goog-CHANNEL-token": "mytoken",
             "X-Goog-MESSAGE-NUMBER": "1",
             "X-Goog-rESOURCE-STATE": "sync",
             "X-Goog-reSOURCE-URI": "http://example.com/",
@@ -135,3 +136,63 @@ class TestNotification(unittest.TestCase):
 
         # Set the id back to a correct value.
         ch.id = "myid"
+
+    def test_notification_token_validation(self):
+        headers = {
+            "X-Goog-Channel-ID": "myid",
+            "X-Goog-Message-Number": "1",
+            "X-Goog-Resource-State": "sync",
+            "X-Goog-Resource-URI": "http://example.com/",
+            "X-Goog-Resource-ID": "http://example.com/resource_1",
+        }
+
+        ch = channel.Channel(
+            "web_hook",
+            "myid",
+            "mytoken",
+            "http://example.org/callback",
+        )
+
+        # A matching id but a missing token must be rejected, otherwise anyone
+        # who learns the (non-secret) channel id can forge notifications.
+        with self.assertRaises(errors.InvalidNotificationError):
+            channel.notification_from_headers(ch, dict(headers))
+
+        # A wrong token is rejected too.
+        wrong = dict(headers)
+        wrong["X-Goog-Channel-Token"] = "nottheone"
+        with self.assertRaises(errors.InvalidNotificationError):
+            channel.notification_from_headers(ch, wrong)
+
+        # The correct token is accepted.
+        good = dict(headers)
+        good["X-Goog-Channel-Token"] = "mytoken"
+        n = channel.notification_from_headers(ch, good)
+        self.assertEqual(1, n.message_number)
+
+        # Header values can arrive as bytes depending on the web framework, and
+        # the token is compared the same way whether it is str or bytes.
+        good_bytes = dict(headers)
+        good_bytes["X-Goog-Channel-Token"] = b"mytoken"
+        n = channel.notification_from_headers(ch, good_bytes)
+        self.assertEqual(1, n.message_number)
+
+        wrong_bytes = dict(headers)
+        wrong_bytes["X-Goog-Channel-Token"] = b"nottheone"
+        with self.assertRaises(errors.InvalidNotificationError):
+            channel.notification_from_headers(ch, wrong_bytes)
+
+        ch_bytes_token = channel.Channel(
+            "web_hook", "myid", b"mytoken", "http://example.org/callback"
+        )
+        n = channel.notification_from_headers(ch_bytes_token, good)
+        self.assertEqual(1, n.message_number)
+        n = channel.notification_from_headers(ch_bytes_token, good_bytes)
+        self.assertEqual(1, n.message_number)
+
+        # Channels created without a token keep the previous behavior.
+        ch_no_token = channel.Channel(
+            "web_hook", "myid", None, "http://example.org/callback"
+        )
+        n = channel.notification_from_headers(ch_no_token, dict(headers))
+        self.assertEqual(1, n.message_number)
