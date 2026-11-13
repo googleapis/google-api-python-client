@@ -160,10 +160,6 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/appsmarket_v2.html)
 
 
-## area120tables
-* [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/area120tables_v1alpha1.html)
-
-
 ## areainsights
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/areainsights_v1.html)
 
@@ -419,6 +415,11 @@
 * [v2beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/cloudtrace_v2beta1.html)
 
 
+## colaboratory
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/colaboratory_v1.html)
+* [v1beta](http://googleapis.github.io/google-api-python-client/docs/dyn/colaboratory_v1beta.html)
+
+
 ## composer
 * [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/composer_v1.html)
 * [v1beta1](http://googleapis.github.io/google-api-python-client/docs/dyn/composer_v1beta1.html)
@@ -543,6 +544,10 @@
 * [v1alpha1](http://googleapis.github.io/google-api-python-client/docs/dyn/datastream_v1alpha1.html)
 
 
+## deepreview
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/deepreview_v1.html)
+
+
 ## deploymentmanager
 * [alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/deploymentmanager_alpha.html)
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/deploymentmanager_v2.html)
@@ -559,6 +564,7 @@
 
 
 ## devicerun
+* [v1](http://googleapis.github.io/google-api-python-client/docs/dyn/devicerun_v1.html)
 * [v1alpha](http://googleapis.github.io/google-api-python-client/docs/dyn/devicerun_v1alpha.html)
 
 
@@ -592,6 +598,7 @@
 * [v2](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v2.html)
 * [v3](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v3.html)
 * [v4](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v4.html)
+* [v5](http://googleapis.github.io/google-api-python-client/docs/dyn/displayvideo_v5.html)
 
 
 ## dlp
