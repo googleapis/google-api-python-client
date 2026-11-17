@@ -26,7 +26,6 @@ import datetime
 import json
 import logging
 import os
-import tempfile
 
 try:
     from oauth2client.contrib.locked_file import LockedFile
@@ -41,7 +40,7 @@ except ImportError:
         )
 
 from . import base
-from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
+from ..discovery_cache import DISCOVERY_DOC_MAX_AGE, _get_cache_directory
 
 LOGGER = logging.getLogger(__name__)
 
@@ -85,7 +84,7 @@ class Cache(base.Cache):
           max_age: Cache expiration in seconds.
         """
         self._max_age = max_age
-        self._file = os.path.join(tempfile.gettempdir(), FILENAME)
+        self._file = os.path.join(_get_cache_directory(), FILENAME)
         f = LockedFile(self._file, "a+", "r")
         try:
             f.open_and_lock()
