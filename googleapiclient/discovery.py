@@ -91,11 +91,13 @@ logger = logging.getLogger(__name__)
 URITEMPLATE = re.compile("{[^}]*}")
 VARNAME = re.compile("[a-zA-Z0-9_-]+")
 DISCOVERY_URI = (
-    "https://www.googleapis.com/discovery/v1/apis/" "{api}/{apiVersion}/rest"
+    "https://www.googleapis.com/discovery/v1/apis/"
+    "{api}/{apiVersion}/rest{?labels*}"
 )
 V1_DISCOVERY_URI = DISCOVERY_URI
 V2_DISCOVERY_URI = (
-    "https://{api}.googleapis.com/$discovery/rest?" "version={apiVersion}"
+    "https://{api}.googleapis.com/$discovery/rest?"
+    "version={apiVersion}{&labels*}"
 )
 DEFAULT_METHOD_DOC = "A description of how to use this function"
 HTTP_PAYLOAD_METHODS = frozenset(["PUT", "POST", "PATCH"])
@@ -208,6 +210,7 @@ def build(
     num_retries=1,
     static_discovery=None,
     always_use_jwt_access=False,
+    labels=None,
 ):
     """Construct a Resource for interacting with an API.
 
@@ -269,6 +272,11 @@ def build(
       always_use_jwt_access: Boolean, whether always use self signed JWT for service
         account credentials. This only applies to
         google.oauth2.service_account.Credentials.
+      labels: list of strings, an optional list of visibility labels (e.g.,
+        ['PREVIEW', 'GOOGLE_INTERNAL']) to filter the discovery document and
+        restrict/downgrade visibility context of subsequent requests. Note:
+        while the client supports multiple labels, Google API servers may
+        not currently support multiple labels simultaneously.
 
     Returns:
       A Resource object with methods for interacting with the service.
@@ -277,7 +285,21 @@ def build(
       google.auth.exceptions.MutualTLSChannelError: if there are any problems
         setting up mutual TLS channel.
     """
+    if labels is not None:
+        if isinstance(labels, str):
+            labels = [labels]
+        else:
+            try:
+                labels_list = list(labels)
+            except TypeError:
+                raise ValueError("labels must be a string or an iterable of strings")
+            if not all(isinstance(label, str) and label for label in labels_list):
+                raise ValueError("labels must be a string or an iterable of non-empty strings")
+            labels = sorted(list(set(labels_list)))
+
     params = {"api": serviceName, "apiVersion": version}
+    if labels:
+        params["labels"] = labels
 
     # The default value for `static_discovery` depends on the value of
     # `discoveryServiceUrl`. `static_discovery` will default to `True` when
@@ -286,7 +308,7 @@ def build(
     # google-api-python-client 1.x which does not support the `static_discovery`
     # parameter.
     if static_discovery is None:
-        if discoveryServiceUrl is None:
+        if discoveryServiceUrl is None and labels is None:
             static_discovery = True
         else:
             static_discovery = False
@@ -325,6 +347,7 @@ def build(
                 adc_cert_path=adc_cert_path,
                 adc_key_path=adc_key_path,
                 always_use_jwt_access=always_use_jwt_access,
+                labels=labels,
             )
             break  # exit if a service was created
         except HttpError as e:
@@ -475,6 +498,7 @@ def build_from_document(
     adc_cert_path=None,
     adc_key_path=None,
     always_use_jwt_access=False,
+    labels=None,
 ):
     """Create a Resource for interacting with an API.
 
@@ -527,6 +551,10 @@ def build_from_document(
       always_use_jwt_access: Boolean, whether always use self signed JWT for service
         account credentials. This only applies to
         google.oauth2.service_account.Credentials.
+      labels: list of strings, an optional list of visibility labels (e.g.,
+        ['PREVIEW', 'GOOGLE_INTERNAL']) to restrict/downgrade visibility context
+        of requests. Note: while the client supports multiple labels, Google
+        API servers may not currently support multiple labels simultaneously.
 
     Returns:
       A Resource object with methods for interacting with the service.
@@ -535,6 +563,18 @@ def build_from_document(
       google.auth.exceptions.MutualTLSChannelError: if there are any problems
         setting up mutual TLS channel.
     """
+
+    if labels is not None:
+        if isinstance(labels, str):
+            labels = [labels]
+        else:
+            try:
+                labels_list = list(labels)
+            except TypeError:
+                raise ValueError("labels must be a string or an iterable of strings")
+            if not all(isinstance(label, str) and label for label in labels_list):
+                raise ValueError("labels must be a string or an iterable of non-empty strings")
+            labels = sorted(list(set(labels_list)))
 
     if client_options is None:
         client_options = google.api_core.client_options.ClientOptions()
@@ -737,6 +777,7 @@ def build_from_document(
         rootDesc=service,
         schema=schema,
         universe_domain=universe_domain,
+        labels=labels,
     )
 
 
@@ -1181,8 +1222,14 @@ def createMethod(methodName, methodDesc, rootDesc, schema):
         api_version = methodDesc.get("apiVersion", None)
 
         headers = {}
+        if getattr(self, "_labels", None):
+            headers["X-Goog-Visibilities"] = ",".join(self._labels)
         headers, params, query, body = model.request(
-            headers, actual_path_params, actual_query_params, body_value, api_version
+            headers,
+            actual_path_params,
+            actual_query_params,
+            body_value,
+            api_version,
         )
 
         expanded_url = uritemplate.expand(pathUrl, params)
@@ -1414,6 +1461,7 @@ class Resource(object):
         rootDesc,
         schema,
         universe_domain=universe.DEFAULT_UNIVERSE if HAS_UNIVERSE else "",
+        labels=None,
     ):
         """Build a Resource from the API description.
 
@@ -1446,6 +1494,7 @@ class Resource(object):
         self._schema = schema
         self._universe_domain = universe_domain
         self._credentials_validated = False
+        self._labels = labels
 
         self._set_service_methods()
 
@@ -1569,6 +1618,7 @@ class Resource(object):
                         rootDesc=rootDesc,
                         schema=schema,
                         universe_domain=self._universe_domain,
+                        labels=getattr(self, "_labels", None),
                     )
 
                 setattr(methodResource, "__doc__", "A collection resource.")
