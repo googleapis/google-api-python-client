@@ -152,13 +152,13 @@ Args:
     { # Defines a status condition for a resource.
       &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
       &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-      &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-      &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+      &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+      &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
       &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
       &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-      &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-      &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-      &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+      &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+      &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+      &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
     },
   ],
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation time.
@@ -220,12 +220,24 @@ Args:
           &quot;buildpacksBuild&quot;: { # Buildpacks build configuration. # Optional. Builds the source using Buildpacks.
             &quot;buildBaseImageUri&quot;: &quot;A String&quot;, # Optional. Specify base image other than the default.
             &quot;cacheImageUri&quot;: &quot;A String&quot;, # Optional. Cache image URI.
-            &quot;environmentVariables&quot;: { # Optional. Environment variables for the build.
+            &quot;environmentVariables&quot;: { # Optional. Deprecated: Use environment_variables in BuildConfiguration instead.
               &quot;a_key&quot;: &quot;A String&quot;,
             },
           },
           &quot;dockerBuild&quot;: { # Docker build configuration. # Optional. Builds the source using Docker.
           },
+          &quot;environmentVariables&quot;: [ # Optional. Environment variables for the build.
+            { # EnvVar represents an environment variable present in a Container.
+              &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must not exceed 32768 characters.
+              &quot;value&quot;: &quot;A String&quot;, # Literal value of the environment variable. Defaults to &quot;&quot;, and the maximum length is 32768 bytes. Variable references are not supported in Cloud Run.
+              &quot;valueSource&quot;: { # EnvVarSource represents a source for the value of an EnvVar. # Source for the environment variable&#x27;s value.
+                &quot;secretKeyRef&quot;: { # SecretEnvVarSource represents a source for the value of an EnvVar. # Selects a secret and a specific version from Cloud Secret Manager.
+                  &quot;secret&quot;: &quot;A String&quot;, # Required. The name of the secret in Cloud Secret Manager. Format: {secret_name} if the secret is in the same project. projects/{project}/secrets/{secret_name} if the secret is in a different project.
+                  &quot;version&quot;: &quot;A String&quot;, # The Cloud Secret Manager secret version. Can be &#x27;latest&#x27; for the latest version, an integer for a specific version, or a version alias.
+                },
+              },
+            },
+          ],
           &quot;imageRepositoryUri&quot;: &quot;A String&quot;, # Required. Artifact Registry URI to store the built image.
           &quot;serviceAccount&quot;: &quot;A String&quot;, # Optional. The service account to use for the build. Its resource name in the format `projects/{project}/serviceAccounts/{email}`.
           &quot;tags&quot;: [ # Optional. Tags to add to the build.
@@ -437,12 +449,9 @@ Args:
             &quot;A String&quot;,
           ],
         },
-        &quot;emptyDir&quot;: { # In memory (tmpfs) ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
-          &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values today is only MEMORY or none. When none, the default will currently be backed by memory but could change over time. +optional
-          &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. More info: https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume. Info in Kubernetes: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-        },
-        &quot;filestore&quot;: { # Represents a volume backed by a Filestore instance. # Optional. Represents a volume backed by a Filestore instance.
-          &quot;volume&quot;: &quot;A String&quot;, # Required. The resource name of the Filestore volume. Format: `projects/{project}/locations/{location}/volumePools/{volume_pool}/volumes/{volume}`
+        &quot;emptyDir&quot;: { # Represents in-memory (tmpfs) or disk-backed ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
+          &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values are `MEMORY`, `DISK`, or unset (`MEDIUM_UNSPECIFIED`). When unset, the default is currently memory-backed but could change over time.
+          &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. For more information, see [Configure in-memory volume mounts](https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume) and the [Kubernetes `emptyDir` volume documentation](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
         },
         &quot;gcs&quot;: { # Represents a volume backed by a Cloud Storage bucket (mounted via Cloud Storage FUSE or as a block device disk). # Persistent storage backed by a Google Cloud Storage bucket.
           &quot;bucket&quot;: &quot;A String&quot;, # Cloud Storage Bucket name.
@@ -492,13 +501,13 @@ Args:
   &quot;terminalCondition&quot;: { # Defines a status condition for a resource. # Output only. The Condition of this Service, containing its readiness status, and detailed error information in case it did not reach a serving state. See comments in `reconciling` for additional information on reconciliation process in Cloud Run.
     &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
     &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-    &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-    &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+    &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+    &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
     &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
     &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-    &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-    &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-    &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+    &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+    &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+    &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
   },
   &quot;threatDetectionEnabled&quot;: True or False, # Output only. True if Cloud Run Threat Detection monitoring is enabled for the parent project of this Service.
   &quot;traffic&quot;: [ # Optional. Specifies how to distribute traffic over a collection of Revisions belonging to the Service. If traffic is empty or not provided, defaults to 100% traffic to the latest `Ready` Revision.
@@ -636,13 +645,13 @@ Returns:
     { # Defines a status condition for a resource.
       &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
       &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-      &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-      &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+      &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+      &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
       &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
       &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-      &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-      &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-      &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+      &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+      &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+      &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
     },
   ],
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation time.
@@ -704,12 +713,24 @@ Returns:
           &quot;buildpacksBuild&quot;: { # Buildpacks build configuration. # Optional. Builds the source using Buildpacks.
             &quot;buildBaseImageUri&quot;: &quot;A String&quot;, # Optional. Specify base image other than the default.
             &quot;cacheImageUri&quot;: &quot;A String&quot;, # Optional. Cache image URI.
-            &quot;environmentVariables&quot;: { # Optional. Environment variables for the build.
+            &quot;environmentVariables&quot;: { # Optional. Deprecated: Use environment_variables in BuildConfiguration instead.
               &quot;a_key&quot;: &quot;A String&quot;,
             },
           },
           &quot;dockerBuild&quot;: { # Docker build configuration. # Optional. Builds the source using Docker.
           },
+          &quot;environmentVariables&quot;: [ # Optional. Environment variables for the build.
+            { # EnvVar represents an environment variable present in a Container.
+              &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must not exceed 32768 characters.
+              &quot;value&quot;: &quot;A String&quot;, # Literal value of the environment variable. Defaults to &quot;&quot;, and the maximum length is 32768 bytes. Variable references are not supported in Cloud Run.
+              &quot;valueSource&quot;: { # EnvVarSource represents a source for the value of an EnvVar. # Source for the environment variable&#x27;s value.
+                &quot;secretKeyRef&quot;: { # SecretEnvVarSource represents a source for the value of an EnvVar. # Selects a secret and a specific version from Cloud Secret Manager.
+                  &quot;secret&quot;: &quot;A String&quot;, # Required. The name of the secret in Cloud Secret Manager. Format: {secret_name} if the secret is in the same project. projects/{project}/secrets/{secret_name} if the secret is in a different project.
+                  &quot;version&quot;: &quot;A String&quot;, # The Cloud Secret Manager secret version. Can be &#x27;latest&#x27; for the latest version, an integer for a specific version, or a version alias.
+                },
+              },
+            },
+          ],
           &quot;imageRepositoryUri&quot;: &quot;A String&quot;, # Required. Artifact Registry URI to store the built image.
           &quot;serviceAccount&quot;: &quot;A String&quot;, # Optional. The service account to use for the build. Its resource name in the format `projects/{project}/serviceAccounts/{email}`.
           &quot;tags&quot;: [ # Optional. Tags to add to the build.
@@ -921,12 +942,9 @@ Returns:
             &quot;A String&quot;,
           ],
         },
-        &quot;emptyDir&quot;: { # In memory (tmpfs) ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
-          &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values today is only MEMORY or none. When none, the default will currently be backed by memory but could change over time. +optional
-          &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. More info: https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume. Info in Kubernetes: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-        },
-        &quot;filestore&quot;: { # Represents a volume backed by a Filestore instance. # Optional. Represents a volume backed by a Filestore instance.
-          &quot;volume&quot;: &quot;A String&quot;, # Required. The resource name of the Filestore volume. Format: `projects/{project}/locations/{location}/volumePools/{volume_pool}/volumes/{volume}`
+        &quot;emptyDir&quot;: { # Represents in-memory (tmpfs) or disk-backed ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
+          &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values are `MEMORY`, `DISK`, or unset (`MEDIUM_UNSPECIFIED`). When unset, the default is currently memory-backed but could change over time.
+          &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. For more information, see [Configure in-memory volume mounts](https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume) and the [Kubernetes `emptyDir` volume documentation](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
         },
         &quot;gcs&quot;: { # Represents a volume backed by a Cloud Storage bucket (mounted via Cloud Storage FUSE or as a block device disk). # Persistent storage backed by a Google Cloud Storage bucket.
           &quot;bucket&quot;: &quot;A String&quot;, # Cloud Storage Bucket name.
@@ -976,13 +994,13 @@ Returns:
   &quot;terminalCondition&quot;: { # Defines a status condition for a resource. # Output only. The Condition of this Service, containing its readiness status, and detailed error information in case it did not reach a serving state. See comments in `reconciling` for additional information on reconciliation process in Cloud Run.
     &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
     &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-    &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-    &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+    &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+    &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
     &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
     &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-    &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-    &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-    &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+    &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+    &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+    &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
   },
   &quot;threatDetectionEnabled&quot;: True or False, # Output only. True if Cloud Run Threat Detection monitoring is enabled for the parent project of this Service.
   &quot;traffic&quot;: [ # Optional. Specifies how to distribute traffic over a collection of Revisions belonging to the Service. If traffic is empty or not provided, defaults to 100% traffic to the latest `Ready` Revision.
@@ -1107,13 +1125,13 @@ Returns:
         { # Defines a status condition for a resource.
           &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
           &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-          &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-          &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+          &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+          &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
           &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
           &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-          &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-          &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-          &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+          &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+          &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+          &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
         },
       ],
       &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation time.
@@ -1175,12 +1193,24 @@ Returns:
               &quot;buildpacksBuild&quot;: { # Buildpacks build configuration. # Optional. Builds the source using Buildpacks.
                 &quot;buildBaseImageUri&quot;: &quot;A String&quot;, # Optional. Specify base image other than the default.
                 &quot;cacheImageUri&quot;: &quot;A String&quot;, # Optional. Cache image URI.
-                &quot;environmentVariables&quot;: { # Optional. Environment variables for the build.
+                &quot;environmentVariables&quot;: { # Optional. Deprecated: Use environment_variables in BuildConfiguration instead.
                   &quot;a_key&quot;: &quot;A String&quot;,
                 },
               },
               &quot;dockerBuild&quot;: { # Docker build configuration. # Optional. Builds the source using Docker.
               },
+              &quot;environmentVariables&quot;: [ # Optional. Environment variables for the build.
+                { # EnvVar represents an environment variable present in a Container.
+                  &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must not exceed 32768 characters.
+                  &quot;value&quot;: &quot;A String&quot;, # Literal value of the environment variable. Defaults to &quot;&quot;, and the maximum length is 32768 bytes. Variable references are not supported in Cloud Run.
+                  &quot;valueSource&quot;: { # EnvVarSource represents a source for the value of an EnvVar. # Source for the environment variable&#x27;s value.
+                    &quot;secretKeyRef&quot;: { # SecretEnvVarSource represents a source for the value of an EnvVar. # Selects a secret and a specific version from Cloud Secret Manager.
+                      &quot;secret&quot;: &quot;A String&quot;, # Required. The name of the secret in Cloud Secret Manager. Format: {secret_name} if the secret is in the same project. projects/{project}/secrets/{secret_name} if the secret is in a different project.
+                      &quot;version&quot;: &quot;A String&quot;, # The Cloud Secret Manager secret version. Can be &#x27;latest&#x27; for the latest version, an integer for a specific version, or a version alias.
+                    },
+                  },
+                },
+              ],
               &quot;imageRepositoryUri&quot;: &quot;A String&quot;, # Required. Artifact Registry URI to store the built image.
               &quot;serviceAccount&quot;: &quot;A String&quot;, # Optional. The service account to use for the build. Its resource name in the format `projects/{project}/serviceAccounts/{email}`.
               &quot;tags&quot;: [ # Optional. Tags to add to the build.
@@ -1392,12 +1422,9 @@ Returns:
                 &quot;A String&quot;,
               ],
             },
-            &quot;emptyDir&quot;: { # In memory (tmpfs) ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
-              &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values today is only MEMORY or none. When none, the default will currently be backed by memory but could change over time. +optional
-              &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. More info: https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume. Info in Kubernetes: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-            },
-            &quot;filestore&quot;: { # Represents a volume backed by a Filestore instance. # Optional. Represents a volume backed by a Filestore instance.
-              &quot;volume&quot;: &quot;A String&quot;, # Required. The resource name of the Filestore volume. Format: `projects/{project}/locations/{location}/volumePools/{volume_pool}/volumes/{volume}`
+            &quot;emptyDir&quot;: { # Represents in-memory (tmpfs) or disk-backed ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
+              &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values are `MEMORY`, `DISK`, or unset (`MEDIUM_UNSPECIFIED`). When unset, the default is currently memory-backed but could change over time.
+              &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. For more information, see [Configure in-memory volume mounts](https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume) and the [Kubernetes `emptyDir` volume documentation](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
             },
             &quot;gcs&quot;: { # Represents a volume backed by a Cloud Storage bucket (mounted via Cloud Storage FUSE or as a block device disk). # Persistent storage backed by a Google Cloud Storage bucket.
               &quot;bucket&quot;: &quot;A String&quot;, # Cloud Storage Bucket name.
@@ -1447,13 +1474,13 @@ Returns:
       &quot;terminalCondition&quot;: { # Defines a status condition for a resource. # Output only. The Condition of this Service, containing its readiness status, and detailed error information in case it did not reach a serving state. See comments in `reconciling` for additional information on reconciliation process in Cloud Run.
         &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
         &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-        &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-        &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+        &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+        &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
         &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
         &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-        &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-        &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-        &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+        &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+        &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+        &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
       },
       &quot;threatDetectionEnabled&quot;: True or False, # Output only. True if Cloud Run Threat Detection monitoring is enabled for the parent project of this Service.
       &quot;traffic&quot;: [ # Optional. Specifies how to distribute traffic over a collection of Revisions belonging to the Service. If traffic is empty or not provided, defaults to 100% traffic to the latest `Ready` Revision.
@@ -1538,13 +1565,13 @@ Args:
     { # Defines a status condition for a resource.
       &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
       &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-      &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-      &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+      &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+      &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
       &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
       &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-      &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-      &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-      &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+      &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+      &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+      &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
     },
   ],
   &quot;createTime&quot;: &quot;A String&quot;, # Output only. The creation time.
@@ -1606,12 +1633,24 @@ Args:
           &quot;buildpacksBuild&quot;: { # Buildpacks build configuration. # Optional. Builds the source using Buildpacks.
             &quot;buildBaseImageUri&quot;: &quot;A String&quot;, # Optional. Specify base image other than the default.
             &quot;cacheImageUri&quot;: &quot;A String&quot;, # Optional. Cache image URI.
-            &quot;environmentVariables&quot;: { # Optional. Environment variables for the build.
+            &quot;environmentVariables&quot;: { # Optional. Deprecated: Use environment_variables in BuildConfiguration instead.
               &quot;a_key&quot;: &quot;A String&quot;,
             },
           },
           &quot;dockerBuild&quot;: { # Docker build configuration. # Optional. Builds the source using Docker.
           },
+          &quot;environmentVariables&quot;: [ # Optional. Environment variables for the build.
+            { # EnvVar represents an environment variable present in a Container.
+              &quot;name&quot;: &quot;A String&quot;, # Required. Name of the environment variable. Must not exceed 32768 characters.
+              &quot;value&quot;: &quot;A String&quot;, # Literal value of the environment variable. Defaults to &quot;&quot;, and the maximum length is 32768 bytes. Variable references are not supported in Cloud Run.
+              &quot;valueSource&quot;: { # EnvVarSource represents a source for the value of an EnvVar. # Source for the environment variable&#x27;s value.
+                &quot;secretKeyRef&quot;: { # SecretEnvVarSource represents a source for the value of an EnvVar. # Selects a secret and a specific version from Cloud Secret Manager.
+                  &quot;secret&quot;: &quot;A String&quot;, # Required. The name of the secret in Cloud Secret Manager. Format: {secret_name} if the secret is in the same project. projects/{project}/secrets/{secret_name} if the secret is in a different project.
+                  &quot;version&quot;: &quot;A String&quot;, # The Cloud Secret Manager secret version. Can be &#x27;latest&#x27; for the latest version, an integer for a specific version, or a version alias.
+                },
+              },
+            },
+          ],
           &quot;imageRepositoryUri&quot;: &quot;A String&quot;, # Required. Artifact Registry URI to store the built image.
           &quot;serviceAccount&quot;: &quot;A String&quot;, # Optional. The service account to use for the build. Its resource name in the format `projects/{project}/serviceAccounts/{email}`.
           &quot;tags&quot;: [ # Optional. Tags to add to the build.
@@ -1823,12 +1862,9 @@ Args:
             &quot;A String&quot;,
           ],
         },
-        &quot;emptyDir&quot;: { # In memory (tmpfs) ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
-          &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values today is only MEMORY or none. When none, the default will currently be backed by memory but could change over time. +optional
-          &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. More info: https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume. Info in Kubernetes: https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-        },
-        &quot;filestore&quot;: { # Represents a volume backed by a Filestore instance. # Optional. Represents a volume backed by a Filestore instance.
-          &quot;volume&quot;: &quot;A String&quot;, # Required. The resource name of the Filestore volume. Format: `projects/{project}/locations/{location}/volumePools/{volume_pool}/volumes/{volume}`
+        &quot;emptyDir&quot;: { # Represents in-memory (tmpfs) or disk-backed ephemeral storage. It is ephemeral in the sense that when the sandbox is taken down, the data is destroyed with it (it does not persist across sandbox runs). # Ephemeral storage used as a shared volume.
+          &quot;medium&quot;: &quot;A String&quot;, # The medium on which the data is stored. Acceptable values are `MEMORY`, `DISK`, or unset (`MEDIUM_UNSPECIFIED`). When unset, the default is currently memory-backed but could change over time.
+          &quot;sizeLimit&quot;: &quot;A String&quot;, # Limit on the storage usable by this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers. The default is nil which means that the limit is undefined. For more information, see [Configure in-memory volume mounts](https://cloud.google.com/run/docs/configuring/in-memory-volumes#configure-volume) and the [Kubernetes `emptyDir` volume documentation](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir).
         },
         &quot;gcs&quot;: { # Represents a volume backed by a Cloud Storage bucket (mounted via Cloud Storage FUSE or as a block device disk). # Persistent storage backed by a Google Cloud Storage bucket.
           &quot;bucket&quot;: &quot;A String&quot;, # Cloud Storage Bucket name.
@@ -1878,13 +1914,13 @@ Args:
   &quot;terminalCondition&quot;: { # Defines a status condition for a resource. # Output only. The Condition of this Service, containing its readiness status, and detailed error information in case it did not reach a serving state. See comments in `reconciling` for additional information on reconciliation process in Cloud Run.
     &quot;executionReason&quot;: &quot;A String&quot;, # Output only. A reason for the execution condition.
     &quot;instanceReason&quot;: &quot;A String&quot;, # Output only. A reason for the instance condition.
-    &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Last time the condition transitioned from one status to another.
-    &quot;message&quot;: &quot;A String&quot;, # Human readable message indicating details about the current status.
+    &quot;lastTransitionTime&quot;: &quot;A String&quot;, # Output only. Last time the condition transitioned from one status to another.
+    &quot;message&quot;: &quot;A String&quot;, # Output only. Human readable message indicating details about the current status.
     &quot;reason&quot;: &quot;A String&quot;, # Output only. A common (service-level) reason for this condition.
     &quot;revisionReason&quot;: &quot;A String&quot;, # Output only. A reason for the revision condition.
-    &quot;severity&quot;: &quot;A String&quot;, # How to interpret failures of this condition, one of Error, Warning, Info
-    &quot;state&quot;: &quot;A String&quot;, # State of the condition.
-    &quot;type&quot;: &quot;A String&quot;, # type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
+    &quot;severity&quot;: &quot;A String&quot;, # Output only. How to interpret failures of this condition, one of Error, Warning, Info
+    &quot;state&quot;: &quot;A String&quot;, # Output only. State of the condition.
+    &quot;type&quot;: &quot;A String&quot;, # Output only. type is used to communicate the status of the reconciliation process. See also: https://github.com/knative/serving/blob/main/docs/spec/errors.md#error-conditions-and-reporting Types common to all resources include: * &quot;Ready&quot;: True when the Resource is ready.
   },
   &quot;threatDetectionEnabled&quot;: True or False, # Output only. True if Cloud Run Threat Detection monitoring is enabled for the parent project of this Service.
   &quot;traffic&quot;: [ # Optional. Specifies how to distribute traffic over a collection of Revisions belonging to the Service. If traffic is empty or not provided, defaults to 100% traffic to the latest `Ready` Revision.
