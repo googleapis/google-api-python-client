@@ -55,6 +55,23 @@ class PositionalTests(unittest.TestCase):
         with self.assertRaises(TypeError):
             function3(1, 2)
 
+        # Unspecified positional on a function without defaults: every
+        # argument may be positional.
+        @_helpers.positional
+        def function4(pos1, pos2):
+            return True
+
+        self.assertTrue(function4(1, 2))
+        with self.assertRaises(TypeError):
+            function4(1, 2, 3)
+
+        # Unspecified positional on a function without arguments.
+        @_helpers.positional
+        def function5():
+            return True
+
+        self.assertTrue(function5())
+
     @mock.patch("googleapiclient._helpers.logger")
     def test_enforcement_warning(self, mock_logger):
         _helpers.positional_parameters_enforcement = _helpers.POSITIONAL_WARNING
