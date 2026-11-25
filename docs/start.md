@@ -85,7 +85,7 @@ nested_collection = service.featured().stamps()
 
 ### Methods and requests
 
-Every collection has a list of methods defined by the API. Calling a collection's method returns an [HttpRequest](http://google.github.io/google-api-python-client/docs/epy/googleapiclient.http.HttpRequest-class.html) object. If the given API collection has a method named `list` that takes an argument called `cents`, you create a request object for that method like this:
+Every collection has a list of methods defined by the API. Calling a collection's method returns an [HttpRequest](https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.http.HttpRequest-class.html) object. If the given API collection has a method named `list` that takes an argument called `cents`, you create a request object for that method like this:
 
 ```python
 request = collection.list(cents=5)
