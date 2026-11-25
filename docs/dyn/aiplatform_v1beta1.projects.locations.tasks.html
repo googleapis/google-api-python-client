@@ -123,7 +123,7 @@ Returns:
         },
       },
     ],
-    &quot;tokenConsumption&quot;: { # Consumption for one budget dimension. # Output only. Token budget status. This is only populated if the Task has a token limit Budget set.
+    &quot;tokenConsumption&quot;: { # Consumption for one budget dimension. # Output only. Token budget status, counted as `Budget.max_total_tokens` describes. This is only populated if the Task has a token limit Budget set.
       &quot;limit&quot;: &quot;A String&quot;, # Output only. The cap from `TaskSpec.budget` for this dimension&#x27;s consumption.
       &quot;spent&quot;: &quot;A String&quot;, # Output only. Amount consumed so far.
     },
@@ -165,7 +165,7 @@ Returns:
   &quot;spec&quot;: { # The centralized specification of a Task: the scoped context it runs in, when it runs, the resource guardrails, and the goal (with verifiers). # Required. The full specification of what to do, how to run it, and how to know it is done.
     &quot;budget&quot;: { # Holistic resource caps metered across the entire task. # Optional. Optional holistic budget caps metered across the entire task lifetime.
       &quot;maxToolCalls&quot;: &quot;A String&quot;, # Optional. Maximum total tool calls across the whole task.
-      &quot;maxTotalTokens&quot;: &quot;A String&quot;, # Optional. Maximum total model tokens across the whole task.
+      &quot;maxTotalTokens&quot;: &quot;A String&quot;, # Optional. Maximum total model tokens across the whole task: the sum, over the model steps of the task&#x27;s agent and its subagents and over its goal checks, in the task and the tasks below it, of the uncached prompt tokens (cache writes included) and the output tokens (thinking included). Supporting model calls the platform makes around a turn, such as titles, summaries, memory and safety checks, are not counted. Prompt tokens served from the model&#x27;s cache are not counted. A cache miss, such as after the cache expires while the task is idle or after the prompt is compacted, counts the whole prompt again.
       &quot;maxWallclock&quot;: &quot;A String&quot;, # Optional. Maximum wall-clock duration for the task. Counts only time spent in `WORKING` or `REQUIRES_ACTION`; `IDLE`, `QUEUED`, and `SUSPENDED` do not accrue.
     },
     &quot;deltaStreaming&quot;: True or False, # Optional. Whether incrementally generated content is delivered as it is produced, rather than once the step is finished. The two modes are exact duals. If false (default), every step arrives once, complete, in TaskServerEvent.step -- so a client that reads only `step` sees the whole conversation. Suited to non-chat callers that consume finished steps. If true, EVERY step instead arrives as a `step_start` / `step_delta`* / `step_stop` run sharing an index, so a chat client sees one uniform lifecycle and never a bare `step`; reassembling a run yields the same step that would otherwise have been delivered. Content the model generates progressively -- assistant text (and the citations on it) and thoughts -- streams natively across the run&#x27;s `step_delta`s as it is produced. A step that arrives whole (tool calls, tool results, elicitations, user-input echoes, errors) carries no `step_delta`: the complete step rides `step_start` and `step_stop` closes the run, since nothing is generated incrementally. The field is deliberately not named for text: what streams progressively is an implementation detail that may widen, and a client asking for incremental delivery wants it for whatever supports it. Note per-step token usage rides `step_stop`, so it is reported only when this is true.
@@ -193,12 +193,39 @@ Returns:
                   &quot;channels&quot;: 42, # The number of audio channels.
                   &quot;data&quot;: &quot;A String&quot;, # The audio content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                      &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
                   &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                 },
                 &quot;document&quot;: { # A document content block.
                   &quot;data&quot;: &quot;A String&quot;, # The document content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                        &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                      },
+                      &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                        &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                      },
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
+                  &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                 },
                 &quot;image&quot;: { # An image content block.
@@ -258,6 +285,9 @@ Returns:
                   &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                   &quot;processingConfig&quot;: {
                     &quot;static&quot;: {
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                        &quot;A String&quot;,
+                      ],
                       &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                       &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                       &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -294,12 +324,39 @@ Returns:
                     &quot;channels&quot;: 42, # The number of audio channels.
                     &quot;data&quot;: &quot;A String&quot;, # The audio content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                        &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
                     &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                   },
                   &quot;document&quot;: { # A document content block.
                     &quot;data&quot;: &quot;A String&quot;, # The document content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                          &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                        },
+                        &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                          &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                        },
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
+                    &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                   },
                   &quot;image&quot;: { # An image content block.
@@ -359,6 +416,9 @@ Returns:
                     &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                     &quot;processingConfig&quot;: {
                       &quot;static&quot;: {
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                          &quot;A String&quot;,
+                        ],
                         &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                         &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                         &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -403,12 +463,39 @@ Returns:
                 &quot;channels&quot;: 42, # The number of audio channels.
                 &quot;data&quot;: &quot;A String&quot;, # The audio content.
                 &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                &quot;processingConfig&quot;: {
+                  &quot;static&quot;: {
+                    &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                    &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                  },
+                },
+                &quot;processingType&quot;: &quot;A String&quot;,
                 &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                 &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
               },
               &quot;document&quot;: { # A document content block.
                 &quot;data&quot;: &quot;A String&quot;, # The document content.
                 &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                &quot;processingConfig&quot;: {
+                  &quot;static&quot;: {
+                    &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                        &quot;A String&quot;,
+                      ],
+                      &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                      &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                    },
+                    &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                        &quot;A String&quot;,
+                      ],
+                      &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                      &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                    },
+                  },
+                },
+                &quot;processingType&quot;: &quot;A String&quot;,
+                &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                 &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
               },
               &quot;image&quot;: { # An image content block.
@@ -468,6 +555,9 @@ Returns:
                 &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                 &quot;processingConfig&quot;: {
                   &quot;static&quot;: {
+                    &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                      &quot;A String&quot;,
+                    ],
                     &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                     &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                     &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -497,12 +587,39 @@ Returns:
                 &quot;channels&quot;: 42, # The number of audio channels.
                 &quot;data&quot;: &quot;A String&quot;, # The audio content.
                 &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                &quot;processingConfig&quot;: {
+                  &quot;static&quot;: {
+                    &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                    &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                  },
+                },
+                &quot;processingType&quot;: &quot;A String&quot;,
                 &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                 &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
               },
               &quot;document&quot;: { # A document content block.
                 &quot;data&quot;: &quot;A String&quot;, # The document content.
                 &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                &quot;processingConfig&quot;: {
+                  &quot;static&quot;: {
+                    &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                        &quot;A String&quot;,
+                      ],
+                      &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                      &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                    },
+                    &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                        &quot;A String&quot;,
+                      ],
+                      &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                      &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                    },
+                  },
+                },
+                &quot;processingType&quot;: &quot;A String&quot;,
+                &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                 &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
               },
               &quot;image&quot;: { # An image content block.
@@ -562,6 +679,9 @@ Returns:
                 &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                 &quot;processingConfig&quot;: {
                   &quot;static&quot;: {
+                    &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                      &quot;A String&quot;,
+                    ],
                     &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                     &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                     &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -595,12 +715,39 @@ Returns:
                         &quot;channels&quot;: 42, # The number of audio channels.
                         &quot;data&quot;: &quot;A String&quot;, # The audio content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                            &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
                         &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                       },
                       &quot;document&quot;: { # A document content block.
                         &quot;data&quot;: &quot;A String&quot;, # The document content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                              &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                            },
+                            &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                              &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                            },
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
+                        &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                       },
                       &quot;image&quot;: { # An image content block.
@@ -660,6 +807,9 @@ Returns:
                         &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                         &quot;processingConfig&quot;: {
                           &quot;static&quot;: {
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                              &quot;A String&quot;,
+                            ],
                             &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                             &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                             &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -713,12 +863,39 @@ Returns:
                         &quot;channels&quot;: 42, # The number of audio channels.
                         &quot;data&quot;: &quot;A String&quot;, # The audio content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                            &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
                         &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                       },
                       &quot;document&quot;: { # A document content block.
                         &quot;data&quot;: &quot;A String&quot;, # The document content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                              &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                            },
+                            &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                              &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                            },
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
+                        &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                       },
                       &quot;image&quot;: { # An image content block.
@@ -778,6 +955,9 @@ Returns:
                         &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                         &quot;processingConfig&quot;: {
                           &quot;static&quot;: {
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                              &quot;A String&quot;,
+                            ],
                             &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                             &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                             &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -833,12 +1013,39 @@ Returns:
                     &quot;channels&quot;: 42, # The number of audio channels.
                     &quot;data&quot;: &quot;A String&quot;, # The audio content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                        &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
                     &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                   },
                   &quot;document&quot;: { # A document content block.
                     &quot;data&quot;: &quot;A String&quot;, # The document content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                          &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                        },
+                        &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                          &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                        },
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
+                    &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                   },
                   &quot;image&quot;: { # An image content block.
@@ -898,6 +1105,9 @@ Returns:
                     &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                     &quot;processingConfig&quot;: {
                       &quot;static&quot;: {
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                          &quot;A String&quot;,
+                        ],
                         &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                         &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                         &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -925,12 +1135,39 @@ Returns:
                   &quot;channels&quot;: 42, # The number of audio channels.
                   &quot;data&quot;: &quot;A String&quot;, # The audio content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                      &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
                   &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                 },
                 &quot;document&quot;: { # A document content block.
                   &quot;data&quot;: &quot;A String&quot;, # The document content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                        &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                      },
+                      &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                        &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                      },
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
+                  &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                 },
                 &quot;image&quot;: { # An image content block.
@@ -990,6 +1227,9 @@ Returns:
                   &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                   &quot;processingConfig&quot;: {
                     &quot;static&quot;: {
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                        &quot;A String&quot;,
+                      ],
                       &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                       &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                       &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1049,12 +1289,39 @@ Returns:
                   &quot;channels&quot;: 42, # The number of audio channels.
                   &quot;data&quot;: &quot;A String&quot;, # The audio content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                      &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
                   &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                 },
                 &quot;document&quot;: { # A document content block.
                   &quot;data&quot;: &quot;A String&quot;, # The document content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                        &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                      },
+                      &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                        &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                      },
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
+                  &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                 },
                 &quot;image&quot;: { # An image content block.
@@ -1114,6 +1381,9 @@ Returns:
                   &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                   &quot;processingConfig&quot;: {
                     &quot;static&quot;: {
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                        &quot;A String&quot;,
+                      ],
                       &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                       &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                       &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1160,12 +1430,39 @@ Returns:
                   &quot;channels&quot;: 42, # The number of audio channels.
                   &quot;data&quot;: &quot;A String&quot;, # The audio content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                      &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
                   &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                 },
                 &quot;document&quot;: { # A document content block.
                   &quot;data&quot;: &quot;A String&quot;, # The document content.
                   &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                  &quot;processingConfig&quot;: {
+                    &quot;static&quot;: {
+                      &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                        &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                      },
+                      &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                          &quot;A String&quot;,
+                        ],
+                        &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                        &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                      },
+                    },
+                  },
+                  &quot;processingType&quot;: &quot;A String&quot;,
+                  &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                   &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                 },
                 &quot;image&quot;: { # An image content block.
@@ -1225,6 +1522,9 @@ Returns:
                   &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                   &quot;processingConfig&quot;: {
                     &quot;static&quot;: {
+                      &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                        &quot;A String&quot;,
+                      ],
                       &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                       &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                       &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1303,6 +1603,9 @@ Returns:
         &quot;engineResourceName&quot;: &quot;A String&quot;, # Optional. Full resource name of the Discovery Engine Engine (e.g., &quot;projects/{project}/locations/{location}/collections/{collection}/engines/{engine}&quot;).
       },
       &quot;environment&quot;: { # Configuration for a custom environment. # Optional. Optional server-managed sandbox environment for the task: skills and tools mounted into the sandbox plus the egress policy. Reuses the Interactions EnvironmentConfig (e.g. SKILL_REGISTRY sources to mount skills, network egress allowlist).
+        &quot;customConfig&quot;: { # Optional. Arbitrary customer-defined JSON configuration passed through to the self-hosted environment poller. Only supported when `mode` is `SELF_HOSTED`.
+          &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+        },
         &quot;env&quot;: { # Environment variables to set in the sandbox environment.
           &quot;a_key&quot;: { # An environment variable to set in the execution environment.
             &quot;credential&quot;: &quot;A String&quot;, # Optional reference to a server-managed Credential resource by ID.
@@ -1318,6 +1621,7 @@ Returns:
             &quot;mode&quot;: &quot;A String&quot;, # Optional. Access mode granted to the environment for this store. Defaults to `READ_ONLY` when unspecified.
           },
         ],
+        &quot;mode&quot;: &quot;A String&quot;, # The compute lifecycle mode for this environment.
         &quot;networkAllowlist&quot;: { # Network egress configuration for the environment. # Allow only specific domains.
           &quot;allowlist&quot;: [ # List of allowed domains and their configurations. Set to `&quot;disabled&quot;` to block all network egress.
             { # A single domain allowlist rule with optional header injection.
@@ -1438,7 +1742,7 @@ Returns:
             },
           },
         ],
-        &quot;tokenConsumption&quot;: { # Consumption for one budget dimension. # Output only. Token budget status. This is only populated if the Task has a token limit Budget set.
+        &quot;tokenConsumption&quot;: { # Consumption for one budget dimension. # Output only. Token budget status, counted as `Budget.max_total_tokens` describes. This is only populated if the Task has a token limit Budget set.
           &quot;limit&quot;: &quot;A String&quot;, # Output only. The cap from `TaskSpec.budget` for this dimension&#x27;s consumption.
           &quot;spent&quot;: &quot;A String&quot;, # Output only. Amount consumed so far.
         },
@@ -1480,7 +1784,7 @@ Returns:
       &quot;spec&quot;: { # The centralized specification of a Task: the scoped context it runs in, when it runs, the resource guardrails, and the goal (with verifiers). # Required. The full specification of what to do, how to run it, and how to know it is done.
         &quot;budget&quot;: { # Holistic resource caps metered across the entire task. # Optional. Optional holistic budget caps metered across the entire task lifetime.
           &quot;maxToolCalls&quot;: &quot;A String&quot;, # Optional. Maximum total tool calls across the whole task.
-          &quot;maxTotalTokens&quot;: &quot;A String&quot;, # Optional. Maximum total model tokens across the whole task.
+          &quot;maxTotalTokens&quot;: &quot;A String&quot;, # Optional. Maximum total model tokens across the whole task: the sum, over the model steps of the task&#x27;s agent and its subagents and over its goal checks, in the task and the tasks below it, of the uncached prompt tokens (cache writes included) and the output tokens (thinking included). Supporting model calls the platform makes around a turn, such as titles, summaries, memory and safety checks, are not counted. Prompt tokens served from the model&#x27;s cache are not counted. A cache miss, such as after the cache expires while the task is idle or after the prompt is compacted, counts the whole prompt again.
           &quot;maxWallclock&quot;: &quot;A String&quot;, # Optional. Maximum wall-clock duration for the task. Counts only time spent in `WORKING` or `REQUIRES_ACTION`; `IDLE`, `QUEUED`, and `SUSPENDED` do not accrue.
         },
         &quot;deltaStreaming&quot;: True or False, # Optional. Whether incrementally generated content is delivered as it is produced, rather than once the step is finished. The two modes are exact duals. If false (default), every step arrives once, complete, in TaskServerEvent.step -- so a client that reads only `step` sees the whole conversation. Suited to non-chat callers that consume finished steps. If true, EVERY step instead arrives as a `step_start` / `step_delta`* / `step_stop` run sharing an index, so a chat client sees one uniform lifecycle and never a bare `step`; reassembling a run yields the same step that would otherwise have been delivered. Content the model generates progressively -- assistant text (and the citations on it) and thoughts -- streams natively across the run&#x27;s `step_delta`s as it is produced. A step that arrives whole (tool calls, tool results, elicitations, user-input echoes, errors) carries no `step_delta`: the complete step rides `step_start` and `step_stop` closes the run, since nothing is generated incrementally. The field is deliberately not named for text: what streams progressively is an implementation detail that may widen, and a client asking for incremental delivery wants it for whatever supports it. Note per-step token usage rides `step_stop`, so it is reported only when this is true.
@@ -1508,12 +1812,39 @@ Returns:
                       &quot;channels&quot;: 42, # The number of audio channels.
                       &quot;data&quot;: &quot;A String&quot;, # The audio content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                          &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
                       &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                     },
                     &quot;document&quot;: { # A document content block.
                       &quot;data&quot;: &quot;A String&quot;, # The document content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                            &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                          },
+                          &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                            &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                          },
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
+                      &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                     },
                     &quot;image&quot;: { # An image content block.
@@ -1573,6 +1904,9 @@ Returns:
                       &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                       &quot;processingConfig&quot;: {
                         &quot;static&quot;: {
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                            &quot;A String&quot;,
+                          ],
                           &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                           &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                           &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1609,12 +1943,39 @@ Returns:
                         &quot;channels&quot;: 42, # The number of audio channels.
                         &quot;data&quot;: &quot;A String&quot;, # The audio content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                            &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
                         &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                       },
                       &quot;document&quot;: { # A document content block.
                         &quot;data&quot;: &quot;A String&quot;, # The document content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                              &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                            },
+                            &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                              &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                            },
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
+                        &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                       },
                       &quot;image&quot;: { # An image content block.
@@ -1674,6 +2035,9 @@ Returns:
                         &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                         &quot;processingConfig&quot;: {
                           &quot;static&quot;: {
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                              &quot;A String&quot;,
+                            ],
                             &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                             &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                             &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1718,12 +2082,39 @@ Returns:
                     &quot;channels&quot;: 42, # The number of audio channels.
                     &quot;data&quot;: &quot;A String&quot;, # The audio content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                        &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
                     &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                   },
                   &quot;document&quot;: { # A document content block.
                     &quot;data&quot;: &quot;A String&quot;, # The document content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                          &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                        },
+                        &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                          &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                        },
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
+                    &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                   },
                   &quot;image&quot;: { # An image content block.
@@ -1783,6 +2174,9 @@ Returns:
                     &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                     &quot;processingConfig&quot;: {
                       &quot;static&quot;: {
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                          &quot;A String&quot;,
+                        ],
                         &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                         &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                         &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1812,12 +2206,39 @@ Returns:
                     &quot;channels&quot;: 42, # The number of audio channels.
                     &quot;data&quot;: &quot;A String&quot;, # The audio content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                        &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
                     &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                   },
                   &quot;document&quot;: { # A document content block.
                     &quot;data&quot;: &quot;A String&quot;, # The document content.
                     &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                    &quot;processingConfig&quot;: {
+                      &quot;static&quot;: {
+                        &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                          &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                        },
+                        &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                            &quot;A String&quot;,
+                          ],
+                          &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                          &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                        },
+                      },
+                    },
+                    &quot;processingType&quot;: &quot;A String&quot;,
+                    &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                     &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                   },
                   &quot;image&quot;: { # An image content block.
@@ -1877,6 +2298,9 @@ Returns:
                     &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                     &quot;processingConfig&quot;: {
                       &quot;static&quot;: {
+                        &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                          &quot;A String&quot;,
+                        ],
                         &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                         &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                         &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -1910,12 +2334,39 @@ Returns:
                             &quot;channels&quot;: 42, # The number of audio channels.
                             &quot;data&quot;: &quot;A String&quot;, # The audio content.
                             &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                            &quot;processingConfig&quot;: {
+                              &quot;static&quot;: {
+                                &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                                &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                              },
+                            },
+                            &quot;processingType&quot;: &quot;A String&quot;,
                             &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                             &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                           },
                           &quot;document&quot;: { # A document content block.
                             &quot;data&quot;: &quot;A String&quot;, # The document content.
                             &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                            &quot;processingConfig&quot;: {
+                              &quot;static&quot;: {
+                                &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                                  &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                                    &quot;A String&quot;,
+                                  ],
+                                  &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                                  &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                                },
+                                &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                                  &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                                    &quot;A String&quot;,
+                                  ],
+                                  &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                                  &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                                },
+                              },
+                            },
+                            &quot;processingType&quot;: &quot;A String&quot;,
+                            &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                             &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                           },
                           &quot;image&quot;: { # An image content block.
@@ -1975,6 +2426,9 @@ Returns:
                             &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                             &quot;processingConfig&quot;: {
                               &quot;static&quot;: {
+                                &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                                  &quot;A String&quot;,
+                                ],
                                 &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                                 &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                                 &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -2028,12 +2482,39 @@ Returns:
                             &quot;channels&quot;: 42, # The number of audio channels.
                             &quot;data&quot;: &quot;A String&quot;, # The audio content.
                             &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                            &quot;processingConfig&quot;: {
+                              &quot;static&quot;: {
+                                &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                                &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                              },
+                            },
+                            &quot;processingType&quot;: &quot;A String&quot;,
                             &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                             &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                           },
                           &quot;document&quot;: { # A document content block.
                             &quot;data&quot;: &quot;A String&quot;, # The document content.
                             &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                            &quot;processingConfig&quot;: {
+                              &quot;static&quot;: {
+                                &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                                  &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                                    &quot;A String&quot;,
+                                  ],
+                                  &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                                  &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                                },
+                                &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                                  &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                                    &quot;A String&quot;,
+                                  ],
+                                  &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                                  &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                                },
+                              },
+                            },
+                            &quot;processingType&quot;: &quot;A String&quot;,
+                            &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                             &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                           },
                           &quot;image&quot;: { # An image content block.
@@ -2093,6 +2574,9 @@ Returns:
                             &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                             &quot;processingConfig&quot;: {
                               &quot;static&quot;: {
+                                &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                                  &quot;A String&quot;,
+                                ],
                                 &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                                 &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                                 &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -2148,12 +2632,39 @@ Returns:
                         &quot;channels&quot;: 42, # The number of audio channels.
                         &quot;data&quot;: &quot;A String&quot;, # The audio content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                            &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
                         &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                       },
                       &quot;document&quot;: { # A document content block.
                         &quot;data&quot;: &quot;A String&quot;, # The document content.
                         &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                        &quot;processingConfig&quot;: {
+                          &quot;static&quot;: {
+                            &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                              &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                            },
+                            &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                              &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                                &quot;A String&quot;,
+                              ],
+                              &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                              &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                            },
+                          },
+                        },
+                        &quot;processingType&quot;: &quot;A String&quot;,
+                        &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                         &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                       },
                       &quot;image&quot;: { # An image content block.
@@ -2213,6 +2724,9 @@ Returns:
                         &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                         &quot;processingConfig&quot;: {
                           &quot;static&quot;: {
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                              &quot;A String&quot;,
+                            ],
                             &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                             &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                             &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -2240,12 +2754,39 @@ Returns:
                       &quot;channels&quot;: 42, # The number of audio channels.
                       &quot;data&quot;: &quot;A String&quot;, # The audio content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                          &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
                       &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                     },
                     &quot;document&quot;: { # A document content block.
                       &quot;data&quot;: &quot;A String&quot;, # The document content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                            &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                          },
+                          &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                            &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                          },
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
+                      &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                     },
                     &quot;image&quot;: { # An image content block.
@@ -2305,6 +2846,9 @@ Returns:
                       &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                       &quot;processingConfig&quot;: {
                         &quot;static&quot;: {
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                            &quot;A String&quot;,
+                          ],
                           &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                           &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                           &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -2364,12 +2908,39 @@ Returns:
                       &quot;channels&quot;: 42, # The number of audio channels.
                       &quot;data&quot;: &quot;A String&quot;, # The audio content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                          &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
                       &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                     },
                     &quot;document&quot;: { # A document content block.
                       &quot;data&quot;: &quot;A String&quot;, # The document content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                            &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                          },
+                          &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                            &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                          },
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
+                      &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                     },
                     &quot;image&quot;: { # An image content block.
@@ -2429,6 +3000,9 @@ Returns:
                       &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                       &quot;processingConfig&quot;: {
                         &quot;static&quot;: {
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                            &quot;A String&quot;,
+                          ],
                           &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                           &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                           &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -2475,12 +3049,39 @@ Returns:
                       &quot;channels&quot;: 42, # The number of audio channels.
                       &quot;data&quot;: &quot;A String&quot;, # The audio content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the audio, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be positive and greater than `start_offset` if `start_offset` is set.
+                          &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time, relative to the start of the audio stream. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
                       &quot;sampleRate&quot;: 42, # The sample rate of the audio.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the audio.
                     },
                     &quot;document&quot;: { # A document content block.
                       &quot;data&quot;: &quot;A String&quot;, # The document content.
                       &quot;mimeTypeString&quot;: &quot;A String&quot;, # Flexible MIME type string of the document, superseding mime_type = 1. Note: Bespoke logic in the GAOS parser/serializer maps this to the &quot;mime_type&quot; JSON key.
+                      &quot;processingConfig&quot;: {
+                        &quot;static&quot;: {
+                          &quot;pageOptions&quot;: { # Processing options for paginated documents, such as PDFs, Office documents, and presentations. # Options for paginated documents. Only valid for paginated document MIME types (e.g. PDF, Office documents, and presentations).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a paginated document.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;endPage&quot;: 42, # Optional. 1-indexed end page, inclusive. Must be &gt;= `start_page` if `start_page` is set.
+                            &quot;startPage&quot;: 42, # Optional. 1-indexed start page, inclusive.
+                          },
+                          &quot;spreadsheetOptions&quot;: { # Processing options for spreadsheets. # Options for spreadsheets. Only valid for spreadsheet MIME types (.xlsx, .xls, .ods).
+                            &quot;contentLayers&quot;: [ # Optional. Content layers to extract from a spreadsheet.
+                              &quot;A String&quot;,
+                            ],
+                            &quot;sheetIndex&quot;: 42, # Optional. The 1-indexed index of the sheet to extract, in workbook order. If not set, all sheets are extracted.
+                            &quot;visibleCells&quot;: &quot;A String&quot;, # Optional. The range of cells to extract, in A1 notation (e.g. &quot;A1:D10&quot;). If not set, the full occupied area of the sheet is used.
+                          },
+                        },
+                      },
+                      &quot;processingType&quot;: &quot;A String&quot;,
+                      &quot;resolution&quot;: &quot;A String&quot;, # The resolution of the media. Applicable when PAGE_IMAGE is selected in content_layers.
                       &quot;uri&quot;: &quot;A String&quot;, # The URI of the document.
                     },
                     &quot;image&quot;: { # An image content block.
@@ -2540,6 +3141,9 @@ Returns:
                       &quot;name&quot;: &quot;A String&quot;, # A user-defined name for this content block. Can be referenced by the model in the final response.
                       &quot;processingConfig&quot;: {
                         &quot;static&quot;: {
+                          &quot;contentLayers&quot;: [ # Optional. Content layers to extract from the video.
+                            &quot;A String&quot;,
+                          ],
                           &quot;endOffset&quot;: &quot;A String&quot;, # Optional. Segment end time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;30s&quot;. Must be non-negative and greater than `start_offset` if `start_offset` is set.
                           &quot;fps&quot;: 3.14, # Optional. Video frame-rate sampling density.
                           &quot;startOffset&quot;: &quot;A String&quot;, # Optional. Segment start time. Specified as a decimal number of seconds followed by an &#x27;s&#x27; suffix, e.g., &quot;10.5s&quot;. Must be non-negative.
@@ -2618,6 +3222,9 @@ Returns:
             &quot;engineResourceName&quot;: &quot;A String&quot;, # Optional. Full resource name of the Discovery Engine Engine (e.g., &quot;projects/{project}/locations/{location}/collections/{collection}/engines/{engine}&quot;).
           },
           &quot;environment&quot;: { # Configuration for a custom environment. # Optional. Optional server-managed sandbox environment for the task: skills and tools mounted into the sandbox plus the egress policy. Reuses the Interactions EnvironmentConfig (e.g. SKILL_REGISTRY sources to mount skills, network egress allowlist).
+            &quot;customConfig&quot;: { # Optional. Arbitrary customer-defined JSON configuration passed through to the self-hosted environment poller. Only supported when `mode` is `SELF_HOSTED`.
+              &quot;a_key&quot;: &quot;&quot;, # Properties of the object.
+            },
             &quot;env&quot;: { # Environment variables to set in the sandbox environment.
               &quot;a_key&quot;: { # An environment variable to set in the execution environment.
                 &quot;credential&quot;: &quot;A String&quot;, # Optional reference to a server-managed Credential resource by ID.
@@ -2633,6 +3240,7 @@ Returns:
                 &quot;mode&quot;: &quot;A String&quot;, # Optional. Access mode granted to the environment for this store. Defaults to `READ_ONLY` when unspecified.
               },
             ],
+            &quot;mode&quot;: &quot;A String&quot;, # The compute lifecycle mode for this environment.
             &quot;networkAllowlist&quot;: { # Network egress configuration for the environment. # Allow only specific domains.
               &quot;allowlist&quot;: [ # List of allowed domains and their configurations. Set to `&quot;disabled&quot;` to block all network egress.
                 { # A single domain allowlist rule with optional header injection.
