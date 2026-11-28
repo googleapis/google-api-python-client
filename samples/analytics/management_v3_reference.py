@@ -429,7 +429,7 @@ def print_pagination_info(management_response):
     """Prints common pagination details.
 
     Args:
-      management_response: The common reponse object for each collection in the
+      management_response: The common response object for each collection in the
           Management API.
     """
 

@@ -169,7 +169,7 @@ parser.add_argument(
 
 
 def safe_version(version):
-    """Create a safe version of the verion string.
+    """Create a safe version of the version string.
 
     Needed so that we can distinguish between versions
     and sub-collections in URIs. I.e. we don't want
